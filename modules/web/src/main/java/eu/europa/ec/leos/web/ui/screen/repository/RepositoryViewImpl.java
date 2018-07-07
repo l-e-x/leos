@@ -13,48 +13,42 @@
  */
 package eu.europa.ec.leos.web.ui.screen.repository;
 
-import java.text.SimpleDateFormat;
-import java.util.Iterator;
-import java.util.List;
+import com.google.common.base.Stopwatch;
+import com.google.common.eventbus.Subscribe;
+import com.vaadin.navigator.ViewChangeListener;
+import com.vaadin.server.FontAwesome;
+import com.vaadin.ui.*;
+import com.vaadin.ui.themes.ValoTheme;
+import eu.europa.ec.leos.vo.UserVO;
+import eu.europa.ec.leos.vo.catalog.CatalogItem;
+import eu.europa.ec.leos.web.event.NotificationEvent;
+import eu.europa.ec.leos.web.event.view.repository.*;
+import eu.europa.ec.leos.web.model.DocumentVO;
+import eu.europa.ec.leos.web.ui.component.card.CardHolder;
+import eu.europa.ec.leos.web.ui.component.card.DataController;
+import eu.europa.ec.leos.web.ui.component.documentCard.DocumentCard;
+import eu.europa.ec.leos.web.ui.screen.LeosScreen;
+import eu.europa.ec.leos.web.ui.themes.Themes;
+import eu.europa.ec.leos.web.ui.window.EditContributorWindow;
+import eu.europa.ec.leos.web.ui.wizard.document.CreateDocumentWizard;
+import eu.europa.ec.leos.web.view.RepositoryView;
+import eu.europa.ec.leos.web.view.subView.FilterSubView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
+import org.vaadin.dialogs.ConfirmDialog;
+import org.vaadin.peter.buttongroup.ButtonGroup;
+import org.vaadin.teemu.VaadinIcons;
+import ru.xpoft.vaadin.VaadinView;
 
 import javax.annotation.Nonnull;
 import javax.annotation.PostConstruct;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
-import ru.xpoft.vaadin.VaadinView;
-
-import com.vaadin.navigator.ViewChangeListener;
-import com.vaadin.server.Page;
-import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.CustomComponent;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Notification;
-import com.vaadin.ui.Panel;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
-
-import eu.europa.ec.leos.model.content.LeosObjectProperties;
-import eu.europa.ec.leos.vo.catalog.CatalogItem;
-import eu.europa.ec.leos.web.event.view.repository.DocumentCreateWizardRequestEvent;
-import eu.europa.ec.leos.web.event.view.repository.EnterRepositoryViewEvent;
-import eu.europa.ec.leos.web.event.view.repository.SelectDocumentEvent;
-import eu.europa.ec.leos.web.model.DocumentVO;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.screen.LeosScreen;
-import eu.europa.ec.leos.web.ui.themes.LeosTheme;
-import eu.europa.ec.leos.web.ui.wizard.document.CreateDocumentWizard;
-import eu.europa.ec.leos.web.view.RepositoryView;
+import java.text.SimpleDateFormat;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Scope("session")
-@Component(RepositoryView.VIEW_ID)
+@org.springframework.stereotype.Component(RepositoryView.VIEW_ID)
 @VaadinView(RepositoryView.VIEW_ID)
 public class RepositoryViewImpl extends LeosScreen implements RepositoryView {
 
@@ -62,29 +56,148 @@ public class RepositoryViewImpl extends LeosScreen implements RepositoryView {
     private static final Logger LOG = LoggerFactory.getLogger(RepositoryViewImpl.class);
     private static final SimpleDateFormat dateFormatter = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
 
-    private VerticalLayout buttonContainerLayout;
-
-    @Autowired
-    private MessageHelper messageHelper;
+    private DataController<DocumentVO> dataController;
+    private FilterSubView<DocumentVO> filterSubView;
 
     @PostConstruct
     private void init() {
         LOG.trace("Initializing {} view...", VIEW_ID);
-
         setSizeFull();
+        setSpacing(true);
         setMargin(true);
         addStyleName("leos-repository");
 
-        addComponent(createDocumentCreateButtton());
-        addComponent(createListContainer());
-        CustomComponent component = new CustomComponent();
-        addComponent(component);
-        setExpandRatio(component, 1f);
+        com.vaadin.ui.Component documentsGrid = createDocumentGrid();
+        filterSubView = new FilterSubView<>(messageHelper, langHelper, eventBus, dataController.getVaadinContainer(), securityContext.getUser());
+
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        horizontalLayout.setSizeFull();
+        horizontalLayout.setSpacing(true);
+        addComponent(horizontalLayout);
+
+        horizontalLayout.addComponent(filterSubView.getUIComponent());
+        horizontalLayout.setExpandRatio(filterSubView.getUIComponent(), .2f);
+
+        VerticalLayout verticalLayout = new VerticalLayout();
+        verticalLayout.setSizeFull();
+        verticalLayout.setSpacing(true);
+        horizontalLayout.addComponent(verticalLayout);
+
+        verticalLayout.addComponent(createTopBar());
+        verticalLayout.addComponent(documentsGrid);
+        verticalLayout.setExpandRatio(documentsGrid, 1f);
+
+        horizontalLayout.setExpandRatio(verticalLayout, 0.8f);
+        eventBus.register(this);
     }
 
-    private Button createDocumentCreateButtton() {
+    private com.vaadin.ui.Component createTopBar() {
+        HorizontalLayout topLayout = new HorizontalLayout();
+        topLayout.setWidth("100%");
+        topLayout.setSpacing(true);
+
+        Component refreshButton= createRefreshButton();
+        topLayout.addComponent(refreshButton);
+        topLayout.setComponentAlignment(refreshButton, Alignment.TOP_LEFT);
+
+        Component titleSearchGroup = createTitleSearchGroup();
+        topLayout.addComponent(titleSearchGroup);
+        topLayout.setExpandRatio(titleSearchGroup, .50f);
+        topLayout.setComponentAlignment(titleSearchGroup, Alignment.TOP_CENTER);
+
+        Button createButton = constructCreateDocumentButton();
+        topLayout.addComponent(createButton);
+        topLayout.setExpandRatio(createButton, .15f);
+        topLayout.setComponentAlignment(createButton, Alignment.TOP_RIGHT);
+        return topLayout;
+    }
+
+    private Component createRefreshButton() {
+        final Button refreshButton=new Button();
+        refreshButton.setStyleName(ValoTheme.BUTTON_ICON_ONLY);
+        refreshButton.setIcon(FontAwesome.REFRESH);
+        refreshButton.addStyleName("leos-refresh-button");
+        refreshButton.setDescription(messageHelper.getMessage("repository.refresh.button.tooltip"));
+        refreshButton.setDisableOnClick(true);
+
+        refreshButton.addClickListener(new Button.ClickListener() {
+            @Override public void buttonClick(Button.ClickEvent clickEvent) {
+                eventBus.post(new RefreshDocumentListEvent());
+                if(!refreshButton.isEnabled()){
+                    refreshButton.setEnabled(true);
+                }
+            }
+        });
+        return refreshButton;
+    }
+
+    private Component createTitleSearchGroup() {
+        CssLayout group= new CssLayout();
+        group.addStyleName(ValoTheme.LAYOUT_COMPONENT_GROUP);
+        group.setWidth("100%");
+
+        Component textFilter = filterSubView.getSearchBox();
+
+        final Button sortAsc = new Button();
+        sortAsc.setIcon(VaadinIcons.CHEVRON_DOWN);
+        sortAsc.setId("ASC");
+        sortAsc.setStyleName("group-button");
+        sortAsc.setDescription(messageHelper.getMessage("repository.filter.tooltip.sortGroup"));
+
+        final Button sortDesc = new Button();
+        sortDesc.setIcon(VaadinIcons.CHEVRON_UP);
+        sortDesc.setId("DESC");
+        sortDesc.setStyleName("group-button");
+        sortDesc.setDescription(messageHelper.getMessage("repository.filter.tooltip.sortGroup"));
+
+        group.addComponent(textFilter);
+
+        //TODO remove when removing old theme
+        if(Themes.LEOS.equals(UI.getCurrent().getTheme())){
+            ButtonGroup buttonGroup = new ButtonGroup();
+            buttonGroup.addButton(sortAsc);
+            buttonGroup.addButton(sortDesc);
+            group.addComponent(buttonGroup);
+        }
+        else {
+            group.addComponent(sortAsc);
+            group.addComponent(sortDesc);
+        }
+
+        Button.ClickListener bc = new Button.ClickListener() {
+            final static String ENABLED_STYLE = "enabled";
+            @Override
+            public void buttonClick(Button.ClickEvent event) {
+                Button sourceButton = event.getButton();
+                if (sourceButton.getData() == null) {// first click
+                    sourceButton.addStyleName(ENABLED_STYLE);
+                    sourceButton.setData(sourceButton.getId());
+                    resetButton(sourceButton.equals(sortAsc) ? sortDesc : sortAsc);
+
+                    doTitleSort(sourceButton.equals(sortAsc));
+                } else {// already sorted then remove the sort
+                    resetButton(sourceButton);
+                    defaultSort();
+                }
+            }
+            private void doTitleSort(boolean sortOrder) {
+                dataController.sortCards(new Object[]{"title"}, new boolean[]{sortOrder});
+            }
+            private void resetButton(Button button) {
+                button.setData(null);
+                button.removeStyleName(ENABLED_STYLE);
+            }
+        };
+        sortAsc.addClickListener(bc);
+        sortDesc.addClickListener(bc);
+        return group;
+    }
+
+    private Button constructCreateDocumentButton() {
         Button button = new Button(messageHelper.getMessage("repository.create.document"));
         button.setDescription(messageHelper.getMessage("repository.create.document.tooltip"));
+        button.addStyleName(ValoTheme.BUTTON_PRIMARY);
+
         button.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent clickEvent) {
@@ -94,23 +207,26 @@ public class RepositoryViewImpl extends LeosScreen implements RepositoryView {
         return button;
     }
 
+    private com.vaadin.ui.Component createDocumentGrid() {
+        CardHolder<DocumentCard, DocumentVO> documentsGrid = new CardHolder<>(messageHelper, langHelper, eventBus, DocumentCard.class);
+        dataController = new DataController<>(documentsGrid, DocumentVO.class, DocumentCard.KEY);// must do before creating filters
+        return documentsGrid;
+    }
+
     @Override
     public void showCreateDocumentWizard(List<CatalogItem> templates) {
         LOG.debug("Showing the create document wizard...");
-
-        CreateDocumentWizard createDocumentWizard = new CreateDocumentWizard(templates, messageHelper, eventBus);
-
+        CreateDocumentWizard createDocumentWizard = new CreateDocumentWizard(templates, messageHelper, langHelper, eventBus);
         UI.getCurrent().addWindow(createDocumentWizard);
-        createDocumentWizard.center();
         createDocumentWizard.focus();
     }
 
-    private Panel createListContainer() {
-        Panel panel = new Panel();
-        buttonContainerLayout = new VerticalLayout();
-        buttonContainerLayout.setSizeFull();
-        panel.setContent(buttonContainerLayout);
-        return panel;
+    @Override
+    public void openContributorsWindow(List<UserVO> allUsers, DocumentVO docDetails) {
+        LOG.debug("Showing the select contributors window...");
+        EditContributorWindow editContributorWindow = new EditContributorWindow( messageHelper, eventBus, allUsers, docDetails );
+        UI.getCurrent().addWindow(editContributorWindow);
+        editContributorWindow.focus();
     }
 
     @Override
@@ -121,91 +237,40 @@ public class RepositoryViewImpl extends LeosScreen implements RepositoryView {
 
     @Override
     public void setSampleDocuments(final List<DocumentVO> documents) {
-        buttonContainerLayout.removeAllComponents();
-        for (DocumentVO doc : documents) {
-            buttonContainerLayout.addComponent(createDocumentLine(doc));
-        }
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        dataController.updateAll(documents);
+        defaultSort();
+        LOG.trace("time taken in setting document list :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
-    private void applyLockInfo(DocumentVO documentVO, HorizontalLayout horizontalDocumentLine) {
+    @Subscribe
+    public void showDialogForDelete(final DeleteDocumentRequest event) {
+        // ask confirmation before delete
+        ConfirmDialog confirmDialog = ConfirmDialog.getFactory().create(
+                messageHelper.getMessage("delete.confirmation.title"),
+                messageHelper.getMessage("delete.confirmation.message", event.getTitle()),
+                messageHelper.getMessage("delete.confirmation.confirm"),
+                messageHelper.getMessage("delete.confirmation.cancel"), null);
+        confirmDialog.setContentMode(ConfirmDialog.ContentMode.HTML);
 
-        Iterator<com.vaadin.ui.Component> buttonLayout=	horizontalDocumentLine.iterator();
-        Button buttonDoc = ((Button) buttonLayout.next());
-        Button buttonInfo = ((Button) buttonLayout.next());
+        confirmDialog.show(getUI(),
+                new ConfirmDialog.Listener() {
+                    private static final long serialVersionUID = -1441968814274639L;
 
-        String  lockMsg= documentVO.getMsgForUser();
-        horizontalDocumentLine.setDescription(lockMsg);
-        
-        if(!StringUtils.isBlank(lockMsg)){
-            buttonInfo.setVisible(true);
-        }
-        else{
-            buttonInfo.setVisible(false);
-        }
-
-        if (documentVO.getLockState().equals(DocumentVO.LockState.LOCKED)) {
-            buttonDoc.setIcon(LeosTheme.LEOS_DOCUMENT_LOCKED_ICON_32);
-            buttonDoc.setEnabled(false);
-        } else {
-            buttonDoc.setIcon(LeosTheme.LEOS_DOCUMENT_ICON_32);
-            buttonDoc.setEnabled(true);
-        }
+                    public void onClose(ConfirmDialog dialog) {
+                        if (dialog.isConfirmed()) {
+                            eventBus.post(new DeleteDocumentEvent(event.getDocumentId()));
+                        }
+                    }
+                }, true);
     }
 
-    private com.vaadin.ui.Component createDocumentLine(DocumentVO documentVO) {
-
-        LeosObjectProperties doc = documentVO.getLeosObjectProperties();
-        HorizontalLayout horizontalDocumentLine = new HorizontalLayout();
-        horizontalDocumentLine.setData(doc.getLeosId());
-        horizontalDocumentLine.setSpacing(true);
-        
-        Button docButton=createDocumentButton(documentVO); 
-        horizontalDocumentLine.addComponent(docButton);
-        horizontalDocumentLine.setComponentAlignment(docButton,Alignment.MIDDLE_LEFT);
-        
-        Button infoButton=createInfoButton(documentVO); 
-        horizontalDocumentLine.addComponent(infoButton);
-        horizontalDocumentLine.setComponentAlignment(infoButton,Alignment.MIDDLE_RIGHT);
-        
-        applyLockInfo(documentVO, horizontalDocumentLine);
-
-        return horizontalDocumentLine;
+    private void defaultSort(){
+        dataController.sortCards(new Object[]{"updatedOn"}, new boolean[]{false});
     }
 
-    private Button createDocumentButton(DocumentVO documentVO) {
-        LeosObjectProperties doc = documentVO.getLeosObjectProperties();
-        Button docButton = new Button(doc.getName());
-        docButton.setData(doc.getLeosId());
-        docButton.setStyleName("link");
-        docButton.setIcon(LeosTheme.LEOS_DOCUMENT_ICON_32);
-        
-        docButton.addClickListener(new Button.ClickListener() {
-            @Override
-            public void buttonClick(Button.ClickEvent event) {
-                SelectDocumentEvent selectDocumentEvent = new SelectDocumentEvent((String) event.getButton().getData());
-                eventBus.post(selectDocumentEvent);
-            }
-        });
-        return docButton;
-    }
-    private Button createInfoButton(DocumentVO documentVO) {
-        
-        LeosObjectProperties doc = documentVO.getLeosObjectProperties();
-        String  lockMsg= documentVO.getMsgForUser();
-        
-        Button infoButton = new Button();
-        infoButton.setData(doc.getLeosId());
-        infoButton.setIcon(LeosTheme.LEOS_INFO_WHITE_16);
-        infoButton.setVisible(false);
-        infoButton.setStyleName("link");
-        infoButton.setDescription(lockMsg);//tooltip
-        
-        return infoButton;
-    }
-    
     @Override
-    public @Nonnull
-    String getViewId() {
+    public @Nonnull String getViewId() {
         return VIEW_ID;
     }
 
@@ -214,27 +279,16 @@ public class RepositoryViewImpl extends LeosScreen implements RepositoryView {
         getUI().access(new Runnable() {
             @Override
             public void run() {
-                Iterator<com.vaadin.ui.Component> iterate = buttonContainerLayout.iterator();
-                while (iterate.hasNext()) {
-                    HorizontalLayout c = (HorizontalLayout) iterate.next();
-                    String buttonLineDocumentId = (String) c.getData();
-                    if (buttonLineDocumentId.equals(udpatedDocVO.getDocumentId())) {
-                        applyLockInfo(udpatedDocVO,(HorizontalLayout) c);
-                    }
-                }
+                // TODO fix to hide the implimentation details
+                dataController.udpateProperty(udpatedDocVO.getLeosId(), "msgForUser", udpatedDocVO.getMsgForUser());
             }
         });
     }
 
     public void showDisclaimer() {
-        String caption = messageHelper.getMessage("prototype.disclaimer.caption");
-        String description = messageHelper.getMessage("prototype.disclaimer.description");
-        Notification disclaimer = new Notification(caption);
-        disclaimer.setDelayMsec(Notification.DELAY_FOREVER);
-        disclaimer.setHtmlContentAllowed(true);
-        disclaimer.setDescription(description);
-        disclaimer.setStyleName("leos-disclaimer");
-        disclaimer.show(Page.getCurrent());
+        NotificationEvent disclaimer=new NotificationEvent(NotificationEvent.Type.DISCLAIMER,"prototype.disclaimer.description");
+        disclaimer.setCaptionKey("prototype.disclaimer.caption");
+        eventBus.post(disclaimer);
     }
 
     @Override

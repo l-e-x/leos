@@ -21,9 +21,14 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.same;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -32,6 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import eu.europa.ec.leos.model.content.*;
 import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.DocumentType;
@@ -41,17 +47,15 @@ import org.apache.chemistry.opencmis.client.api.ObjectFactory;
 import org.apache.chemistry.opencmis.client.api.ObjectType;
 import org.apache.chemistry.opencmis.client.api.OperationContext;
 import org.apache.chemistry.opencmis.client.api.Policy;
+import org.apache.chemistry.opencmis.client.api.Property;
 import org.apache.chemistry.opencmis.client.api.Session;
 import org.apache.chemistry.opencmis.client.runtime.util.AbstractPageFetcher;
 import org.apache.chemistry.opencmis.client.runtime.util.CollectionIterable;
 import org.apache.chemistry.opencmis.commons.data.Ace;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
-import org.apache.chemistry.opencmis.commons.data.ObjectData;
-import org.apache.chemistry.opencmis.commons.data.ObjectList;
 import org.apache.chemistry.opencmis.commons.enums.BaseTypeId;
 import org.apache.chemistry.opencmis.commons.enums.VersioningState;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.ContentStreamImpl;
-import org.apache.commons.codec.language.bm.Languages.SomeLanguages;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -60,12 +64,9 @@ import org.mockito.Mockito;
 
 import com.google.common.net.MediaType;
 
-import eu.europa.ec.leos.model.content.LeosDocument;
-import eu.europa.ec.leos.model.content.LeosFile;
-import eu.europa.ec.leos.model.content.LeosFileProperties;
-import eu.europa.ec.leos.model.content.LeosObjectProperties;
-import eu.europa.ec.leos.model.content.LeosTypeId;
 import eu.europa.ec.leos.repositories.support.cmis.OperationContextProvider;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties.EditableProperty;
 import eu.europa.ec.leos.test.support.LeosTest;
 
 public class ContentRepositoryImplTest extends LeosTest {
@@ -372,9 +373,13 @@ public class ContentRepositoryImplTest extends LeosTest {
         byte[] byteContent = new byte[]{1, 2, 3};
         Long streamLength = Long.valueOf(byteContent.length);
         InputStream inputStream = new ByteArrayInputStream(byteContent);
-
+        
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, streamName);
+        
         // exercise
-        contentRepository.updateContent(id, streamName, streamLength, streamMimeType, inputStream, "",LeosDocument.class);
+        contentRepository.updateContent(id, streamLength, streamMimeType, inputStream, newProperties, LeosDocument.class);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -385,9 +390,12 @@ public class ContentRepositoryImplTest extends LeosTest {
         MediaType streamMimeType = MediaType.OCTET_STREAM;
         Long streamLength = -1L;
         InputStream inputStream = null;
-
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, streamName);
+        
         // exercise
-        contentRepository.updateContent(id, streamName, streamLength, streamMimeType, inputStream,"", LeosDocument.class);
+        contentRepository.updateContent(id, streamLength, streamMimeType, inputStream,newProperties, LeosDocument.class);
     }
 
     @Test
@@ -413,10 +421,13 @@ public class ContentRepositoryImplTest extends LeosTest {
         boolean overwriteStream = true;
         when(cmisDocument.setContentStream(contentStream, overwriteStream)).thenReturn(cmisDocument);
         when(cmisDocument.getContentStream()).thenReturn(contentStream);
+        
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, streamName);
 
         // exercise
-        LeosDocument result = contentRepository.updateContent(id, streamName, streamLength, streamMimeType,
-                inputStream, "", LeosDocument.class);
+        LeosDocument result = contentRepository.updateContent(id, streamLength, streamMimeType, inputStream, newProperties, LeosDocument.class);
 
         // verify
         verify(session, atLeastOnce()).queryObjects(eq(LeosTypeId.LEOS_DOCUMENT.value()),contains(id),eq(false) ,same(oc));
@@ -433,9 +444,11 @@ public class ContentRepositoryImplTest extends LeosTest {
         String sourceDocumentPath = null;
         String targetDocumentName = "target document";
         String targetFolderPath = "/target/folder/path";
-
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, targetDocumentName);
         // exercise
-        contentRepository.copy(sourceDocumentPath, targetDocumentName, targetFolderPath,"operation.intial.version");
+        contentRepository.copy(sourceDocumentPath, targetFolderPath,newProperties);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -444,9 +457,13 @@ public class ContentRepositoryImplTest extends LeosTest {
         String sourceDocumentPath = "/source/document/path";
         String targetDocumentName = null;
         String targetFolderPath = "/target/folder/path";
+        
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, targetDocumentName);
 
         // exercise
-        contentRepository.copy(sourceDocumentPath, targetDocumentName, targetFolderPath,"operation.intial.version");
+        contentRepository.copy(sourceDocumentPath, targetFolderPath, newProperties);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -455,16 +472,19 @@ public class ContentRepositoryImplTest extends LeosTest {
         String sourceDocumentPath = "/source/document/path";
         String targetDocumentName = "target document";
         String targetFolderPath = null;
-
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, targetDocumentName);
+        
         // exercise
-        contentRepository.copy(sourceDocumentPath, targetDocumentName, targetFolderPath,"operation.intial.version");
+        contentRepository.copy(sourceDocumentPath, targetFolderPath, newProperties );
     }
 
     @Test
     public void test_createDocumentFromPath_should_returnNonnull() {
         // setup
         String sourceDocumentPath = "/source/document/path";
-        String targetDocumentName = "target document";
+        String targetDocumentTitle = "target document";
         String targetFolderPath = "/target/folder/path";
 
         OperationContext oc = setupOperationContext();
@@ -480,12 +500,19 @@ public class ContentRepositoryImplTest extends LeosTest {
 
         String targetFileId = "789";
         Document targetDocument = setupCMISDocumentAtRepository(targetFileId);
-        when(targetDocument.getName()).thenReturn(targetDocumentName);
+        
+        Property<Object> title= mock(Property.class);
+        when(title.getValueAsString()).thenReturn(targetDocumentTitle);
+        when(targetDocument.getProperty(eq(LeosDocumentProperties.TITLE))).thenReturn(title);
         when(sourceDocument.copy(eq(targetFolder), anyMapOf(String.class, Object.class), eq(VersioningState.MAJOR),
                 anyListOf(Policy.class), anyListOf(Ace.class), anyListOf(Ace.class), eq(oc))).thenReturn(targetDocument);
 
+        StorageProperties newProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        newProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.intial.version");
+        newProperties.set(EditableProperty.NAME, targetDocumentTitle);
+        
         // exercise
-        LeosDocument result = contentRepository.copy(sourceDocumentPath, targetDocumentName, targetFolderPath,"operation.intial.version");
+        LeosDocument result = contentRepository.copy(sourceDocumentPath, targetFolderPath,newProperties);
 
         // verify
         verify(session).getObjectByPath(same(sourceDocumentPath), same(oc));
@@ -493,7 +520,7 @@ public class ContentRepositoryImplTest extends LeosTest {
         verify(sourceDocument).copy(eq(targetFolder), anyMapOf(String.class, Object.class), eq(VersioningState.MAJOR),
                 anyListOf(Policy.class), anyListOf(Ace.class), anyListOf(Ace.class), eq(oc));
         assertThat(result, is(notNullValue(LeosDocument.class)));
-        assertThat(result.getName(), is(equalTo(targetDocumentName)));
+        assertThat(result.getTitle(), is(equalTo(targetDocumentTitle)));
     }
 
     private OperationContext setupOperationContext() {
@@ -560,7 +587,11 @@ public class ContentRepositoryImplTest extends LeosTest {
         when(cmisDocument.getVersionSeriesId()).thenReturn(leosId); 
         when(cmisDocument.isLatestVersion()).thenReturn(true);
         when (session.getTypeDefinition(LeosTypeId.LEOS_DOCUMENT.value())).thenReturn(objectType);
-        
+        //role
+        Property<Object> authorId= mock(Property.class);
+        Property<Object> authorName= mock(Property.class);
+        when(cmisDocument.getProperty(eq(LeosObject.AUTHOR_ID))).thenReturn(authorId);
+        when(cmisDocument.getProperty(eq(LeosObject.AUTHOR_NAME))).thenReturn(authorName);
         return cmisDocument;
     }
     private ContentStream setupContentStream(String name, long length, MediaType mimeType, InputStream inputStream) {

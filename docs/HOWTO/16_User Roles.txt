@@ -1,0 +1,33 @@
+                            USER ROLES - HOWTO
+--------------------------------------------------------------------------------
+Roles :
+-   author (creator of the document)
+-   contributor (list of people allowed to edit)
+
+An author can:
+-   create/edit/delete a document
+-   add and remove (aka grant and revoke) contributor for a document
+
+A contributor can:
+-   edit a document
+
+                            BEHAVIOUR
+--------------------------------------------------------------------------------
+Behaviour UI:
+-   Only view list of document where user is author or contributor
+-   Only offer the delete button to the author.
+-   Add grant and revoke facilities for document author.
+
+
+                            USER LOOKUP
+--------------------------------------------------------------------------------
+Provided by third party integration
+By default LEOS embedded a H2 database storing the user
+
+
+                            ROLE STORAGE
+--------------------------------------------------------------------------------
+Authors and contributors are stored key and names are stored as CMIS 
+leos:document properties under:
+leos:authorIds, leos:authorNames, leos:contributorIds, leos:contributorNames
+

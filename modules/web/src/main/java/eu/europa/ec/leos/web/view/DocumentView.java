@@ -13,21 +13,23 @@
  */
 package eu.europa.ec.leos.web.view;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
 import eu.europa.ec.leos.vo.MetaDataVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public interface DocumentView extends LeosView {
 
     public static final String VIEW_ID = "document";
 
-    void setDocumentName(final String documentName);
+    void setDocumentTitle(final String documentTitle);
+
+    void setDocumentStage(final LeosDocumentProperties.Stage stage);
 
     void refreshContent(final String documentContent);
 
@@ -61,4 +63,7 @@ public interface DocumentView extends LeosView {
     
     void refreshRecitalsEditor(String recitalsContent);
     
+    void setCrossReferenceToc(List<TableOfContentItemVO> tocItemList, List<String> ancestorsIds, String editorName);
+    
+	void setElementContent(String elementContent, String windowName);
 }

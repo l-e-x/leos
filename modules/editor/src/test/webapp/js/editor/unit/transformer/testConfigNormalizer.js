@@ -33,6 +33,7 @@ define(function testConfigNormalizerModule(require) {
                 var rawConfig = {
                     akn : 'aknnode',
                     html : 'htmlnode',
+                    transformer : {}
                 };
 
                 var expectedNormalizeConfig = {
@@ -57,7 +58,8 @@ define(function testConfigNormalizerModule(require) {
                         "toParentPath" : "aknnode",
                         "to" : "aknnode",
                         "toAttribute" : undefined
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var normalizedConfig = getNormalizedConfig(rawConfig);
@@ -72,7 +74,8 @@ define(function testConfigNormalizerModule(require) {
                     sub : {
                         akn : "aknchild",
                         html : "htmlnode/htmlchild"
-                    }
+                    },
+                    transformer : {}
                 };
 
                 var expectedNormalizeConfig = {
@@ -117,7 +120,8 @@ define(function testConfigNormalizerModule(require) {
                         "toParentPath" : "aknnode",
                         "to" : "aknchild",
                         "toAttribute" : undefined
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var normalizedConfig = getNormalizedConfig(rawConfig);
@@ -136,7 +140,8 @@ define(function testConfigNormalizerModule(require) {
                             akn : "aknsubchild",
                             html : "htmlnode/htmlchild/htmlsubchild"
                         }
-                    }
+                    },
+                    transformer : {}
                 };
 
                 var expectedNormalizeConfig = {
@@ -201,7 +206,8 @@ define(function testConfigNormalizerModule(require) {
                         "toParentPath" : "aknnode/aknchild",
                         "to" : "aknsubchild",
                         "toAttribute" : undefined
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var normalizedConfig = getNormalizedConfig(rawConfig);
@@ -217,7 +223,8 @@ define(function testConfigNormalizerModule(require) {
                     attr : [ {
                         akn : "aknattr",
                         html : "htmlattr"
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var expectedNormalizeConfig = {
@@ -254,7 +261,8 @@ define(function testConfigNormalizerModule(require) {
                         "toParentPath" : "aknnode",
                         "to" : "aknnode",
                         "toAttribute" : undefined
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var normalizedConfig = getNormalizedConfig(rawConfig);
@@ -270,7 +278,8 @@ define(function testConfigNormalizerModule(require) {
                     attr : [ {
                         akn : "aknattr",
                         html : "htmlattr"
-                    } ]
+                    } ],
+                    transformer : {}
                 };
 
                 var expectedNormalizeConfig = {
@@ -310,7 +319,8 @@ define(function testConfigNormalizerModule(require) {
                         to : 'aknnode',
                         toAttribute : 'aknAttr',
                         toAttributeValue : 'htmlAttrValue'
-                    } ]
+                    } ],
+                    transformer : {}
                 }
 
                 var normalizedConfig = getNormalizedConfig(rawConfig);

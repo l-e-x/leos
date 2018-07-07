@@ -18,13 +18,10 @@ import java.util.Set;
 
 import org.apache.chemistry.opencmis.client.api.OperationContext;
 import org.apache.chemistry.opencmis.client.api.Session;
-import org.apache.chemistry.opencmis.commons.PropertyIds;
 import org.apache.chemistry.opencmis.commons.enums.IncludeRelationships;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import eu.europa.ec.leos.model.content.LeosDocumentProperties;
 
 @Component
 public class OperationContextProvider {
@@ -38,25 +35,17 @@ public class OperationContextProvider {
         Validate.notNull(context, "The operation context must not be null!");
 
         // select only the wanted properties, for better performance
-        // the following properties are always retrieved:
+        // the following properties are always retrieved, So not adding those to the list
         // - object id
         // - base type id
         // - object type id
         Set<String> properties = new HashSet<>();
-        properties.add(PropertyIds.NAME);
-        properties.add(PropertyIds.DESCRIPTION);
-        properties.add(PropertyIds.CREATED_BY);
-        properties.add(PropertyIds.CREATION_DATE);
-        properties.add(PropertyIds.LAST_MODIFIED_BY);
-        properties.add(PropertyIds.LAST_MODIFICATION_DATE);
-        properties.add(PropertyIds.IS_LATEST_VERSION);
-        properties.add(PropertyIds.VERSION_SERIES_ID);
-        properties.add(PropertyIds.VERSION_LABEL);
-        properties.add(PropertyIds.CHECKIN_COMMENT);
-        properties.add(PropertyIds.CHANGE_TOKEN);
-        properties.add(LeosDocumentProperties.LANGUAGE);
-        properties.add(LeosDocumentProperties.TITLE);
-        properties.add(LeosDocumentProperties.TEMPLATE);
+        for(StorageProperties.Property property :StorageProperties.NonEditableProperty.values()){
+            properties.add(property.getCMISKey());    
+        }
+        for(StorageProperties.Property property :StorageProperties.EditableProperty.values()){
+            properties.add(property.getCMISKey());    
+        }
         
         // configure the context
         context.setFilter(properties);

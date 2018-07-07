@@ -1,0 +1,8 @@
+                        OPEN DOCUMENT - HOWTO
+--------------------------------------------------------------------------------
+
+1.  The repository browser contains list of documents with each document card 
+    consists of an 'Open' button.
+
+2.  Clicking on Open button will open the legislative document.
+                               

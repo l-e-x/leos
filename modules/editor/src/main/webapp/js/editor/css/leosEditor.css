@@ -24,6 +24,7 @@ body {
 	white-space: normal;
 }
 
+/*styles to display blue outline for widgets. We have used !important to override inline styling of widgets border*/
 .cke_widget_wrapper:hover .cke_widget_editable {
 	outline: 2px solid #ace !important;
 }
@@ -32,6 +33,11 @@ body {
 	outline: 2px solid #ace !important;
 }
 
+/*style to override outline for comments widget. We have used !important to override inline styling of widgets border*/
+.cke_widget_wrapper > .leoscomments, .cke_widget_wrapper:hover > .leoscomments {
+ 	outline: none !important;
+ }
+ 
 /************************Styles for Non-editable Elements********************/
 *[contenteditable="false"] {
 	color: darkgray;
@@ -40,3 +46,6 @@ body {
 *[contenteditable="true"] {
 	color: black;
 }
+
+::-moz-selection { color: white;  background: #0080ff; }
+::selection      { color: white;  background: #0080ff; } 

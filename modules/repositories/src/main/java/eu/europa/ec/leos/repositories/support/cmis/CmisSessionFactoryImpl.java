@@ -48,6 +48,33 @@ public class CmisSessionFactoryImpl implements CmisSessionFactory {
     @Value("${leos.cmis.repository.url}")
     private String repositoryUrl;
 
+    @Value("${leos.cmis.ws.repository.url}")
+    private String repositoryRepositoryServiceWsUrl;
+
+    @Value("${leos.cmis.ws.discovery.url}")
+    private String repositoryDiscoveryServiceWsUrl;
+
+    @Value("${leos.cmis.ws.multifiling.url}")
+    private String repositoryMultiFilingServiceWsUrl;
+
+    @Value("${leos.cmis.ws.navigation.url}")
+    private String repositoryNavigationServiceWsUrl;
+
+    @Value("${leos.cmis.ws.object.url}")
+    private String repositoryObjectServiceWsUrl;
+
+    @Value("${leos.cmis.ws.policy.url}")
+    private String repositoryPolicyServiceWsUrl;
+
+    @Value("${leos.cmis.ws.relationship.url}")
+    private String repositoryRelationshipServiceWsUrl;
+
+    @Value("${leos.cmis.ws.versioning.url}")
+    private String repositoryVersioningServiceWsUrl;
+
+    @Value("${leos.cmis.ws.acl.url}")
+    private String repositoryAclServiceWsUrl;
+
     @Value("${leos.cmis.httpInvoker.class:}")
     private String httpInvokerClass;
 
@@ -72,6 +99,18 @@ public class CmisSessionFactoryImpl implements CmisSessionFactory {
         parameters.put(SessionParameter.USER, leosSecurityContext.getUser().getName());
 
         switch (bindingType) {
+            case WEBSERVICES:
+                parameters.put(SessionParameter.WEBSERVICES_JAXWS_IMPL, "sunri" );
+                parameters.put(SessionParameter.WEBSERVICES_ACL_SERVICE,            repositoryRepositoryServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_DISCOVERY_SERVICE,      repositoryDiscoveryServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_MULTIFILING_SERVICE,    repositoryMultiFilingServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_NAVIGATION_SERVICE,     repositoryNavigationServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_OBJECT_SERVICE,         repositoryObjectServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_POLICY_SERVICE,         repositoryPolicyServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_RELATIONSHIP_SERVICE,   repositoryRelationshipServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_REPOSITORY_SERVICE,     repositoryRepositoryServiceWsUrl);
+                parameters.put(SessionParameter.WEBSERVICES_VERSIONING_SERVICE,     repositoryVersioningServiceWsUrl);
+                break;
             case ATOMPUB:
                 parameters.put(SessionParameter.ATOMPUB_URL, repositoryUrl);
                 break;

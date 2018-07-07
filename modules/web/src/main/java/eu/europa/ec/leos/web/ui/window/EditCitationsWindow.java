@@ -13,10 +13,16 @@
  */
 package eu.europa.ec.leos.web.ui.window;
 
+import java.util.List;
+
 import com.google.common.eventbus.EventBus;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
 
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.web.event.view.document.LoadCrossReferenceTocEvent;
+import eu.europa.ec.leos.web.event.view.document.LoadElementContentEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
 import eu.europa.ec.leos.web.event.view.document.SaveCitationsRequestEvent;
 import eu.europa.ec.leos.web.event.window.CloseCitationsEditorEvent;
@@ -24,29 +30,29 @@ import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.CKEditorComponent;
 
-
 public class EditCitationsWindow extends AbstractEditChangeMonitorWindow {
     private static final long serialVersionUID = 2324679729171812974L;
 
     private CKEditorComponent ckEditor;
     private String citationsId;
-    private  final String EDITOR_NAME = "leosAknCitationsEditor";
-    private  final String PROFILE_ID = "aknCitations";
+    private static final String WINDOW_NAME = "editCitationsWindow";
+    private static final String EDITOR_NAME = "leosAknCitationsEditor";
+    private static final String PROFILE_ID = "aknCitations";
 
-    public EditCitationsWindow(MessageHelper messageHelper, EventBus eventBus, String citationsId, String citationsContentData, ConfigurationHelper cfgHelper) {
+    public EditCitationsWindow(MessageHelper messageHelper, EventBus eventBus, String citationsId, String citationsContentData, ConfigurationHelper cfgHelper,
+            User user) {
         super(messageHelper, eventBus);
 
         setWidth(880, Unit.PIXELS);
         setHeight(685, Unit.PIXELS);
         setCaption(messageHelper.getMessage("edit.citations.window.title"));
         addButtonOnLeft(buildDapButton(cfgHelper.getProperty("leos.dap.edit.citations.url")));
-        ckEditor = new CKEditorComponent(PROFILE_ID , EDITOR_NAME, citationsContentData);
+        ckEditor = new CKEditorComponent(PROFILE_ID, EDITOR_NAME, citationsContentData, user, messageHelper);
         setBodyComponent(ckEditor);
         addCKEditorListeners();
 
-        this.citationsId=citationsId;
+        this.citationsId = citationsId;
     }
-
 
     @Override
     protected void onSave() {
@@ -56,37 +62,63 @@ public class EditCitationsWindow extends AbstractEditChangeMonitorWindow {
     @Override
     public void close() {
         ckEditor.actionDone(CKEditorComponent.CLOSE);
-        
+
     }
-    
+
     public void updateContent(String newContent) {
         ckEditor.setContent(newContent);
     }
 
-    private void addCKEditorListeners(){
-        
+    public void setCrossReferenceTableOfContent(List<TableOfContentItemVO> tocItemList, List<String> ancestorsIds) {
+        ckEditor.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+    }
+    
+    public void setElementContent(String elementContent) {
+    	ckEditor.setElementContent(elementContent);
+    }
+
+    private void addCKEditorListeners() {
+
         ckEditor.addChangeListener(new ValueChangeListener() {
             @Override
             public void valueChange(ValueChangeEvent event) {
-                enableSave();                
+                enableSave();
             }
         });
-        
+
         ckEditor.addSaveListener(new CKEditorComponent.SaveListener() {
             @Override
             public void saveClick(String content) {
                 eventBus.post(new SaveCitationsRequestEvent(citationsId, content));
                 EditCitationsWindow.super.onSave();
             }
-        });                       
-         
+        });
+
         ckEditor.addCloseListener(new CKEditorComponent.CloseListener() {
             @Override
             public void close() {
+                EditCitationsWindow.super.close();
                 eventBus.post(new CloseCitationsEditorEvent(citationsId));
                 eventBus.post(new RefreshDocumentEvent());
-                EditCitationsWindow.super.close();
             }
         });
+
+        ckEditor.addCrossReferenceTocListener(new CKEditorComponent.CrossReferenceTocListener() {
+            @Override
+            public void loadCrossReferenceToc(String selectedNodeId) {
+                eventBus.post(new LoadCrossReferenceTocEvent(WINDOW_NAME, selectedNodeId));
+            }
+        });
+        
+    	ckEditor.addLoadElementContentListener(new CKEditorComponent.LoadElementContentListener() {
+			@Override
+			public void loadElementContent(String elementId, String elementType) {
+				eventBus.post(new LoadElementContentEvent(WINDOW_NAME, elementId, elementType));
+			}
+		});
+    }
+
+    public String getWindowName() {
+        return WINDOW_NAME;
     }
 }

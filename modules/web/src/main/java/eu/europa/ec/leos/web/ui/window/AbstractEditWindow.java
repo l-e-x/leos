@@ -33,6 +33,7 @@ public abstract class AbstractEditWindow extends AbstractWindow {
 
     private Button buildSaveButton() {
         saveButton = new Button(messageHelper.getMessage("leos.button.save"));
+        saveButton.addStyleName("primary");
         saveButton.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent event) {

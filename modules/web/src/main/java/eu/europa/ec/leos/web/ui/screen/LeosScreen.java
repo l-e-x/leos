@@ -17,9 +17,10 @@ import com.google.common.eventbus.EventBus;
 import com.vaadin.navigator.View;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
-
+import eu.europa.ec.leos.model.security.SecurityContext;
 import eu.europa.ec.leos.web.event.view.LeaveViewEvent;
-
+import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
+import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanCreationException;
@@ -37,6 +38,15 @@ public abstract class LeosScreen extends VerticalLayout implements View {
 
     @Autowired
     protected EventBus eventBus;
+
+    @Autowired
+    protected SecurityContext securityContext;
+
+    @Autowired
+    protected MessageHelper messageHelper;
+
+    @Autowired
+    protected LanguageHelper langHelper;
 
     public @Nonnull
     abstract String getViewId();
@@ -61,11 +71,9 @@ public abstract class LeosScreen extends VerticalLayout implements View {
         super.detach();
     }
     
-    public void setPollingStatus(boolean enabled) {
+    protected void setPollingStatus(boolean enabled) {
         int millis = enabled ? pollingInterval : -1;
-        LOG.trace("Setting Leos Screen polling interval: {} millis", millis);
+        LOG.trace("View Id :{}, Setting Leos Screen polling interval: {} millis", getViewId(), millis);
         UI.getCurrent().setPollInterval(millis);
     }
-    
-    
 }

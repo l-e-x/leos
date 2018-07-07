@@ -15,10 +15,9 @@ package eu.europa.ec.leos.vo;
 
 public class MetaDataVO {
 
-    private String source = "EC DIGIT LEOS Prototype";
-    
+    //default values
     private String template;
-    private String language; // store in table name - code
+    private String language; // always should be set to language Code
     private String docStage;
     private String docType;
     private String docPurpose;
@@ -85,4 +84,35 @@ public class MetaDataVO {
         this.internalRef = internalRef;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((docPurpose == null) ? 0 : docPurpose.hashCode());
+        result = prime * result + ((docStage == null) ? 0 : docStage.hashCode());
+        result = prime * result + ((docType == null) ? 0 : docType.hashCode());
+        result = prime * result + ((template == null) ? 0 : template.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null) return false;
+        if (getClass() != obj.getClass()) return false;
+        MetaDataVO other = (MetaDataVO) obj;
+        if (docPurpose == null) {
+            if (other.docPurpose != null) return false;
+        } else if (!docPurpose.equals(other.docPurpose)) return false;
+        if (docStage == null) {
+            if (other.docStage != null) return false;
+        } else if (!docStage.equals(other.docStage)) return false;
+        if (docType == null) {
+            if (other.docType != null) return false;
+        } else if (!docType.equals(other.docType)) return false;
+        if (template == null) {
+            if (other.template != null) return false;
+        } else if (!template.equals(other.template)) return false;
+        return true;
+    }
 }

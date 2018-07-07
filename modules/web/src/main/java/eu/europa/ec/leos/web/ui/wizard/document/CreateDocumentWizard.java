@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.web.ui.wizard.document;
 
+import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 import com.google.common.eventbus.EventBus;
@@ -29,17 +30,19 @@ import java.util.List;
 @Scope("prototype")
 public class CreateDocumentWizard extends AbstractWizard {
 
-    public CreateDocumentWizard(List<CatalogItem> templates, MessageHelper messageHelper, EventBus eventBus) {
+    private LanguageHelper langHelper;
+    private DocumentCreateWizardVO documentCreateWizardVO;
+
+    public CreateDocumentWizard(List<CatalogItem> templates, MessageHelper messageHelper, LanguageHelper langHelper, EventBus eventBus) {
         super(messageHelper, eventBus);
+        this.langHelper=langHelper;
         init(templates);
     }
-
-    private DocumentCreateWizardVO documentCreateWizardVO;
 
     public void init(List<CatalogItem> templates) {
         documentCreateWizardVO = new DocumentCreateWizardVO();
         registerWizardStep(new TemplateSelectionStep(documentCreateWizardVO, templates, messageHelper));
-        registerWizardStep(new MetaDataStep(documentCreateWizardVO, messageHelper));
+        registerWizardStep(new MetaDataStep(documentCreateWizardVO, messageHelper, langHelper));
         setWizardStep(0);
     }
 

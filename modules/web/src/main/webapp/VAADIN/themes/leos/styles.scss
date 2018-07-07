@@ -12,17 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-
 @import "addons.scss";
 @import "leos.scss";
 @import "scss/window/window.scss";
-@import "scss/layout/header.scss";
 @import "scss/layout/footer.scss";
 @import "scss/layout/leosUI.scss";
 @import "scss/views/documentView.scss";
+@import "scss/views/feedbackView.scss";
 @import "scss/views/repositoryView.scss";
 @import "scss/views/unauthorizedView.scss";
 @import "scss/wizard/document/templateSelection.scss";
+
+@import "common";
+@import "scss/component/header";
 
 
 /* This file prefixes all rules with the LEOS theme name to avoid conflicts with other themes. */
@@ -35,10 +37,13 @@
     @include leos;
     
     //Include header theme styles
-    @include header;
+    @include ec-header;
     
     //Include documentView theme styles
     @include documentview;
+    
+    //Include feedbackView theme styles
+    @include feedbackview;    
     
     //Include footer theme styles
     @include footer;
@@ -53,4 +58,5 @@
     @include leosui;
     
     @include templateSelection;
+
 }

@@ -21,7 +21,7 @@ define(function testTransformationConfigResolverModule(require) {
     // helper functions for testing
     var getProductInHtml = function getProductInHtml(fragmentInHtml, transformationConfigs, direction) {
         var transformationConfigResolver = {
-            getConfig: function getConfig() {
+            getConfig : function getConfig() {
                 return transformationConfigs;
             }
 
@@ -31,9 +31,9 @@ define(function testTransformationConfigResolverModule(require) {
         var transformerFragmentToTest = transformerFragmentStamp();
         // DO THE ACTUAL CALL
         var product = transformerFragmentToTest.getTransformedElement({
-            fragment: element,
-            direction: 'whatever',
-            transformationConfigResolver: transformationConfigResolver
+            fragment : element,
+            direction : 'whatever',
+            transformationConfigResolver : transformationConfigResolver
         });
 
         var productInHtml = null;
@@ -53,7 +53,7 @@ define(function testTransformationConfigResolverModule(require) {
         if (params.elementName === "text") {
             htmlTags.push(params.textValue);
         } else {
-            htmlTags = htmlTags.concat(["<", params.elementName]);
+            htmlTags = htmlTags.concat([ "<", params.elementName ]);
             if (params.attributes) {
                 for (var ii = 0; ii < params.attributes.length; ii++) {
                     htmlTags.push(" ");
@@ -69,7 +69,7 @@ define(function testTransformationConfigResolverModule(require) {
             if (params.children) {
                 htmlTags = htmlTags.concat(params.children);
             }
-            htmlTags = htmlTags.concat(["</", params.elementName, ">"]);
+            htmlTags = htmlTags.concat([ "</", params.elementName, ">" ]);
         }
 
         return htmlTags;
@@ -106,23 +106,23 @@ define(function testTransformationConfigResolverModule(require) {
                                 var fragmentInHtml;
                                 var firstLevelElement = "firstLevelElement";
                                 fragmentInHtml = getHtmlTagsInArray({
-                                    elementName: firstLevelElement
+                                    elementName : firstLevelElement
                                 }).join("");
                                 var direction = "to";
                                 // prepare transformation config
                                 var firstLevelElementConfigs = {};
                                 firstLevelElementConfigs[direction] = {};
-                                firstLevelElementConfigs[direction] = [{
-                                    fromPath: toConfigPath(firstLevelElement),
-                                    from: firstLevelElement
-                                }];
+                                firstLevelElementConfigs[direction] = [ {
+                                    fromPath : toConfigPath(firstLevelElement),
+                                    from : firstLevelElement
+                                } ];
 
                                 var transformationConfigs = [];
                                 transformationConfigs.push(firstLevelElementConfigs);
                                 // == end of prepare transformation config
                                 var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
                                 transformationConfigResolverToTest.init({
-                                    transformationConfigs: transformationConfigs
+                                    transformationConfigs : transformationConfigs
                                 });
 
                                 var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
@@ -137,16 +137,16 @@ define(function testTransformationConfigResolverModule(require) {
                                 var firstLevelElement = "firstLevelElement";
                                 var actualFirstLevelElement = "unknownFirstLevelElement";
                                 fragmentInHtml = getHtmlTagsInArray({
-                                    elementName: actualFirstLevelElement
+                                    elementName : actualFirstLevelElement
                                 }).join("");
                                 var direction = "to";
                                 // prepare transformation config
                                 var firstLevelElementConfigs = {};
                                 firstLevelElementConfigs[direction] = {};
-                                firstLevelElementConfigs[direction] = [{
-                                    fromPath: toConfigPath(firstLevelElement),
-                                    from: firstLevelElement
-                                }];
+                                firstLevelElementConfigs[direction] = [ {
+                                    fromPath : toConfigPath(firstLevelElement),
+                                    from : firstLevelElement
+                                } ];
 
                                 var transformationConfigs = [];
                                 transformationConfigs.push(firstLevelElementConfigs);
@@ -154,7 +154,7 @@ define(function testTransformationConfigResolverModule(require) {
 
                                 var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
                                 transformationConfigResolverToTest.init({
-                                    transformationConfigs: transformationConfigs
+                                    transformationConfigs : transformationConfigs
                                 });
                                 var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
                                 // actual call
@@ -168,16 +168,16 @@ define(function testTransformationConfigResolverModule(require) {
                                         var fragmentInHtml;
                                         var firstLevelElement = "firstLevelElement";
                                         fragmentInHtml = getHtmlTagsInArray({
-                                            elementName: firstLevelElement
+                                            elementName : firstLevelElement
                                         }).join("");
                                         var direction = "to";
                                         // prepare transformation config
                                         var firstLevelElementConfigs = {};
                                         firstLevelElementConfigs[direction] = {};
-                                        firstLevelElementConfigs[direction] = [{
-                                            fromPath: toConfigPath(firstLevelElement),
-                                            from: firstLevelElement
-                                        }];
+                                        firstLevelElementConfigs[direction] = [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
+                                        } ];
 
                                         var transformationConfigs = [];
                                         transformationConfigs.push(firstLevelElementConfigs);
@@ -187,7 +187,7 @@ define(function testTransformationConfigResolverModule(require) {
 
                                         var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
                                         transformationConfigResolverToTest.init({
-                                            transformationConfigs: transformationConfigs
+                                            transformationConfigs : transformationConfigs
                                         });
 
                                         var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
@@ -196,6 +196,365 @@ define(function testTransformationConfigResolverModule(require) {
                                         expect(resolvedConfig).toBeUndefined();
                                     });
 
+                            describe("Checking config resolution depending on the element attributes.", function() {
+                                it("Expect to resolve config with attribute name for one config without attibute name and the other one with attribute name for element with attribute name.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name"
+                                        } ]
+                                    }).join("");
+                                    var direction = "to";
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).not.toBeUndefined();
+                                    expect(resolvedConfig).toEqual(transformationConfigs[1]['to']);
+                                });
+                                
+                                it("Expect to return config without attribute name for one config without attibute name and the other one with attribute name for element without attribute name.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement
+                                    }).join("");
+                                    var direction = "to";
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).not.toBeUndefined();
+                                    expect(resolvedConfig).toEqual(transformationConfigs[0]['to']);
+                                });
+                                
+                                
+                                it("Expect to return config with attribute name and value for one config with attibute name and the other one with attribute name and value for element with attribute name and value.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                            value: "akn1"
+                                        } ]
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name",
+                                            fromAttributeValue: "akn1"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).not.toBeUndefined();
+                                    expect(resolvedConfig).toEqual(transformationConfigs[1]['to']);
+                                });
+                                
+                                
+                                it("Expect to return matched config with attribute name and value for one matched config with attibute name and value and the unmatched config with attribute name and value with attribute name and  value.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                            value: "akn1"
+                                        } ]
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name",
+                                            fromAttributeValue: "akn1"
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name",
+                                            fromAttributeValue: "akn2"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).not.toBeUndefined();
+                                    expect(resolvedConfig).toEqual(transformationConfigs[0]['to']);
+                                });
+                                
+                                it("Expect to return matched config with attribute name for one matched config with attibute name and not value and the unmatched config.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                            value: "akn1"
+                                        } ]
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).not.toBeUndefined();
+                                    expect(resolvedConfig).toEqual(transformationConfigs[0]['to']);
+                                });
+                                
+                                
+                                it("Expect to return undefined for two config with matching attributes names.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                            value: "akn1"
+                                        } ]
+                                      
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).toBeUndefined();
+                                });
+                                
+                                
+                                it("Expect to return undefined for two config with matching attributes names and its values.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                            value: "akn1"
+                                        } ]
+                                      
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name",
+                                            fromAttributeValue: "akn1"
+                                                
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name",
+                                            fromAttributeValue: "akn1"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).toBeUndefined();
+                                });
+                                
+                                
+                                it("Expect to return undefined for two config with unmatching attributes names.", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn-name"
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            fromAttribute: "data-akn1-name"
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).toBeUndefined();
+                                });
+                                
+                                
+                                it("Expect to return undefined for two config with unmatching attributes names......", function() {
+                                    var fragmentInHtml;
+                                    var firstLevelElement = "firstLevelElement";
+                                    fragmentInHtml = getHtmlTagsInArray({
+                                        elementName : firstLevelElement,
+                                        attributes : [ {
+                                            name : "data-akn-name",
+                                        }]
+                                    }).join("");
+                                    var direction = "to";
+
+                                    var transformationConfigs = [ {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            
+                                        } ]
+                                    },
+                                    {
+                                        "to" : [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement,
+                                            
+                                        } ]
+                                    }
+
+                                    ];
+                                    var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
+                                    transformationConfigResolverToTest.init({
+                                        transformationConfigs : transformationConfigs
+                                    });
+
+                                    var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);
+                                    // actual call
+                                    var resolvedConfig = transformationConfigResolverToTest.getConfig(fragment.children[0], direction);
+                                    expect(resolvedConfig).toBeUndefined();
+                                });
+
+
+                            });
+
                             it(
                                     "Expect  to resolve transformation config for two level element with  transformation config present and conflicting at first level but not at the second level.",
                                     function() {
@@ -203,29 +562,29 @@ define(function testTransformationConfigResolverModule(require) {
                                         var firstLevelElement = "firstLevelElement";
                                         var secondLevelElement = "secondLevelElement";
                                         fragmentInHtml = getHtmlTagsInArray({
-                                            elementName: firstLevelElement,
-                                            children: getHtmlTagsInArray({
-                                                elementName: secondLevelElement
+                                            elementName : firstLevelElement,
+                                            children : getHtmlTagsInArray({
+                                                elementName : secondLevelElement
                                             })
                                         }).join("");
                                         var direction = "to";
                                         // prepare transformation config
                                         var firstLevelElementConfigs = {};
                                         firstLevelElementConfigs[direction] = {};
-                                        firstLevelElementConfigs[direction] = [{
-                                            fromPath: toConfigPath(firstLevelElement),
-                                            from: firstLevelElement
+                                        firstLevelElementConfigs[direction] = [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
                                         }, {
-                                            fromPath: toConfigPath(firstLevelElement, secondLevelElement),
-                                            from: secondLevelElement
-                                        }];
+                                            fromPath : toConfigPath(firstLevelElement, secondLevelElement),
+                                            from : secondLevelElement
+                                        } ];
 
                                         var firstLevelElementConfigsDuplicate = {};
                                         firstLevelElementConfigsDuplicate[direction] = {};
-                                        firstLevelElementConfigsDuplicate[direction] = [{
-                                            fromPath: toConfigPath(firstLevelElement),
-                                            from: firstLevelElement
-                                        }];
+                                        firstLevelElementConfigsDuplicate[direction] = [ {
+                                            fromPath : toConfigPath(firstLevelElement),
+                                            from : firstLevelElement
+                                        } ];
 
                                         var transformationConfigs = [];
                                         transformationConfigs.push(firstLevelElementConfigs);
@@ -234,7 +593,7 @@ define(function testTransformationConfigResolverModule(require) {
 
                                         var transformationConfigResolverToTest = transformationConfigResolverStampToTest();
                                         transformationConfigResolverToTest.init({
-                                            transformationConfigs: transformationConfigs
+                                            transformationConfigs : transformationConfigs
                                         });
 
                                         var fragment = ckEditorFragmentFactory.getCkFragmentForHtml(fragmentInHtml, direction);

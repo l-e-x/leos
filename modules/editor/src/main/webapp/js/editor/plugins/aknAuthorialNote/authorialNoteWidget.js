@@ -14,16 +14,16 @@
 ; // jshint ignore:line
 define(function authorialNoteWidgetModule(require) {
     "use strict";
-    
+
     var STAMPIT = require("stampit");
 
     var authorialNoteWidgetDefinition = {
-        inline : true,
+        inline: true,
         requires: "leosWidgetPlugin",
-        allowedContent : "span[title,marker](!authorialnote)",
-        template : '<span class="authorialnote" title="" marker=""></span>',
-        dialog : "authorialNoteDialog",
-        init : function() {
+        allowedContent: "span[title,marker,data-akn-name](!authorialnote)",
+        template: '<span class="authorialnote" title="" marker="" data-akn-name="aknAuthorialNote"></span>',
+        dialog: "authorialNoteDialog",
+        init: function() {
             var title = this.element.getAttribute("title") || "";
             // move title value to fnote so the dialog can access it
             this.setData("fnote", title);
@@ -31,25 +31,45 @@ define(function authorialNoteWidgetModule(require) {
             this.on("destroy", this._onRenumberCallback);
         },
 
-        data : function data() {
+        data: function data() {
             // move fnote value to title so element title can be updated after changes done by user in dialog
             this.element.setAttribute("title", this.data.fnote);
         },
-        _onRenumberCallback : function _onRenumberCallback(evt) {
+
+        _onRenumberCallback: function _onRenumberCallback(evt) {
             // re-numbering all the widgets
             this._renumberAuthorialNotes(this.editor);
         },
-        _renumberAuthorialNotes : function _renumberAuthorialNotes(editor) {
-            var authorialNotes = editor.document.$.getElementsByClassName("authorialnote");
-            if (authorialNotes) {
+
+        _renumberAuthorialNotes: function _renumberAuthorialNotes(editor) {
+            var jqEditor = $(this.editor.editable().$);
+            var authorialNotes = jqEditor.find('*[data-akn-name="aknAuthorialNote"]');
+            if (authorialNotes && authorialNotes.length > 0) {
+                var markerValue = this._getLowestMarkerValue(authorialNotes);
+                var currentMarkerVal = parseInt(this.element.getAttribute("marker"));
+                if (!isNaN(currentMarkerVal)) {
+                    markerValue = Math.min.apply(Math, [markerValue, currentMarkerVal]);
+                }
                 for (var index = 0; index < authorialNotes.length; index++) {
-                    authorialNotes.item(index).innerHTML = index + 1;
-                    authorialNotes.item(index).setAttribute("marker", index + 1);
+                    authorialNotes.get(index).innerHTML = markerValue;
+                    authorialNotes.get(index).setAttribute("marker", markerValue);
+                    markerValue = markerValue + 1;
                 }
             }
         },
 
-        upcast : function upcast(element) {
+        _getLowestMarkerValue: function _getLowestMarkerValue(authorialNotes) {
+            var markerArray = [];
+            for (var index = 0; index < authorialNotes.length; index++) {
+                var markerVal = parseInt(authorialNotes.get(index).getAttribute("marker"));
+                if (!isNaN(markerVal)) {
+                    markerArray.push(markerVal);
+                }
+            }
+            return markerArray.length > 0 ? Math.min.apply(Math, markerArray) : 1;
+        },
+
+        upcast: function upcast(element) {
             // Defines which elements will become widgets.
             if (element.hasClass("authorialnote")) {
                 return true;

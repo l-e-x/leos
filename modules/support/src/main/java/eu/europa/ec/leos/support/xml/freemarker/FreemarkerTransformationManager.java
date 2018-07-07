@@ -13,22 +13,24 @@
  */
 package eu.europa.ec.leos.support.xml.freemarker;
 
-import com.google.common.base.Stopwatch;
-import eu.europa.ec.leos.model.content.LeosDocument;
-import eu.europa.ec.leos.support.xml.TransformationManager;
-import freemarker.ext.dom.NodeModel;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
+import java.io.InputStream;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import com.google.common.base.Stopwatch;
+
+import eu.europa.ec.leos.support.xml.TransformationManager;
+import freemarker.ext.dom.NodeModel;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
 
 @Component
 public class FreemarkerTransformationManager implements TransformationManager {
@@ -43,33 +45,48 @@ public class FreemarkerTransformationManager implements TransformationManager {
 
     @Value("${leos.freemarker.ftl.htmlPreview}")
     private String readOnlyHtmlTemplate;
+    
+    @Value("${leos.freemarker.ftl.feedbackView}")
+    private String nonEditableXHtmlTemplate;
 
+    @Value("${leos.freemarker.ftl.fragmentXmlWrapper}")
+    private String nonEditableFragmentTemplate;
+    
     /** This method will return XML along with wrappers to invoke CKEditor */
     @Override
-    public String toEditableXml(final LeosDocument document,String contextPath ){
-        return transform(document, editableXHtmlTemplate, contextPath);
+    public String toEditableXml(final InputStream documentStream, String contextPath ){
+        return transform(documentStream, editableXHtmlTemplate, contextPath);
     }
 
     /** This method will return XML along with CSS to display the content of the document on the browser */
     @Override
-    public String toReadOnlyHtml(final LeosDocument document,String contextPath) {
-        return transform(document, readOnlyHtmlTemplate, contextPath);
+    public String toHtmlForPreview(final InputStream documentStream,String contextPath) {
+        return transform(documentStream, readOnlyHtmlTemplate, contextPath);
     }
 
-    private String transform(LeosDocument leosDocument, String templateName ,String  contextPath) {
+    @Override
+    public String toNonEditableXml(final InputStream documentStream,String contextPath) {
+        return transform(documentStream, nonEditableXHtmlTemplate, contextPath);
+    }
+    
+    @Override
+    public String toXmlFragmentWrapper(InputStream documentStream, String contextPath) {
+        return transform(documentStream, nonEditableFragmentTemplate, contextPath);
+    }
+    
+    private String transform(InputStream documentStream, String templateName ,String  contextPath) {
         LOG.trace("Transforming document using {} template...", templateName);
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
             StringWriter outputWriter = new StringWriter();
             Template template = freemarkerConfiguration.getTemplate(templateName);
             
-            NodeModel nodeModel = XmlNodeModelHandler.parseXmlStream(leosDocument.getContentStream());
+            NodeModel nodeModel = XmlNodeModelHandler.parseXmlStream(documentStream);
+
+            Map headers =new HashMap<String, String>();
+            headers.put("contextPath", contextPath);
 
             Map root = new HashMap<String, Object>();
-            Map headers =new HashMap<String, String>();
-            
-            headers.put("contextPath", contextPath);
-            
             root.put("xml_data", nodeModel);
             root.put("headers", headers);
             

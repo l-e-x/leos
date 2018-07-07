@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.InputStream;
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -54,7 +55,7 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
                 String samplesPath = parameters.get("leos.samples.path");
                 String paramKey = "leos.samples.files";
                 String folderId = createPath(cmisService, repositoryId, rootFolderId, folderTypeId, samplesPath);
-                createFiles(cmisService, repositoryId, folderId, samplesPath, documentTypeId, mimeType, parameters, paramKey, true);
+                createFiles(cmisService, repositoryId, folderId, samplesPath, documentTypeId, mimeType, parameters, paramKey, true, true);
             } else {
                 LOG.info("LEOS samples are disabled!");
             }
@@ -64,7 +65,7 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
                 String templatesPath = parameters.get("leos.templates.path");
                 String paramKey = "leos.templates.files";
                 String folderId = createPath(cmisService, repositoryId, rootFolderId, folderTypeId, templatesPath);
-                createFiles(cmisService, repositoryId, folderId, templatesPath, documentTypeId, mimeType, parameters, paramKey, false);
+                createFiles(cmisService, repositoryId, folderId, templatesPath, documentTypeId, mimeType, parameters, paramKey, false, false);
             } else {
                 LOG.info("LEOS templates are disabled!");
             }
@@ -74,7 +75,7 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
                 String workspacesPath = parameters.get("leos.workspaces.path");
                 String paramKey = "leos.workspaces.files";
                 String folderId = createPath(cmisService, repositoryId, rootFolderId, folderTypeId, workspacesPath);
-                createFiles(cmisService, repositoryId, folderId, workspacesPath, documentTypeId, mimeType, parameters, paramKey, false);
+                createFiles(cmisService, repositoryId, folderId, workspacesPath, documentTypeId, mimeType, parameters, paramKey, false, false);
             } else {
                 LOG.info("LEOS workspaces are disabled!");
             }
@@ -114,18 +115,31 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
         return parentObjectId;
     }
 
-    private void createFiles(CmisService cmisService, String repositoryId, String folderId, String folderPath, String documentTypeId, String mimeType, Map<String, String> parameters, String paramKey, boolean renameFiles) {
+    private void createFiles(CmisService cmisService, String repositoryId, String folderId, String folderPath, String documentTypeId, String mimeType, Map<String, String> parameters, String paramKey, boolean renameFiles, boolean setContributors) {
         LOG.info("Creating files...");
         String files = parameters.get(paramKey);
         StringTokenizer filesTokenizer = new StringTokenizer(files, ";", false);
-        ClassLoader classLoader = getClass().getClassLoader();
+        ArrayList<String> contributors = new ArrayList<String>();
+
+        if(setContributors) {
+            String contributorsString = parameters.get("leos.samples.contributorIds");
+            StringTokenizer contributorTokens = new StringTokenizer(contributorsString, ";", false);
+
+            while (contributorTokens.hasMoreTokens()) {
+                String contributorId = contributorTokens.nextToken();
+                contributors.add(contributorId);
+            }
+        }
 
         while (filesTokenizer.hasMoreTokens()) {
             String fileName = filesTokenizer.nextToken();
             LOG.info("Creating document: {} [{}]", fileName, mimeType);
 
             String filePath = folderPath + fileName;
-            InputStream is = classLoader.getResourceAsStream(filePath);
+            InputStream is = getClass().getResourceAsStream(filePath);
+            if (is == null) {
+                LOG.error("Unable to load file: {}", filePath);
+            }
             ContentStream cs = new ContentStreamImpl(fileName, null, mimeType, is);
 
             String documentName = renameFiles ? parameters.get(paramKey + "." + fileName) : fileName;
@@ -134,7 +148,38 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
             PropertiesImpl props = new PropertiesImpl();
             props.addProperty(new PropertyIdImpl(PropertyIds.OBJECT_TYPE_ID, documentTypeId));
             props.addProperty(new PropertyStringImpl(PropertyIds.NAME, documentName));
+            String TITLE= "leos:title";
+            String TEMPLATE= "leos:template";
+            String LANGUAGE ="leos:language";
+            String STAGE ="leos:stage";
+            String SYSTEM ="leos:system";
+            String AUTHOR_ID="leos:authorId";
+            String AUTHOR_NAME="leos:authorName";
+            String CONTRIBUTOR_IDS ="leos:contributorIds";
+            String CONTRIBUTOR_NAMES ="leos:contributorNames";
 
+            props.addProperty(new PropertyStringImpl(TITLE, documentName));
+            props.addProperty(new PropertyStringImpl(LANGUAGE, "EN"));
+            props.addProperty(new PropertyStringImpl(TEMPLATE, "SJ-016"));
+            props.addProperty(new PropertyStringImpl(CONTRIBUTOR_IDS, contributors));
+            props.addProperty(new PropertyStringImpl(CONTRIBUTOR_NAMES, contributors));
+            props.addProperty(new PropertyStringImpl(AUTHOR_ID, "LEOS"));
+            props.addProperty(new PropertyStringImpl(AUTHOR_NAME, "LEOS"));
+
+            //TODO find a way to do cleaner impl
+            if(documentName.startsWith("FEEDBACK")||documentName.startsWith("Feedback")){
+                props.addProperty(new PropertyStringImpl(STAGE, "REVIEW"));
+                props.addProperty(new PropertyStringImpl(SYSTEM, "CISNET"));
+            }
+            else if(documentName.startsWith("Edition")||documentName.startsWith("EDITION")){
+                props.addProperty(new PropertyStringImpl(STAGE, "EDIT"));
+                props.addProperty(new PropertyStringImpl(SYSTEM, "CISNET"));
+            }
+            else  {
+                props.addProperty(new PropertyStringImpl(STAGE, "DRAFT"));
+                props.addProperty(new PropertyStringImpl(SYSTEM, "LEOS"));
+            }
+            
             cmisService.createDocument(repositoryId, props, folderId, cs, null, null, null, null, null);
         }
     }

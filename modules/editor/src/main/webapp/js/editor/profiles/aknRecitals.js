@@ -32,12 +32,23 @@ define(function aknCitationsProfileModule(require) {
     plugins.push(require("plugins/aknHtmlSuperScript/aknHtmlSuperScriptPlugin"));
     plugins.push(require("plugins/aknHtmlSubScript/aknHtmlSubScriptPlugin"));
     plugins.push(require("plugins/leosAttrHandler/leosAttrHandlerPlugin"));
-
+    plugins.push(require("plugins/leosHighlight/leosHighlightPlugin"));
+    plugins.push(require("plugins/leosComments/leosCommentsPlugin"));
+    plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
+    plugins.push(require("plugins/leosWidget/leosWidgetPlugin"));
+    
     var pluginNames = plugins.map(function(p){return p.name;});
     var extraPlugins = pluginNames.join(",");
     var transformationConfigResolver = transformationConfigManager.getTransformationConfigResolverForPlugins(pluginNames);
     
-    var customContentsCss = pluginTools.toUrl("css/leosEditor.css");
+    // holds ckEditor external plugins names
+    var externalPluginsNames = ["scayt"];
+    pluginTools.addExternalPlugins(externalPluginsNames);
+    var extraPlugins = pluginNames.concat(externalPluginsNames).join(",");
+    var leosEditorCss = pluginTools.toUrl("css/leosEditor.css");
+    var dataHintCss = pluginTools.toUrl("css/data-hint.css");
+    
+    var customContentsCss = [leosEditorCss, dataHintCss];
     
     var profileName = "AKN Recitals";
 
@@ -50,10 +61,10 @@ define(function aknCitationsProfileModule(require) {
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath," +
                  "clipboard,undo,basicstyles,enterkey,entities," +
-                 "button,dialog,dialogui,sourcearea",
+                 "button,dialog,dialogui,sourcearea,colorbutton,pastetext,find",
         
         // comma-separated list of toolbar button names that must not be rendered
-        removeButtons: "Underline,Strike",
+        removeButtons: "Underline,Strike,TextColor",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
         // convert all entities into Unicode numerical decimal format
@@ -64,12 +75,13 @@ define(function aknCitationsProfileModule(require) {
         contentsCss: customContentsCss,
         // height of the editing area
         height : 522,
-
+        // force Paste as plain text
+        forcePasteAsPlainText: false,
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups: [
             {name: "document", groups: ["document", "doctools"]},
             {name: "clipboard", groups: ["clipboard", "undo"]},
-            {name: "editing", groups: ["find", "selection"]},
+            {name: "editing", groups: ["find", "selection", "spellchecker"]},
             {name: "forms"},
             {name: "basicstyles", groups: ["basicstyles", "cleanup"]},
             {name: "paragraph"},
@@ -81,7 +93,27 @@ define(function aknCitationsProfileModule(require) {
             {name: "others"},
             {name: "mode"},
             {name: "about"}
-        ]
+        ],
+        // leos text highlight configuration
+        colorButton_enableMore: false,
+        colorButton_colors: 'yellow/FFFF00,green/00FF00,cyan/00FFFF,pink/FF00FF,blue/0000FF,red/FF0000,grey/C0C0C0',
+        colorButton_backStyle: {
+            element: 'span',
+            attributes: {
+                'class': 'leos-highlight-#(color)',
+            },
+            overrides: [{
+                element: 'span',
+                attributes: {
+                    'class': /^leos-highlight-*/,
+                    'refersto': '~leoshighlight', 
+                    'data-hint' : /[\w]*/,
+                    'leos:userId' : /[\w]*/,
+                    'leos:username' : /[\w]*/,
+                    'leos:datetime' : /[\w]*/
+                }
+            }]
+        }
     };
 
     // create profile definition

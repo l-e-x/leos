@@ -78,6 +78,28 @@
 	<#assign authorialNoteList = authorialNoteList + [getAuthorialNoteSpan(noteId, marker, noteText)]>
 </#macro>
 
+<#-----------------------------------------------------------------------------
+popup tag handler -->
+------------------------------------------------------------------------------>
+<#macro popup>
+<#local commentText=.node.@@text?trim?xml>
+<popup class="hint--top hint--bounce hint--rounded" ${.node.@@attributes_markup} data-text='${commentText}' onmouseover="javascript:leg_setDataHint('${.node.@id[0]}')"><img src="${webContextPath}/static/leos/icons/16/leosComment_color.png" width="16" height="16"></img></popup>
+</#macro>
+<#-----------------------------------------------------------------------------
+leos highlight handler -->
+------------------------------------------------------------------------------>
+<#macro span>
+	<#if ("~leoshighlight" == .node["@refersto"][0]!"")>  <#-- Check if refersto=~leoshighlight attribute is present in the span -->
+		<span id='${.node.@id[0]}' class="${.node['@class'][0]} hint--top hint--bounce hint--rounded" leos:userid='${.node['@leos:userid'][0]}' leos:username='${.node['@leos:username'][0]}' leos:datetime='${.node['@leos:datetime'][0]}' onmouseover="javascript:leg_setDataHint('${.node.@id[0]}');"><#recurse></span>
+	</#if>
+</#macro>
+<#-----------------------------------------------------------------------------
+Cross Reference handler -->
+------------------------------------------------------------------------------>
+<#macro ref>
+<#local refId=.node.@href[0]!''>
+<ref ${.node.@@attributes_markup} onClick="nav_navigateToContent('${refId}')"><#recurse></ref></#macro>
+
 <#-- AKN end-of-line handler -->
 <#macro eol>
 <br/>

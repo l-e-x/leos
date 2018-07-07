@@ -17,6 +17,7 @@ define(function aknUnorderedListPluginModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
+    var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
 
     var pluginName = "aknUnorderedList";
     var cssPath = "css/aknUnOrderedList.css";
@@ -70,68 +71,34 @@ define(function aknUnorderedListPluginModule(require) {
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
-    var transformationConfig = {
-        akn : 'list',
-        html : 'ul',
-        attr : [ {
-            akn : "leos:editable",
-            html : "contenteditable"
-        }, {
-            akn : "id",
-            html : "id"
-        }, {
-            html : "data-akn-name=aknUnOrderedList"
-        } ],
-        sub : {
-            akn : 'indent',
-            html : 'ul/li',
+    var leosHierarchicalElementTransformer = leosHierarchicalElementTransformerStamp({
+        firstLevelConfig : {
+            akn : 'list',
+            html : 'ul',
             attr : [ {
                 akn : "leos:editable",
                 html : "contenteditable"
             }, {
                 akn : "id",
                 html : "id"
-            } ],
-            sub : [ {
-                akn : 'num',
-                html : 'ul/li',
-                attr : [ {
-                    akn : "id",
-                    html : "data-akn-num-id"
-                } ],
-                sub : {
-                    akn : 'text',
-                    html : 'ul/li[data-akn-num]'
-                }
             }, {
-                akn : 'content',
-                html : 'ul/li',
-                attr : [ {
-                    akn : "id",
-                    html : "data-akn-content-id"
-                } ],
-                sub : {
-                    akn : 'mp',
-                    html : 'ul/li',
-                    attr : [ {
-                        akn : "id",
-                        html : "data-akn-mp-id"
-                    } ],
-                    sub : {
-                        akn : 'text',
-                        html : 'ul/li/text'
-                    }
-                }
+                html : "data-akn-name=aknUnOrderedList"
             } ]
-        }
-    };
+        },
+        rootElementsForFrom : [ "list", "indent" ],
+        contentWrapperForFrom : "alinea",
+        rootElementsForTo : [ "ul", "li" ]
+    });
+
+    var transformationConfig = leosHierarchicalElementTransformer.getTransformationConfig();
 
     // return plugin module
     var pluginModule = {
-        name : pluginName
+        name : pluginName,
+        transformationConfig: transformationConfig
     };
 
-    pluginTools.addTransformationConfigForPlugin(transformationConfig, pluginName);
+    pluginTools.addTransformationConfigForPlugin(leosHierarchicalElementTransformer.getTransformationConfig(), pluginName);
 
     return pluginModule;
 });

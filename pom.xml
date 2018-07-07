@@ -19,7 +19,7 @@
 
     <groupId>eu.europa.ec.leos.prototype</groupId>
     <artifactId>leos</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>2.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>LEOS Prototype</name>
@@ -36,7 +36,7 @@
         <repository>
 	        <id>vaadin-addons</id>
 	        <url>http://maven.vaadin.com/vaadin-addons</url>
-	    </repository>
+        </repository>
     </repositories>
 
     <modules>
@@ -79,9 +79,9 @@
         <maven-surefire-plugin.version>2.15</maven-surefire-plugin.version>
         <maven-jar-plugin.version>2.4</maven-jar-plugin.version>
         <maven-war-plugin.version>2.3</maven-war-plugin.version>
-        <jetty-maven-plugin.version>9.2.0.v20140526</jetty-maven-plugin.version>
+        <jetty-maven-plugin.version>9.2.14.v20151106</jetty-maven-plugin.version>
         <tomcat7-maven-plugin.version>2.2</tomcat7-maven-plugin.version>
-        <jasmine-maven-plugin.version>2.0-alpha-01</jasmine-maven-plugin.version>
+        <jasmine-maven-plugin.version>2.0</jasmine-maven-plugin.version>
         <cobertura-maven-plugin.version>2.6</cobertura-maven-plugin.version>
         <build-helper-plugin.version>1.8</build-helper-plugin.version>
         <build-number-plugin.version>1.3</build-number-plugin.version>
@@ -89,6 +89,7 @@
         <properties-maven-plugin.version>1.0-alpha-2</properties-maven-plugin.version>
         <copy-maven-plugin.version>0.2.5</copy-maven-plugin.version>
         <mycila-license-maven-plugin.version>2.11</mycila-license-maven-plugin.version>
+        <groovy.version>2.4.3</groovy.version>
         <!-- Extensions -->
         <wagon-ftp-extension.version>2.2</wagon-ftp-extension.version>
         <!-- Libraries -->
@@ -98,8 +99,14 @@
         <hamcrest.version>1.3</hamcrest.version>
         <mockito.version>1.9.5</mockito.version>
         <hsqldb.version>1.8.0.10</hsqldb.version>
-        <spring.version>4.0.7.RELEASE</spring.version>
-        <chemistry-opencmis.version>0.12.0</chemistry-opencmis.version>
+        <h2db.version>1.4.190</h2db.version>
+        <spring.version>4.2.0.RELEASE</spring.version>
+        <spring-data-commons.version>1.7.1.RELEASE</spring-data-commons.version>
+        <spring-data-jpa.version>1.5.1.RELEASE</spring-data-jpa.version>
+        <hibernate-jpa2-api.version>1.0.1.Final</hibernate-jpa2-api.version>
+        <hibernate-orm.version>4.2.10.Final</hibernate-orm.version>
+        <jboss-logging.version>3.1.3.GA</jboss-logging.version>
+        <chemistry-opencmis.version>0.13.0</chemistry-opencmis.version>
         <httpclient.version>4.3.6</httpclient.version>
         <servlet.version>3.0.1</servlet.version>
         <commons-lang3.version>3.3</commons-lang3.version>
@@ -110,15 +117,21 @@
         <freemarker.version>2.3.20</freemarker.version>
         <vtd-xml.version>2.11</vtd-xml.version>
         <xstream.version>1.4.7</xstream.version>
-        <jersey.version>1.17.1</jersey.version>
+        <jersey.version>1.18</jersey.version>
         <cachefilter.version>2.0</cachefilter.version>
         <flying-saucer.version>9.0.6</flying-saucer.version>
         <!-- Vaadin -->
-        <vaadin.version>7.1.13</vaadin.version>
+        <vaadin.version>7.5.8</vaadin.version>
         <vaadin-plugin.version>${vaadin.version}</vaadin-plugin.version>
-        <spring-vaadin-integration.version>2.0.2</spring-vaadin-integration.version>
-        <vaadin-cssinject.version>2.0.3</vaadin-cssinject.version>
-        <vaadin-confirmdialog.version>2.0.4</vaadin-confirmdialog.version>
+        <spring-vaadin-integration.version>3.1</spring-vaadin-integration.version>
+        <vaadin-confirmdialog.version>2.1.2</vaadin-confirmdialog.version>
+        <vaadin-itemlayout.version>2.0.2</vaadin-itemlayout.version>
+        <vaadin-icons.version>1.0.1</vaadin-icons.version>
+        <vaadin-reset-button.version>1.2.1</vaadin-reset-button.version>
+        <vaadin-buttongroup.version>2.3</vaadin-buttongroup.version>
+        <!--jaxws-->
+        <javax.xml.ws.version>2.2.8</javax.xml.ws.version>
+        <com.sun.xml.ws.version>2.2.7</com.sun.xml.ws.version>
     </properties>
 
     <prerequisites>
@@ -192,6 +205,11 @@
             </dependency>
             <dependency>
                 <groupId>org.springframework</groupId>
+                <artifactId>spring-orm</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
                 <artifactId>spring-tx</artifactId>
                 <version>${spring.version}</version>
             </dependency>
@@ -210,6 +228,41 @@
                 <artifactId>spring-test</artifactId>
                 <version>${spring.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-commons</artifactId>
+                <version>${spring-data-commons.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.data</groupId>
+                <artifactId>spring-data-jpa</artifactId>
+                <version>${spring-data-jpa.version}</version>
+            </dependency>
+            <!-- Persistence framework -->
+            <dependency>
+                <groupId>org.hibernate.javax.persistence</groupId>
+                <artifactId>hibernate-jpa-2.0-api</artifactId>
+                <version>${hibernate-jpa2-api.version}</version>
+                <scope>compile</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-core</artifactId>
+                <version>${hibernate-orm.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.logging</groupId>
+                <artifactId>jboss-logging</artifactId>
+                <version>${jboss-logging.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate</groupId>
+                <artifactId>hibernate-entitymanager</artifactId>
+                <version>${hibernate-orm.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <!-- Apache Chemistry framework -->
             <dependency>
@@ -294,9 +347,35 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-server</artifactId>
+                <groupId>com.sun.jersey.contribs</groupId>
+                <artifactId>jersey-spring</artifactId>
                 <version>${jersey.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-web</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-aop</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-asm</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-beans</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-context</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.springframework</groupId>
+                        <artifactId>spring-core</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>com.sun.jersey</groupId>
@@ -304,8 +383,8 @@
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-multipart</artifactId>
+                <groupId>com.sun.jersey</groupId>
+                <artifactId>jersey-core</artifactId>
                 <version>${jersey.version}</version>
             </dependency>
             <dependency>
@@ -355,6 +434,17 @@
                 <artifactId>hsqldb</artifactId>
                 <version>${hsqldb.version}</version>
                 <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.h2database</groupId>
+                <artifactId>h2</artifactId>
+                <version>${h2db.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.groovy</groupId>
+                <artifactId>groovy-all</artifactId>
+                <version>${groovy.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -677,8 +767,10 @@
                         <exclude>**/src/main/filters/**</exclude>
                         <exclude>**/src/main/resources/**</exclude>
                         <exclude>**/src/test/resources/**</exclude>
+                        <exclude>**/src/test/data/**</exclude>
                         <exclude>**/src/etc/**</exclude>
                         <exclude>**/src/test/etc/**</exclude>
+                        <exclude>**/themes/**/fonts/**</exclude>
                         <exclude>**/editor/lib/**</exclude>
                         <exclude>**/widgetsets/**</exclude>
                         <exclude>**/freemarker/*.ftl</exclude>

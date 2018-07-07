@@ -27,10 +27,12 @@ define(function testAttributeTransformerModule(require) {
         return product;
     }
 
-    describe("Unit Tests /transformer/attributeTransformer",
+    describe(
+            "Unit Tests /transformer/attributeTransformer",
             function() {
 
-                describe("Test getAttributeTransformerName() cases.",
+                describe(
+                        "Test getAttributeTransformerName() cases.",
                         function() {
                             it("Expect transformer action name to be 'addClassAttributeTransformer' when a 'class' attribute is passed in the configuration",
                                     function() {
@@ -42,8 +44,23 @@ define(function testAttributeTransformerModule(require) {
                                         var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
                                         expect(transformerName).toEqual("addClassAttributeTransformer");
                                     });
-
-                            it("Expect transformer action name to be 'passAttributeTransformer' when both 'akn' & 'html' attribute is passed in the configuration",
+                            
+                            it(
+                                    "Expect transformer action name to be 'addClassAttributeTransformer' when 'class=classname*' attribute is passed in the configuration",
+                                    function() {
+                                        var normAttr = {
+                                            to: "class",
+                                            toValue: "classname*",
+                                            from: "class",
+                                            fromValue: "classname*"
+                                        };
+                                        // DO THE ACTUAL CALL
+                                        var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
+                                        expect(transformerName).toEqual("addClassAttributeTransformer");
+                                    });
+                            
+                            it(
+                                    "Expect transformer action name to be 'passAttributeTransformer' when both 'akn' & 'html' attribute is passed in the configuration",
                                     function() {
                                         var normAttr = {
                                             from: "fromAttr",
@@ -56,7 +73,8 @@ define(function testAttributeTransformerModule(require) {
                                         expect(transformerName).toEqual("passAttributeTransformer");
                                     });
 
-                            it("Expect transformer action name to be 'handleNonEditable' when  'akn=editable' or 'html=contenteditable' attribute is passed in the configuration",
+                            it(
+                                    "Expect transformer action name to be 'handleNonEditable' when  'akn=editable' or 'html=contenteditable' attribute is passed in the configuration",
                                     function() {
                                         var normAttr = {
                                             from: "editable",
@@ -79,9 +97,21 @@ define(function testAttributeTransformerModule(require) {
                                         var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
                                         expect(transformerName).toEqual("addAttributeTransformer");
                                     });
+                            
+                            it("Expect transformer action name to be 'passAttributeTransformer' when to attribute is of 'class' value and from attribute is present.",  function() {
+                                var normAttr = {
+                                    to: "class",
+                                    from : "whatever"
+                                };
+                                // DO THE ACTUAL CALL
+                                var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
+                                expect(transformerName).toEqual("passAttributeTransformer");
+                            });
                         });
 
-                describe("Test getAttributeTransformer().perform() cases.", function() {
+                describe(
+                        "Test getAttributeTransformer().perform() cases.",
+                        function() {
                             it("Expect transformer action name to be 'addClassAttributeTransformer' & class attribute value to be set when a 'class' attribute is passed in the configuration",
                                     function() {
 
@@ -123,7 +153,73 @@ define(function testAttributeTransformerModule(require) {
                                         expect(product.attributes['class']).toEqual("xyz abc");
                                     });
 
-                            it("Expect transformer action name to be 'passAttributeTransformer' & attribute value to be set when 'from' attribute is passed in the configuration", function() {
+                            it("Expect transformer action name to be 'addClassAttributeTransformer' & class attribute value to be set only when a 'class' attribute is passed with a '*' in the configuration",
+                                    function() {
+
+                                        var normAttr = {
+                                            to: "class",
+                                            toValue: "xyz*",
+                                            from: "class",
+                                            fromValue: "xyz*"
+                                        };
+
+                                        var element = {
+                                                attributes: [normAttr.to]
+                                        };
+                                        element.attributes[normAttr.to] = "xyzabc bla blabla";
+                                        
+                                        var product = {
+                                            attributes: []
+                                        }
+
+                                        // DO THE ACTUAL CALL
+                                        var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
+                                        var attributeTransformer = attributeTransformerFactoryToTest.getAttributeTransformer(transformerName);
+                                        attributeTransformer.perform.call({
+                                            toElement: product,
+                                            fromElement: element,
+                                            attrConfig: normAttr
+                                        });
+                                     
+                                        expect(transformerName).toEqual("addClassAttributeTransformer");
+                                        expect(product.attributes['class']).toEqual("xyzabc");
+                                    });
+                            
+                            it("Expect transformer action name to be 'addClassAttributeTransformer' & class attribute value to be set when a 'class' attribute is passed with a '*' in the configuration along with the other classes",
+                                    function() {
+
+                                        var normAttr = {
+                                            to: "class",
+                                            toValue: "xyz* bla blabla",
+                                            from: "class",
+                                            fromValue: "xyz* bla blabla"
+                                        };
+
+                                        var element = {
+                                                attributes: [normAttr.to]
+                                        };
+                                        element.attributes[normAttr.to] = "xyzabc bla blabla";
+                                        
+                                        var product = {
+                                            attributes: []
+                                        }
+
+                                        // DO THE ACTUAL CALL
+                                        var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
+                                        var attributeTransformer = attributeTransformerFactoryToTest.getAttributeTransformer(transformerName);
+                                        attributeTransformer.perform.call({
+                                            toElement: product,
+                                            fromElement: element,
+                                            attrConfig: normAttr
+                                        });
+                                     
+                                        expect(transformerName).toEqual("addClassAttributeTransformer");
+                                        expect(product.attributes['class']).toEqual("xyzabc bla blabla");
+                                    });
+                            
+                            it(
+                                    "Expect transformer action name to be 'passAttributeTransformer' & attribute value to be set when 'from' attribute is passed in the configuration",
+                                    function() {
                                         var normAttr = {
                                             from: "fromAttr",
                                             fromValue: "fromValue",
@@ -165,7 +261,9 @@ define(function testAttributeTransformerModule(require) {
                                         expect(product2.attributes['toAttr']).toEqual("toValue");
                                     });
 
-                            it("Expect transformer action name to be 'handleNonEditable' & contenteditable should be removed when 'editable=true' attribute is set", function() {
+                            it(
+                                    "Expect transformer action name to be 'handleNonEditable' & contenteditable should be removed when 'editable=true' attribute is set",
+                                    function() {
                                         var normAttr = {
                                             from: "editable",
                                             fromValue: "true",
@@ -194,47 +292,30 @@ define(function testAttributeTransformerModule(require) {
                                         expect(product.attributes['contenteditable']).toBe(undefined);
                                     });
 
-                            it("Expect transformer action name to be 'addAttributeTransformer' when only 'to' attribute is set",  function() {
-                                        var normAttr = {
-                                            to: "toAttr",
-                                            toValue: "toValue"
-                                        };
-                                        var element = {};
-                                        var product = {
-                                            attributes: []
-                                        };
-
-                                        // DO THE ACTUAL CALL
-                                        var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
-                                        var attributeTransformer = attributeTransformerFactoryToTest.getAttributeTransformer(transformerName);
-                                        attributeTransformer.perform.call({
-                                            toElement: product,
-                                            fromElement: element,
-                                            attrConfig: normAttr
-                                        });
-
-                                        expect(transformerName).toEqual("addAttributeTransformer");
-                                        expect(product.attributes['toAttr']).toEqual("toValue");
-                                    });
-                            
-                            
-                            it("Expect transformer action name to be 'addClassAttributeTransformer' when to attribute is of 'class' value.",  function() {
+                            it("Expect transformer action name to be 'addAttributeTransformer' when only 'to' attribute is set", function() {
                                 var normAttr = {
-                                    to: "class",
-                                    from : "whatever"
+                                    to: "toAttr",
+                                    toValue: "toValue"
                                 };
-                                var element = {
-                                        
+                                var element = {};
+                                var product = {
+                                    attributes: []
                                 };
+
                                 // DO THE ACTUAL CALL
                                 var transformerName = attributeTransformerFactoryToTest.getAttributeTransformerName(normAttr);
-                                expect(transformerName).toEqual("addClassAttributeTransformer");
+                                var attributeTransformer = attributeTransformerFactoryToTest.getAttributeTransformer(transformerName);
+                                attributeTransformer.perform.call({
+                                    toElement: product,
+                                    fromElement: element,
+                                    attrConfig: normAttr
+                                });
+
+                                expect(transformerName).toEqual("addAttributeTransformer");
+                                expect(product.attributes['toAttr']).toEqual("toValue");
                             });
 
                         });
-                
-                
-                
 
             });
 

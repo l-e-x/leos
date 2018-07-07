@@ -20,7 +20,7 @@
                     <FRBRdate id="frbrexpression__frbrdate_1" date="1970-01-01" name="official"/>
                     <FRBRauthor id="frbrexpression__frbrauthor_1" href="~COM" as="~docIntroducer"/>
                     <FRBRauthor id="frbrexpression__frbrauthor_2" href="~CONSIL" as="~docAuthority"/>
-                    <FRBRlanguage id="frbrexpression__frbrlanguage_1" language="en"/>
+                    <FRBRlanguage id="frbrexpression__frbrlanguage_1" language="EN"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis id="frbrmanifestation__frbrthis" value=""/>
@@ -61,8 +61,10 @@
                 <TLCLocation id="BEL_BRU" href="http://publications.europa.eu/resource/authority/place/BEL_BRU" showAs="Brussels"/>
                 <TLCLocation id="FRA_SXB" href="http://publications.europa.eu/resource/authority/place/FRA_SXB" showAs="Strasbourg"/>
                 <TLCReference id="leos" href="/software/leos" showAs="EC DIGIT LEOS PROTOTYPE" name="software"/>
-            </references>
-            <proprietary source="EC DIGIT LEOS PROTOTYPE">
+                <TLCConcept id="leosComment" href="/software/leos/comment" showAs="comment"/>
+                <TLCConcept id="leosHighlight" href="/software/leos/highlight" showAs="highlight"/>
+            </references>       
+            <proprietary source="~leos">
                 <leos:template id="proprietary__template">SJ-016</leos:template>
                 <leos:docStage id="proprietary__docstage">Proposal for a</leos:docStage>
                 <leos:docType id="proprietary__doctype">Council Regulation</leos:docType>
@@ -71,111 +73,111 @@
         </meta>
         <preface id="preface">
             <longTitle id="preface__longtitle_1" leos:ref="longTitle-bill_cnl+proposal+regulation">
-                <p>
-                    <docTitle>
-                        <docStage refersTo="~proprietary__docstage">Proposal for a</docStage>
-                        <docType refersTo="~proprietary__doctype">COUNCIL REGULATION</docType>
-                        <docPurpose refersTo="~proprietary__docpurpose">on [...]</docPurpose>
+                <p id="akn_wNlLjr">
+                    <docTitle id="akn_48Nbn9">
+                        <docStage id="akn_8S4uJb"  refersTo="~proprietary__docstage">Proposal for a</docStage>
+                        <docType id="akn_nOMPXA"  refersTo="~proprietary__doctype">COUNCIL REGULATION</docType>
+                        <docPurpose id="akn_bkRm8D"  refersTo="~proprietary__docpurpose">on [...]</docPurpose>
                     </docTitle>
                 </p>
             </longTitle>
         </preface>
         <preamble id="preamble">
             <formula id="preamble__formula_1" leos:name="authorities" leos:ref="formula-authorities_CNL">
-                <p>THE COUNCIL OF THE EUROPEAN UNION,</p>
+                <p id="akn_ezLJG2" >THE COUNCIL OF THE EUROPEAN UNION,</p>
             </formula>
             <citations id="cits">
                 <citation id="cit_1" refersTo="~citationLegalBasis" leos:ref="citation-legalBase-TFEU-art">
-                    <p>Having regard to the Treaty on the Functioning of the European Union, and in particular Article [...] thereof,</p>
+                    <p id="cits_wMNWk2" >Having regard to the Treaty on the Functioning of the European Union, and in particular Article [...] thereof,</p>
                 </citation>
                 <citation id="cit_2" refersTo="~citationPreparatoryActsInitial" leos:ref="citation-proposal-COM">
-                    <p>Having regard to the proposal from the European Commission,</p>
+                    <p id="cits_F2dNqt" >Having regard to the proposal from the European Commission,</p>
                 </citation>
                 <citation id="cit_3" leos:ref="citation-natParl_transmission">
-                    <p>After transmission of the draft legislative act to the national Parliaments,</p>
+                    <p id="cits_m0KMC8" >After transmission of the draft legislative act to the national Parliaments,</p>
                 </citation>
                 <citation id="cit_4" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_EP" leos:multiplicity="optional">
-                    <p>Having regard to the opinion of the European Parliament
+                    <p id="cits_91vZhB" >Having regard to the opinion of the European Parliament
                         <authorialNote id="cit_4__authorialNote_1" marker="1" placement="bottom">
-                            <p>OJ C [...], [...], p.[...]</p>
+                            <p id="cits_ZJrjD5" >OJ C [...], [...], p.[...]</p>
                         </authorialNote>
                         ,
                     </p>
                 </citation>
                 <citation id="cit_5" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_EESC" leos:multiplicity="optional">
-                    <p>Having regard to the opinion of the European Economic and Social Committee
+                    <p id="cits_7Jh4aL" >Having regard to the opinion of the European Economic and Social Committee
                         <authorialNote id="cit_5__authorialNote_1" marker="2" placement="bottom">
-                            <p>OJ C [...], [...], p.[...]</p>
+                            <p id="cits_LSaBz4" >OJ C [...], [...], p.[...]</p>
                         </authorialNote>
                         ,
                     </p>
                 </citation>
                 <citation id="cit_6" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_CoR" leos:multiplicity="optional">
-                    <p>Having regard to the opinion of the Committee of the Regions
+                    <p id="cits_eEvtBb" >Having regard to the opinion of the Committee of the Regions
                         <authorialNote id="cit_6__authorialNote_1" marker="3" placement="bottom">
-                            <p>OJ C [...], [...], p.[...]</p>
+                            <p id="cits_nDKLBj" >OJ C [...], [...], p.[...]</p>
                         </authorialNote>
                         ,
                     </p>
                 </citation>
                 <citation id="cit_7" refersTo="~citationProcedureInfo" leos:ref="citation-proc_SLP">
-                    <p>Acting in accordance with a special legislative procedure,</p>
+                    <p id="cits_tKpLsi" >Acting in accordance with a special legislative procedure,</p>
                 </citation>
             </citations>
-            <block name="recitalsIntro">Whereas:</block>
+            <block id="akn_5YpuAZ"  name="recitalsIntro">Whereas:</block>
             <recitals id="recs">
                 <recital id="rec_1">
-                    <num>(1)</num>
-                    <p>Recital...</p>
+                    <num id="recs_OEfiMH" >(1)</num>
+                    <p id="recs_RJbx6p" >Recital...</p>
                 </recital>
                 <recital id="rec_2">
-                    <num>(2)</num>
-                    <p>Recital...</p>
+                    <num id="recs_4GinQG" >(2)</num>
+                    <p id="recs_INR3UM" >Recital...</p>
                 </recital>
             </recitals>
             <formula id="preamble__formula_2" leos:name="adoption" leos:ref="formula-adoption_adopt_sg+regulation">
-                <p>HAS ADOPTED THIS REGULATION:</p>
+                <p id="akn_h07lly" >HAS ADOPTED THIS REGULATION:</p>
             </formula>
         </preamble>
         <body id="body">
             <article id="art_1">
-                <num>Article 1</num>
-                <heading>Scope</heading>
+                <num id="art_1_bbRkpT" >Article 1</num>
+                <heading id="art_1_2TyX1d" >Scope</heading>
                 <paragraph id="art_1__para_1">
-                    <num>1.</num>
-                    <content>
-                        <p>Text...</p>
+                    <num id="art_1_8SzwAb" >1.</num>
+                    <content id="art_1_yvOFvt" >
+                        <p id="art_1_Zuy0Li" >Text...</p>
                     </content>
                 </paragraph>
             </article>
             <article id="art_n1" refersTo="~eif" leos:ref="article-inforce_day_after_pub+regulation" leos:editable="false" leos:deletable="false">
-                <num>Article #</num>
-                <heading>Entry into force</heading>
-                <content>
-                    <p>This Directive shall enter into force on the [...] day following that of its publication in the
-                        <i>Official Journal of the European Union</i>
+                <num id="art_n1_z7Z4g8" >Article #</num>
+                <heading id="art_n1_eJBJ1p" >Entry into force</heading>
+                <content id="art_n1_pVHLNS" >
+                    <p id="art_n1_XFMHGh" >This Directive shall enter into force on the [...] day following that of its publication in the
+                        <i id="art_n1_nWjdRJ" >Official Journal of the European Union</i>
                         .
                     </p>
                 </content>
             </article>
             <clause id="clause_1" refersTo="~addressee" leos:ref="content-binding_all+regulation" leos:choice="addressee__alternative" leos:editable="false">
-                <content leos:ref="~content-addressee+regulation">
-                    <p>This Regulation shall be binding in its entirety and directly applicable in all Member States.</p>
+                <content id="akn_DHDolC"  leos:ref="~content-addressee+regulation">
+                    <p id="akn_HYYdL4" >This Regulation shall be binding in its entirety and directly applicable in all Member States.</p>
                 </content>
             </clause>
             <clause id="clause_2" refersTo="~addressee" leos:ref="article-binding_treaty+regulation" leos:choice="addressee__alternative" leos:editable="false">
-                <content>
-                    <p>This Regulation shall be binding in its entirety and directly applicable in the Member States in accordance with the Treaties.</p>
+                <content id="akn_4uPTGB" >
+                    <p id="akn_j6EKGW" >This Regulation shall be binding in its entirety and directly applicable in the Member States in accordance with the Treaties.</p>
                 </content>
             </clause>
         </body>
         <conclusions id="conclusions">
-            <p>Done at
+            <p id="akn_7LEG1B" >Done at
                 <location id="conclusions__location_1" refersTo="~analysis__otheranalysis__doclocation">Brussels</location>
                 ,
             </p>
-            <p>
-                <signature leos:ref="signature-cnl">
+            <p id="akn_jUydpq" >
+                <signature id="akn_nwK1Mn"  leos:ref="signature-cnl">
                     <organization id="conclusions__signature_2__org_1" refersTo="~CONSIL">For the Council</organization>
                     <role id="conclusions__signature_2__role_1" refersTo="~president">The President</role>
                     <person id="conclusions__signature_2__person_1" refersTo="">[...]</person>

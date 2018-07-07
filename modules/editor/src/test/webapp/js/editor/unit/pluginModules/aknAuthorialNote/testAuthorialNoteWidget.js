@@ -17,6 +17,7 @@ define(function testAknCitationPlugin(require) {
 
     var authorialNoteWidget = require("plugins/aknAuthorialNote/authorialNoteWidget");
     var MARKER = "marker";
+    var DATA_AKN_NAME = "data-akn-name";
 
     function _crateElementForName(name) {
         var product;
@@ -27,41 +28,40 @@ define(function testAknCitationPlugin(require) {
         }
         return product;
     }
-    describe("Unit tests for: plugins/aknNumberedParagraph/aknNumberedParagraphPlugin", function() {
-        describe("Test aknNumburedParagraphModule.renumberHandler.renumberingParagraph().", function() {
-            it("Expect  p(akn paragraph) element to have value of 'marker' attribute 1 more than attribute of proceding p(akn paragraph) element. ",
+    describe("Unit tests for: plugins/aknAuthorialNote/aknAuthorialNotePlugin", function() {
+        describe("Test aknAuthorialNoteModule.", function() {
+            it("Expect  span(aknAuthorialNote) element to have value of 'marker' attribute 1 more than attribute of proceding span(aknAuthorialNote) element. ",
                     function() {
                         var valueOfDataAknNumAttrOfFirstElement = 6;
                         var valueOfDataAknNumAttrOfSecondElement = 6;
-                        var firstElement = _crateElementForName("p");
+                        var firstElement = _crateElementForName("span");
                         firstElement.setAttribute(MARKER, valueOfDataAknNumAttrOfFirstElement);
-                        var secondElement = _crateElementForName("p");
+                        firstElement.setAttribute(DATA_AKN_NAME, "aknAuthorialNote");
+                        var secondElement = _crateElementForName("span");
                         secondElement.setAttribute(MARKER, valueOfDataAknNumAttrOfSecondElement);
-                        var paragraphs = [ firstElement, secondElement ];
-
-                        var event = {
-                            editor : {
-                                document : {
-                                    $ : {
-                                        getElementsByClassName : function getElementsByClassName(className) {
-                                            if (className == "authorialnote") {
-                                                return {
-                                                    length : paragraphs.length,
-                                                    item : function item(index) {
-                                                        return paragraphs[index];
-                                                    }
-                                                };
-                                            }
-                                        }
-                                    }
-
-                                }
-                            }
+                        secondElement.setAttribute(DATA_AKN_NAME, "aknAuthorialNote");
+                        var authNotes = [ firstElement, secondElement ];
+                        var authNotesObject = {
+                                get : function get(index) {
+                                    return authNotes[index];
+                                },
+                                length : authNotes.length
                         };
 
-                        authorialNoteWidget._renumberAuthorialNotes(event.editor);
-                        expect(firstElement.getAttribute(MARKER)).toEqual("1");
-                        expect(secondElement.getAttribute(MARKER)).toEqual("2");
+                        
+                        var editor = {
+                            editable: function editable() {
+                                return {$: {}}
+                            }
+                        };
+                        
+                        spyOn($.fn, "find").and.callFake(function() {
+                            return authNotesObject;
+                        });
+                        
+                        authorialNoteWidget._renumberAuthorialNotes(editor);
+                        expect(firstElement.getAttribute(MARKER)).toEqual("6");
+                        expect(secondElement.getAttribute(MARKER)).toEqual("7");
                     });
         });
 

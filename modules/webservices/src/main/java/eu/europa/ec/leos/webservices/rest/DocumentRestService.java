@@ -30,19 +30,27 @@ import javax.ws.rs.core.StreamingOutput;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.context.support.SpringBeanAutowiringSupport;
+import org.springframework.stereotype.Component;
 
+import eu.europa.ec.leos.model.content.LeosDocument;
+import eu.europa.ec.leos.services.content.DocumentService;
 import eu.europa.ec.leos.services.format.FormatterService;
 import eu.europa.ec.leos.support.web.UrlBuilder;
 
+@Component
 @Path("/document")
 public class DocumentRestService {
 
     private static final Logger LOG = LoggerFactory.getLogger(DocumentRestService.class);
     private static final MediaType HTML_MEDIA_TYPE = MediaType.TEXT_HTML_TYPE;
     private static final MediaType PDF_MEDIA_TYPE = new MediaType("application", "pdf");
-    private static final ServiceHelper HELPER = new ServiceHelper();
 
+    @Autowired
+    private FormatterService formatterService;
+    
+    @Autowired
+    private DocumentService docService;
+    
     @GET
     @Path("/html/{leosId}")
     public Response getHtmlDocument(
@@ -57,7 +65,8 @@ public class DocumentRestService {
             @Override
             public void write(OutputStream outputStream) throws IOException, WebApplicationException {
                 try {
-                    HELPER.generateHtmlDocument(leosId, revisionId, outputStream,new UrlBuilder().getWebAppPath(servletRequest));
+                    LeosDocument leosDocument = docService.getDocument(leosId);
+                    formatterService.formatToHtml(leosDocument.getContentStream(), outputStream, new UrlBuilder().getWebAppPath(servletRequest));
                     outputStream.flush();
                     outputStream.close();
                 }
@@ -88,7 +97,8 @@ public class DocumentRestService {
             @Override
             public void write(OutputStream outputStream) throws IOException, WebApplicationException {
                 try {
-                    HELPER.generatePdfDocument(leosId, revisionId, outputStream , new UrlBuilder().getWebAppPath(servletRequest));
+                    LeosDocument leosDocument = docService.getDocument(leosId);
+                    formatterService.formatToPdf(leosDocument.getContentStream(), outputStream, new UrlBuilder().getWebAppPath(servletRequest));
                     outputStream.flush();
                     outputStream.close();
                 }
@@ -104,23 +114,6 @@ public class DocumentRestService {
         } catch (Exception e) {
             LOG.error("REST service error when generating PDF (leosId={})!", leosId);
             throw new WebApplicationException(e);
-        }
-    }
-
-    /**This class is introduced here to connect Spring services to the jersey webservice class */
-    private static class ServiceHelper extends SpringBeanAutowiringSupport {
-
-        @Autowired
-        private FormatterService formatterService;
-
-        public void generateHtmlDocument(String leosId, String revisionId, OutputStream outputStream, String contextPath) {
-            LOG.debug("Getting HTML document (leosId={})...", leosId);
-            formatterService.formatToHtml(leosId, outputStream,  contextPath);
-        }
-
-        public void generatePdfDocument(String leosId, String revisionId, OutputStream outputStream, String contextPath) {
-            LOG.debug("Generating PDF document (leosId={})...", leosId);
-            formatterService.formatToPdf(leosId, outputStream,  contextPath);
         }
     }
 }

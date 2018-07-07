@@ -21,10 +21,6 @@ define(function basicProfileModule(require) {
 
     var profileName = "Basic";
     
-    //holds ckEditor external plugins names
-    var externalPluginsNames = ["lite"]; 
-    pluginTools.addExternalPlugins(externalPluginsNames);
-
     // create profile configuration
     var profileConfig = {
         // user interface language localization
@@ -37,8 +33,6 @@ define(function basicProfileModule(require) {
                  "button,dialog,dialogui,sourcearea",
         // comma-separated list of plugins that must not be loaded
         removePlugins: "",
-        // comma-separated list of additional plugins to be loaded
-        extraPlugins: "lite",
         // convert all entities into Unicode numerical decimal format
         entities_processNumerical: "force",
         // toolbar groups arrangement, optimized for a single toolbar row
@@ -54,7 +48,6 @@ define(function basicProfileModule(require) {
             {name: "styles"},
             {name: "colors"},
             {name: "tools"},
-            {name: "lite"},
             {name: "others"},
             {name: "mode"},
             {name: "about"}
@@ -64,11 +57,6 @@ define(function basicProfileModule(require) {
         // semicolon-separated list of dialog elements that must not be rendered
         // element is a string concatenation of dialog name + colon + tab name
         removeDialogTabs: "",
-        //lite plugin extra configuration
-        lite: {
-            userName: "LEOS_USER",
-            isTracking: false
-        }
     };
 
     // create profile definition

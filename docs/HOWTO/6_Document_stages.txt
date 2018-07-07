@@ -1,0 +1,38 @@
+                            DOCUMENT STAGES
+--------------------------------------------------------------------------------
+    In LEOS, Document Stage is a property of document which indicates where the 
+document stands in  editing process and which all actions are available for the 
+document.
+
+There are three stages as of now.
+1. IN DRAFTING
+	In this stage, a document is being drafted from template. A single or 
+	multiple users can work over document. But LEOS is owner system of the 
+	document. Here elements can be added, removed, edited. 
+2. IN EDITING
+	This stage is similar to IN DRAFTING stage with one major difference. At 
+	this stage, LEOS is not anymore owner of the document. Mostly, the document 
+	is imported from any other collaborating systems and will be exported back 
+	to owner system at end of the editing. As of now, integration with other 
+	systems is out of scope. So, behaviour is same as that of IN DRAFTING stage.
+3. IN REVIEW
+	This stage signifies that drafting phase of the document is completed and 
+	now document is open to a wider audience for commenting and their reviews on
+	different aspects of the document. In this stage, a user can not modify 
+	content of the document but only add/edit/delete comment on the different
+	sections of the document. Many other functions like editing metadata,
+	preview etc. are not available
+
+
+                            CHANGING STAGE
+--------------------------------------------------------------------------------
+	LEOS is not intended to be a workflow system. So stage should not be 
+manipulated in LEOS. But for admin purpose, a test functionality is available.
+
+1.	Go to Repository browser and find the document.
+
+2.	Click on stage value which is located on top-right corner of the document 
+	card. A drop down will appear.
+
+3.	Select the intended stage and it will result in change in document stage.
+

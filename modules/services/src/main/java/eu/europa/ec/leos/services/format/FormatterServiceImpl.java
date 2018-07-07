@@ -13,9 +13,10 @@
  */
 package eu.europa.ec.leos.services.format;
 
-import eu.europa.ec.leos.model.content.LeosDocument;
-import eu.europa.ec.leos.services.content.DocumentService;
-import eu.europa.ec.leos.support.xml.TransformationManager;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.Charset;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.xhtmlrenderer.pdf.ITextRenderer;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
+import eu.europa.ec.leos.model.content.LeosDocument;
+import eu.europa.ec.leos.services.content.DocumentService;
+import eu.europa.ec.leos.support.xml.TransformationManager;
 
 @Service
 public class FormatterServiceImpl implements FormatterService {
@@ -39,16 +40,14 @@ public class FormatterServiceImpl implements FormatterService {
     private DocumentService documentService;
 
     @Override
-    public void formatToHtml(String leosId, OutputStream outputStream, String contextPath) {
-        LOG.debug("formatToHtml service invoked for leosId:{})", leosId);
+    public void formatToHtml(InputStream inputStream, OutputStream outputStream, String contextPath) {
+        LOG.debug("formatToHtml service invoked for Stream");
 
         try {
-            // 1. get document in xml format
-            LeosDocument leosDocument = documentService.getDocument(leosId);
-            // 2. get seperate parts of doc..Rigth now working with Legal body only
-            // 3. transform if required
-            String strHtml = transformationManager.toReadOnlyHtml(leosDocument,contextPath);
-            // 4. join it and return
+            // 1. get seperate parts of doc.
+            // 2. transform if required
+            String strHtml = transformationManager.toHtmlForPreview(inputStream, contextPath);
+            // 3. join it and return
 
             outputStream.write(strHtml.getBytes(Charset.forName("UTF-8")));
         } catch (IOException e) {
@@ -56,6 +55,7 @@ public class FormatterServiceImpl implements FormatterService {
         }
     }
 
+    
     @Override
     public String formatToHtml(String versionId, String contextPath) {
         LOG.debug("formatToHtml service invoked for version id:{})", versionId);
@@ -65,7 +65,7 @@ public class FormatterServiceImpl implements FormatterService {
             LeosDocument leosDocument = documentService.getDocument(null, versionId);
             // 2. get seperate parts of doc..Rigth now working with Legal body only
             // 3. transform if required
-            String strHtml = transformationManager.toReadOnlyHtml(leosDocument,contextPath);
+            String strHtml = transformationManager.toHtmlForPreview(leosDocument.getContentStream(),contextPath);
             // 4. join it and return
 
             return strHtml;
@@ -75,12 +75,11 @@ public class FormatterServiceImpl implements FormatterService {
     }
     
     @Override
-    public void formatToPdf(String leosId, OutputStream outputStream, String contextPath) {
-        LOG.debug("Creating PDF service invoked for leosId:{})", leosId);
+    public void formatToPdf(InputStream inputStream, OutputStream outputStream, String contextPath) {
+        LOG.debug("Creating PDF service invoked for Stream");
         
         try {
-            LeosDocument leosDocument = documentService.getDocument(leosId);
-            String xhtml = transformationManager.toReadOnlyHtml(leosDocument,contextPath);
+            String xhtml = transformationManager.toHtmlForPreview(inputStream,contextPath);
 
             ITextRenderer iTextRenderer = new ITextRenderer();
             // plugging in custom UserAgentCallback to find CSSIn local directory/authenticated way

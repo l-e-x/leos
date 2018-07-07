@@ -48,6 +48,7 @@ public class DownloadWindow extends AbstractWindow {
 
     private Button buildDownloadButton(String docName, InputStream docContent) {
         final Button downloadButton = new Button(messageHelper.getMessage("window.download.button.caption"));
+        downloadButton.addStyleName("primary");
         DownloadStreamResource downloadStreamResource = new DownloadStreamResource(docName, docContent);
         FileDownloader fileDownloader = new FileDownloader(downloadStreamResource);
         fileDownloader.extend(downloadButton);

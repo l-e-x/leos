@@ -13,17 +13,32 @@
  */
 package eu.europa.ec.leos.web.event.view.repository;
 
+import eu.europa.ec.leos.model.content.LeosDocumentProperties.Stage;
+
 
 public class SelectDocumentEvent {
 
     private String documentId;
+    private Stage documentStage =Stage.DRAFT;
 
-    public SelectDocumentEvent(String documentId) {
+    public SelectDocumentEvent(String documentId, Stage docStage) {
         this.documentId = documentId;
+        if(docStage!=null){
+            this.documentStage= docStage;
+        }
     }
 
     public String getDocumentId() {
         return documentId;
     }
+
+    public Stage getDocumentStage() {
+        return documentStage;
+    }
+
+    public void setDocumentStage(Stage documentStage) {
+        this.documentStage = documentStage;
+    }
+    
 
 }

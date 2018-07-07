@@ -13,26 +13,8 @@
  */
 package eu.europa.ec.leos.web.ui.screen.document;
 
-public class DocumentViewSettings {
+import eu.europa.ec.leos.web.model.ViewSettings;
 
-    private TocPosition tocPosition = TocPosition.RIGHT;
-    private final float defaultSplitterPosition = 80.0f;
-    private float maxSplitterPosition = 100.0f;
-
-    public TocPosition getTocPosition() {
-        return tocPosition;
-    }
-
-    public void setTocPosition(TocPosition tocPosition) {
-        this.tocPosition = tocPosition;
-    }
-
-    public float getDefaultSplitterPosition() {
-        return tocPosition.equals(TocPosition.RIGHT) ? defaultSplitterPosition : maxSplitterPosition - defaultSplitterPosition;
-    }
-
-    public float getMaxSplitterPosition() {
-        return maxSplitterPosition;
-    }
+public class DocumentViewSettings extends ViewSettings{
 
 }

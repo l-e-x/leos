@@ -13,17 +13,6 @@
  */
 package eu.europa.ec.leos.services.locking;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.locking.handler.LockHandler;
 import eu.europa.ec.leos.services.locking.handler.LockHandlerFactory;
@@ -32,6 +21,16 @@ import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockActionInfo.Operation;
 import eu.europa.ec.leos.vo.lock.LockData;
 import eu.europa.ec.leos.vo.lock.LockLevel;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Service
@@ -125,6 +124,7 @@ public class LockingServiceImpl implements LockingService {
             if(lockData.getSessionId().equals(sessionId)){//release all locks for session
                 LockHandler lHandler=lockHandlerFactory.getHandler(lockData.getLockLevel().toString());
                 lockActionInfo = lHandler.releaseLock(lockData);
+                LOG.trace("Lock id {},Operation{}, status:{} ,", lockId, lockActionInfo.getOperation(), lockActionInfo.sucesss());
                 operationStatus&=lockActionInfo.sucesss();
                 if(lockActionInfo.sucesss()){
                     lockUpdateBroadcaster.broadcastLockUpdate(lockActionInfo);

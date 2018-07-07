@@ -20,6 +20,9 @@ public class LeosTheme extends BaseTheme {
 
     // leos theme image resources
     public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE = new ThemeResource("img/header_logo.png");
+    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_NEW = new ThemeResource("img/logo_en.gif");
+    public static final ThemeResource LEOS_HEADER_HOME_ICON = new ThemeResource("img/house.png");
+
     public static final ThemeResource LEOS_HEADER_BREADCRUMB_RESOURCE = new ThemeResource("img/breadcrumb.gif");
     // leos theme icons resources
     public static final ThemeResource LEOS_REFRESH_ICON_16 = new ThemeResource("icons/16/refresh.png");

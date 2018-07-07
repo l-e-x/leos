@@ -18,6 +18,7 @@ import com.google.common.eventbus.EventBus;
 import eu.europa.ec.leos.vo.MetaDataVO;
 import eu.europa.ec.leos.web.event.window.CloseMetadataEditorEvent;
 import eu.europa.ec.leos.web.event.window.SaveMetaDataRequestEvent;
+import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.MetaDataFormComponent;
 
@@ -27,14 +28,14 @@ public class EditMetaDataWindow extends AbstractEditWindow {
 
     private MetaDataFormComponent metaDataFormComponent;
 
-    public EditMetaDataWindow(MessageHelper messageHelper, EventBus eventBus, MetaDataVO metaDataVO) {
+    public EditMetaDataWindow(MessageHelper messageHelper, LanguageHelper languageHelper, EventBus eventBus, MetaDataVO metaDataVO) {
         super(messageHelper, eventBus);
 
-        setWidth(500, Unit.PIXELS);
-        setHeight(500, Unit.PIXELS);
+        setWidth(650, Unit.PIXELS);//same as create doc wiz size
+        setHeight(450, Unit.PIXELS);
         setCaption(messageHelper.getMessage("window.metadata.edit.caption"));
 
-        metaDataFormComponent = new MetaDataFormComponent(messageHelper, metaDataVO);
+        metaDataFormComponent = new MetaDataFormComponent(messageHelper, languageHelper, metaDataVO);
         setBodyComponent(metaDataFormComponent);
     }
 

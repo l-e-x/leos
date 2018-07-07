@@ -22,7 +22,7 @@
     <parent>
         <groupId>eu.europa.ec.leos.prototype</groupId>
         <artifactId>leos</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>2.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>leos-modules</artifactId>
@@ -34,7 +34,7 @@
         <module>model</module>
         <module>repositories</module>
         <module>support</module>
-        <module>integration</module>
+        <module>groovy-support</module>
         <module>services</module>
         <module>webservices</module>
         <module>editor</module>

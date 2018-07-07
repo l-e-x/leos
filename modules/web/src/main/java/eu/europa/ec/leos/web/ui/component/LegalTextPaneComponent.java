@@ -26,9 +26,9 @@ import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.component.TocPositionEvent;
+import eu.europa.ec.leos.web.model.ViewSettings;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.toc.TableOfContentComponent;
-import eu.europa.ec.leos.web.ui.screen.document.DocumentViewSettings;
 
 public class LegalTextPaneComponent extends CustomComponent {
 
@@ -37,15 +37,15 @@ public class LegalTextPaneComponent extends CustomComponent {
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
-    private DocumentViewSettings docViewSettings;
+    private ViewSettings viewSettings;
 
     private LegalTextComponent legalTextComponent;
     private TableOfContentComponent tableOfContentComponent;
 
-    public LegalTextPaneComponent(EventBus eventBus, MessageHelper messageHelper, DocumentViewSettings docViewSettings) {
+    public LegalTextPaneComponent(EventBus eventBus, MessageHelper messageHelper, ViewSettings viewSettings) {
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
-        this.docViewSettings = docViewSettings;
+        this.viewSettings = viewSettings;
 
         buildLegalTextPane();
     }
@@ -62,14 +62,14 @@ public class LegalTextPaneComponent extends CustomComponent {
         legalTextSplitter.setSizeFull();
 
         // set splitter position
-        float defaultPosition = docViewSettings.getDefaultSplitterPosition();
+        float defaultPosition = viewSettings.getDefaultSplitterPosition();
         legalTextSplitter.setSplitPosition(defaultPosition, Unit.PERCENTAGE);
 
         // initialize the child components
-        legalTextComponent = new LegalTextComponent(eventBus,messageHelper);
+        legalTextComponent = new LegalTextComponent(eventBus,messageHelper, viewSettings );
         legalTextSplitter.setFirstComponent(legalTextComponent);
 
-        tableOfContentComponent = new TableOfContentComponent(messageHelper, eventBus);
+        tableOfContentComponent = new TableOfContentComponent(messageHelper, eventBus, viewSettings);
         legalTextSplitter.setSecondComponent(tableOfContentComponent);
 
         legalTextPane.addComponent(legalTextSplitter);
@@ -83,7 +83,7 @@ public class LegalTextPaneComponent extends CustomComponent {
                 legalTextSplitter.removeAllComponents();
 
                 legalTextSplitter.setLocked(false);
-                legalTextSplitter.setSplitPosition(docViewSettings.getDefaultSplitterPosition(), Unit.PERCENTAGE);
+                legalTextSplitter.setSplitPosition(viewSettings.getDefaultSplitterPosition(), Unit.PERCENTAGE);
 
                 switch (event.getTocPosition()) {
                     case OFF:
@@ -91,7 +91,7 @@ public class LegalTextPaneComponent extends CustomComponent {
 
                         // since we have only one component, lock the splitter and expand it to maximum
                         legalTextSplitter.setLocked(true);
-                        legalTextSplitter.setSplitPosition(docViewSettings.getMaxSplitterPosition(), Unit.PERCENTAGE);
+                        legalTextSplitter.setSplitPosition(viewSettings.getMaxSplitterPosition(), Unit.PERCENTAGE);
                         break;
                     case LEFT:
                         legalTextSplitter.setFirstComponent(tableOfContentComponent);
@@ -116,10 +116,10 @@ public class LegalTextPaneComponent extends CustomComponent {
                 SplitPositionEvent.MoveDirection direction = event.getMoveDirection();
                 float newPosition;
                 if (direction.equals(SplitPositionEvent.MoveDirection.RIGHT)) {
-                    newPosition = (legalTextSplitter.getSplitPosition() < docViewSettings.getDefaultSplitterPosition()) ? docViewSettings
-                            .getDefaultSplitterPosition() : docViewSettings.getMaxSplitterPosition();
+                    newPosition = (legalTextSplitter.getSplitPosition() < viewSettings.getDefaultSplitterPosition()) ? viewSettings
+                            .getDefaultSplitterPosition() : viewSettings.getMaxSplitterPosition();
                 } else {
-                    newPosition = (legalTextSplitter.getSplitPosition() > docViewSettings.getDefaultSplitterPosition()) ? docViewSettings
+                    newPosition = (legalTextSplitter.getSplitPosition() > viewSettings.getDefaultSplitterPosition()) ? viewSettings
                             .getDefaultSplitterPosition() : 0.0f;
 
                 }

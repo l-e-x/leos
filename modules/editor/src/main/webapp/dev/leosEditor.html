@@ -24,19 +24,27 @@
             logLevel: "debug"
         };
     </script>
-    <script src="../js/editor/lib/requirejs_2.1.16/require.js" data-main="../js/editor/leosBootstrap.js" async></script>
+    <script src="../js/editor/lib/requirejs_2.1.20/require.js" data-main="../js/editor/leosBootstrap.js" async></script>
 </head>
 <body>
 
-<button onclick="LEOS.createEditor('basic', 'editableDiv')">Basic</button>&nbsp;
-<button onclick="LEOS.createEditor('development', 'editableDiv')">Development</button>&nbsp;
-<button onclick="LEOS.createEditor('aknArticle', 'editableDiv')">AKN Article</button>&nbsp;
-<button onclick="LEOS.createEditor('aknCitations', 'editableDiv')">AKN Citations</button>&nbsp;
-<button onclick="LEOS.createEditor('aknRecitals', 'editableDiv')">AKN Recitals</button>&nbsp;
+<button onclick="LEOS.createEditor({ profileId: 'basic', htmlElementId: 'editableDiv'})">Basic</button>&nbsp;
+<button onclick="LEOS.createEditor({ profileId: 'development', htmlElementId: 'editableDiv' })">Development</button>&nbsp;
+<button onclick="LEOS.createEditor({ profileId: 'aknArticle', htmlElementId: 'editableDiv'})">AKN Article</button>&nbsp;
+<button onclick="LEOS.createInlineEditor({ profileId: 'inlineAknArticle', htmlElementId: 'editableDiv'})">Inline AKN Article</button>&nbsp;
+<button onclick="LEOS.createEditor({ profileId: 'aknCitations', htmlElementId: 'editableDiv'})">AKN Citations</button>&nbsp;
+<button onclick="LEOS.createEditor({ profileId: 'aknRecitals', htmlElementId: 'editableDiv'})">AKN Recitals</button>&nbsp;
 <button onclick="CKEDITOR.instances['editableDiv'].destroy()">Destroy</button>
 
 
-<div id="editableDiv"></div>
+<div id="editableDiv">
+
+<br>
+<br>
+<br>
+
+
+</div>
 
 </body>
 </html>

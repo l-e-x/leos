@@ -13,43 +13,52 @@
  */
 package eu.europa.ec.leos.support.xml;
 
+import static eu.europa.ec.leos.support.xml.XmlHelper.determinePrefixForChildren;
+import static eu.europa.ec.leos.support.xml.XmlHelper.skipNodeAndChildren;
+import static eu.europa.ec.leos.support.xml.XmlHelper.skipNodeOnly;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
+import com.google.common.base.Stopwatch;
 import com.ximpleware.AutoPilot;
 import com.ximpleware.ModifyException;
 import com.ximpleware.NavException;
 import com.ximpleware.ParseException;
 import com.ximpleware.TranscodeException;
+import com.ximpleware.VTDException;
 import com.ximpleware.VTDGen;
 import com.ximpleware.VTDNav;
 import com.ximpleware.XMLModifier;
+import com.ximpleware.XPathEvalException;
+import com.ximpleware.XPathParseException;
 
 import eu.europa.ec.leos.support.ByteArrayBuilder;
+import eu.europa.ec.leos.vo.CommentVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO.Type;
-
-import static eu.europa.ec.leos.support.xml.XmlHelper.skipNodeAndChildren;
-import static eu.europa.ec.leos.support.xml.XmlHelper.skipNodeOnly;
-import static eu.europa.ec.leos.support.xml.XmlHelper.determinePrefixForChildren;
 
 @Component
 public class VtdXmlContentProcessor implements XmlContentProcessor {
 
     public static final String ARTICLE = "article";
-
+    public static final String COMMENT = "popup";
     public static final String AUTHORIAL_NOTE = "authorialNote";
     public static final String MARKER_ATTRIBUTE = "marker";
     public static final String ID = "id";
@@ -132,12 +141,12 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         LOG.trace("Start doXMLPostProcessing ");
         try{
             long startTime = System.currentTimeMillis();
-
             VTDNav vtdNav = setupVTDNav(xmlContent);
             XMLModifier xmlModifier = new XMLModifier(vtdNav);
             
             long startTimeIdInjects = System.currentTimeMillis();
             injectTagIdsinNode(vtdNav, xmlModifier, IdGenerator.DEFAULT_PREFIX);
+
             long endTimeIdInjects =System.currentTimeMillis();
             modifyAuthorialNoteMarkers(xmlModifier, vtdNav, 1);
             long endTimeIdAuthRenumber =System.currentTimeMillis();
@@ -176,29 +185,32 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     }
 
     @Override
-    public byte[] replaceElementWithTagName(byte[] xmlContent, String tagName, String newContent) {
+    public byte[] replaceElementsWithTagName(byte[] xmlContent, String tagName, String newContent) {
+        
         VTDGen vtdGen = new VTDGen();
         XMLModifier xmlModifier = new XMLModifier();
         vtdGen.setDoc(xmlContent);
+        boolean found=false;
         try {
             vtdGen.parse(false);
-
             VTDNav vtdNav = vtdGen.getNav();
             AutoPilot autoPilot = new AutoPilot(vtdNav);
             autoPilot.selectElement(tagName);
+            
             while (autoPilot.iterate()) {
-
                 xmlModifier.bind(vtdNav);
-
                 xmlModifier.insertAfterElement(newContent.getBytes(UTF_8));
                 xmlModifier.remove();
-                return toByteArray(xmlModifier);
+                found=true;
             }
+            if(!found){
+                throw new IllegalArgumentException("No tag found with name " + tagName);
+            }
+            return toByteArray(xmlModifier);
+            
         } catch (ParseException | NavException | ModifyException | TranscodeException | IOException e) {
             throw new RuntimeException("Unable to perform the replace operation", e);
         }
-        throw new IllegalArgumentException("No tag found with name " + tagName);
-
     }
 
     @Override
@@ -689,5 +701,175 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         }
         return idAttrValue;
     }
+    
+    //@Override
+    public byte[] updateReferedAttributes(byte[] xmlContent, Map<String, String> referenceValueMap){
+        byte[] updatedContent=xmlContent;
+        Stopwatch watch=Stopwatch.createStarted();
 
+        try{
+            VTDNav vtdNav = setupVTDNav(xmlContent);
+            XMLModifier xmlModifier = new XMLModifier(vtdNav);
+            vtdNav.toElement(VTDNav.ROOT);
+            AutoPilot ap = new AutoPilot(vtdNav);
+
+            for(String reference : referenceValueMap.keySet()){
+                try {
+                    ap.resetXPath();
+                    ap.selectXPath("//*[@refersTo='~"+reference+"']");
+                    while(ap.evalXPath()!=-1){
+                        int p = vtdNav.getText();
+                        xmlModifier.updateToken(p, referenceValueMap.get(reference).getBytes(UTF_8));
+                    }
+                } catch (Exception e) {
+                    LOG.error("Unexpected error occoured during reference update:{}. Consuming and continuing", reference, e);
+                }        
+            }//End For
+           // get the updated XML content
+            updatedContent = toByteArray(xmlModifier);
+        }catch(Exception e){
+            LOG.error("Unexpected error occoured during reference updates", e);
+        }
+        LOG.trace("References Updated in  {} ms", watch.elapsed(TimeUnit.MILLISECONDS));
+
+        return updatedContent;
+    }
+    
+    /** Finds the first element with the id,if there are others, XML is incorrect
+    * @param vtdNav
+    * @param id id Attribute valyue 
+    * @return complete Tag or null
+    */
+
+    private String getElementById(VTDNav vtdNav, String idAttributeValue) {
+        Validate.isTrue(idAttributeValue!=null, "Id can not be null");
+        
+        Stopwatch watch = Stopwatch.createStarted();
+        try {
+            AutoPilot ap = new AutoPilot(vtdNav);
+            ap.selectXPath("//*[@id = '" + idAttributeValue + "']");
+            if (ap.evalXPath() != -1) {
+                return getFragmentAsString(vtdNav,vtdNav.getElementFragment(),false);
+            }
+            else {
+                LOG.debug("Element with Id {} not found", idAttributeValue);
+            }
+        } catch (Exception e) {
+            LOG.error("Unexpected error occoured finding element", e);
+        }
+        LOG.trace("Found tag in {} ms", watch.elapsed(TimeUnit.MILLISECONDS));
+        return null;
+    }
+    
+    
+    @Override
+    public byte[] insertCommentInElement(byte[] xmlContent, String idAttributeValue, String comment, boolean start) throws Exception{
+        Validate.isTrue(idAttributeValue!=null, "Id can not be null");
+        
+        Stopwatch watch = Stopwatch.createStarted();
+        byte[] updatedContent=xmlContent;
+        VTDNav vtdNav = setupVTDNav(xmlContent);
+        vtdNav.toElement(VTDNav.ROOT);
+        XMLModifier xmlModifier = new XMLModifier(vtdNav);
+        
+        String elementContent = getElementById(vtdNav, idAttributeValue);//find the elementd
+        
+        if(StringUtils.isNotEmpty(elementContent) ){
+            StringBuffer sb= new StringBuffer(elementContent);
+            if(start && (elementContent.indexOf(">") > -1)){
+                sb.insert(elementContent.indexOf(">")+1, comment);
+            }
+            else if ((elementContent.lastIndexOf("<"))-1 > 0){
+                sb.insert(elementContent.lastIndexOf("<"), comment);
+            }
+            xmlModifier.insertAfterElement(sb.toString().getBytes(UTF_8));
+            xmlModifier.remove();
+        }
+        else if(elementContent==null) {//element not found
+            throw new RuntimeException("Element with Id:"+idAttributeValue+" not found");
+        }
+        updatedContent=toByteArray(xmlModifier);
+        
+        LOG.trace("inserted tag in {} ms", watch.elapsed(TimeUnit.MILLISECONDS));
+        return updatedContent;
+    }
+
+    @Autowired
+    private XmlCommentProcessor xmlCommentProcessor;
+    
+    @Override
+    public List<CommentVO> getAllComments(byte[] xmlContent) {
+
+        Stopwatch watch = Stopwatch.createStarted();
+        List<CommentVO> comments = new ArrayList<CommentVO>();
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent);
+            vtdNav.toElement(VTDNav.ROOT);
+            AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.selectElement(COMMENT);
+            int skip=0;
+            while (autoPilot.iterate()) {
+                if(skip > 0){ skip--; continue;}//dont do anything for skipped popups
+                int currentIndex = vtdNav.getCurrentIndex();//index of Comment node  
+                
+                vtdNav.toElement(VTDNav.PARENT);
+                String parentTag=new String(getTagWithContent(vtdNav), UTF_8);
+                List<CommentVO> innerComments=xmlCommentProcessor.fromXML(parentTag);
+                skip=(innerComments.size()>1)?(innerComments.size()-1):0;//this is done, not to  process twice multiple comments in same tag
+
+                comments.addAll(innerComments);
+                vtdNav.recoverNode(currentIndex);
+            }
+        } catch (Exception e) {
+            LOG.error("Unexpected error", e);
+        }
+        LOG.trace("Found all Comments in {} ms", watch.elapsed(TimeUnit.MILLISECONDS));
+        return comments;    
+    }
+    
+    @Override
+    public List<String> getAncestorsIdsForElementId(byte[] xmlContent,
+            String idAttributeValue) {
+        Validate.isTrue(idAttributeValue != null, "Id can not be null");
+        Stopwatch watch = Stopwatch.createStarted();
+        LinkedList<String> ancestorsIds = new LinkedList<String>();
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent);
+            AutoPilot ap = new AutoPilot(vtdNav);
+            ap.selectXPath("//*[@id = '" + idAttributeValue + "']");
+            if (ap.evalXPath() == -1) {
+                String errorMsg = String.format(
+                        "Element with id: %s does not exists.",
+                        idAttributeValue);
+                LOG.error(errorMsg);
+                throw new IllegalArgumentException(errorMsg);
+            }
+            /* Skip current element */
+            if (!vtdNav.toElement(VTDNav.PARENT)) {
+                return ancestorsIds;
+            }
+            do {
+                ap.selectAttr("id");
+                int i = -1;
+                String idValue = "";
+                if ((i = ap.iterateAttr()) != -1) {
+                    // Get the value of the 'id' attribute
+                    idValue = vtdNav.toRawString(i + 1);
+                    ancestorsIds.addFirst(idValue);
+                };
+            }
+            while (vtdNav.toElement(VTDNav.PARENT));
+
+        } catch (VTDException e) {
+            String errorMsg = String
+                    .format("Not able to retrieve ancestors ids for given element id: %s",
+                            idAttributeValue);
+            LOG.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        }
+        LOG.trace("Retrieved ancestors ids in {} ms",
+                watch.elapsed(TimeUnit.MILLISECONDS));
+        return ancestorsIds;
+    }
 }
+

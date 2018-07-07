@@ -13,16 +13,26 @@
  */
 package eu.europa.ec.leos.model.content;
 
+ import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import javax.annotation.Nonnull;
 
-import org.apache.chemistry.opencmis.client.api.CmisObject;
+ import eu.europa.ec.leos.vo.UserVO;
+ import org.apache.chemistry.opencmis.client.api.CmisObject;
 import org.apache.commons.lang3.Validate;
 
 public class LeosObject implements LeosObjectProperties {
 
+    public static final String AUTHOR_ID          ="leos:authorId";
+    public static final String AUTHOR_NAME        ="leos:authorName";
+    public static final String CONTRIBUTOR_IDS    ="leos:contributorIds";
+    public static final String CONTRIBUTOR_NAMES  ="leos:contributorNames";
+
     private final CmisObject cmisObject;
+    private List<UserVO> contributors;
+    private UserVO author;
 
     public LeosObject(@Nonnull final CmisObject object) {
         cmisObject = object;
@@ -79,4 +89,23 @@ public class LeosObject implements LeosObjectProperties {
                 cmisObject.getLastModificationDate().getTime() :
                 null;
     }
+
+    @Override
+    public List<UserVO> getContributors(){
+        return contributors;
+    }
+
+    @Override
+    public UserVO getAuthor() {
+        return author;
+    }
+
+    public void setContributors(List<UserVO> contributors) {
+        this.contributors = contributors;
+    }
+
+    public void setAuthor(UserVO author) {
+        this.author = author;
+    }
+
 }

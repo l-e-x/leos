@@ -22,7 +22,8 @@ define(function aknOrderedListPluginModule(require) {
     var cachedSequenceForThirdLevel;
     var pluginName = "aknOrderedList";
     var cssPath = "css/aknOrderedList.css";
-
+    var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
+ 
     var DATA_AKN_NUM = "data-akn-num";
 
     var pluginDefinition = {
@@ -139,7 +140,7 @@ define(function aknOrderedListPluginModule(require) {
      * 
      */
     function resetNumbering(event) {
-        event.editor.fire( 'lockSnapshot' );
+        event.editor.fire('lockSnapshot');
         var jqEditor = $(event.editor.editable().$);
         var orderedLists = jqEditor.find("*[data-akn-name='aknOrderedList']");
         for (var ii = 0; ii < orderedLists.length; ii++) {
@@ -148,10 +149,10 @@ define(function aknOrderedListPluginModule(require) {
             var listItems = orderedList.children;
             var sequence = generateSequence(listItems.length, currentNestingLevel);
             for (var jj = 0; jj < listItems.length; jj++) {
-                listItems[jj].setAttribute(DATA_AKN_NUM, sequence[jj]);
+                sequence && listItems[jj].setAttribute(DATA_AKN_NUM, sequence[jj]);
             }
         }
-        event.editor.fire( 'unlockSnapshot' );
+        event.editor.fire('unlockSnapshot');
 
     }
 
@@ -169,88 +170,54 @@ define(function aknOrderedListPluginModule(require) {
     }
 
     function resetDataAknNameForOrderedList(event) {
-        event.editor.fire( 'lockSnapshot' );
+        event.editor.fire('lockSnapshot');
         var jqEditor = $(event.editor.editable().$);
         var orderedLists = jqEditor.find("ol");
         for (var ii = 0; ii < orderedLists.length; ii++) {
             var orderedList = orderedLists[ii];
             var currentNestingLevel = getNestingLevelForOl(orderedList);
-            if (currentNestingLevel>0) {
+            if (currentNestingLevel > 0) {
                 orderedList.setAttribute("data-akn-name", "aknOrderedList");
                 var listItems = orderedList.children;
                 for (var jj = 0; jj < listItems.length; jj++) {
                     listItems[jj].removeAttribute("data-akn-name");
                 }
             }
-            
+
         }
-        event.editor.fire( 'unlockSnapshot' );
+        event.editor.fire('unlockSnapshot');
     }
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
-    var transformationConfig = {
-        akn : 'list',
-        html : 'ol',
-        attr : [ {
-            akn : "leos:editable",
-            html : "contenteditable"
-        }, {
-            akn : "id",
-            html : "id"
-        }, {
-            html : "data-akn-name=aknOrderedList"
-        } ],
-        sub : {
-            akn : 'point',
-            html : 'ol/li',
+    var leosHierarchicalElementTransformer = leosHierarchicalElementTransformerStamp({
+        firstLevelConfig : {
+            akn : 'list',
+            html : 'ol',
             attr : [ {
                 akn : "leos:editable",
                 html : "contenteditable"
             }, {
                 akn : "id",
                 html : "id"
-            } ],
-            sub : [ {
-                akn : 'num',
-                html : 'ol/li',
-                attr : [ {
-                    akn : "id",
-                    html : "data-akn-num-id"
-                } ],
-                sub : {
-                    akn : 'text',
-                    html : 'ol/li[data-akn-num]'
-                }
             }, {
-                akn : 'content',
-                html : 'ol/li',
-                attr : [ {
-                    akn : "id",
-                    html : "data-akn-content-id"
-                } ],
-                sub : {
-                    akn : 'mp',
-                    html : 'ol/li',
-                    attr : [ {
-                        akn : "id",
-                        html : "data-akn-mp-id"
-                    } ],
-                    sub : {
-                        akn : 'text',
-                        html : 'ol/li/text'
-                    }
-                }
+                html : "data-akn-name=aknOrderedList"
             } ]
-        }
-    };
+        },
+        rootElementsForFrom : [ "list", "point" ],
+        contentWrapperForFrom : "alinea",
+        rootElementsForTo : [ "ol", "li" ]
+    });
+
+				var transformationConfig = leosHierarchicalElementTransformer.getTransformationConfig();
 
     // return plugin module
     var pluginModule = {
-        name : pluginName
+        name : pluginName,
+        transformationConfig: transformationConfig
     };
 
-    pluginTools.addTransformationConfigForPlugin(transformationConfig, pluginName);
+    pluginTools.addTransformationConfigForPlugin(leosHierarchicalElementTransformer.getTransformationConfig(), pluginName);
 
     return pluginModule;
 });

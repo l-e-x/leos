@@ -53,7 +53,6 @@ public abstract class AbstractWizard extends AbstractWindow {
         // set default window size
         setWidth("650px");
         setHeight("450px");
-        setClosable(false);
 
         buildWizardBody();
         setBodyComponent(wizardBodyLayout);
@@ -211,6 +210,7 @@ public abstract class AbstractWizard extends AbstractWindow {
     private Button buildFinishButton() {
         finishButton = new Button();
         finishButton.setCaption(messageHelper.getMessage("leos.button.finish"));
+        finishButton.addStyleName("primary");
         finishButton.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent clickEvent) {

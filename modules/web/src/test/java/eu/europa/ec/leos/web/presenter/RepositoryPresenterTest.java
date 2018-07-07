@@ -13,33 +13,15 @@
  */
 package eu.europa.ec.leos.web.presenter;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import org.hamcrest.Matchers;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
+import eu.europa.ec.leos.model.content.LeosDocument;
+import eu.europa.ec.leos.model.content.LeosDocumentProperties.Stage;
 import eu.europa.ec.leos.model.content.LeosObjectProperties;
 import eu.europa.ec.leos.model.content.LeosTypeId;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.content.DocumentService;
 import eu.europa.ec.leos.services.content.WorkspaceService;
 import eu.europa.ec.leos.services.locking.LockingService;
+import eu.europa.ec.leos.services.user.PermissionService;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockActionInfo.Operation;
@@ -49,9 +31,25 @@ import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.view.repository.EnterRepositoryViewEvent;
 import eu.europa.ec.leos.web.event.view.repository.SelectDocumentEvent;
 import eu.europa.ec.leos.web.model.DocumentVO;
+import eu.europa.ec.leos.web.support.LockHelper;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.view.DocumentView;
+import eu.europa.ec.leos.web.view.FeedbackView;
 import eu.europa.ec.leos.web.view.RepositoryView;
+import org.hamcrest.Matchers;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.*;
 
 public class RepositoryPresenterTest extends LeosPresenterTest {
 
@@ -68,6 +66,12 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
     private LockingService lockingService;
 
     @Mock
+    private LockHelper lockHelper;
+
+    @Mock
+    private PermissionService permissionService;
+
+    @Mock
     private User user;
 
     @InjectMocks
@@ -77,13 +81,14 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
     public void testEnterRepositoryView() throws Exception {
 
         List<LeosObjectProperties> documents = new ArrayList<>();
-        LeosObjectProperties leosObjectMock = mock(LeosObjectProperties.class);
+        LeosDocument leosObjectMock = mock(LeosDocument.class);
         documents.add(leosObjectMock);
         when(workspaceService.browseUserWorkspace()).thenReturn(documents);
 
         when(leosObjectMock.getLeosId()).thenReturn("878");
         when(leosObjectMock.getLeosTypeId()).thenReturn(LeosTypeId.LEOS_DOCUMENT);
-
+        when(leosObjectMock.getStage()).thenReturn(Stage.DRAFT);
+        
         HashMap<String, List<LockData>> map = new HashMap<String, List<LockData>>();
         List<LockData> lstLocksInfo = new ArrayList<LockData>();
         lstLocksInfo.add(new LockData("878", 1418046932495L, "login", "user", "sessionID", LockLevel.READ_LOCK));
@@ -102,7 +107,7 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
 
         List documentList = argument.getValue();
         assertThat(documentList.size(), is(1));
-        assertThat(((DocumentVO) documentList.get(0)).getLeosObjectProperties(), is(sameInstance(leosObjectMock)));
+        assertThat(((DocumentVO) documentList.get(0)).getLeosId(), equalTo(leosObjectMock.getLeosId()));
         assertThat(((DocumentVO) documentList.get(0)).getLockInfo().get(0), is(sameInstance(map.get("878").get(0))));
 
         verifyNoMoreInteractions(workspaceService, repositoryView);
@@ -114,12 +119,23 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         String docId = "123";
 
         // DO THE ACTUAL CALL
-        repositoryPresenter.navigateToDocumentView(new SelectDocumentEvent(docId));
+        repositoryPresenter.navigateToDocumentView(new SelectDocumentEvent(docId, Stage.DRAFT));
 
         verify(httpSession).setAttribute(SessionAttribute.DOCUMENT_ID.name(), docId);
         verify(eventBus).post(argThat(Matchers.<NavigationRequestEvent>hasProperty("viewId", equalTo(DocumentView.VIEW_ID))));
     }
 
+    @Test
+    public void testNavigateToFeedbackView() {
+
+        String docId = "123";
+
+        // DO THE ACTUAL CALL
+        repositoryPresenter.navigateToDocumentView(new SelectDocumentEvent(docId, Stage.FEEDBACK));
+
+        verify(httpSession).setAttribute(SessionAttribute.DOCUMENT_ID.name(), docId);
+        verify(eventBus).post(argThat(Matchers.<NavigationRequestEvent>hasProperty("viewId", equalTo(FeedbackView.VIEW_ID))));
+    }
     @Test
     public void test_onDocumentLockUpdate_readLock() {
 
@@ -131,7 +147,6 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         // DO THE ACTUAL CALL
         repositoryPresenter.onLockUpdate(lockActionInfo);
 
-        verify(repositoryView).updateLockInfo( argThat(Matchers.<DocumentVO>hasProperty("leosObjectProperties", equalTo(null))));
         verify(repositoryView).updateLockInfo( argThat(Matchers.<DocumentVO>hasProperty("lockState", equalTo(DocumentVO.LockState.UNLOCKED))));
     }
 
@@ -149,7 +164,7 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         // DO THE ACTUAL CALL
         repositoryPresenter.onLockUpdate(lockActionInfo);
 
-        verify(repositoryView).updateLockInfo(argThat(Matchers.<DocumentVO>hasProperty("leosObjectProperties", equalTo(null))));
+        verify(repositoryView).updateLockInfo(argThat(Matchers.<DocumentVO>hasProperty("leosId", equalTo("45"))));
         verify(repositoryView).updateLockInfo(argThat(Matchers.<DocumentVO>hasProperty("lockState", equalTo(DocumentVO.LockState.UNLOCKED))));
     }
     
@@ -167,7 +182,7 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         // DO THE ACTUAL CALL
         repositoryPresenter.onLockUpdate(lockActionInfo);
 
-        verify(repositoryView).updateLockInfo( argThat(Matchers.<DocumentVO>hasProperty("leosObjectProperties", equalTo(null))));
+        verify(repositoryView).updateLockInfo(argThat(Matchers.<DocumentVO>hasProperty("leosId", equalTo("45"))));
         verify(repositoryView).updateLockInfo( argThat(Matchers.<DocumentVO>hasProperty("lockState", equalTo(DocumentVO.LockState.UNLOCKED))));
     }
     

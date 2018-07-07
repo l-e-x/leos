@@ -13,48 +13,33 @@
  */
 package eu.europa.ec.leos.web.ui.component;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vaadin.cssinject.CSSInject;
-
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.JavaScript;
-import com.vaadin.server.BrowserWindowOpener;
-import com.vaadin.server.ClientConnector;
-import com.vaadin.server.ThemeResource;
-import com.vaadin.server.VaadinSession;
+import com.vaadin.annotations.StyleSheet;
+import com.vaadin.server.*;
 import com.vaadin.shared.ui.label.ContentMode;
-import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
+import com.vaadin.ui.*;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomComponent;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.JavaScriptFunction;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
-
+import elemental.json.JsonArray;
+import elemental.json.JsonException;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockLevel;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.component.TocPositionEvent;
-import eu.europa.ec.leos.web.event.view.document.DeleteArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EditArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EditCitationsRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EditRecitalsRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.InsertArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
+import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.ShowVersionsEvent;
+import eu.europa.ec.leos.web.model.ViewSettings;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.screen.document.TocPosition;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vaadin.teemu.VaadinIcons;
 
+@StyleSheet({"vaadin://themes/leos/css/bill_xml.css"+ LeosCacheToken.TOKEN})
 @JavaScript({"vaadin://js/web/util/legaltext.js" + LeosCacheToken.TOKEN})
 public class LegalTextComponent extends CustomComponent {
     private static final long serialVersionUID = -7268025691934327898L;
@@ -63,17 +48,17 @@ public class LegalTextComponent extends CustomComponent {
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
-
+    private ViewSettings viewSettings;
     private Label docContent;
-    private Button textRefreshNote; 
+    private Button textRefreshNote;
     private BrowserWindowOpener htmlPreviewOpener;
     private BrowserWindowOpener pdfPreviewOpener;
 
-    public LegalTextComponent(final EventBus eventBus,final MessageHelper messageHelper) {
+    public LegalTextComponent(final EventBus eventBus,final MessageHelper messageHelper, ViewSettings viewSettings) {
 
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
-
+        this.viewSettings = viewSettings;
         VerticalLayout legalTextlayout = new VerticalLayout();
         setCompositionRoot(legalTextlayout);
 
@@ -104,21 +89,24 @@ public class LegalTextComponent extends CustomComponent {
 
 
         // create preview buttons
-        final Button previewHtmlButton = legalTextPreviewHtmlButton();
-        toolsLayout.addComponent(previewHtmlButton);
-        toolsLayout.setComponentAlignment(previewHtmlButton, Alignment.MIDDLE_LEFT);         
-        final Button previewPdfButton = legalTextPreviewPdfButton();
-        toolsLayout.addComponent(previewPdfButton);
-        toolsLayout.setComponentAlignment(previewPdfButton, Alignment.MIDDLE_LEFT );
+        if(viewSettings.isPreviewEnabled()){
+            final Button previewHtmlButton = legalTextPreviewHtmlButton();
+            toolsLayout.addComponent(previewHtmlButton);
+            toolsLayout.setComponentAlignment(previewHtmlButton, Alignment.MIDDLE_LEFT);
+            final Button previewPdfButton = legalTextPreviewPdfButton();
+            toolsLayout.addComponent(previewPdfButton);
+            toolsLayout.setComponentAlignment(previewPdfButton, Alignment.MIDDLE_LEFT );
+        }
 
         //add compare button
-        final Button compareVersionsButton = buildVersionCompareButton();
-        toolsLayout.addComponent(compareVersionsButton);
-        toolsLayout.setComponentAlignment(compareVersionsButton, Alignment.MIDDLE_LEFT );
-
+        if(viewSettings.isCompareEnabled()){
+            final Button compareVersionsButton = buildVersionCompareButton();
+            toolsLayout.addComponent(compareVersionsButton);
+            toolsLayout.setComponentAlignment(compareVersionsButton, Alignment.MIDDLE_LEFT );
+        }
         // create legal text slider button
         final Button legalTextSlideButton = legalTextSliderButton();
-        
+
         // create toolbar spacer label to push components to the sides
         final Label toolbarLabel = new Label("&nbsp;", ContentMode.HTML);
         toolbarLabel.setSizeUndefined();
@@ -131,7 +119,7 @@ public class LegalTextComponent extends CustomComponent {
         textRefreshNote =legalTextNote();
         toolsLayout.addComponent(textRefreshNote);
         toolsLayout.setComponentAlignment(textRefreshNote, Alignment.MIDDLE_RIGHT);
-        
+
         // create text refresh button
         final Button textRefreshButton = legalTextRefreshButton();
         toolsLayout.addComponent(textRefreshButton);
@@ -162,7 +150,7 @@ public class LegalTextComponent extends CustomComponent {
 
     // create legal text slider button
     private Button legalTextSliderButton() {
-        ThemeResource legalTextSliderIcon = LeosTheme.CHEVRON_LEFT_ICON_16;
+        VaadinIcons legalTextSliderIcon = VaadinIcons.CARET_SQUARE_LEFT_O;
 
         final Button legalTextSliderButton = new Button();
         legalTextSliderButton.setIcon(legalTextSliderIcon);
@@ -179,10 +167,10 @@ public class LegalTextComponent extends CustomComponent {
             @Subscribe
             public void updateLegalTextSliderIcon(TocPositionEvent event) {
                 if (event.getTocPosition().equals(TocPosition.RIGHT)) {
-                    legalTextSliderButton.setIcon(LeosTheme.CHEVRON_LEFT_ICON_16);
+                    legalTextSliderButton.setIcon(VaadinIcons.CARET_SQUARE_LEFT_O);
                     legalTextSliderButton.setData(SplitPositionEvent.MoveDirection.LEFT);
                 } else {
-                    legalTextSliderButton.setIcon(LeosTheme.CHEVRON_RIGHT_ICON_16);
+                    legalTextSliderButton.setIcon(VaadinIcons.CARET_SQUARE_RIGHT_O);
                     legalTextSliderButton.setData(SplitPositionEvent.MoveDirection.RIGHT);
                 }
             }
@@ -197,7 +185,7 @@ public class LegalTextComponent extends CustomComponent {
         previewPDFButton.setId("previewPDF");
         previewPDFButton.setDescription(messageHelper.getMessage("document.tab.legal.button.pdfPreview.tooltip"));
 
-        previewPDFButton.setIcon(LeosTheme.LEOS_PREVIEW_PDF_ICON_16);
+        previewPDFButton.setIcon(FontAwesome.FILE_PDF_O);
         previewPDFButton.setStyleName("link");
         previewPDFButton.addStyleName("leos-toolbar-button");
 
@@ -215,7 +203,7 @@ public class LegalTextComponent extends CustomComponent {
         previewHTMLButton.setId("previewHTML");
         previewHTMLButton.setDescription(messageHelper.getMessage("document.tab.legal.button.htmlPreview.tooltip"));
 
-        previewHTMLButton.setIcon(LeosTheme.LEOS_PREVIEW_HTML_ICON_16);
+        previewHTMLButton.setIcon(FontAwesome.FILE_CODE_O);
         previewHTMLButton.setStyleName("link");
         previewHTMLButton.addStyleName("leos-toolbar-button");
 
@@ -232,7 +220,7 @@ public class LegalTextComponent extends CustomComponent {
         final Button textRefreshButton = new Button();
         textRefreshButton.setId("refreshDocument");
         textRefreshButton.setHtmlContentAllowed(true);
-        textRefreshButton.setIcon(LeosTheme.LEOS_REFRESH_ICON_16);
+        textRefreshButton.setIcon(VaadinIcons.REFRESH);
         textRefreshButton.setStyleName("link");
         textRefreshButton.addStyleName("leos-dimmed-button");
         textRefreshButton.addClickListener(new ClickListener() {
@@ -243,16 +231,17 @@ public class LegalTextComponent extends CustomComponent {
                 eventBus.post(new RefreshDocumentEvent());
             }
         });
-        
+
         return textRefreshButton;
     }
-    
+
     // create text refresh button
     private Button legalTextNote() {
         final Button textRefreshNote = new Button();
         textRefreshNote.setId("refreshDocumentNote");
         textRefreshNote.setHtmlContentAllowed(true);
         textRefreshNote.setStyleName("link");
+        textRefreshNote.addStyleName("leos-toolbar-button");
         textRefreshNote.setCaption(messageHelper.getMessage("document.request.refresh.msg"));
         textRefreshNote.setIcon(LeosTheme.LEOS_INFO_YELLOW_16);
         textRefreshNote.addClickListener(new ClickListener() {
@@ -271,7 +260,7 @@ public class LegalTextComponent extends CustomComponent {
         final Button diffButton = new Button();
         diffButton.setId("compareDocVersionButton");
         diffButton.setDescription(messageHelper.getMessage("document.tab.legal.button.versioncompare.tooltip"));
-        diffButton.setIcon(LeosTheme.LEOS_COMPARE_WITH_16);
+        diffButton.setIcon(VaadinIcons.COPY_O);
         diffButton.setStyleName("link");
         diffButton.addStyleName("leos-toolbar-button");
         diffButton.addClickListener(new Button.ClickListener() {
@@ -288,9 +277,6 @@ public class LegalTextComponent extends CustomComponent {
     private Component buildLegalTextContent() {
         LOG.debug("Building Legal Text content...");
 
-        CSSInject css = new CSSInject(UI.getCurrent());
-        css.addThemeStyleSheet("css/bill_xml.css" + LeosCacheToken.TOKEN);
-
         // create content layout
         final VerticalLayout textContentLayout = new VerticalLayout();
         textContentLayout.setSizeUndefined();
@@ -306,17 +292,17 @@ public class LegalTextComponent extends CustomComponent {
     }
 
     public void populateContent(String docContentText) {
-        docContent.setValue(docContentText);               
+        docContent.setValue(docContentText);
         textRefreshNote.setVisible(false);
-        
+
     }
 
     private void bindJavaScriptActions() {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_editArticle",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String articleId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String articleId = arguments.getString(0);
                 eventBus.post(new EditArticleRequestEvent(articleId));
             }
         });
@@ -324,8 +310,8 @@ public class LegalTextComponent extends CustomComponent {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_editCitations",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String citationsId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String citationsId = arguments.getString(0);
                 eventBus.post(new EditCitationsRequestEvent(citationsId));
             }
         });
@@ -333,8 +319,8 @@ public class LegalTextComponent extends CustomComponent {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_editRecitals",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String recitalsId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String recitalsId = arguments.getString(0);
                 eventBus.post(new EditRecitalsRequestEvent(recitalsId));
             }
         });
@@ -342,8 +328,8 @@ public class LegalTextComponent extends CustomComponent {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_deleteArticle",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String articleId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String articleId = arguments.getString(0);
 
                 eventBus.post(new DeleteArticleRequestEvent(articleId));
             }
@@ -352,8 +338,8 @@ public class LegalTextComponent extends CustomComponent {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_insertArticleAfter",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String articleId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String articleId = arguments.getString(0);
 
                 eventBus.post(new InsertArticleRequestEvent(articleId, InsertArticleRequestEvent.POSITION.AFTER));
             }
@@ -361,8 +347,8 @@ public class LegalTextComponent extends CustomComponent {
         com.vaadin.ui.JavaScript.getCurrent().addFunction("leg_insertArticleBefore",
                 new JavaScriptFunction() {
             @Override
-            public void call(JSONArray arguments) throws JSONException {
-                String articleId = (String)arguments.get(0);
+            public void call(JsonArray arguments) throws JsonException {
+                String articleId = arguments.getString(0);
 
                 eventBus.post(new InsertArticleRequestEvent(articleId, InsertArticleRequestEvent.POSITION.BEFORE));
             }
@@ -391,7 +377,7 @@ public class LegalTextComponent extends CustomComponent {
         }
         htmlOpener = new BrowserWindowOpener(htmlURL);
         htmlOpener.setFeatures(LeosTheme.LEOS_PREVIEW_WINDOW_FEATURES);
-        htmlOpener.setWindowName("PreviewHTML_" +documentId ); 
+        htmlOpener.setWindowName("PreviewHTML_" +documentId );
         htmlOpener.extend((Button)buttonHtmlConnector);
         this.setHtmlPreviewOpener(htmlOpener);
     }

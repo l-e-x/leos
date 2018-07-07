@@ -13,11 +13,13 @@
  */
 package eu.europa.ec.leos.support.xml;
 
-import eu.europa.ec.leos.model.content.LeosDocument;
+import java.io.InputStream;
 
 public interface TransformationManager {
 
-	String toEditableXml(LeosDocument document, String contextPath);
-	String toReadOnlyHtml(LeosDocument document,String contextPath); 
+	String toEditableXml(InputStream documentStream, String contextPath);
+	String toNonEditableXml(InputStream documentStream, String contextPath);
+    String toHtmlForPreview(InputStream documentStream,String contextPath);
+    String toXmlFragmentWrapper(InputStream documentStream,String contextPath);
 
 }

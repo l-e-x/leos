@@ -49,6 +49,9 @@
         <aop:scoped-proxy/>
     </bean>
 
+    <!-- Persistence Context -->
+    <import resource="classpath:eu/europa/ec/leos/persistenceContext.xml"/>
+    
     <!-- Support Context -->
     <import resource="classpath:eu/europa/ec/leos/supportContext.xml"/>
 

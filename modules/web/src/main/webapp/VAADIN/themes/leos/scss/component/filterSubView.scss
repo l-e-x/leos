@@ -1,0 +1,97 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+$pane-background-color:#E5F0F6;
+$header-background-color:#0065A2;
+$caption-color:#004890;
+$check-box-bg-color:#F5F7F9;
+$check-box-label-color:#003f59;
+$seperator-color:#94c0d2;
+
+@mixin filterSubView {
+
+    .leos-card-filters {
+        border: 1px solid grey;
+        background:$pane-background-color;
+        overflow:hidden;
+
+        .leos-filter-header {
+            padding: 3px 10% 2px 10px;
+            background:$header-background-color;
+            color:white;
+            font-weight:bold;
+            .icon-only-caption {
+                font-weight: normal;
+            }
+            .reset-button{
+                cursor: pointer;
+            }
+        }
+
+        .v-captiontext {
+            padding: 5px 10px;
+            font-weight: bold;
+            color:$caption-color;
+        }
+
+        .v-select-optiongroup {
+            .v-checkbox {
+                direction: rtl;
+                padding-left: 15px;
+                width: 100%;
+                background: $check-box-bg-color;
+                label {
+                    display: inline-block;
+                    min-width: 75%;
+                    color:$check-box-label-color;
+                }
+            }
+        }
+
+        .v-select-optiongroup:last-child{
+            border-bottom: 1px solid $seperator-color;
+        }
+    }
+
+    .leos-search-field{
+        margin-left: 2px;
+    }
+    /********Following styles are copied from valo theme and should be removed when migrating to Valo ***/
+    .v-slot-inline-icon {
+        position: relative;
+    }
+    .v-caption-inline-icon {
+        padding: 0;
+        span.v-icon {
+            width: 26px;
+            line-height: 26px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .v-icon {
+            position: absolute;
+            z-index: 10;
+        }
+    }
+    input.inline-icon.v-textfield-inline-icon {
+        padding-left: 26px;
+    }
+
+    /*******End Inline-styles*******************/
+
+    //override default Styles for search reset button
+    .resetbuttonfortextfield-resetbutton {
+        vertical-align: top;
+    }
+}

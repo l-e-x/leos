@@ -22,6 +22,7 @@ import eu.europa.ec.leos.services.content.RulesService;
 import eu.europa.ec.leos.services.locking.LockingService;
 import eu.europa.ec.leos.support.web.UrlBuilder;
 import eu.europa.ec.leos.support.xml.TransformationManager;
+import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.vo.MetaDataVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
@@ -108,15 +109,16 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         LeosDocument document = mock(LeosDocument.class);
         when(document.getLeosId()).thenReturn(docId);
-        when(document.getName()).thenReturn(docName);
-        when(document.getContentStream()).thenReturn(new ByteArrayInputStream(byteContent));
+        when(document.getTitle()).thenReturn(docName);
+        ByteArrayInputStream bStreeam=new ByteArrayInputStream(byteContent);
+        when(document.getContentStream()).thenReturn(bStreeam);
 
         String displayableContent = "document displayable content";
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
 
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
 
-        User user = new User(45L, "login", "name");
+        User user = ModelHelper.buildUser(45L, "login", "name");
         when(securityContext.getUser()).thenReturn(user);
 
         LockData lockData = new LockData(docId, new Date().getTime(), "loginB", "name", SESSION_ID, LockLevel.READ_LOCK);
@@ -127,7 +129,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(lockingService.lockDocument(docId, user, SESSION_ID, LockLevel.READ_LOCK)).thenReturn(lockActionInfo);
 
         when(documentService.getDocument(docId)).thenReturn(document);
-        when(transformationManager.toEditableXml(argThat(sameInstance(document)), any(String.class))).thenReturn(displayableContent);
+        when(transformationManager.toEditableXml(argThat(sameInstance(document.getContentStream())), any(String.class))).thenReturn(displayableContent);
         when(documentService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
         
         when(urlBuilder.getDocumentPdfUrl(any(HttpServletRequest.class), eq(docId))).thenReturn(url);
@@ -137,18 +139,45 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         documentPresenter.enterDocumentView(new EnterDocumentViewEvent());
 
         verify(documentService).getDocument(docId);
-        verify(transformationManager).toEditableXml(argThat(sameInstance(document)),any(String.class));
-        verify(documentView).setDocumentName(docName);
+        verify(transformationManager).toEditableXml(argThat(sameInstance(document.getContentStream())), any(String.class));
+        verify(documentView).setDocumentTitle(docName);
         verify(documentView).refreshContent(displayableContent);
         verify(documentService).getTableOfContent(document);
         verify(documentView).setToc(argThat(sameInstance(tableOfContentItemVoList)));
-        verify(lockingService).lockDocument(docId, user, SESSION_ID,LockLevel.READ_LOCK);
-        verify(documentView).setDocumentPreviewURLs(docId,"http://test.com","http://test.com");
+        verify(lockingService).lockDocument(docId, user, SESSION_ID, LockLevel.READ_LOCK);
+        verify(documentView).setDocumentPreviewURLs(docId, "http://test.com", "http://test.com");
         verify(documentView).updateLocks(any(LockActionInfo.class));
-        
+        verify(documentView).setDocumentStage(document.getStage());
+
         verifyNoMoreInteractions(documentService, transformationManager, documentView);
     }
 
+    @Test
+    public void test_LoadCrossReferenceToc() throws Exception {
+
+        String docId = "555";
+        String windowName = "";
+        String selectedNodeId = "xyz";
+        LeosDocument document = mock(LeosDocument.class);
+
+        List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
+        List<String> ancestorsIds = Collections.emptyList();
+        when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
+        when(documentService.getDocument(docId)).thenReturn(document);
+        when(documentService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
+        when(documentService.getAncestorsIdsForElementId(document, selectedNodeId)).thenReturn(ancestorsIds);
+
+        // DO THE ACTUAL CALL
+        documentPresenter.loadCrossReferenceToc(new LoadCrossReferenceTocEvent(windowName, selectedNodeId));
+
+        verify(documentService).getDocument(docId);
+        verify(documentService).getTableOfContent(document);
+        verify(documentService).getAncestorsIdsForElementId(document, selectedNodeId);
+        verify(documentView).setCrossReferenceToc(argThat(sameInstance(tableOfContentItemVoList)), argThat(sameInstance(ancestorsIds)), eq(windowName));
+        verifyNoMoreInteractions(documentService, documentView);
+    }
+
+    
     @Test
     public void testEnterDocumentView_when_documentIsLocked() throws Exception {
 
@@ -156,7 +185,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
 
-        User user = new User(45L, "login", "name");
+        User user = ModelHelper.buildUser(45L, "login", "name");
         when(securityContext.getUser()).thenReturn(user);
 
         LockData lockData = new LockData(docId, new Date().getTime(), "loginB", "name", SESSION_ID, LockLevel.READ_LOCK);
@@ -182,7 +211,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
 
-        User user = new User(45L, "login", "name");
+        User user = ModelHelper.buildUser(45L, "login", "name");
         when(securityContext.getUser()).thenReturn(user);
         when(documentView.getViewId()).thenReturn(DocumentView.VIEW_ID);
 
@@ -224,15 +253,16 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         LeosDocument document = mock(LeosDocument.class);
         when(document.getLeosId()).thenReturn(docId);
-        when(document.getName()).thenReturn(docName);
-        when(document.getContentStream()).thenReturn(new ByteArrayInputStream(byteContent));
+        when(document.getTitle()).thenReturn(docName);
+        ByteArrayInputStream bStreeam=new ByteArrayInputStream(byteContent);
+        when(document.getContentStream()).thenReturn(bStreeam);
 
         String displayableContent = "document displayable content";
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
 
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
         when(documentService.getDocument(docId)).thenReturn(document);
-        when(transformationManager.toEditableXml(argThat(sameInstance(document)),any(String.class))).thenReturn(displayableContent);
+        when(transformationManager.toEditableXml(argThat(sameInstance(document.getContentStream())),any(String.class))).thenReturn(displayableContent);
         when(documentService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
         
         when(urlBuilder.getDocumentPdfUrl(any(HttpServletRequest.class), eq(docId))).thenReturn(url);
@@ -243,12 +273,13 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         verify(documentService).getDocument(docId);
         verify(documentService).getTableOfContent(document);
-        verify(transformationManager).toEditableXml(argThat(sameInstance(document)),any(String.class));
+        verify(transformationManager).toEditableXml(argThat(sameInstance(document.getContentStream())), any(String.class));
         verify(documentView).refreshContent(displayableContent);
-        verify(documentView).setDocumentName(docName);
+        verify(documentView).setDocumentTitle(docName);
         verify(documentView).setToc(argThat(sameInstance(tableOfContentItemVoList)));
-        verify(documentView).setDocumentPreviewURLs(docId,url,url);
-        
+        verify(documentView).setDocumentPreviewURLs(docId, url, url);
+        verify(documentView).setDocumentStage(document.getStage());
+
         verifyNoMoreInteractions(documentService, transformationManager, documentView);
     }
 
@@ -262,7 +293,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         LeosDocument document = mock(LeosDocument.class);
         when(document.getLeosId()).thenReturn(docId);
-        when(document.getName()).thenReturn(docName);
+        when(document.getTitle()).thenReturn(docName);
         when(document.getContentStream()).thenReturn(bios);
 
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
@@ -288,7 +319,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String articleContent = "article content";
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         ArrayList<LockData> lockInfolst=new ArrayList<LockData>();
         LockActionInfo lockActionInfo = new LockActionInfo(true,Operation.ACQUIRE,null, new ArrayList<LockData>());
@@ -320,7 +351,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
             String articleContent = "article content";
             
             String userLogin="login";
-            User user = new User(45L, userLogin, "name");
+            User user = ModelHelper.buildUser(45L, userLogin, "name");
             when(securityContext.getUser()).thenReturn(user);
             ArrayList<LockData> lockInfolst=new ArrayList<LockData>();
             lockInfolst.add(new LockData(docId, new Date().getTime(), userLogin, "name", SESSION_ID, LockLevel.ELEMENT_LOCK, articleId));
@@ -350,7 +381,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
             LeosDocument document = mock(LeosDocument.class);
 
             String userLogin="login";
-            User user = new User(45L, userLogin, "name");
+            User user = ModelHelper.buildUser(45L, userLogin, "name");
 
             when(securityContext.getUser()).thenReturn(user);
 
@@ -379,7 +410,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
             LeosDocument document = mock(LeosDocument.class);
 
             String userLogin="login";
-            User user = new User(45L, userLogin, "name");
+            User user = ModelHelper.buildUser(45L, userLogin, "name");
 
             when(securityContext.getUser()).thenReturn(user);
             ArrayList<LockData> lockInfolst=new ArrayList<LockData>();
@@ -413,7 +444,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String newArticleText = "new article text";
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
@@ -442,7 +473,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String newArticleText = "new article text";
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(docId);
@@ -468,7 +499,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         String articleId = "486";
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
 
         LockActionInfo lockActionInfo = new LockActionInfo(true,Operation.ACQUIRE,null, new ArrayList<LockData>());
@@ -500,7 +531,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         String articleId = "486";
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         LockActionInfo lockActionInfo = new LockActionInfo(true,Operation.ACQUIRE,null, new ArrayList<LockData>());
 
@@ -527,7 +558,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         LeosDocument originalDocument = mock(LeosDocument.class);
@@ -557,7 +588,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         LeosDocument originalDocument = mock(LeosDocument.class);
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn("test");
@@ -580,7 +611,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         LeosDocument originalDocument = mock(LeosDocument.class);
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         when(originalDocument.getLeosId()).thenReturn("test");
@@ -603,7 +634,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     @Test
     public void testEditToc() throws Exception {
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
 
         LockActionInfo lockActionInfo = new LockActionInfo(true,Operation.ACQUIRE,null, new ArrayList<LockData>());
@@ -639,7 +670,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String newArticleText = "new article text";
         
         String userLogin="login";
-        User user = new User(45L, userLogin, "name");
+        User user = ModelHelper.buildUser(45L, userLogin, "name");
         when(securityContext.getUser()).thenReturn(user);
         
         when(httpSession.getAttribute(SessionAttribute.DOCUMENT_ID.name())).thenReturn(null);

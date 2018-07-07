@@ -13,38 +13,13 @@
  */
 package eu.europa.ec.leos.web.ui.screen.document;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-
-import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-
-import ru.xpoft.vaadin.VaadinView;
-
 import com.vaadin.annotations.JavaScript;
 import com.vaadin.data.Container;
 import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.server.Page;
 import com.vaadin.server.VaadinSession;
-import com.vaadin.shared.Position;
-import com.vaadin.ui.Alignment;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Image;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.Notification;
-import com.vaadin.ui.Notification.Type;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.Window;
-
+import com.vaadin.shared.ui.label.ContentMode;
+import com.vaadin.ui.*;
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
 import eu.europa.ec.leos.vo.MetaDataVO;
@@ -52,23 +27,30 @@ import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockData;
 import eu.europa.ec.leos.web.event.view.document.EnterDocumentViewEvent;
+import eu.europa.ec.leos.web.support.LockNotificationManager;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.LegalTextPaneComponent;
 import eu.europa.ec.leos.web.ui.component.MenuBarComponent;
 import eu.europa.ec.leos.web.ui.component.SharedLockComponent;
+import eu.europa.ec.leos.web.ui.converter.StageIconConverter;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
 import eu.europa.ec.leos.web.ui.screen.LeosScreen;
-import eu.europa.ec.leos.web.ui.themes.LeosTheme;
-import eu.europa.ec.leos.web.ui.window.CompareDocumentVersionWindow;
-import eu.europa.ec.leos.web.ui.window.DownloadWindow;
-import eu.europa.ec.leos.web.ui.window.EditArticleWindow;
-import eu.europa.ec.leos.web.ui.window.EditCitationsWindow;
-import eu.europa.ec.leos.web.ui.window.EditMetaDataWindow;
-import eu.europa.ec.leos.web.ui.window.EditRecitalsWindow;
-import eu.europa.ec.leos.web.ui.window.EditTocWindow;
-import eu.europa.ec.leos.web.ui.window.VersionsListWindow;
+import eu.europa.ec.leos.web.ui.window.*;
 import eu.europa.ec.leos.web.view.DocumentView;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import ru.xpoft.vaadin.VaadinView;
+
+import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Scope("session")
 @org.springframework.stereotype.Component(DocumentView.VIEW_ID)
@@ -80,13 +62,11 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     private static final Logger LOG = LoggerFactory.getLogger(DocumentViewImpl.class);
 
     @Autowired
-    private MessageHelper messageHelper;
-
-    @Autowired
     private ConfigurationHelper cfgHelper;
 
     private DocumentViewSettings docViewSettings;
-    private final Label docName = new Label();
+    private final Label docTitle = new Label();
+    private final Label docIcon = new Label("", ContentMode.HTML);//default
     private LegalTextPaneComponent legalTextPaneComponent;
     private EditTocWindow editTocWindow;
     private EditArticleWindow editArticleWindow;
@@ -107,7 +87,7 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
 
     @Override
     public void enter(ViewChangeListener.ViewChangeEvent event) {
-        LOG.debug("Entering {} view...", getViewId());
+        LOG.debug("Entering {} view...param {}", getViewId(), event.getParameters());
         eventBus.post(new EnterDocumentViewEvent());
     }
 
@@ -144,15 +124,15 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
         docLayout.setSpacing(true);
         addComponent(docLayout);
 
-        Image docIcon = new Image("", LeosTheme.LEOS_DOCUMENT_ICON_32);
-        docIcon.addStyleName("leos-viewdoc-icon");
+        docIcon.addStyleName("leos-docview-icon");
+        docIcon.setWidth("32px");
         docLayout.addComponent(docIcon);
         docLayout.setComponentAlignment(docIcon, Alignment.MIDDLE_LEFT);
 
-        docName.addStyleName("leos-docview-doctitle");
-        docLayout.addComponent(docName);
-        docLayout.setExpandRatio(docName, 1.0f);
-        docLayout.setComponentAlignment(docName, Alignment.MIDDLE_LEFT);
+        docTitle.addStyleName("leos-docview-doctitle");
+        docLayout.addComponent(docTitle);
+        docLayout.setExpandRatio(docTitle, 1.0f);
+        docLayout.setComponentAlignment(docTitle, Alignment.MIDDLE_LEFT);
 
         // add menu bar component
         menuBarComponent = new MenuBarComponent(messageHelper, eventBus, cfgHelper, docViewSettings);
@@ -174,8 +154,16 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     }
 
     @Override
-    public void setDocumentName(final String documentName) {
-        docName.setValue(documentName);
+    public void setDocumentTitle(final String documentTitle) {
+        docTitle.setValue(documentTitle);
+    }
+
+    @Override
+    public void setDocumentStage(final LeosDocumentProperties.Stage value) {
+        LeosDocumentProperties.Stage stage = (value == null) ? LeosDocumentProperties.Stage.DRAFT : value;
+        docIcon.setValue(new StageIconConverter().convertToPresentation(stage, null, null));
+        docIcon.setStyleName(stage.toString().toLowerCase());//to clear the already set styles
+        docIcon.addStyleName("leos-docview-icon");
     }
 
     @Override
@@ -186,7 +174,7 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
 
     @Override
     public void showArticleEditor(final String articleId, final String article) {
-        editArticleWindow = new EditArticleWindow(messageHelper, eventBus, articleId, article, cfgHelper);
+        editArticleWindow = new EditArticleWindow(messageHelper, eventBus, articleId, article, cfgHelper, securityContext.getUser());
         UI.getCurrent().addWindow(editArticleWindow);
         editArticleWindow.center();
         editArticleWindow.focus();
@@ -201,7 +189,7 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     
     @Override
     public void showCitationsEditor(final String citationsId, final String citations) {
-        editCitationWindow = new EditCitationsWindow(messageHelper, eventBus, citationsId, citations, cfgHelper);
+        editCitationWindow = new EditCitationsWindow(messageHelper, eventBus, citationsId, citations, cfgHelper, securityContext.getUser());
         UI.getCurrent().addWindow(editCitationWindow);
         editCitationWindow.center();
         editCitationWindow.focus();
@@ -216,7 +204,7 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     
     @Override
     public void showRecitalsEditor(final String recitalsId, final String recitals) {
-        editRecitalsWindow = new EditRecitalsWindow(messageHelper, eventBus, recitalsId, recitals, cfgHelper);
+        editRecitalsWindow = new EditRecitalsWindow(messageHelper, eventBus, recitalsId, recitals, cfgHelper, securityContext.getUser());
         UI.getCurrent().addWindow(editRecitalsWindow);
         editRecitalsWindow.center();
         editRecitalsWindow.focus();
@@ -231,8 +219,8 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     
     @Override
     public void showMetadataEditWindow(MetaDataVO metaDataVO) {
-        Validate.notNull(docName);
-        EditMetaDataWindow editMetaDataWindow = new EditMetaDataWindow(messageHelper, eventBus, metaDataVO);
+        Validate.notNull(docTitle);
+        EditMetaDataWindow editMetaDataWindow = new EditMetaDataWindow(messageHelper, langHelper, eventBus, metaDataVO);
 
         UI.getCurrent().addWindow(editMetaDataWindow);
         editMetaDataWindow.center();
@@ -251,8 +239,8 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
 
     @Override
     public void showDownloadWindow(final LeosDocument document, String msgKey) {
-
-        DownloadWindow downloadWindow = new DownloadWindow(messageHelper, eventBus, document.getName(), document.getContentStream(), msgKey);
+        
+        DownloadWindow downloadWindow = new DownloadWindow(messageHelper, eventBus, document.getTitle(), document.getContentStream(), msgKey);
         downloadWindow.addCloseListener(new Window.CloseListener() {
             @Override
             public void windowClose(Window.CloseEvent e) {
@@ -343,30 +331,32 @@ public class DocumentViewImpl extends LeosScreen implements DocumentView {
     }
 
     private void showTrayNotfnForLockUpdate(LockActionInfo lockActionInfo){
-
         if(! VaadinSession.getCurrent().getSession().getId().equals(lockActionInfo.getLock().getSessionId())){
-            LockData updatedLock=lockActionInfo.getLock();
-            String messageHeading=messageHelper.getMessage( "document.message.tray.heading");
-            String message=null;
-
-            switch (lockActionInfo.getLock().getLockLevel()) {
-                case READ_LOCK:
-                    message = messageHelper.getMessage( "document.locked.read."+lockActionInfo.getOperation().getValue(), updatedLock.getUserName(), updatedLock.getUserLoginName());
-                    break;
-                case DOCUMENT_LOCK:
-                    message = messageHelper.getMessage( "document.locked."+ lockActionInfo.getOperation().getValue(), updatedLock.getUserName(), updatedLock.getUserLoginName());
-                    break;
-                case ELEMENT_LOCK:
-                    message = messageHelper.getMessage( "document.locked.article."+ lockActionInfo.getOperation().getValue(), updatedLock.getUserName(), updatedLock.getUserLoginName(), updatedLock.getElementId());
-                    break;
-            }
-
-            Notification notfn= new Notification(messageHeading, message, Type.TRAY_NOTIFICATION);
-            notfn.setPosition(Position.BOTTOM_RIGHT);
-            notfn.setDelayMsec(3000);
-            notfn.show(Page.getCurrent());
+            LockNotificationManager.notifyUser(messageHelper,lockActionInfo);
         }
     }
+
+    @Override
+    public void setCrossReferenceToc(List<TableOfContentItemVO> tocItemList, List<String> ancestorsIds, String windowName) {
+        if (editArticleWindow != null && editArticleWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editArticleWindow.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+        } else if (editCitationWindow != null && editCitationWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editCitationWindow.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+        } else if (editRecitalsWindow != null && editRecitalsWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editRecitalsWindow.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+        }
+    }
+    
+    @Override
+    public void setElementContent(String elementContent, String windowName) {
+        if(editArticleWindow != null && editArticleWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editArticleWindow.setElementContent(elementContent);
+        } else if(editCitationWindow != null && editCitationWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editCitationWindow.setElementContent(elementContent);
+        } else if(editRecitalsWindow != null && editRecitalsWindow.getWindowName().equalsIgnoreCase(windowName)) {
+            editRecitalsWindow.setElementContent(elementContent);
+        } 
+    }  
 
 }
 

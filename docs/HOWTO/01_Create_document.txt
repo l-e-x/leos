@@ -1,0 +1,32 @@
+                        CREATE A DOCUMENT - HOWTO
+--------------------------------------------------------------------------------
+
+1.  In the repository browser, click on the button 'Create document' on the top 
+    right hand side of the view. 
+   
+2.  A dialog box titled 'Create new legislative document - Template
+    Selection' will appear. Its purpose is to select a template for the new 
+    document and provide some information about document like document name etc.
+   
+3.  Different Templates are available in the tree format. There are various 
+    controls available to browse templates
+    a) On top left corner, a button is provided to quickly expand the template 
+    tree.
+    b) By clicking on arrow buttons, you can selectively browse the tree.
+    c) A input box with title 'Type' is available to filter templates by name.
+
+4.  Select the desired template to be used for creating the document. Only few 
+    templates are available for selection in prototype. After selection, a brief
+    description of the selected template is displayed at the bottom of the tree 
+    and the 'Language' drop-down is activated to select the available language 
+    of the template.
+   
+5.  Clicking on 'Next' will navigate to 'Document metadata' screen. It 
+    consist of pre-populated input fields with the data based on the selected 
+    template. The input field 'Document title' is available for editing to 
+    provide the title of the new document. The title has to be a unique name 
+    else document will not be created.
+   
+6.  Click 'Finish' to create a document. The dialog box will be closed and a new
+    document will be created. This new document will be available in repository
+    browser.     

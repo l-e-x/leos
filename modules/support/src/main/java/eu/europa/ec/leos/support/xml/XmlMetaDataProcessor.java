@@ -15,12 +15,19 @@ package eu.europa.ec.leos.support.xml;
 
 import eu.europa.ec.leos.vo.MetaDataVO;
 
-import javax.xml.stream.XMLStreamException;
-
 public interface XmlMetaDataProcessor {
-
-    public String createXmlForProprietary(MetaDataVO metaDataVO) throws XMLStreamException;
-
-    public MetaDataVO createMetaDataVOFromXml(String xml);
+    
+    //default values
+    public static final String DEFAULT_LANG_ID = "frbrexpression__frbrlanguage_1";
+    public static final String DEFAULT_DOC_PURPOSE_ID = "proprietary__docpurpose";
+    public static final String DEFAULT_DOC_TEMPLATE_ID = "proprietary__template";
+    public static final String DEFAULT_DOC_STAGE_ID = "proprietary__docstage";
+    public static final String DEFAULT_DOC_TYPE_ID = "proprietary__doctype";
+    public static final String DEFAULT_SOURCE = "leos";
+    
+    public String toXML(MetaDataVO metaDataVO);
+    public String toXML(MetaDataVO metaDataVO, String xmlString);
+    
+    public MetaDataVO fromXML(String xml);
 
 }

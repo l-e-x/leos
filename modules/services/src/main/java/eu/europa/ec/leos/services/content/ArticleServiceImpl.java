@@ -16,7 +16,6 @@ package eu.europa.ec.leos.services.content;
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.support.xml.XmlHelper;
-import eu.europa.ec.leos.support.xml.XmlMetaDataProcessor;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,9 +31,6 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Autowired
     private XmlContentProcessor xmlContentProcessor;
-
-    @Autowired
-    private XmlMetaDataProcessor xmlMetaDataProcessor;
 
     @Override
     public String getArticleTemplate() {

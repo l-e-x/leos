@@ -13,44 +13,88 @@
  */
 package eu.europa.ec.leos.web.model;
 
-import java.io.Serializable;
-
-import org.json.JSONObject;
-import org.json.JSONString;
-
 import eu.europa.ec.leos.vo.lock.LockData;
 
-public class LockVO  extends JSONObject implements JSONString, Serializable{
+import java.io.Serializable;
+import java.util.Date;
+
+public class LockVO implements Serializable{
 
     private static final long serialVersionUID = 2208198405431L;
-    
-    private LockData lockData;
 
+    private String lockId;
+    private String  userLoginName;
+    private String lockLevel;
+    private String  userName;
+    private String sessionId;
+    private String elementId;
+    private Date lockingAcquiredOn;
+
+    public LockVO(){//mandatory constructor
+
+    }
     public LockVO(LockData lockData){
-        this.lockData=lockData;
+        lockId = lockData.getLockId();
+        userLoginName= lockData.getUserLoginName();
+        lockLevel= lockData.getLockLevel().toString();
+        userName=lockData.getUserName();
+        sessionId= lockData.getSessionId();
+        elementId= lockData.getElementId();
+        lockingAcquiredOn = new Date(lockData.getLockingAcquiredOn());
     }
 
-    public LockData getLockData() {
-        return lockData;
+    public String getLockId() {
+        return lockId;
     }
 
-    //this method is being used when serialized lockInfo is sent to client side.
-    @Override
-    public String toJSONString() {
-        return String.format("{\"lockId\":\"%s\"," +
-                "\"userLoginName\":\"%s\"," +
-                "\"lockLevel\":\"%s\"," +
-                "\"userName\":\"%s\"," +
-                "\"sessionId\":\"%s\"," +
-                "\"elementId\":\"%s\"," +
-                "\"lockingAcquiredOn\":%d }", 
-                lockData.getLockId(),
-                lockData.getUserLoginName(),
-                lockData.getLockLevel().toString(),
-                lockData.getUserName(),
-                lockData.getSessionId(),
-                lockData.getElementId(),
-                lockData.getLockingAcquiredOn()
-                );
+    public String getUserLoginName() {
+        return userLoginName;
+    }
+
+    public String getLockLevel() {
+        return lockLevel;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public String getElementId() {
+        return elementId;
+    }
+
+    public Date getLockingAcquiredOn() {
+        return lockingAcquiredOn;
+    }
+
+    public void setLockingAcquiredOn(Date lockingAcquiredOn) {
+        this.lockingAcquiredOn = lockingAcquiredOn;
+    }
+    public void setLockId(String lockId) {
+        this.lockId = lockId;
+    }
+
+    public void setLockLevel(String lockLevel) {
+        this.lockLevel = lockLevel;
+    }
+
+    public void setUserLoginName(String userLoginName) {
+        this.userLoginName = userLoginName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public void setElementId(String elementId) {
+        this.elementId = elementId;
     }
 }

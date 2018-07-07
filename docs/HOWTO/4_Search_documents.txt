@@ -1,0 +1,9 @@
+                        SEARCH DOCUMENTS - HOWTO
+--------------------------------------------------------------------------------
+
+1.  On top of the repository browser, a search field is provided to search 
+    documents from list of available documents.
+
+2.  To search, input full or part of the document title and if found, the list 
+    of documents will be displayed matching the input text.
+   

@@ -18,19 +18,26 @@ import java.util.Arrays;
 public class NotificationEvent {
 
     public static enum Type {
-        INFO,
-        WARNING,
-        ERROR
+        INFO, WARNING, ERROR, TRAY, DISCLAIMER
     }
 
     private final String messageKey;
     private final Type type;
     private final Object[] args;
+    private String captionKey;
 
     public NotificationEvent(Type type, String messageKey, Object... args) {
         this.messageKey = messageKey;
         this.type = type;
         this.args = args;
+    }
+
+    public void setCaptionKey(String captionKey) {
+        this.captionKey=captionKey;
+    }
+
+    public String getCaptionKey() {
+        return captionKey;
     }
 
     public String getMessageKey() {

@@ -13,30 +13,15 @@
  */
 package eu.europa.ec.leos.web.ui.component.toc;
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.JavaScript;
 import com.vaadin.data.Container;
 import com.vaadin.data.Item;
 import com.vaadin.data.Property;
-import com.vaadin.server.ThemeResource;
 import com.vaadin.server.VaadinSession;
 import com.vaadin.shared.ui.label.ContentMode;
-import com.vaadin.ui.AbstractSelect;
-import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomComponent;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.Panel;
-import com.vaadin.ui.Tree;
-import com.vaadin.ui.VerticalLayout;
-
+import com.vaadin.ui.*;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockData;
 import eu.europa.ec.leos.vo.lock.LockLevel;
@@ -44,11 +29,16 @@ import eu.europa.ec.leos.web.event.component.EditTocRequestEvent;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.component.TocPositionEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
+import eu.europa.ec.leos.web.model.ViewSettings;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
 import eu.europa.ec.leos.web.ui.screen.document.TocPosition;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.vaadin.teemu.VaadinIcons;
 
 @JavaScript({"vaadin://js/web/util/navigate.js" + LeosCacheToken.TOKEN})
 public class TableOfContentComponent extends CustomComponent {
@@ -63,15 +53,17 @@ public class TableOfContentComponent extends CustomComponent {
     private Tree tocTree;
     private Button tocExpandCollapseButton;
     private Button tocEditButton;
-
+    private ViewSettings viewSettings;
+    
     public enum TreeAction {
         EXPAND,
         COLLAPSE
     }
 
-    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus) {
+    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus, ViewSettings viewSettings) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
+        this.viewSettings=viewSettings;
         buildToc();
     }
 
@@ -122,10 +114,11 @@ public class TableOfContentComponent extends CustomComponent {
         tocToolsLayout.setComponentAlignment(tocExpandCollapseButton, Alignment.MIDDLE_LEFT);
 
         // create toc edit button
-        tocEditButton = tocEditButton();
-        tocToolsLayout.addComponent(tocEditButton);
-        tocToolsLayout.setComponentAlignment(tocEditButton, Alignment.MIDDLE_LEFT);
-
+        if(viewSettings.isTocEditEnabled()){
+            tocEditButton = tocEditButton();
+            tocToolsLayout.addComponent(tocEditButton);
+            tocToolsLayout.setComponentAlignment(tocEditButton, Alignment.MIDDLE_LEFT);
+        }
         // spacer label will use all available space
         final Label spacerLabel = new Label("&nbsp;", ContentMode.HTML);
         tocToolsLayout.addComponent(spacerLabel);
@@ -145,7 +138,7 @@ public class TableOfContentComponent extends CustomComponent {
                     tocToolsLayout.addComponentAsFirst(tocSlideButton);
                     tocToolsLayout.setComponentAlignment(tocSlideButton, Alignment.MIDDLE_LEFT);
                 } else {
-                    tocToolsLayout.addComponent(tocSlideButton, 5);
+                    tocToolsLayout.addComponent(tocSlideButton);
                     tocToolsLayout.setComponentAlignment(tocSlideButton, Alignment.MIDDLE_RIGHT);
                 }
             }
@@ -157,7 +150,7 @@ public class TableOfContentComponent extends CustomComponent {
 
     // Toc slider button for automatic expand/collapse
     private Button tocSlideButton() {
-        ThemeResource tocSliderIcon = LeosTheme.CHEVRON_RIGHT_ICON_16;
+        VaadinIcons tocSliderIcon = VaadinIcons.CARET_SQUARE_RIGHT_O;
         // create toc collapse button
         final Button tocSliderButton = new Button();
         tocSliderButton.setIcon(tocSliderIcon);
@@ -176,10 +169,10 @@ public class TableOfContentComponent extends CustomComponent {
             @Subscribe
             public void updateTocSliderIcon(TocPositionEvent event) {
                 if (event.getTocPosition().equals(TocPosition.RIGHT)) {
-                    tocSliderButton.setIcon(LeosTheme.CHEVRON_RIGHT_ICON_16);
+                    tocSliderButton.setIcon(VaadinIcons.CARET_SQUARE_RIGHT_O);
                     tocSliderButton.setData(SplitPositionEvent.MoveDirection.RIGHT);
                 } else {
-                    tocSliderButton.setIcon(LeosTheme.CHEVRON_LEFT_ICON_16);
+                    tocSliderButton.setIcon(VaadinIcons.CARET_SQUARE_LEFT_O);
                     tocSliderButton.setData(SplitPositionEvent.MoveDirection.LEFT);
                 }
             }
@@ -195,6 +188,7 @@ public class TableOfContentComponent extends CustomComponent {
         tocTreeButton.setDescription(messageHelper.getMessage("toc.expand.button.description"));
         tocTreeButton.setIcon(LeosTheme.LEOS_TOC_TREE_ICON_16);
         tocTreeButton.setStyleName("link");
+        tocTreeButton.addStyleName("leos-toolbar-button");
         tocTreeButton.addClickListener(new Button.ClickListener() {
             private static final long serialVersionUID = -1860677385826130362L;
 
@@ -232,6 +226,7 @@ public class TableOfContentComponent extends CustomComponent {
         tocEditButton.setDescription(messageHelper.getMessage("toc.edit.button.description"));
         tocEditButton.setIcon(LeosTheme.LEOS_TOC_EDIT_ICON_16);
         tocEditButton.setStyleName("link");
+        tocEditButton.addStyleName("leos-toolbar-button");
         tocEditButton.addClickListener(new Button.ClickListener() {
 
             private static final long serialVersionUID = -5569672970887757136L;
@@ -247,9 +242,8 @@ public class TableOfContentComponent extends CustomComponent {
     // Toc tree Refresh Button
     private Button tocRefreshButton() {
         final Button tocRefreshButton = new Button();
-        tocRefreshButton.setIcon(LeosTheme.LEOS_REFRESH_ICON_16);
+        tocRefreshButton.setIcon(VaadinIcons.REFRESH);
         tocRefreshButton.setStyleName("link");
-        tocRefreshButton.addStyleName("leos-toolbar-button");
         tocRefreshButton.addStyleName("leos-dimmed-button");
         tocRefreshButton.addClickListener(new Button.ClickListener() {
             private static final long serialVersionUID = -6447526561147453574L;
@@ -308,7 +302,7 @@ public class TableOfContentComponent extends CustomComponent {
 
         // wrap tree in panel to provide scroll bars
         final Panel treePanel = new Panel(tocTree);
-        treePanel.setStyleName("light");
+        treePanel.setStyleName("leos-viewdoc-toctree-panel");
         treePanel.setSizeFull();
 
         return treePanel;
@@ -319,6 +313,10 @@ public class TableOfContentComponent extends CustomComponent {
     }
     
     public void updateLocks(LockActionInfo lockActionInfo) {
+        if(!viewSettings.isTocEditEnabled()){
+                return;
+        }
+        
         LockData lock= lockActionInfo.getLock();
         String currentSessionId= VaadinSession.getCurrent().getSession().getId();
         boolean tocEnabaled=true;

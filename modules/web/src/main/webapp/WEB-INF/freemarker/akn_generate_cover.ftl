@@ -2,9 +2,7 @@
       strict_syntax=true
       strip_whitespace=true
       strip_text=true
-      ns_prefixes={"D":"http://www.akomantoso.org/2.0",
-                   "leos":"urn:eu:europa:ec:leos"}>
-<#--
+      ns_prefixes={"D":"http://www.akomantoso.org/2.0", "leos":"urn:eu:europa:ec:leos"}>
 
     Copyright 2015 European Commission
 
@@ -28,7 +26,7 @@
 <#macro coverPage>
 <span id="leos-coverpage" class="leos-coverpage">
     <span id="leos-cover-logo" class="leos-cover-logo">
-        <img src="${webContextPath}/VAADIN/themes/leos/img/logo-ce-horizontal-en.png" width="326" height="86" alt="European Commission ${webContextPath}" title="European Commission"/>
+        <img src="${webContextPath}/static/leos/img/logo-ce-horizontal-en.png" width="326" height="86" alt="European Commission" title="European Commission"/>
     </span>
     <span id="leos-cover-cote" class="leos-cover-cote"> Brussels, 
     		<span class="leos-cover-placeholder">XXX</span><br/>

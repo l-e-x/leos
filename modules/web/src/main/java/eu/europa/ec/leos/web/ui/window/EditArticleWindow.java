@@ -13,6 +13,8 @@
  */
 package eu.europa.ec.leos.web.ui.window;
 
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,6 +22,10 @@ import com.google.common.eventbus.EventBus;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
 
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.web.event.view.document.LoadCrossReferenceTocEvent;
+import eu.europa.ec.leos.web.event.view.document.LoadElementContentEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
 import eu.europa.ec.leos.web.event.view.document.SaveArticleRequestEvent;
 import eu.europa.ec.leos.web.event.window.CloseArticleEditorEvent;
@@ -33,64 +39,94 @@ public class EditArticleWindow extends AbstractEditChangeMonitorWindow {
 
     private CKEditorComponent ckEditor;
     private String articleId;
-
+    private static final String WINDOW_NAME = "editArticleWindow";
     private static final String EDITOR_NAME = "leosAknArticleEditor";
     private static final String PROFILE_ID = "aknArticle";
-    
-    public EditArticleWindow(MessageHelper messageHelper, final EventBus eventBus, final String articleId, String articleContentData, ConfigurationHelper cfgHelper) {
+
+    public EditArticleWindow(MessageHelper messageHelper, final EventBus eventBus, final String articleId, String articleContentData,
+            ConfigurationHelper cfgHelper, User user) {
         super(messageHelper, eventBus);
         setWidth(880, Unit.PIXELS);
         setHeight(710, Unit.PIXELS);
         setCaption(messageHelper.getMessage("edit.article.window.title"));
         addButtonOnLeft(buildDapButton(cfgHelper.getProperty("leos.dap.edit.article.url")));
-        
-        this.articleId=articleId;
-        ckEditor=new CKEditorComponent(PROFILE_ID, EDITOR_NAME, articleContentData);
+
+        this.articleId = articleId;
+        ckEditor = new CKEditorComponent(PROFILE_ID, EDITOR_NAME, articleContentData, user, messageHelper);
         setBodyComponent(ckEditor);
         addCKEditorListeners();
     }
 
     @Override
     protected void onSave() {
-        //on click of save, new content needs to be available to perform save . 
-        //But no interaction with editor is possible till vaadin save is complete, So calling editor in Async mode.
+        // on click of save, new content needs to be available to perform save .
+        // But no interaction with editor is possible till vaadin save is complete, So calling editor in Async mode.
         ckEditor.actionDone(CKEditorComponent.SAVE);
     }
 
     @Override
     public void close() {
         ckEditor.actionDone(CKEditorComponent.CLOSE);
-        
     }
-    
+
     public void updateContent(String newContent) {
         ckEditor.setContent(newContent);
     }
+
+    public void setCrossReferenceTableOfContent(List<TableOfContentItemVO> tocItemList, List<String> ancestorsIds) {
+        ckEditor.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+    }
     
-    private void addCKEditorListeners(){
-        
+    
+    public void setElementContent(String elementContent) {
+    	ckEditor.setElementContent(elementContent);
+    }
+
+    private void addCKEditorListeners() {
+
         ckEditor.addChangeListener(new ValueChangeListener() {
             @Override
             public void valueChange(ValueChangeEvent event) {
-                enableSave();                
+                enableSave();
             }
         });
-        
+
         ckEditor.addSaveListener(new CKEditorComponent.SaveListener() {
             @Override
             public void saveClick(String content) {
                 eventBus.post(new SaveArticleRequestEvent(articleId, content));
                 EditArticleWindow.super.onSave();
             }
-        });                       
-         
+        });
+
         ckEditor.addCloseListener(new CKEditorComponent.CloseListener() {
             @Override
             public void close() {
+                EditArticleWindow.super.close();
                 eventBus.post(new CloseArticleEditorEvent(articleId));
                 eventBus.post(new RefreshDocumentEvent());
-                EditArticleWindow.super.close();
             }
         });
+
+        ckEditor.addCrossReferenceTocListener(new CKEditorComponent.CrossReferenceTocListener() {
+            @Override
+            public void loadCrossReferenceToc(String selectedNodeId) {
+                // TODO: Refactor and remove the WINDOW NAME
+                eventBus.post(new LoadCrossReferenceTocEvent(WINDOW_NAME, selectedNodeId));
+            }
+        });
+        
+		ckEditor.addLoadElementContentListener(new CKEditorComponent.LoadElementContentListener() {
+			@Override
+			public void loadElementContent(String elementId, String elementType) {
+				eventBus.post(new LoadElementContentEvent(WINDOW_NAME, elementId, elementType));
+			}
+		});
+        
+    }
+
+    // TODO: Refactor and remove
+    public String getWindowName() {
+        return WINDOW_NAME;
     }
 }

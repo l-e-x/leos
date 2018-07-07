@@ -43,6 +43,7 @@ public class Footer extends CustomComponent {
         // create footer layout
         final VerticalLayout footerLayout = new VerticalLayout();
         footerLayout.addStyleName("leos-footer-layout");
+        footerLayout.setHeight("20px");
 
         // set footer layout as composition root
         setCompositionRoot(footerLayout);

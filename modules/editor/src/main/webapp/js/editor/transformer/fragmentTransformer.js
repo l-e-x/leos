@@ -44,9 +44,10 @@ define(function fragmentTransformerModule(require) {
                          * 
                          */
                         getTransformedElement : function getTransformedElement(params) {
-                            this._validateRequired(["fragment","transformationConfigResolver","direction"], params);
+                            this._validateRequired([ "fragment", "transformationConfigResolver", "direction" ], params);
                             this._init(params);
                             var product = null;
+                            var outerLevelTransformationContext = this._.fragment.transformationContext;
                             if (this._.fragmentConfig) {
                                 this._.transformationConfigResolver = params.transformationConfigResolver;
                                 var binded_createProductsForElement = LODASH.bind(this._createProductsForElement, this);
@@ -65,13 +66,31 @@ define(function fragmentTransformerModule(require) {
                                 }
 
                             }
+
+                            if (product && this._.fragmentConfig.transformer) {
+                                this._.product = product;
+                                var currentTransformer = this._.fragmentConfig.transformer[this._.direction].action.bind(this);
+                                var that = this;
+                                this._.fragment.forEach(function(element) {
+                                    if (!that._isTopLevelElement(element)) {
+                                        element.transformationContext = that._getTransformationContext(element);
+                                    }
+                                    currentTransformer(element);
+                                    if (element.transformationContext.skipChildren) {
+                                        // return false so that forEach iterator won't iterate over its children
+                                        return false;
+                                    }
+                                });
+
+                            }
+
+                            this._.fragment.transformationContext = outerLevelTransformationContext;
                             return product;
                         },
-                        _init: function _init(params) {
+                        _init : function _init(params) {
                             this._ = {};
                             this._.direction = params.direction;
                             this._.fragment = params.fragment;
-                            params.fragment.isTopFragmentElement = true;
                             this._.orderOfChildrensForParent = {};
                             this._.fragmentConfig = params.transformationConfigResolver.getConfig(params.fragment, this._.direction);
                         },
@@ -88,9 +107,15 @@ define(function fragmentTransformerModule(require) {
                                 var topProductPath = LODASH.reduce(paths, function getShorterStringForTwo(a, b) {
                                     return a.length < b.length ? a : b;
                                 });
-                                product = pathToProduct[topProductPath].product;
+                                var pathToProductConfig = this._pullProductFromPathToProduct({
+                                    element : element,
+                                    path : topProductPath
+                                });
+                                if (pathToProductConfig) {
+                                    product = pathToProductConfig.product;
+                                }
+                                // pathToProduct[topProductPath].product;
                             }
-
                             return product;
                         },
 
@@ -101,40 +126,65 @@ define(function fragmentTransformerModule(require) {
                          * can be produced more than one products @param element - element being processed
                          */
                         _createProductsForElement : function _createProductsForElement(element) {
-                            var elementName = this._getElementName(element);
-                            var elementPath = this._getElementPath(element);
-                            var elementConfigs = this._getElementConfigsForPath(elementPath);
-                            if (elementConfigs.length === 0) {
-                                // not able to transform element according to current config
-                                if (elementName === "text" && element.value.trim() === "") {
-                                    // white spaces detected, skipping them
-                                    return false;
-                                }
-                                var globalConfig = this._.transformationConfigResolver.getConfig(element, this._.direction);
-                                if (!globalConfig) {
-                                    // not able to transform element according to global configs, skipping and warning
-                                    var warningMessage = [ "Element: ", this._getElementAsString(element), " with path: ", elementPath,
-                                            " is not recognized under fragment: ", this._getElementAsString(this._.fragment), " and is skipped." ];
-                                    LOG.warn(warningMessage.join(""));
-                                    return false;
-                                }
-                            }
-                            var transformationContext = {
-                                elementName : elementName,
-                                elementPath : elementPath,
-                                elementConfigs : elementConfigs,
-                                pathToProduct : {}
-
-                            };
+                            var transformationContext = this._getTransformationContext(element);
                             element.transformationContext = transformationContext;
-                            this._createProductsForElementWithContext(element);
-                            if (element && element.transformationContext && element.transformationContext.skipChildren) {
+                            if (transformationContext.elementConfigs.length === 0) {
+                                if (this._.fragmentConfig.transformer) {
+                                    return false;
+                                }
+                                this._handleNonExistedElementConfig(element);
+                            } else {
+                                this._createProductsForElementWithContext(element);
+                            }
+
+                            if (element.transformationContext.skipChildren) {
                                 // return false so that forEach iterator won't iterate over its children
                                 return false;
                             }
                             // return true so that forEach iterator iterate over its children
                             return true;
 
+                        },
+                        _handleNonExistedElementConfig : function _handleNonExistedElementConfig(element) {
+                            // if no existed element config set flag skip children to true
+                            element.transformationContext.skipChildren = true;
+                            // not able to transform element according to current config
+                            if (this._isWhitespaceElement(element)) {
+                                // white spaces detected, skipping them
+                                return;
+                            } else {
+                                var globalConfig = this._.transformationConfigResolver.getConfig(element, this._.direction);
+                                if (!globalConfig) {
+                                    // not able to transform element according to global configs, skipping and warning
+                                    var warningMessage = [ "Element: ", this._getElementAsString(element), " with path: ",
+                                            element.transformationContext.elementPath, " is not recognized under fragment: ",
+                                            this._getElementAsString(this._.fragment), " and is skipped." ];
+                                    LOG.warn(warningMessage.join(""));
+                                } else {
+                                    var product = this._getNestedProduct(element);
+                                    if (product) {
+                                        var productParent = this._getTheMostNestedProductForElementParent(element);
+                                        if (productParent) {
+                                            productParent.add(product);
+                                        }
+
+                                    }
+                                }
+                            }
+                        },
+                        _isWhitespaceElement : function _isWhitespaceElement(element) {
+                            return element.transformationContext.elementName === "text" && element.value.trim() === "";
+                        },
+                        _getTransformationContext : function _getTransformationContext(element) {
+                            var elementName = this._getElementName(element);
+                            var elementPath = this._getElementPath(element);
+                            var transformationContext = {
+                                elementName : elementName,
+                                elementPath : elementPath,
+                                pathToProduct : {}
+                            };
+                            transformationContext.elementConfigs = this._getElementConfigsForPath(elementPath);
+                            return transformationContext;
                         },
                         /*
                          * Utility method to get simplified string representation of the element
@@ -162,12 +212,9 @@ define(function fragmentTransformerModule(require) {
                                 for (var ii = 0, length = elementConfigs.length; ii < length; ii++) {
                                     var elementConfig = elementConfigs[ii];
                                     product = this._createProduct(element, elementConfig);
-                                    this._moveValueForTextNode(element, elementConfig, product);
+
                                     this._moveAttrs(element, elementConfig, product);
                                 }
-                                // no transformations config for element, performing nested transformation
-                            } else {
-                                this._createNestedProduct(element);
                             }
 
                         },
@@ -202,12 +249,108 @@ define(function fragmentTransformerModule(require) {
                                 product = this._crateElementForName(elementConfig.to);
                                 this._setParentChildRelationForProduct(element, elementConfig, product);
                             }
-                            element.transformationContext.pathToProduct[elementConfig.toPath] = {};
-                            element.transformationContext.pathToProduct[elementConfig.toPath].product = product;
-                            element.transformationContext.pathToProduct[elementConfig.toPath].config = elementConfig;
+                            this._pushProductToPathAndProductHash({
+                                element : element,
+                                product : product,
+                                elementConfig : elementConfig
+                            });
+                            this._moveValueForTextNode(element, elementConfig, product);
                             return product;
                         },
-                        _createNestedProduct : function _createNestedProduct(element) {
+                        mapToProducts : function mapToProducts(element, elementConfigs) {
+                            element.transformationContext = element.transformationContext || this._getTransformationContext(element);
+                            element.transformationContext.elementConfigs = this._normalizeElementConfigs(elementConfigs);
+                            this._createProductsForElementWithContext(element);
+                        },
+                        _pushProductToPathAndProductHash : function _pushProductToPathAndProductHash(pathToProductConfig) {
+                            var pathToProduct = pathToProductConfig.element.transformationContext.pathToProduct;
+                            if (!pathToProduct[pathToProductConfig.elementConfig.toPath]) {
+                                pathToProduct[pathToProductConfig.elementConfig.toPath] = [];
+                            }
+                            pathToProduct[pathToProductConfig.elementConfig.toPath].push({
+                                product : pathToProductConfig.product,
+                                config : pathToProductConfig.elementConfig
+                            });
+                        },
+                        _pullProductFromPathToProduct : function _pullProductFromPathToProduct(pathToProductConfig) {
+                            var productsForPaths = pathToProductConfig.element.transformationContext.pathToProduct[pathToProductConfig.path];
+                            var recentProductForPath;
+                            if (productsForPaths) {
+                                recentProductForPath = productsForPaths[productsForPaths.length - 1];
+                            }
+                            return recentProductForPath;
+                        },
+
+                        _appendChildToProduct : function _appendChildToProduct(element, elementConfig) {
+                            if (!elementConfig.toChildProduct && !elementConfig.toChild) {
+                                throw new Error("At least one of the following properties: 'toChildProduct' or 'toChild' needs to be provided.")
+                            }
+                            if (!elementConfig.toChildProduct) {
+                                elementConfig.toChildProduct = this._crateElementForName(elementConfig.toChild);
+                                if (elementConfig.toChild === "text") {
+                                    elementConfig.toChildProduct.value = elementConfig.toChildTextValue;
+                                }
+                            }
+
+                            var parentProduct = this._getProductForPath(elementConfig.toPath, element);
+                            if (!parentProduct) {
+                                LOG.error("Element with name: ", elementConfig.toChild, " created. But can not be attached to parent.",
+                                        "Parent element with path: ", elementConfig.toPath, " does not exists.");
+                            } else {
+                                parentProduct.add(elementConfig.toChildProduct);
+                                this._pushProductToPathAndProductHash({
+                                    element : element,
+                                    product : elementConfig.toChildProduct,
+                                    elementConfig : {
+                                        toPath : (elementConfig.toPath + "/" + elementConfig.toChild)
+                                    }
+                                });
+                                this._moveAttrs(element, elementConfig, elementConfig.toChildProduct);
+                            }
+
+                        },
+                        mapToChildProducts : function mapToChildProducts(element, elementConfigs) {
+                            element.transformationContext = element.transformationContext || this._getTransformationContext(element);
+                            element.transformationContext.elementConfigs = this._normalizeElementConfigs(elementConfigs);
+                            var that = this;
+                            element.transformationContext.elementConfigs.forEach(function(config) {
+                                that._appendChildToProduct(element, config);
+                            })
+                        },
+                        mapToNestedChildProduct : function mapToNestedChildProduct(element, elementConfig) {
+                            element.transformationContext = element.transformationContext || this._getTransformationContext(element);
+                            var nestedProduct = this._getNestedProduct(element);
+                            if (nestedProduct) {
+                                this._appendChildToProduct(element.parent, {
+                                    toPath : elementConfig.toPath,
+                                    toChildProduct : nestedProduct
+                                });
+                            }
+                        },
+                        _normalizeElementConfigs : function _normalizeElementConfigs(elementConfigs) {
+                            var configs = elementConfigs.constructor !== Array ? [ elementConfigs ] : elementConfigs;
+                            configs.forEach(function(config) {
+                                if (!config.toPath) {
+                                    throw new Error("Missing required 'toPath' attribute.");
+                                } else {
+                                    if (!config.to) {
+                                        var pathParts = config.toPath.split("/");
+                                        if (!config.to) {
+                                            config.to = pathParts[pathParts.length - 1];
+                                        }
+
+                                        if (!config.toParentPath) {
+                                            var parentPathLength = (pathParts.length > 1) ? pathParts.length - 1 : 1
+                                            config.toParentPath = pathParts.slice(0, parentPathLength).join("/");
+                                        }
+                                    }
+                                }
+
+                            })
+                            return configs;
+
+                        },
+                        _getNestedProduct : function _getNestedProduct(element) {
                             if (element.isNested === true) {
                                 // don't do nested transformation when already tried one
                                 return;
@@ -220,18 +363,17 @@ define(function fragmentTransformerModule(require) {
                                 direction : this._.direction,
                                 transformationConfigResolver : this._.transformationConfigResolver
                             });
-                            if (product) {
-                                var productParent = this._getTheMostNestedProductForElementParent(element);
-                                if (productParent) {
-                                    productParent.add(product);
-                                }
-                                element.transformationContext.skipChildren = true;
-                            }
+                            element.transformationContext.skipChildren = true;
+                            return product;
                         },
                         _getTheMostNestedProductForElementParent : function _getTheMostNestedProductForElementParent(element) {
                             var pathToProduct = element.parent.transformationContext.pathToProduct;
+                            var that = this;
                             var mostNestedProductPath = LODASH.max(LODASH.keys(pathToProduct), function(productPath) {
-                                var configElementWithProduct = pathToProduct[productPath];
+                                var configElementWithProduct = that._pullProductFromPathToProduct({
+                                    element : element.parent,
+                                    path : productPath
+                                });
                                 if (productPath.match(/text$/)) {
                                     return -1;
                                 }
@@ -241,7 +383,11 @@ define(function fragmentTransformerModule(require) {
 
                                 return productPath.length;
                             });
-                            var mostNestedProduct = element.parent.transformationContext.pathToProduct[mostNestedProductPath].product;
+                            var mostNestedProduct = this._pullProductFromPathToProduct({
+                                element : element.parent,
+                                path : mostNestedProductPath
+                            }).product;
+                            ;
                             return mostNestedProduct;
                         },
 
@@ -258,13 +404,13 @@ define(function fragmentTransformerModule(require) {
                                     parentProduct.add(product);
                                 } else {
                                     var insertionIndex;
-                                    var configsForParentChildren=this._getChildrenOrderForParent(elementConfig.toParentPath);
+                                    var configsForParentChildren = this._getChildrenOrderForParent(elementConfig.toParentPath);
                                     parentProduct.children.forEach(function(element, index, array) {
                                         if (configsForParentChildren[product.name] < configsForParentChildren[element.name]) {
                                             insertionIndex = index;
                                             return;
                                         } else if (array.length - 1 === index) {
-                                                insertionIndex = index+1;
+                                            insertionIndex = index + 1;
                                         }
                                     });
                                     parentProduct.add(product, insertionIndex);
@@ -300,9 +446,9 @@ define(function fragmentTransformerModule(require) {
                          */
                         _moveValueForTextNode : function _moveValueForTextNode(element, elementConfig, product) {
                             // only execute if the element or product is text node
-                            if (elementConfig.to === "text" || elementConfig.from === "text") {
+                            if (elementConfig.to === "text" || element.transformationContext.elementName === "text") {
                                 var elementValue = null;
-                                if (elementConfig.from === "text") {
+                                if (element.transformationContext.elementName === "text") {
                                     elementValue = element.value;
                                 } else {
                                     elementValue = element.attributes[elementConfig.fromAttribute.toLowerCase()];
@@ -327,21 +473,22 @@ define(function fragmentTransformerModule(require) {
                             var product;
                             var currentElement = element;
                             do {
-                                productForPath = currentElement.transformationContext.pathToProduct[path];
+                                productForPath = this._pullProductFromPathToProduct({
+                                    element : currentElement,
+                                    path : path
+                                });
                                 if (productForPath) {
                                     product = productForPath.product;
                                     break;
                                 }
 
-                                if (currentElement.isTopFragmentElement) {
+                                if (this._isTopLevelElement(currentElement)) {
                                     break;
                                 }
 
                                 currentElement = currentElement.parent;
                             } while (currentElement && currentElement.transformationContext);
-
                             return product;
-
                         },
                         /*
                          * Creates the ckEditor element for given name @param name - element's name @return the ckEditor element
@@ -379,7 +526,7 @@ define(function fragmentTransformerModule(require) {
                             var currentElement = element;
                             do {
                                 partsOfFragmentPath.unshift(this._getElementName(element).toLowerCase());
-                                if (currentElement.isTopFragmentElement) {
+                                if (this._isTopLevelElement(currentElement)) {
                                     break;
                                 } else {
                                     currentElement = currentElement.parent;
@@ -389,7 +536,7 @@ define(function fragmentTransformerModule(require) {
                                     partsOfFragmentPath = currentElement.partsOfFragmentPath.concat(partsOfFragmentPath);
                                     break;
                                 }
-                            } while (!currentElement.isTopFragmentElement);
+                            } while (!this._isTopLevelElement(currentElement));
                             element.partsOfFragmentPath = partsOfFragmentPath;
                             return partsOfFragmentPath.join("/");
                         },
@@ -413,6 +560,9 @@ define(function fragmentTransformerModule(require) {
                                     throw new Error(errorMessage);
                                 }
                             });
+                        },
+                        _isTopLevelElement: function _isTopLevelElement(element) {
+                            return element === this._.fragment;
                         }
 
                     });

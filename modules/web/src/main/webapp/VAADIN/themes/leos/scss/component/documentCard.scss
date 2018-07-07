@@ -1,0 +1,204 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+$draft-color: #00b4f0;
+$draft-background-color: #ccf2ff;
+
+$edit-color: #ee7c08;
+$edit-background-color: #ffe7ce;
+
+$feedback-color: #40b527;
+$feedback-background-color: #deffd7;
+
+$button-color: #00b4f0;
+
+@mixin leosCard {
+
+    .leos-card-holder .v-table-row-odd {
+        background: white;
+    }
+
+    //.leos-card-holder .v-table-cell-content {
+    //    padding: 0px 2px;
+    //}
+
+    .leos-card {
+        box-sizing: border-box;
+        background: #fff;
+        border: 1px solid #eee;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 5px -9px rgba(0, 0, 0, 0.4);
+        transition: all 100ms;
+    }
+
+    .leos-card:hover .leos-card-footer {
+        opacity: 1;
+    }
+
+    .leos-card:hover {
+        -moz-transform: translateY(-3px);
+        -webkit-transform: translateY(-3px);
+        transform: translateY(-3px);
+    }
+
+    /*header color and background*/
+    .leos-card-header {
+        padding: 3px 10px;
+        font-weight: bold;
+    }
+
+    .draft .leos-card-header {
+        background: $draft-background-color;
+        color: $draft-color;
+    }
+
+    .feedback .leos-card-header {
+        background: $feedback-background-color;
+        color: $feedback-color;
+    }
+
+    .edit .leos-card-header {
+        background:$edit-background-color;
+        color: $edit-color;
+    }
+
+    .leos-card-footer {
+        position: absolute;
+        bottom:6px;
+        padding: 0 10px;
+        width: 100%;
+        //background: #f3f3f3;
+        //box-sizing: border-box;
+        opacity: 0;
+        font-size: 12px;
+    }
+
+    .leos-card .leos-open-button,
+    .leos-card .leos-open-button * {
+        display: inline-flex;
+        line-height: 1em;
+        letter-spacing: 0.1em;
+        text-align: left;
+        border-radius: 4px;
+        background: $button-color;
+        color: white;
+        margin: 2px 2px;
+    }
+
+    .leos-card .leos-card-actions {
+        font-weight: bold;
+        font-size: 12px;
+        line-height: 1em;
+        text-align: left;
+        color: $button-color;
+    }
+
+    .leos-card-details {
+        padding: 3px 10px;
+    }
+
+    /*for document Icon*/
+    .leos-card-icon .v-icon {
+        font-size: 50px;
+        line-height: 50px;
+    }
+
+    .edit .leos-card-icon {
+        color: $edit-color;
+    }
+
+    .feedback .leos-card-icon {
+        color: $feedback-color;
+    }
+
+    .draft .leos-card-icon {
+        color: $draft-color;
+    }
+
+    /* setting caption same line and in left */
+    .leos-card .v-caption-leos-caption-on-left {
+        float: left;
+        padding-right: 5px;
+        line-height: 12px;
+    }
+
+    .leos-card .v-caption-leos-caption-on-left +
+    .v-label-leos-caption-on-left {
+        color: #00b4f0;
+        font-weight: bold;
+        display: inline;
+    }
+
+    .leos-card-icon .v-icon {
+        font-size: 50px;
+        line-height: 70px;
+    }
+
+    /*shifting the lock button over image*/
+    .leos-lock-icon * {
+        margin-left: 18px;
+        margin-top: -20px;
+        font-size: 20px;
+    }
+
+    .hidden * {
+        display: none
+    }
+    .leos-contributors-panel {
+        .v-scrollable{
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 10px;
+            -webkit-box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+        }
+    }
+
+    .leos-contributor-list {
+        font-size: 12px;
+        .v-button {
+            height: 12px;
+            width: 12px;
+        }
+        .v-label{
+            padding-left: 4px;
+            color:black;
+        }
+    }
+
+    .add-contributor.v-button {
+        padding:0;
+        height:15px;
+    }
+
+    .v-button {
+        &.icon-red .v-icon {
+            color: #a31515;
+        }
+        &.icon-green .v-icon{
+            color:$G_GREEN_COLOR;
+        }
+    }
+}
+
+

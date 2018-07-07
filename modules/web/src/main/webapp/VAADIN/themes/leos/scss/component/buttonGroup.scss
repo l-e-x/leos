@@ -1,0 +1,82 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+@mixin buttonGroup {
+
+    //overriding styles for Button Group Add On as those are not working for custom theme
+    .v-buttongroup {
+        border: 0;
+    }
+
+    .v-buttongroup .v-button {
+        height: 25px;
+    }
+
+    .v-buttongroup .v-button-left .v-button-wrap {
+        padding: 4px 6px 0 3px;
+    }
+
+    .v-buttongroup .v-button-middle .v-button-wrap {
+        padding: 4px 6px 0 6px;
+    }
+
+    .v-buttongroup .v-button-right .v-button-wrap {
+        padding: 4px 9px 0 6px;
+    }
+
+    .v-buttongroup .v-button-left .v-button-wrap,
+    .v-buttongroup .v-button-middle .v-button-wrap,
+    .v-buttongroup .v-button-left.v-disabled .v-button-wrap,
+    .v-buttongroup .v-button-middle.v-disabled .v-button-wrap,
+    .v-buttongroup .v-button-left.v-disabled:active .v-button-wrap,
+    .v-buttongroup .v-button-middle.v-disabled:active .v-button-wrap,
+    .v-buttongroup .v-button-left.v-disabled:focus .v-button-wrap,
+    .v-buttongroup .v-button-middle.v-disabled:focus .v-button-wrap {
+        background-position: -130px;
+    }
+
+    .v-buttongroup .enabled * {
+        color: $draft-color;
+    }
+
+    .v-buttongroup .v-button-middle,
+    .v-buttongroup .v-button-middle.v-disabled:active,
+    .v-buttongroup .v-button-middle.v-disabled:focus {
+        border-left: 1px solid #ccc;
+        background-position: 5px -104px;
+        padding: 0;
+    }
+
+    .v-buttongroup .v-button-right {
+        border-left: 1px solid #ccc;
+        padding: 0;
+        background-image: none;
+    }
+
+    .v-buttongroup .v-button-left:focus .v-button-wrap {
+        background-position: -26px;
+    }
+
+    .v-buttongroup .v-button-middle:focus,
+    .v-buttongroup .v-button-middle:focus .v-button-wrap {
+        background-position: -26px;
+    }
+
+    .v-buttongroup .v-button-left:active .v-button-wrap,
+    .v-buttongroup .v-button-left.v-pressed .v-button-wrap,
+    .v-buttongroup .v-button-middle:active .v-button-wrap,
+    .v-buttongroup .v-button-middle.v-pressed .v-button-wrap {
+        background-position: -78px;
+    }
+}

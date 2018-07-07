@@ -32,7 +32,7 @@
 <html>
     <head>
         <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
-        <link rel="stylesheet" type="text/css" href="${webContextPath}/VAADIN/themes/leos/css/bill_xml.css"/>
+        <link rel="stylesheet" type="text/css" href="${webContextPath}/static/leos/css/bill_xml.css"/>
         <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/2.3-latest/MathJax.js?config=default"></script>
         <script type="text/javascript">
             function leg_scrollIntoView(eId) {
@@ -43,6 +43,31 @@
                     }
                 }
             }
+			function leg_setDataHint(eId) {
+			    var element = document.getElementById(eId);
+			    if(element) {
+			        var datahint='';
+			        var userId = element.hasAttribute("leos:userid") ? element.getAttribute("leos:userid") : '';
+			        var userName = element.hasAttribute("leos:username") ? element.getAttribute("leos:username") : '';
+			        var timestamp = element.hasAttribute("leos:datetime") ? element.getAttribute("leos:datetime") : new Date();
+			        var commentText = element.hasAttribute("data-text") ? element.getAttribute("data-text") : undefined;
+			
+			        var formattedDate = getFormattedDate(new Date(timestamp));
+			        if(element.localName === "popup") {//Comments
+			            datahint = commentText + "\n------------------------------------\n[Commented by: "+ userName + "(" + userId +")" + " - " + formattedDate + "]";  
+			        } else{//Highlight
+			            datahint = "[Highlighted by: "+ userName + "(" + userId +")" + " - " + formattedDate + "]";  
+			        }
+			        element.setAttribute("data-hint", datahint);
+			    }
+			}
+			function getFormattedDate(date) {
+			    var year = date.getFullYear(), month = date.getMonth(), day = date.getDate(), hours = date.getHours(), minutes = date.getMinutes();
+			    return year + "-" + addZero(month + 1) + "-" + addZero(day) + " " + addZero(hours) +":"+ addZero(minutes);
+			}
+			function addZero(i) {
+			    return ("0" + i).slice(-2);
+			}
         </script>
     </head>
     <body xmlns:leos="urn:eu:europa:ec:leos">

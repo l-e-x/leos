@@ -22,17 +22,6 @@
  */
 package org.apache.chemistry.opencmis.inmemory.query;
 
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.GregorianCalendar;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-
 import org.antlr.runtime.tree.Tree;
 import org.apache.chemistry.opencmis.commons.data.ObjectData;
 import org.apache.chemistry.opencmis.commons.data.ObjectList;
@@ -45,28 +34,22 @@ import org.apache.chemistry.opencmis.commons.enums.PropertyType;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisInvalidArgumentException;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisRuntimeException;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.ObjectListImpl;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.Content;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.DocumentVersion;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.Filing;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.Folder;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.ObjectStore;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.StoredObject;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.VersionedDocument;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.*;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ContentStreamDataImpl;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ObjectStoreImpl;
 import org.apache.chemistry.opencmis.inmemory.types.PropertyCreationHelper;
 import org.apache.chemistry.opencmis.server.support.TypeManager;
-import org.apache.chemistry.opencmis.server.support.query.AbstractPredicateWalker;
-import org.apache.chemistry.opencmis.server.support.query.CmisQueryWalker;
-import org.apache.chemistry.opencmis.server.support.query.CmisSelector;
-import org.apache.chemistry.opencmis.server.support.query.ColumnReference;
-import org.apache.chemistry.opencmis.server.support.query.QueryObject;
+import org.apache.chemistry.opencmis.server.support.query.*;
 import org.apache.chemistry.opencmis.server.support.query.QueryObject.JoinSpec;
 import org.apache.chemistry.opencmis.server.support.query.QueryObject.SortSpec;
-import org.apache.chemistry.opencmis.server.support.query.QueryUtilStrict;
-import org.apache.chemistry.opencmis.server.support.query.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * A processor for a CMIS query for the In-Memory server. During tree traversal
@@ -752,12 +735,20 @@ public class InMemoryQueryProcessor {
             }
             break;
         case HTML:
-        case STRING:
         case URI:
         case ID:
             if (rVal instanceof String) {
                 LOG.debug("compare strings: " + lValue + " with " + rVal);
                 return ((String) lValue).compareTo((String) rVal);
+            } else {
+                throwIncompatibleTypesException(lValue, rVal);
+            }
+            break;
+        case STRING:
+            if (rVal instanceof String) {
+            	String unesc = StringUtil.unescape((String) rVal, null);
+                LOG.debug("compare strings: " + lValue + " with " + unesc);
+                return ((String) lValue).compareTo(unesc);
             } else {
                 throwIncompatibleTypesException(lValue, rVal);
             }

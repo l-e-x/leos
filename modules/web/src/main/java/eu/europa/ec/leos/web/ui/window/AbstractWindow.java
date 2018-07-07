@@ -15,7 +15,6 @@ package eu.europa.ec.leos.web.ui.window;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.ui.*;
-import eu.europa.ec.leos.web.event.LeosUIComponentsStateUpdateEvent;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 public class AbstractWindow extends Window {
@@ -27,26 +26,13 @@ public class AbstractWindow extends Window {
 
     protected AbstractWindow(MessageHelper messageHelper, final EventBus eventBus) {
         this.messageHelper = messageHelper;
-        this.bodyComponentWrapper = new Panel();
-        this.buttonsArea = new HorizontalLayout();
-        this.buttonsLeftArea = new HorizontalLayout();
         this.eventBus = eventBus;
-        this.setClosable(false);
-
-        this.addAttachListener(new AttachListener() {
-            @Override
-            public void attach(AttachEvent event) {
-                eventBus.post(new LeosUIComponentsStateUpdateEvent(false));
-            }
-        });
-        this.addDetachListener(new DetachListener() {
-            @Override
-            public void detach(DetachEvent event) {
-                eventBus.post(new LeosUIComponentsStateUpdateEvent(true));
-            }
-        });
+        bodyComponentWrapper = new Panel();
+        buttonsArea = new HorizontalLayout();
+        buttonsLeftArea = new HorizontalLayout();
+        setClosable(false);
         setResizable(false);
-
+        setModal(true);
         initLayout();
     }
 
@@ -55,11 +41,13 @@ public class AbstractWindow extends Window {
         verticalLayout.setSizeFull();
 
         bodyComponentWrapper.setSizeFull();
+        bodyComponentWrapper.addStyleName("window-contents-area");
         verticalLayout.addComponent(bodyComponentWrapper);
         verticalLayout.setExpandRatio(bodyComponentWrapper, 1.0f);
 
         HorizontalLayout buttonsLayout = new HorizontalLayout();
         buttonsLayout.setWidth(100, Unit.PERCENTAGE);
+        buttonsLayout.addStyleName("window-buttons-area");
 
         HorizontalLayout buildButtonsLeftArea = buildButtonsLeftArea();
         buttonsLayout.addComponent(buildButtonsLeftArea);
@@ -89,8 +77,6 @@ public class AbstractWindow extends Window {
 
     private HorizontalLayout buildButtonsArea() {
         buttonsArea.setSpacing(true);
-        buttonsArea.setStyleName("leos-window-buttons-area");
-
         buttonsArea.setWidth(100, Unit.PERCENTAGE);
         Label spacer = new Label("");
         buttonsArea.addComponent(spacer, 0);
@@ -112,7 +98,6 @@ public class AbstractWindow extends Window {
     private HorizontalLayout buildButtonsLeftArea() {
         buttonsLeftArea.setHeight(100, Unit.PERCENTAGE);
         buttonsLeftArea.setSpacing(true);
-        buttonsLeftArea.setStyleName("leos-window-buttons-area");
         return buttonsLeftArea;
     }
 

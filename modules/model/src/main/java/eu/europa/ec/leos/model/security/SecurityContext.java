@@ -14,12 +14,9 @@
 package eu.europa.ec.leos.model.security;
 
 import eu.europa.ec.leos.model.user.User;
+import org.springframework.data.domain.AuditorAware;
 
-import java.io.Serializable;
-
-public class SecurityContext implements Serializable {
-
-    private static final long serialVersionUID = 2514823532916571014L;
+public class SecurityContext implements AuditorAware<User> {
 
     private String principalName;
 
@@ -43,5 +40,10 @@ public class SecurityContext implements Serializable {
 
     public boolean isUserAuthenticated() {
         return (user != null);
+    }
+
+    @Override
+    public User getCurrentAuditor() {
+        return user;
     }
 }

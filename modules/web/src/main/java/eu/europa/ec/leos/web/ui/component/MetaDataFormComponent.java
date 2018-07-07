@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.web.ui.component;
 
+import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 import com.vaadin.server.AbstractErrorMessage;
@@ -38,10 +39,11 @@ public class MetaDataFormComponent extends FormLayout {
     private TextField secLevelField;
     private TextField interInstitutionalRefField;
     private MessageHelper messageHelper;
-
-    public MetaDataFormComponent(MessageHelper messageHelper, MetaDataVO metaDataVO) {
+    private LanguageHelper languageHelper;
+    public MetaDataFormComponent(MessageHelper messageHelper, LanguageHelper languageHelper,  MetaDataVO metaDataVO) {
 
         this.messageHelper = messageHelper;
+        this.languageHelper=languageHelper;
         setSizeFull();
         setSpacing(true);
         setMargin(true);
@@ -58,9 +60,14 @@ public class MetaDataFormComponent extends FormLayout {
         internalRefField = new TextField(messageHelper.getMessage("metadata.textfield.internalref.caption"));
 
         templateField.setValue(StringUtils.defaultString(metaDataVO.getTemplate()));
-        languageField.setValue(StringUtils.defaultString(metaDataVO.getLanguage(),"EN"));
+
+        languageField.setValue(languageHelper.getLanguageDescription(StringUtils.defaultString(metaDataVO.getLanguage(), "EN")));
+        languageField.setData(StringUtils.defaultString(metaDataVO.getLanguage(), "EN"));
+
         docStageField.setValue(StringUtils.defaultString(metaDataVO.getDocStage()));
-        docTypField.setValue(StringUtils.defaultString(metaDataVO.getDocType()));
+        docTypField.setValue(metaDataVO.getDocStage() == null ? "" : (metaDataVO.getDocStage()+" ")  
+                                            + StringUtils.defaultString(metaDataVO.getDocType()));
+        docTypField.setData(metaDataVO.getDocType());
         docPurposeField.setValue(StringUtils.defaultString(metaDataVO.getDocPurpose(), "on [...]"));
         internalRefField.setValue(StringUtils.defaultString(metaDataVO.getInternalRef()));
 
@@ -130,7 +137,7 @@ public class MetaDataFormComponent extends FormLayout {
     }
 
     public MetaDataVO getMetaDataValues() {
-        MetaDataVO metaDataVO = new MetaDataVO(templateField.getValue(), languageField.getValue(),docStageField.getValue(), docTypField.getValue(),
+        MetaDataVO metaDataVO = new MetaDataVO(templateField.getValue(), (String)languageField.getData(),docStageField.getValue(), (String)docTypField.getData(),
                 docPurposeField.getValue(), internalRefField.getValue());
         return metaDataVO;
     }

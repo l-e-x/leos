@@ -13,33 +13,19 @@
  */
 package eu.europa.ec.leos.web.ui.window;
 
-import java.util.HashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.vaadin.cssinject.CSSInject;
-
 import com.google.common.eventbus.EventBus;
 import com.vaadin.data.Property;
-import com.vaadin.server.ExternalResource;
-import com.vaadin.server.Resource;
-import com.vaadin.server.VaadinServletService;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.shared.ui.label.ContentMode;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.JavaScript;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.OptionGroup;
-import com.vaadin.ui.Panel;
-import com.vaadin.ui.UI;
-import com.vaadin.ui.VerticalLayout;
-
+import com.vaadin.ui.*;
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.support.web.UrlBuilder;
 import eu.europa.ec.leos.web.event.view.document.CompareVersionEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
 
 @com.vaadin.annotations.JavaScript({"vaadin://js/web/util/versionCompare.js" + LeosCacheToken.TOKEN})
 public class CompareDocumentVersionWindow extends AbstractWindow {
@@ -64,7 +50,7 @@ public class CompareDocumentVersionWindow extends AbstractWindow {
             LeosDocumentProperties firstItem, LeosDocumentProperties secondItem) {
 
         super(messageHelper, eventBus);
-        setCaption("Compare revision " + firstItem.getVersionLabel() + " with revision " + secondItem.getVersionLabel());
+        setCaption(messageHelper.getMessage("document.versions.caption.window", firstItem.getVersionLabel(), secondItem.getVersionLabel()));
         this.firstItem = firstItem;
         this.secondItem = secondItem;
         prepareWindow();
@@ -74,10 +60,6 @@ public class CompareDocumentVersionWindow extends AbstractWindow {
         
         setWidth(SINGLE_COLUMN_WIDTH); //default setting for single column mode
         setHeight("90%");
-
-        setResizable(false);
-        setClosable(false);
-        setModal(true);
 
         VerticalLayout windowLayout = new VerticalLayout();
         windowLayout.setSizeFull();
@@ -178,43 +160,33 @@ public class CompareDocumentVersionWindow extends AbstractWindow {
 
     private Component buildComparisonResultArea() {
 
-        //TODO it can be removed by including in main css.kept here for dynamic loading
-        CSSInject cssInject = new CSSInject(UI.getCurrent());
-
-        Resource billCss = new ExternalResource((
-                new UrlBuilder()).getLocalPath(VaadinServletService.getCurrentServletRequest(), 
-                        "/VAADIN/themes/leos/css/compare_styles.css"));
-        cssInject.addStyleSheet(billCss);
-
         HorizontalLayout contentCompareResult = new HorizontalLayout();
         contentCompareResult.setSpacing(true);
-        contentCompareResult.setWidth("100%");
-        contentCompareResult.addStyleName("leos-compare-style");
 
         if (diffMode == SINGLE_COLUMN_MODE && htmlCompareResult.get(SINGLE_COLUMN_MODE)!=null) {
-
+            contentCompareResult.setWidth("100%");
+            contentCompareResult.addStyleName("leos-single-column-layout");
             contentCompareResult.addComponent(
                     new Label((String) htmlCompareResult.get(SINGLE_COLUMN_MODE),ContentMode.HTML));
-            contentCompareResult.removeStyleName("leos-two-column-compare");
 
         } else if (htmlCompareResult.get(TWO_COLUMN_MODE)!=null){
-
             Label leftSide = new Label(((String[]) htmlCompareResult.get(TWO_COLUMN_MODE))[0], ContentMode.HTML);
             Label rightSide = new Label(((String[]) htmlCompareResult.get(TWO_COLUMN_MODE))[1], ContentMode.HTML);
-
-            leftSide.setPrimaryStyleName("leos-two-column-compare leos-compare-style");
-            rightSide.setPrimaryStyleName("leos-two-column-compare leos-compare-style");
             rightSide.setSizeFull();
             leftSide.setSizeFull();
+            leftSide.setPrimaryStyleName("leos-two-column-compare");
+            rightSide.setPrimaryStyleName("leos-two-column-compare");
 
             contentCompareResult.addComponent(leftSide);
             contentCompareResult.setExpandRatio(leftSide, 1.0f);
             contentCompareResult.addComponent(rightSide);
             contentCompareResult.setExpandRatio(rightSide, 1.0f);
+            contentCompareResult.setSizeUndefined();
+            contentCompareResult.setPrimaryStyleName("leos-two-column-layout");
+
             //this implementation binds as well a JS call to align the modified elements
             JavaScript.getCurrent().execute("versionCompare.alignModifiedElements();");			
         }
-
         return contentCompareResult;
     }
 
@@ -242,9 +214,9 @@ public class CompareDocumentVersionWindow extends AbstractWindow {
         horizontalLayout.setMargin(new MarginInfo(false, true, false, true));
         horizontalLayout.setSpacing(true);
         horizontalLayout.setWidth("100%");
-        horizontalLayout.addComponent(new Label("<b>Author</b>: " + componentCompareItem.getUpdatedBy(), ContentMode.HTML));
-        horizontalLayout.addComponent(new Label("<b>Date</b>: " + componentCompareItem.getUpdatedOn(), ContentMode.HTML));
-        horizontalLayout.addComponent(new Label("<b>Revision</b>: " + componentCompareItem.getVersionLabel(), ContentMode.HTML));
+        horizontalLayout.addComponent(new Label( messageHelper.getMessage("document.versions.caption.author" , componentCompareItem.getUpdatedBy()), ContentMode.HTML));
+        horizontalLayout.addComponent(new Label( messageHelper.getMessage("document.versions.caption.date",  componentCompareItem.getUpdatedOn()), ContentMode.HTML));
+        horizontalLayout.addComponent(new Label( messageHelper.getMessage("document.versions.caption.revision", componentCompareItem.getVersionLabel()), ContentMode.HTML));
         verticalLayout.addComponent(horizontalLayout);
 
         //add the second line
@@ -252,12 +224,13 @@ public class CompareDocumentVersionWindow extends AbstractWindow {
         horizontalLayout.setWidth("100%");
         horizontalLayout.setMargin(new MarginInfo(false, true, false, true));
         horizontalLayout.setSpacing(true);
-        Label commentsLabel = new Label("<b>Comments</b>: ", ContentMode.HTML);
+        Label commentsLabel = new Label(messageHelper.getMessage("document.versions.caption.comments"), ContentMode.HTML);
+        commentsLabel.setSizeUndefined();
         horizontalLayout.addComponent(commentsLabel);
-        horizontalLayout.setExpandRatio(commentsLabel, 1.0f);
         Label commentsContent = new Label(componentCompareItem.getVersionComment()!=null? messageHelper.getMessage(componentCompareItem.getVersionComment()):"");
+        commentsContent.setSizeUndefined();
         horizontalLayout.addComponent(commentsContent);
-        horizontalLayout.setExpandRatio(commentsContent, 7.0f);
+        horizontalLayout.setExpandRatio(commentsContent, 1.0f);
         verticalLayout.addComponent(horizontalLayout);
 
         return verticalLayout;

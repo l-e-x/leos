@@ -16,7 +16,10 @@ package eu.europa.ec.leos.services.format;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,82 +29,49 @@ import org.xhtmlrenderer.pdf.ITextUserAgent;
 /** implementation of how to load local resources by Itext renderer(flying saucer  
  */
 public class LocalLoadingUserAgent extends ITextUserAgent {
-	
-	LocalLoadingUserAgent(ITextOutputDevice _outputDevice){
-		super(_outputDevice);
-	}
-	
-	private static final Logger LOG = LoggerFactory.getLogger(LocalLoadingUserAgent.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalLoadingUserAgent.class);
 
-	/**
-     * Gets a Reader for the resource identified
-     *
+    LocalLoadingUserAgent(ITextOutputDevice _outputDevice){
+        super(_outputDevice);
+    }
+
+    /**Gets a Reader for the resource identified
      * @param uri PARAM
-     * @return The stylesheet value
+     * @return open input stream of resource
      */
-    //TODO:implement this with nio.
     protected InputStream resolveAndOpenStream(String uri) {
-        java.io.InputStream is = null;
-        StringBuffer sbAbsolutePth=new StringBuffer("");
-        ClassLoader cLoader = Thread.currentThread().getContextClassLoader();
+        InputStream is = null;
         try {
             if(uri==null)
                 return is;
-        // input find path starting from
-        int iLastIndex=uri.lastIndexOf("VAADIN");
-        String fileName =null;
-        if(iLastIndex >-1)
-        	fileName =uri.substring(iLastIndex);
-        else 
-        	fileName=uri;
-        
-        
-        	//create absolute path and
-        	String pathWebApp= cLoader.getResource("").getPath();
-        	sbAbsolutePth.append(pathWebApp).append("../../").append(fileName);
-        	is = new FileInputStream(new File(sbAbsolutePth.toString()));
-            //is = new URL(uri).openStream();
-        } catch (Throwable e ) {// to cleanup later
-        	e.printStackTrace();
-        	LOG.debug("exception occured {}",e);
-        	LOG.debug("resource name {} not found", uri);
-        	
-        }
-        return is;
-    }
-    
-    //unfinsihed
-    /*private InputStream getProtectedResource(String uri){
-        
-    if (_isProtectedResource(uri))
-    {
-        java.io.InputStream is = null;
-        uri = resolveURI(uri);
-        try {
-            URL url = new URL(uri);
-            String encoding = new Base64Encoder().encode ("kaushvi:kaushvi".getBytes());
-            URLConnection uc = url.openConnection();
-            uc.setRequestProperty  ("Authorization", "Basic " + encoding);
-            is = uc.getInputStream();
-            LOG.debug("got input stream");
-        }
-        catch (java.net.MalformedURLException e) {
-            LOG.error("bad URL given: " + uri, e);
-        }
-        catch (java.io.FileNotFoundException e) {
-            LOG.error("item at URI " + uri + " not found");
-        }
-        catch (java.io.IOException e) {
-            LOG.error("IO problem for " + uri, e);
-        }
-        return is;
-    }
-    else
-    {
-        return super.resolveAndOpenStream(uri);
-    }
-}
-   */
 
-    
+            if(uri.contains("/VAADIN")){
+                is = readfromFileSystem(uri);
+            }
+            else {
+                is = readfromURL(uri);
+            }
+
+        } catch (Exception e ) {// to cleanup later
+            LOG.error("Resource :{} not found", uri);
+        }
+        return is;
+    }
+
+    private InputStream readfromFileSystem(String uri) throws FileNotFoundException{
+        //create absolute path and try to find the file
+        StringBuffer sbAbsolutePth=new StringBuffer("");
+        String fileName =uri.substring(uri.lastIndexOf("VAADIN"));
+        ClassLoader cLoader = Thread.currentThread().getContextClassLoader();
+        String pathWebApp= cLoader.getResource("").getPath();
+        
+        sbAbsolutePth.append(pathWebApp).append("../../").append(fileName);
+        
+        return new FileInputStream(new File(sbAbsolutePth.toString()));
+    }
+
+    private InputStream readfromURL(String uri) throws IOException{
+        URL address= new URL(uri);
+        return address.openStream();
+    }
 }

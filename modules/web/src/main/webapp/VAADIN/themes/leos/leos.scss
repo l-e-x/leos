@@ -12,8 +12,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-
 @import "../reindeer/reindeer.scss";
+
+/* This font-face declaration must be outside your theme mixin. */
+@font-face {
+    font-family: 'Vaadin-Icons';
+    src: url('fonts/Vaadin-Icons.eot');
+    src: url('fonts/Vaadin-Icons.eot?#iefix') format('embedded-opentype'),
+    url('fonts/Vaadin-Icons.woff') format('woff'),
+    url('fonts/Vaadin-Icons.ttf') format('truetype'),
+    url('fonts/Vaadin-Icons.svg#icomoon') format('svg');
+}
+
+.Vaadin-Icons {
+    font-family: 'Vaadin-Icons';
+}
 
 @mixin leos {
 
@@ -63,7 +76,8 @@
     }
 
     .leos-disclaimer {
-        background: #3b3c3e url(./icons/32/cross-circle.png) no-repeat right top;
+        background: rgba(68, 68, 68, 1) url(./icons/32/cross-circle.png) no-repeat right top;
+        max-width:80%;
         border: 2px solid #585b5c;
         margin: 0 5px 5px 0;
         padding: 0.8em 0.9em;

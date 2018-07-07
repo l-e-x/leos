@@ -1,0 +1,140 @@
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/*-----------------------------------------------------------------------------
+	AKN article styles
+-----------------------------------------------------------------------------*/
+article {
+    display: block;
+}
+
+article > num {
+    display: block;
+    font-style: italic;
+    text-align: center;
+    padding-top: 18pt;
+    padding-bottom: 6pt;
+}
+
+article > heading {
+    display: block;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+}
+
+article > content {
+    display: block;
+}
+
+/*-----------------------------------------------------------------------------
+	AKN alinea styles
+-----------------------------------------------------------------------------*/
+article alinea {
+    display: block;
+}
+
+article alinea > content {
+    display: block;
+}
+
+/*-----------------------------------------------------------------------------
+	AKN paragraph styles
+-----------------------------------------------------------------------------*/
+article paragraph {
+    position: relative;
+    display: block;
+}
+article paragraph > num {
+    padding-top: 8px;/*put on the same line as the content*/
+    min-width: 2.5em;
+    float:left;
+}
+
+article subparagraph {
+    clear:both;
+}
+article paragraph > content{
+   clear:both;
+}
+
+/*-----------------------------------------------------------------------------
+	AKN list/point styles
+-----------------------------------------------------------------------------*/
+article list {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+}
+
+article list > intro {
+    display: table-row;
+}
+
+article list > wrap {
+    display: table-row;
+}
+
+article point {
+    position: relative;
+    padding-left: 2.5em;
+    display: block;
+}
+article point > num {
+    padding-top: 8px;/*put on the same line as the content*/
+    min-width: 2.5em;
+    margin-left: -2.5em;
+    float:left;
+}
+
+article point > content{
+   clear:both;
+}
+
+article indent {
+    position: relative;
+    padding-left:2.5em;
+    display: block;
+}
+
+article indent > num {
+    padding-top: 8px;/*put on the same line as the content*/
+    width: 2.5em;
+    margin-left:-2.5em;
+    position: absolute;
+    float:left;
+}
+
+article indent > content {
+   clear:both;
+}
+
+/*-----------------------------------------------------------------------------
+    AKN table styles
+-----------------------------------------------------------------------------*/
+article table {
+    border: 1px solid black;
+    background-color: silver;
+    border-spacing: 2px;
+    empty-cells: show;
+}
+
+article tr {
+    background-color: white;
+}
+
+article td {
+    /* extra spacing for improved readability */
+    padding: 5px;
+}

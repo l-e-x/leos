@@ -13,7 +13,10 @@
  */
 package eu.europa.ec.leos.model.content;
 
+import eu.europa.ec.leos.vo.UserVO;
+
 import java.util.Date;
+import java.util.List;
 
 public interface LeosObjectProperties {
 
@@ -71,4 +74,15 @@ public interface LeosObjectProperties {
      * @return the date.
      */
     Date getUpdatedOn();
+
+    /**
+     * returns Contributors name to display for leos document
+     * @return List
+     */
+    List<UserVO> getContributors();
+    /**
+     * returns Author for leos document
+     * @return String
+     */
+    UserVO getAuthor();
 }

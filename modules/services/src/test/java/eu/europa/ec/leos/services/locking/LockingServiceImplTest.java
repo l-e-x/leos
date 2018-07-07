@@ -13,12 +13,20 @@
  */
 package eu.europa.ec.leos.services.locking;
 
-import eu.europa.ec.leos.model.user.User;
-import eu.europa.ec.leos.services.locking.handler.LockHandlerFactory;
-import eu.europa.ec.leos.test.support.LeosTest;
-import eu.europa.ec.leos.vo.lock.LockActionInfo;
-import eu.europa.ec.leos.vo.lock.LockData;
-import eu.europa.ec.leos.vo.lock.LockLevel;
+import static org.hamcrest.Matchers.emptyCollectionOf;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -28,13 +36,13 @@ import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.*;
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.services.locking.handler.LockHandlerFactory;
+import eu.europa.ec.leos.test.support.LeosTest;
+import eu.europa.ec.leos.test.support.model.ModelHelper;
+import eu.europa.ec.leos.vo.lock.LockActionInfo;
+import eu.europa.ec.leos.vo.lock.LockData;
+import eu.europa.ec.leos.vo.lock.LockLevel;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"classpath:eu/europa/ec/leos/test-lockingServicesContext.xml"})
@@ -54,7 +62,7 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockDocument_ReadLevel_successfull() throws Exception {
 
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfo = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
@@ -73,7 +81,7 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockDocument_DocumentLevel_successfull() throws Exception {
 
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfo = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.DOCUMENT_LOCK);
@@ -92,7 +100,7 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockDocument_ElementLevel_successfull() throws Exception {
 
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfo = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.ELEMENT_LOCK, "art1");
@@ -112,8 +120,8 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockDocument_Read_whenAlready_Locked_successfull() throws Exception {
 
-        User userA = new User(33L, "userA", "user A");
-        User userB = new User(33L, "userB", "user B");
+        User userA = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(33L, "userB", "user B");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfoA = lockingServiceImpl.lockDocument("45", userA, "sessionIDA",LockLevel.READ_LOCK);
@@ -142,8 +150,8 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockElement_whenAnotherElementAlreadyLocked_successfull() throws Exception {
 
-        User userA = new User(33L, "userA", "user A");
-        User userB = new User(33L, "userB", "user B");
+        User userA = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(33L, "userB", "user B");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfoA = lockingServiceImpl.lockDocument("45", userA, "sessionIDA",LockLevel.ELEMENT_LOCK, "art1");
@@ -173,8 +181,8 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_lockSameElement_whenElementAlready_Locked_returnOldLock() throws Exception {
-        User userA = new User(33L, "userA", "user A");
-        User userB = new User(33L, "userB", "user B");
+        User userA = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(33L, "userB", "user B");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfoA = lockingServiceImpl.lockDocument("45", userA, "sessionIDA",LockLevel.ELEMENT_LOCK, "art1");
@@ -204,7 +212,7 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_lockDocument_Element_whenElementAlready_Locked_returnFalse() throws Exception {
     	//same user should not be able to lock the same article
-        User userA = new User(33L, "userA", "user A");
+        User userA = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo lockAcquireInfoA = lockingServiceImpl.lockDocument("45", userA, "sessionIDA",LockLevel.ELEMENT_LOCK, "art1");
@@ -233,8 +241,8 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_lockDocument_when_alreadyDocumentLocked_should_returnFalseAndOldLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLock = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.DOCUMENT_LOCK);
         
@@ -250,8 +258,8 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_lockElement_whenDocumentAlreadyLocked_should_returnNotLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLock = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.DOCUMENT_LOCK);
         
@@ -270,27 +278,27 @@ public class LockingServiceImplTest extends LeosTest {
     @Test(expected = NullPointerException.class)
     public void test_lockDocument_when_leosIdNull_should_throwException() throws Exception {
         // DO THE ACTUAL CALL
-        lockingServiceImpl.lockDocument(null, new User(33L, "userA", "user A"), "sessionID",LockLevel.READ_LOCK);
+        lockingServiceImpl.lockDocument(null, ModelHelper.buildUser(33L, "userA", "user A"), "sessionID",LockLevel.READ_LOCK);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void test_lockDocument_when_invalidCall_throwException() throws Exception {
         // DO THE ACTUAL CALL
-        lockingServiceImpl.lockDocument("45", new User(33L, "userA", "user A"), "sessionID",LockLevel.DOCUMENT_LOCK, "testArt");
+        lockingServiceImpl.lockDocument("45", ModelHelper.buildUser(33L, "userA", "user A"), "sessionID",LockLevel.DOCUMENT_LOCK, "testArt");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void test_lockDocument_when_invalidReadCall_throwException() throws Exception {
 
         // DO THE ACTUAL CALL
-        lockingServiceImpl.lockDocument("45", new User(33L, "userA", "user A"), "sessionID",LockLevel.READ_LOCK, "testArt");
+        lockingServiceImpl.lockDocument("45", ModelHelper.buildUser(33L, "userA", "user A"), "sessionID",LockLevel.READ_LOCK, "testArt");
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void test_lockDocument_when_elementNull_should_throwException() throws Exception {
 
         // DO THE ACTUAL CALL
-        lockingServiceImpl.lockDocument("45", new User(33L, "userA", "user A"), "sessionID",LockLevel.ELEMENT_LOCK, null);
+        lockingServiceImpl.lockDocument("45", ModelHelper.buildUser(33L, "userA", "user A"), "sessionID",LockLevel.ELEMENT_LOCK, null);
 
     }
     
@@ -304,7 +312,7 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_unlockDocument_when_noDocLock_should_returnFalse() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo result = lockingServiceImpl.unlockDocument("45", user.getLogin(),"SessionID",LockLevel.DOCUMENT_LOCK);
@@ -316,7 +324,7 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_unlockDocument_when_noElementLock_should_returnFalse() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo result = lockingServiceImpl.unlockDocument("45", user.getLogin(),"SessionID",LockLevel.ELEMENT_LOCK, "elementId" );
@@ -328,7 +336,7 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_unlockDocument_when_noReadLock_should_returnFalse() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
 
         // DO THE ACTUAL CALL
         LockActionInfo result = lockingServiceImpl.unlockDocument("45", user.getLogin(),"SessionID",LockLevel.READ_LOCK);
@@ -340,7 +348,7 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_unlockDocument_when_lock_should_returnTrue() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         
         lockingServiceImpl.lockDocument("45", user, "SessionID",LockLevel.DOCUMENT_LOCK);
 
@@ -355,7 +363,7 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_unlockElement_when_ElementAlreadylock_should_returnTrue() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         
         lockingServiceImpl.lockDocument("45", user, "SessionID",LockLevel.ELEMENT_LOCK, "elementId");
 
@@ -371,8 +379,8 @@ public class LockingServiceImplTest extends LeosTest {
     @Test
     public void test_unlockDocument_when_lockedByOtherUser_should_returnOtherLock() throws Exception {
         
-    	User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+    	User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLock = lockingServiceImpl.lockDocument("45", user, "sessionID_A",LockLevel.DOCUMENT_LOCK);
 
@@ -406,8 +414,8 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_getLockingInfo_when_lock_should_returnLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLockAR = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
         LockActionInfo existingLockBR = lockingServiceImpl.lockDocument("45", userB, "sessionID2",LockLevel.READ_LOCK);
@@ -442,8 +450,8 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_getAllLocks_when_locksPresend_should_returnLocks() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(33L, "userA", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(33L, "userA", "user B");
         LockActionInfo existingLock = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
         LockActionInfo existingLock2 = lockingServiceImpl.lockDocument("451", user, "sessionID",LockLevel.READ_LOCK);
         LockActionInfo existingLock3 = lockingServiceImpl.lockDocument("8", userB, "sessionID",LockLevel.READ_LOCK);
@@ -470,7 +478,7 @@ public class LockingServiceImplTest extends LeosTest {
     @Test(expected = UnsupportedOperationException.class)
     public void test_getLockingInfo_when_tryToModifyList_should_throwError() throws Exception {
 
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         LockActionInfo existingLock = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
 
         // DO THE ACTUAL CALL
@@ -495,7 +503,7 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_isDocumentLockedFor() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         LockActionInfo existingLockBR = lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.DOCUMENT_LOCK);
         
         //execute calls
@@ -514,7 +522,7 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_isElementLockedFor() throws Exception {
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         LockActionInfo existingLockBR = lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.ELEMENT_LOCK, "E1");
         
         //execute calls
@@ -537,7 +545,7 @@ public class LockingServiceImplTest extends LeosTest {
     
     @Test
     public void test_releaseLocksForSession() throws Exception{
-        User user = new User(33L, "userA", "user A");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
         
         lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.READ_LOCK);
         lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.DOCUMENT_LOCK);
@@ -555,8 +563,8 @@ public class LockingServiceImplTest extends LeosTest {
 
     @Test
     public void test_unlockReadLock_when_DocLockPresent_should_releaseOnlyOneLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLockAR = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);//to be released in test //1
         LockActionInfo existingLockAD = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.DOCUMENT_LOCK);//2
@@ -577,8 +585,8 @@ public class LockingServiceImplTest extends LeosTest {
     }
     @Test
     public void test_unlockElementLock_when_twoElementLockPresent_should_releaseOnlyOneLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLockAR = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
         LockActionInfo existingLockAR2 =lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.READ_LOCK);
@@ -605,8 +613,8 @@ public class LockingServiceImplTest extends LeosTest {
     }
     @Test
     public void test_unlockDocumentLock_when_twoReadLockPresent_should_releaseOnlyOneLock() throws Exception {
-        User user = new User(33L, "userA", "user A");
-        User userB = new User(34L, "userB", "user B");
+        User user = ModelHelper.buildUser(33L, "userA", "user A");
+        User userB = ModelHelper.buildUser(34L, "userB", "user B");
 
         LockActionInfo existingLockAR = lockingServiceImpl.lockDocument("45", user, "sessionID",LockLevel.READ_LOCK);
         LockActionInfo existingLockAR2 =lockingServiceImpl.lockDocument("45", user, "sessionID2",LockLevel.READ_LOCK);

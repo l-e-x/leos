@@ -13,10 +13,11 @@
  */
 package eu.europa.ec.leos.web.view;
 
-import java.util.List;
-
+import eu.europa.ec.leos.vo.UserVO;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.web.model.DocumentVO;
+
+import java.util.List;
 
 public interface RepositoryView extends LeosView {
 
@@ -29,4 +30,6 @@ public interface RepositoryView extends LeosView {
     void updateLockInfo(DocumentVO documentVO);
 
     void showDisclaimer();
+
+    void openContributorsWindow(List<UserVO> allUsers, DocumentVO docDetails);
 }

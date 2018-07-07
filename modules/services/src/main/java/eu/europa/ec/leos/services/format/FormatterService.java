@@ -13,25 +13,26 @@
  */
 package eu.europa.ec.leos.services.format;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 
 public interface FormatterService {
     /**
      * This methods gets the document from repository, converts in HTML format 
      *
-     * @param leosId leosId to be returned in html format
+     * @param inputStream inputStream of Akmantoso to be returned in html format
      * @param contextPath the base path to be used while creating HTML for resources
      * @return document in html format in outputStream
      */
-    public void formatToHtml(String leosId, OutputStream outputStream, String contextPath);
+    public void formatToHtml(InputStream inputStream, OutputStream outputStream, String contextPath);
     /**
      * This methods gets the document from repository, converts in pdf format 
      *
-     * @param leosId leosId to be returned in pdf format
+     * @param inputStream inputStream of Akmantoso file to be converted to pdf
      * @param contextPath the base path to be used while creating HTML for resources
 	 * @return document in pdf format in outputStream 
      */
-    public void formatToPdf(String leosId, OutputStream outputStream, String contextPath);
+    public void formatToPdf(InputStream inputStream, OutputStream outputStream, String contextPath);
     /**
      * This methods gets the document from repository, converts in html format 
      *

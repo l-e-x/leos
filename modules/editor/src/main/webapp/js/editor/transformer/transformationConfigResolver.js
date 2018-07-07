@@ -38,12 +38,16 @@ define(function transformationConfigResolverModule(require) {
             this.priority = params.priority;
             return this;
         },
-        hasGreaterPriorityThanInElement : function hasGreaterPriorityThanInElement(element) {
-            if (this.priority >= element.matchedBy.priority) {
+        matchConfigs : function matchConfigs(element, matchedConfigs, config) {
+            if (this.priority > element.matchedBy.priority) {
                 element.matchedBy = this;
-                return true;
+                matchedConfigs = [ config ];
+            } else if (this.priority === element.matchedBy.priority) {
+                matchedConfigs.push(config);
+            } else {
+                //if it less than we just ignore
             }
-            return false;
+            return matchedConfigs;
         }
     });
 
@@ -62,11 +66,6 @@ define(function transformationConfigResolverModule(require) {
         priority : 3
     });
 
-    var MATCH_TYPE_DATA_AKN_NAME = matchTypeStamp().init({
-        matchName : "DATA_AKN_NAME",
-        priority : 4
-    });
-
     /*
      * Container storing data specific to one iteration of the element at specific level.
      */
@@ -77,24 +76,6 @@ define(function transformationConfigResolverModule(require) {
             this.direction = params.direction;
             this.matchedConfigs = params.configs;
             return this;
-        },
-        /*
-         * Iterator of the transformation configs
-         */
-        forEachFirstLevelConfig : function forEachConfig(onEachConfigCallback) {
-            if (!this.matchedConfigs) {
-                return;
-            }
-            var newMatchedConfigs = [];
-            var that = this;
-            this.matchedConfigs.forEach(function(config) {
-                var firstLevelConfigForPathAndDirection = config[that.direction][FIRST_LEVEL_ELEMENT];
-                if (onEachConfigCallback(firstLevelConfigForPathAndDirection)) {
-                    newMatchedConfigs.push(config);
-                }
-            });
-            this.matchedConfigs = newMatchedConfigs;
-
         },
         /*
          * Return false - if current iteration should finish or true if iteration should go to the child element
@@ -108,8 +89,7 @@ define(function transformationConfigResolverModule(require) {
                 } else if (this.matchedConfigs.length === 1) {
                     return false;
                 }
-            } 
-            else if (this.element.elementLevel > FIRST_LEVEL_ELEMENT) {
+            } else if (this.element.elementLevel > FIRST_LEVEL_ELEMENT) {
                 // because there could be nested white spaces if the first level is not matched try to go as deep as possible
                 return true;
             }
@@ -148,64 +128,91 @@ define(function transformationConfigResolverModule(require) {
                                 return false;
                             }
                             that._setPath(element, fragment);
-                            matchedConfigs = that._resolveByElementName(that._.resolverConfigs, element, direction);
                             var context = configResolverContextStamp().init({
                                 direction : direction,
                                 element : element,
                                 elementLevel : elementLevel,
-                                configs : matchedConfigs
+                                configs : that._.resolverConfigs
                             });
-                            that._resolveConfigsForFromAttribute(context);
+                            context.matchedConfigs = that._resolveByElementName(context);
+                            var matchedConfigsByCustomPredict = that._resolveConfisByCustomPredict(context);
+                            if (matchedConfigsByCustomPredict && matchedConfigsByCustomPredict.length > 0) {
+                                matchedConfigs = matchedConfigsByCustomPredict;
+                                return false;
+                            }
+                            context.matchedConfigs = that._resolveConfigsByAttribute(context);
                             matchedConfigs = context.matchedConfigs;
                             return context.shouldGoToChildElement();
                         });
 
                     }
-                    matchedConfig = this._resolveSingleConfig(matchedConfigs, direction);
+                    matchedConfig = this._resolveSingleConfig(matchedConfigs, direction, fragment);
                     return matchedConfig;
 
                 },
+                _resolveConfisByCustomPredict : function _resolveConfisByCustomPredict(context) {
+                    var newMatchedConfigs = [];
+                    if (context.matchedConfigs) {
+                        context.matchedConfigs.forEach(function(config) {
+                            if (config.transformer && config.transformer[context.direction].supports
+                                    && config.transformer[context.direction].supports(context.element)) {
+                                newMatchedConfigs.push(config);
+                            }
+                        });
+                    }
+                    return newMatchedConfigs;
+                },
+
                 _resolveSingleConfig : function _resolveSingleConfig(matchedConfigs, direction, fragment) {
                     var matchedConfig;
                     if (matchedConfigs) {
                         if (matchedConfigs.length > 1) {
-                            LOG.error("Not able to uniquely identify config for: '", fragment, "' . Try to adjust your transformation configs.");
+                            LOG.error("Not able to uniquely identify config for: '", fragment, "' . The Conflicting configurations are - ", matchedConfigs);
                         } else if (matchedConfigs.length === 1) {
                             matchedConfig = matchedConfigs[0][direction];
+                            matchedConfig.transformer = matchedConfigs[0].transformer;
                         }
+                    } else {
+                        LOG.warn("Not able to find config for: '", fragment, "' .");
                     }
                     return matchedConfig;
                 },
-                _resolveByElementName : function _resolveByElementName(configs, element, direction) {
-                    var matchedConfigs = configs[direction][element[PATH]];
+                _resolveByElementName : function _resolveByElementName(context) {
+                    var matchedConfigs = context.matchedConfigs[context.direction][context.element[PATH]];
                     if (matchedConfigs) {
-                        element.matchedBy = MATCH_TYPE_ELEMENT_NAME;
+                        context.element.matchedBy = MATCH_TYPE_ELEMENT_NAME;
+                    } else {
+                        matchedConfigs = [];
                     }
+
                     return matchedConfigs;
                 },
                 /*
                  * Resolve the transformation config in case of the presence of the from attribute
                  */
-                _resolveConfigsForFromAttribute : function _resolveConfigsForFromAttribute(context) {
+                _resolveConfigsByAttribute : function _resolveConfigsByAttribute(context) {
                     if (context.elementLevel !== FIRST_LEVEL_ELEMENT) {
-                        return;
+                        return context.matchedConfigs;
                     }
-                    context.forEachFirstLevelConfig(function(firstLevelConfig) {
-                        if (!firstLevelConfig.fromAttribute) {
-                            return true;
-                        } else {
-                            if (!!firstLevelConfig.fromAttributeValue
-                                    && context.element.attributes[firstLevelConfig.fromAttribute] === firstLevelConfig.fromAttributeValue) {
-                                // if branched here it means that in order to resolver config, the element name needs to be matched as well as its attribute and
-                                // attribute value
-                                return MATCH_TYPE_ATTRIBUTE_NAME_AND_VALUE.hasGreaterPriorityThanInElement(context.element);
-                            } else if (!firstLevelConfig.fromAttributeValue && !!context.element.attributes[firstLevelConfig.fromAttribute]) {
-                                // if branched here it means that in order to resolver config, the element name needs to be matched as well as its attribute
-                                return MATCH_TYPE_ATTRIBUTE_NAME.hasGreaterPriorityThanInElement(context.element);
-                            }
+                    var newMatchedConfigs = [];
+                    context.matchedConfigs.forEach(function(config) {
+                        var firstLevelConfig = config[context.direction][FIRST_LEVEL_ELEMENT];
+                        var firstLevelFromAttribute = firstLevelConfig.fromAttribute;
+                        var firstLevelFromAttributeValue = firstLevelConfig.fromAttributeValue;
+
+                        if (!!firstLevelFromAttributeValue && context.element.attributes[firstLevelFromAttribute] === firstLevelFromAttributeValue) {
+                            // if branched here it means that in order to resolver config, the element name needs to be matched as well as its attribute and
+                            // attribute value
+                            newMatchedConfigs = MATCH_TYPE_ATTRIBUTE_NAME_AND_VALUE.matchConfigs(context.element, newMatchedConfigs, config);
+                        } else if (context.element.attributes.hasOwnProperty(firstLevelFromAttribute) && !firstLevelFromAttributeValue) {
+                            // if branched here it means that in order to resolver config, the element name needs to be matched as well as its attribute
+                            newMatchedConfigs = MATCH_TYPE_ATTRIBUTE_NAME.matchConfigs(context.element, newMatchedConfigs, config);
+                        } else if (!firstLevelFromAttribute) {
+                            newMatchedConfigs = MATCH_TYPE_ELEMENT_NAME.matchConfigs(context.element, newMatchedConfigs, config);
                         }
-                        return false;
+
                     });
+                    return newMatchedConfigs;
                 },
 
                 /*
@@ -266,7 +273,6 @@ define(function transformationConfigResolverModule(require) {
                             transformationConfigs : transformationConfigs
                         });
                     }
-
                 },
                 /*
                  * Adds transformation configs representing exactly one element and one of the to possible direction: 'to' or 'from'
@@ -274,13 +280,15 @@ define(function transformationConfigResolverModule(require) {
                 _addTransformationConfigsForDirection : function _addTransformationConfigs(params) {
                     var transformationConfigsForDirection = params.transformationConfigs[params.direction];
                     var resolverConfigsForDirection = this._.resolverConfigs[params.direction];
-                    for ( var ii in transformationConfigsForDirection) {
-                        this._pushConfigToResolver({
-                            direction : params.direction,
-                            transformationConfigs : params.transformationConfigs,
-                            transformationConfigsIndex : ii,
-                            resolverConfigsForDirection : resolverConfigsForDirection
-                        });
+                    if (transformationConfigsForDirection) {
+                        for (var ii = 0; ii < transformationConfigsForDirection.length; ii++) {
+                            this._pushConfigToResolver({
+                                direction : params.direction,
+                                transformationConfigs : params.transformationConfigs,
+                                transformationConfigsIndex : ii,
+                                resolverConfigsForDirection : resolverConfigsForDirection
+                            });
+                        }
                     }
                 },
                 /*

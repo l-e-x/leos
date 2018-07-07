@@ -1,0 +1,15 @@
+                      PREVIEW DOCUMENT - HOWTO
+--------------------------------------------------------------------------------
+
+                            PREVIEW HTML
+--------------------------------------------------------------------------------
+In the document viewer, on the left-hand side of the document tool-bar, click on
+the first icon labelled as 'Preview in Browser'. A new window will open with the
+document preview in HTML representation.
+
+                            PREVIEW PDF
+--------------------------------------------------------------------------------
+Preview in PDF: In the document viewer, on the left-hand side of the document 
+tool-bar, click on the second icon labelled as 'Preview in PDF Format'. A new 
+window will open with the document preview in PDF format. You can also save it
+on your computer.

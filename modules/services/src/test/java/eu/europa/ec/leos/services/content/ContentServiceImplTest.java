@@ -13,9 +13,32 @@
  */
 package eu.europa.ec.leos.services.content;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.isA;
+import static org.mockito.Matchers.notNull;
+import static org.mockito.Matchers.same;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+
+
 import com.google.common.net.MediaType;
+
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.repositories.content.ContentRepository;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties;
 import eu.europa.ec.leos.services.exception.LeosDocumentLockException;
 import eu.europa.ec.leos.services.locking.LockingService;
 import eu.europa.ec.leos.support.xml.XmlContentProcessor;
@@ -23,17 +46,6 @@ import eu.europa.ec.leos.support.xml.XmlHelper;
 import eu.europa.ec.leos.support.xml.XmlMetaDataProcessor;
 import eu.europa.ec.leos.test.support.LeosTest;
 import eu.europa.ec.leos.vo.MetaDataVO;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.*;
 
 public class ContentServiceImplTest extends LeosTest {
 
@@ -63,38 +75,45 @@ public class ContentServiceImplTest extends LeosTest {
         String metaDocType = "metadata doc type";
         String metaDocPurpose = "metadata doc title";
         MetaDataVO metadataVO = setupMetadataVO(metaDocStage, metaDocType, metaDocPurpose);
-
-        String proprietaryTag = "proprietary";
+        Map<String, String> hm = new HashMap<String, String>();
+        hm.put(XmlMetaDataProcessor.DEFAULT_DOC_PURPOSE_ID, metadataVO.getDocPurpose());
+        
+        String proprietaryTag = "meta";
         String proprietaryXml = "proprietary xml";
         byte[] updatedProprietaryContent = "updated document content with proprietary xml".getBytes(UTF_8);
 
         when(lockingService.isDocumentLockedFor(docId, "userId", null)).thenReturn(true);
-
-        when(xmlMetaDataProcessor.createXmlForProprietary(metadataVO)).thenReturn(proprietaryXml);
-        when(xmlContentProcessor.replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml)).thenReturn(updatedProprietaryContent);
+        
+        when(xmlContentProcessor.getElementByNameAndId(docContent, "meta", null)).thenReturn(proprietaryXml);
+        when(xmlMetaDataProcessor.toXML(metadataVO,proprietaryXml)).thenReturn(proprietaryXml);
+        when(xmlContentProcessor.replaceElementsWithTagName(docContent, proprietaryTag, proprietaryXml)).thenReturn(updatedProprietaryContent);
 
         String docPurposeTag = "docPurpose";
         String docPurposeXml = XmlHelper.buildTag(docPurposeTag, metadataVO.getDocPurpose());
         byte[] updateddocPurposeContent = "updated document content with title xml".getBytes(UTF_8);
+
         LeosDocument updatedTitleDocument = setupLeosDocumentMock(docId, docName, updateddocPurposeContent);
-        when(xmlContentProcessor.replaceElementWithTagName(updatedProprietaryContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
+        //when(xmlContentProcessor.replaceElementsWithTagName(updatedProprietaryContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
+        when(xmlContentProcessor.updateReferedAttributes(updatedProprietaryContent,hm)).thenReturn(updateddocPurposeContent);
         when(xmlContentProcessor.doXMLPostProcessing(updateddocPurposeContent)).thenReturn(updateddocPurposeContent);
-        when(contentRepository.updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class), isA(InputStream.class), same("operation.metadata.updated"), same(LeosDocument.class))).thenReturn(
+        
+        when(contentRepository.updateContent(same(docId), anyLong(), isA(MediaType.class), isA(InputStream.class), isA(StorageProperties.class), same(LeosDocument.class))).thenReturn(
                 updatedTitleDocument);
 
-        String updatedDocName = metaDocType + " " + metaDocPurpose;
+        String updatedDocName = metaDocStage +" "+metaDocType + " " + metaDocPurpose;
         LeosDocument updatedNameDocument = setupLeosDocumentMock(docId, updatedDocName, updateddocPurposeContent);
-        when(contentRepository.rename(docId, updatedDocName,("operation.document.renamed"))).thenReturn(updatedNameDocument);
 
         // DO THE ACTUAL CALL
         contentServiceImpl.updateMetaData(originalDocument, "userId", metadataVO);
 
-        verify(xmlMetaDataProcessor).createXmlForProprietary(metadataVO);
-        verify(xmlContentProcessor).replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml);
-        verify(xmlContentProcessor).replaceElementWithTagName(updatedProprietaryContent, docPurposeTag, docPurposeXml);
+        verify(xmlMetaDataProcessor).toXML(metadataVO,proprietaryXml);
+        verify(xmlContentProcessor).getElementByNameAndId(docContent, "meta", null);
+        verify(xmlContentProcessor).replaceElementsWithTagName(docContent, proprietaryTag, proprietaryXml);
+        //verify(xmlContentProcessor).replaceElementsWithTagName(updatedProprietaryContent, docPurposeTag, docPurposeXml);
+        verify(xmlContentProcessor).updateReferedAttributes(updatedProprietaryContent,hm);
         verify(xmlContentProcessor).doXMLPostProcessing(updateddocPurposeContent);
-        verify(contentRepository).updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class),  isA(InputStream.class),same("operation.metadata.updated"), same(LeosDocument.class));
-        verify(contentRepository).rename(docId, updatedDocName,("operation.document.renamed"));
+
+        verify(contentRepository).updateContent(same(docId), anyLong(), isA(MediaType.class),  isA(InputStream.class),isA(StorageProperties.class), same(LeosDocument.class));
         verifyNoMoreInteractions(xmlMetaDataProcessor, xmlContentProcessor, contentRepository);
     }
 
@@ -125,41 +144,43 @@ public class ContentServiceImplTest extends LeosTest {
         String metaDocType = "metadata doc type";
         String metaDocPurpose = "metadata doc title";
         MetaDataVO metadataVO = setupMetadataVO(metaDocStage, metaDocType, metaDocPurpose);
-
-        String proprietaryTag = "proprietary";
+        Map<String, String> hm = new HashMap<String, String>();
+        hm.put(XmlMetaDataProcessor.DEFAULT_DOC_PURPOSE_ID, metadataVO.getDocPurpose());
+        
+        String metaTag = "meta";
         String proprietaryXml = "proprietary xml";
 
         when(lockingService.isDocumentLockedFor(docId, "sessionId", null)).thenReturn(true);
+        when(xmlContentProcessor.getElementByNameAndId(docContent, "meta", null)).thenReturn(proprietaryXml);
+        when(xmlMetaDataProcessor.toXML(metadataVO,proprietaryXml)).thenReturn(proprietaryXml);
+        when(xmlContentProcessor.replaceElementsWithTagName(docContent, metaTag, proprietaryXml)).thenThrow(new IllegalArgumentException());
 
-        when(xmlMetaDataProcessor.createXmlForProprietary(metadataVO)).thenReturn(proprietaryXml);
-        when(xmlContentProcessor.replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml)).thenThrow(new IllegalArgumentException());
-
-        String metaTag = "meta";
         byte[] updatedMetaContent = "updated document content with meta and proprietary xml".getBytes(UTF_8);
-        when(xmlContentProcessor.appendElementToTag(docContent, metaTag, proprietaryXml)).thenReturn(updatedMetaContent);
+        when(xmlContentProcessor.appendElementToTag(docContent, "bill", proprietaryXml)).thenReturn(updatedMetaContent);
 
-        String docPurposeTag = "docPurpose";
-        String docPurposeXml = XmlHelper.buildTag(docPurposeTag, metadataVO.getDocPurpose());
+        //String docPurposeTag = "docPurpose";
+        //String docPurposeXml = XmlHelper.buildTag(docPurposeTag, metadataVO.getDocPurpose());
         byte[] updateddocPurposeContent = "updated document content with title xml".getBytes(UTF_8);
         LeosDocument updatedTitleDocument = setupLeosDocumentMock(docId, docName, updateddocPurposeContent);
-        when(xmlContentProcessor.replaceElementWithTagName(updatedMetaContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
-        when(contentRepository.updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class),isA(InputStream.class), same("operation.metadata.updated"), same(LeosDocument.class))).thenReturn(updatedTitleDocument);
+        //when(xmlContentProcessor.replaceElementsWithTagName(updatedMetaContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
+        when(xmlContentProcessor.updateReferedAttributes(updatedMetaContent,hm)).thenReturn(updateddocPurposeContent);
         when(xmlContentProcessor.doXMLPostProcessing(updateddocPurposeContent)).thenReturn(updateddocPurposeContent);
+        when(contentRepository.updateContent(same(docId), anyLong(), isA(MediaType.class),isA(InputStream.class), isA(StorageProperties.class), same(LeosDocument.class))).thenReturn(updatedTitleDocument);
 
-        String updatedDocName = metaDocType + " " + metaDocPurpose;
+        String updatedDocName =metaDocStage +" "+ metaDocType + " " + metaDocPurpose;
         LeosDocument updatedNameDocument = setupLeosDocumentMock(docId, updatedDocName, updateddocPurposeContent);
-        when(contentRepository.rename(docId, updatedDocName,("operation.document.renamed"))).thenReturn(updatedNameDocument);
 
         // DO THE ACTUAL CALL
         contentServiceImpl.updateMetaData(originalDocument, "sessionId", metadataVO);
 
-        verify(xmlMetaDataProcessor).createXmlForProprietary(metadataVO);
-        verify(xmlContentProcessor).replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml);
-        verify(xmlContentProcessor).appendElementToTag(docContent, metaTag, proprietaryXml);
-        verify(xmlContentProcessor).replaceElementWithTagName(updatedMetaContent, docPurposeTag, docPurposeXml);
+        verify(xmlContentProcessor).getElementByNameAndId(docContent, "meta", null);
+        verify(xmlMetaDataProcessor).toXML(metadataVO,proprietaryXml);
+        verify(xmlContentProcessor).replaceElementsWithTagName(docContent, metaTag, proprietaryXml);
+        verify(xmlContentProcessor).appendElementToTag(docContent, "bill", proprietaryXml);
+        //verify(xmlContentProcessor).replaceElementsWithTagName(updatedMetaContent, docPurposeTag, docPurposeXml);
+        verify(xmlContentProcessor).updateReferedAttributes(updatedMetaContent,hm);
         verify(xmlContentProcessor).doXMLPostProcessing(updateddocPurposeContent);
-        verify(contentRepository).updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class), isA(InputStream.class),same("operation.metadata.updated"), same(LeosDocument.class));
-        verify(contentRepository).rename(docId, updatedDocName,("operation.document.renamed"));
+        verify(contentRepository).updateContent(same(docId), anyLong(), isA(MediaType.class), isA(InputStream.class),isA(StorageProperties.class), same(LeosDocument.class));
         verifyNoMoreInteractions(xmlMetaDataProcessor, xmlContentProcessor, contentRepository);
     }
 
@@ -174,20 +195,18 @@ public class ContentServiceImplTest extends LeosTest {
         String metaDocType = "metadata doc type";
         String metaDocPurpose = "metadata doc title";
         MetaDataVO metadataVO = setupMetadataVO(metaDocStage, metaDocType, metaDocPurpose);
-
-        String proprietaryTag = "proprietary";
-        String proprietaryXml = "proprietary xml";
+        Map<String, String> hm = new HashMap<String, String>();
+        hm.put(XmlMetaDataProcessor.DEFAULT_DOC_PURPOSE_ID, metadataVO.getDocPurpose());
+        
+        String metaTag = "meta";
+        String metaXml = "proprietary xml";
 
         when(lockingService.isDocumentLockedFor(docId, "sessionId", null)).thenReturn(true);
-
-        when(xmlMetaDataProcessor.createXmlForProprietary(metadataVO)).thenReturn(proprietaryXml);
-        when(xmlContentProcessor.replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml)).thenThrow(new IllegalArgumentException());
-
-        String metaTag = "meta";
-        when(xmlContentProcessor.appendElementToTag(docContent, metaTag, proprietaryXml)).thenThrow(new IllegalArgumentException());
+        when(xmlContentProcessor.getElementByNameAndId(docContent, "meta", null)).thenReturn(metaXml);
+        when(xmlMetaDataProcessor.toXML(metadataVO,metaXml)).thenReturn(metaXml);
+        when(xmlContentProcessor.replaceElementsWithTagName(docContent, metaTag, metaXml)).thenThrow(new IllegalArgumentException());
 
         String billTag = "bill";
-        String metaXml = XmlHelper.buildTag(metaTag, proprietaryXml);
         byte[] updatedBillContent = "updated document content with bill, meta and proprietary xml".getBytes(UTF_8);
         when(xmlContentProcessor.appendElementToTag(docContent, billTag, metaXml)).thenReturn(updatedBillContent);
 
@@ -195,26 +214,26 @@ public class ContentServiceImplTest extends LeosTest {
         String docPurposeXml = XmlHelper.buildTag(docPurposeTag, metadataVO.getDocPurpose());
         byte[] updateddocPurposeContent = "updated document content with title xml".getBytes(UTF_8);
         LeosDocument updatedTitleDocument = setupLeosDocumentMock(docId, docName, updateddocPurposeContent);
-        when(xmlContentProcessor.replaceElementWithTagName(updatedBillContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
-        when(contentRepository.updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class), isA(InputStream.class), same("operation.metadata.updated"), same(LeosDocument.class))).thenReturn(
+        //when(xmlContentProcessor.replaceElementsWithTagName(updatedBillContent, docPurposeTag, docPurposeXml)).thenReturn(updateddocPurposeContent);
+        when(contentRepository.updateContent(same(docId), anyLong(), isA(MediaType.class), isA(InputStream.class), isA(StorageProperties.class), same(LeosDocument.class))).thenReturn(
                 updatedTitleDocument);
+        when(xmlContentProcessor.updateReferedAttributes(updatedBillContent,hm)).thenReturn(updateddocPurposeContent);
         when(xmlContentProcessor.doXMLPostProcessing(updateddocPurposeContent)).thenReturn(updateddocPurposeContent);
 
-        String updatedDocName = metaDocType + " " + metaDocPurpose;
+        String updatedDocName =metaDocStage +" "+ metaDocType + " " + metaDocPurpose;
         LeosDocument updatedNameDocument = setupLeosDocumentMock(docId, updatedDocName, updateddocPurposeContent);
-        when(contentRepository.rename(docId, updatedDocName,("operation.document.renamed"))).thenReturn(updatedNameDocument);
 
         // DO THE ACTUAL CALL
         contentServiceImpl.updateMetaData(originalDocument, "sessionId", metadataVO);
 
-        verify(xmlMetaDataProcessor).createXmlForProprietary(metadataVO);
-        verify(xmlContentProcessor).replaceElementWithTagName(docContent, proprietaryTag, proprietaryXml);
-        verify(xmlContentProcessor).appendElementToTag(docContent, metaTag, proprietaryXml);
+        verify(xmlMetaDataProcessor).toXML(metadataVO,metaXml);
+        verify(xmlContentProcessor).getElementByNameAndId(docContent, "meta", null);
+        verify(xmlContentProcessor).replaceElementsWithTagName(docContent, metaTag, metaXml);
         verify(xmlContentProcessor).appendElementToTag(docContent, billTag, metaXml);
-        verify(xmlContentProcessor).replaceElementWithTagName(updatedBillContent, docPurposeTag, docPurposeXml);
+        //verify(xmlContentProcessor).replaceElementsWithTagName(updatedBillContent, docPurposeTag, docPurposeXml);
+        verify(xmlContentProcessor).updateReferedAttributes(updatedBillContent,hm);
         verify(xmlContentProcessor).doXMLPostProcessing(updateddocPurposeContent);
-        verify(contentRepository).updateContent(same(docId), anyString(), anyLong(), isA(MediaType.class), isA(InputStream.class), same("operation.metadata.updated"), same(LeosDocument.class));
-        verify(contentRepository).rename(docId, updatedDocName,("operation.document.renamed"));
+        verify(contentRepository).updateContent(same(docId),  anyLong(), isA(MediaType.class), isA(InputStream.class), isA(StorageProperties.class), same(LeosDocument.class));
         verifyNoMoreInteractions(xmlMetaDataProcessor, xmlContentProcessor, contentRepository);
     }
 
@@ -226,18 +245,32 @@ public class ContentServiceImplTest extends LeosTest {
         when(originalDocument.getContentStream()).thenReturn(new ByteArrayInputStream(originalByteContent));
         MetaDataVO metaDataVO = new MetaDataVO();
 
-        when(xmlContentProcessor.getElementByNameAndId(originalByteContent, "proprietary", null)).thenReturn("meta");
-        when(xmlMetaDataProcessor.createMetaDataVOFromXml("meta")).thenReturn(metaDataVO);
+        when(xmlContentProcessor.getElementByNameAndId(originalByteContent, "meta", null)).thenReturn("meta");
+        when(xmlMetaDataProcessor.fromXML("meta")).thenReturn(metaDataVO);
 
         MetaDataVO result = contentServiceImpl.getMetaData(originalDocument);
 
         assertThat(result, is(metaDataVO));
     }
 
+    @Test
+    public void test_getAncestorsIdsForElementId_when_elementIdPassed_return_matchedAncestorsIds() {
+        LeosDocument document = mock(LeosDocument.class);
+        byte[] originalByteContent = new byte[]{1, 2, 3};
+        when(document.getContentStream()).thenReturn(new ByteArrayInputStream(originalByteContent));
+        String elementId = "xyz";
+        List<String> stubAncestorsIds = Arrays.asList("ab", "cd", "a1");
+        when(xmlContentProcessor.getAncestorsIdsForElementId((byte[]) notNull(), same(elementId))).thenReturn(stubAncestorsIds);
+        //Actual call
+        List<String> returnedAncestorsIds = contentServiceImpl.getAncestorsIdsForElementId(document, elementId);
+        assertThat(stubAncestorsIds, is(returnedAncestorsIds));
+    }
+
     private LeosDocument setupLeosDocumentMock(String id, String name, byte[] content) {
         LeosDocument document = mock(LeosDocument.class);
         when(document.getLeosId()).thenReturn(id);
         when(document.getName()).thenReturn(name);
+        when(document.getTitle()).thenReturn(name);
         InputStream stream = new ByteArrayInputStream(content);
         when(document.getContentStream()).thenReturn(stream);
         return document;
@@ -245,7 +278,6 @@ public class ContentServiceImplTest extends LeosTest {
 
     private MetaDataVO setupMetadataVO(String docStage,String docType, String docPurpose) {
         MetaDataVO metaDataVO = new MetaDataVO();
-        
         metaDataVO.setDocStage(docStage);
         metaDataVO.setDocType(docType);
         metaDataVO.setDocPurpose(docPurpose);

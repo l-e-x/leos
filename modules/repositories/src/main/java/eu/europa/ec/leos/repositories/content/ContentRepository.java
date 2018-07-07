@@ -15,17 +15,15 @@ package eu.europa.ec.leos.repositories.content;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.google.common.net.MediaType;
 
-import eu.europa.ec.leos.model.content.LeosFile;
-import eu.europa.ec.leos.model.content.LeosFileProperties;
-import eu.europa.ec.leos.model.content.LeosObject;
-import eu.europa.ec.leos.model.content.LeosObjectProperties;
+import eu.europa.ec.leos.model.content.*;
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties;
 
 public interface ContentRepository {
 
@@ -38,6 +36,15 @@ public interface ContentRepository {
     @Nonnull 
     List<LeosObjectProperties> browse(@Nonnull String folderPath);
 
+    /**
+     * Retrieve leos object properties of the folder and specific to a user.
+     *
+     * @param path the path of the folder to browse.
+     * @param user the connected user.
+     * @return a list of object properties, folders or documents (excluding content).
+     */
+    @Nonnull
+    List<LeosObjectProperties> getUserLeosObjectProperties(@Nonnull String folderPath, @Nonnull User user);
     /**
      * Retrieve the latest document with the given leosId.
      *
@@ -70,53 +77,46 @@ public interface ContentRepository {
      * Update the content of the document with the given id.
      *
      * @param leosId the leosId of the LeosFile to update.
-     * @param streamName the name of the new content. If <code>null</code>, the LeosFile name will be used.
      * @param streamLength the length, in bytes, of the new content. If <code>null</code>, the value <code>-1</code> will be used.
      * @param streamMimeType the MimeType of the new content. If <code>null</code>, the value <code>application/octet-stream</code> will be used.
      * @param inputStream the new content stream for the document.
-     * @param checkinComment checkinComment about the update
+     * @paran {@link StorageProperties} containing atleast
+     *  checkinComment checkinComment about the update
+     *  streamName the name of the new content. If <code>null</code>, the LeosFile name will be used.
      * @return the updated document.
      */
     @Nonnull
-    <T extends LeosFile> T updateContent(@Nonnull String leosId, @Nullable String streamName,
-            @Nullable Long streamLength, @Nullable MediaType streamMimeType,
-            @Nonnull InputStream inputStream, String checkinComment, Class<T> type);
+    <T extends LeosFile> T updateContent(@Nonnull String leosId, @Nullable Long streamLength, @Nullable MediaType streamMimeType,
+            @Nonnull InputStream inputStream, StorageProperties properties, Class<T> type );
 
     /**
      * Create a leosFile from another leosFile with the given path, including content.
      *
      * @param sourceFilePath the path of the source @{LeosFile}.
-     * @param targetFileName the name of the new document.
      * @param targetFolderPath the path of the folder where to create the document.
-     * @param checkinComment comment to be updated in repository
+     * @paran {@link StorageProperties} containing atleast
+     *  checkinComment checkinComment about the update
+     *  streamName the name of the new content. If <code>null</code>, the LeosFile name will be used.
      * @return the created document.
      */
-    @Nonnull
-    <T extends LeosFile> T copy(@Nonnull String sourceFilePath,
-            @Nonnull String targetFileName,
-            @Nonnull String targetFolderPath, String checkinComment);
-
     
-    /** rename the LeosObject with give leosId
-     * @param leosId
-     * @param name
-     * @param checkinComment comment to be updated in repository
-     * @return
-     */
-    <T extends LeosObject> T rename(String leosId, String name, String checkinComment);
+    @Nonnull
+    <T extends LeosFile> T copy(@Nonnull String sourceFilePath, @Nonnull String targetFolderPath, StorageProperties properties);
 
     /**
      * Create a leosFile with the given path, including properties and content.
      *
      * @param folderPath the path of the new LeosFile.
-     * @param documentName the name of the new LeosFile.
      * @param streamMimeType the MimeType of the content of the new LeosFile.
      * @param inputStream the content stream of the new document.
      * @param streamLength the length, in bytes, of the content of the new LeosFile.
+     * @paran {@link StorageProperties} containing atleast
+     *  checkinComment checkinComment about the update
+     *  documentName the name of the new content.
      * @param type LeosDocument/LeosFile
      * @return the created LeosFile.
      */
-    <T extends LeosFile> T create(String folderPath, String filetName, MediaType streamMimeType, InputStream inputStream, Long streamLength, Class<T> type);
+    <T extends LeosFile> T create(String folderPath, MediaType streamMimeType, InputStream inputStream, Long streamLength, StorageProperties properties, Class<T> type);
 
     /**
      * Delete a object by leosId
@@ -124,7 +124,7 @@ public interface ContentRepository {
      * @param leosId of the leos object to delete
      * @return void
      */
-    void delete(String leosId);
+    void delete(String leosId, Class type);
     
     /**
      * get available versions of a leosFile by leosId
@@ -140,7 +140,7 @@ public interface ContentRepository {
      * @param properties
      * @return
      */
-    <T extends LeosObject> T updateProperties(String leosId, Map<String, Object> properties);
+    <T extends LeosObject> T updateProperties(String leosId, StorageProperties properties);
 
     
 }

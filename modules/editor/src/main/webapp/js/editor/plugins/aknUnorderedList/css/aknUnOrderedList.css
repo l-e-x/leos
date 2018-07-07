@@ -47,6 +47,7 @@ li > ul {
     border: 1px dotted #808080;
     display: block;
     padding-top: 20px;
+    margin: 1px 1px 1px 13px;
     position: relative;
 }
 

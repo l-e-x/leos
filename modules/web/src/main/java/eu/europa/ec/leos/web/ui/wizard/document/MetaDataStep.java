@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.web.ui.wizard.document;
 
+import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 import com.vaadin.ui.Component;
@@ -29,11 +30,14 @@ public class MetaDataStep extends CustomComponent implements WizardStep {
     private static final long serialVersionUID = 6884508924788177667L;
 
     private MessageHelper messageHelper;
+    private LanguageHelper langHelper;
+
     private DocumentCreateWizardVO documentCreateWizardVO;
     private MetaDataFormComponent metaDataFormComponent;
 
-    public MetaDataStep(DocumentCreateWizardVO documentCreateWizardVO, MessageHelper messageHelper) {
+    public MetaDataStep(DocumentCreateWizardVO documentCreateWizardVO, MessageHelper messageHelper, LanguageHelper langHelper) {
         this.messageHelper = messageHelper;
+        this.langHelper = langHelper;
         this.documentCreateWizardVO = documentCreateWizardVO;
 
     }
@@ -56,7 +60,7 @@ public class MetaDataStep extends CustomComponent implements WizardStep {
 
         MetaDataVO metaDataVO = new MetaDataVO(documentCreateWizardVO.getTemplateId(), documentCreateWizardVO.getTemplateLanguage(),
                 null, docType, null, null);
-        metaDataFormComponent = new MetaDataFormComponent(messageHelper, metaDataVO);
+        metaDataFormComponent = new MetaDataFormComponent(messageHelper, langHelper, metaDataVO);
         return metaDataFormComponent;
     }
 

@@ -12,14 +12,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-
 @mixin documentview {
 
-/* LEOS document view styles */
+    /* LEOS document view styles */
     .leos-document {
     }
 
-/* LEOS document title style*/
+    /* LEOS document title style*/
     .leos-docview-doctitle {
         font-size: 16px;
         font-weight: bold;
@@ -33,11 +32,17 @@
         margin-bottom: 10px;
     }
 
-    .leos-viewdoc-icon {
-        width: 32px;
-        height: 32px;
-        margin-top: -15px;
-        margin-right: -5px;
+    .leos-docview-icon .v-icon{
+        font-size: 32px;
+        top:7px;
+        position:relative;
+    }
+
+    @each $stage in draft, edit, feedback {
+        .#{$stage}.leos-docview-icon {
+            color: stage-color($stage);
+            overflow:visible;
+        }
     }
 
     .leos-viewdoc-close .v-button-wrap {
@@ -66,7 +71,7 @@
         background: #DDD;
         border-bottom: 1px solid #AAA;
         border-top: 1px solid #AAA;
-        
+
     }
 
     .leos-viewdoc-padbar-both {
@@ -105,16 +110,16 @@
         font-weight: normal;
         text-align: justify;
         /* Normal: Line spacing: single */
-        line-height: 1.25em;        /* extra spacing for improved readability */
-    
+        line-height: 1.25em; /* extra spacing for improved readability */
+
         /**page layout**/
-        padding: 2.0cm 2.5cm;       /* LegisWrite page margins */
+        padding: 2.0cm 2.5cm; /* LegisWrite page margins */
         margin: 0.5cm auto;
         width: 18.2cm;
         min-height: 24.7cm;
         box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
         white-space: normal;
-        overflow:hidden;
+        overflow: hidden;
     }
 
 

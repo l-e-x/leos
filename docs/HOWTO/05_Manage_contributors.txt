@@ -1,0 +1,26 @@
+                        MANAGE CONTRIBUTORS - HOWTO
+--------------------------------------------------------------------------------
+
+1.  The owner/author of a document can choose to share the document with other 
+    users who can then view and edit content of the document. These additional 
+    users are called contributors in LEOS.
+
+2.  If a user is owner of a document, a 'Contributors' button is available, next
+    to the title on document card in the repository browser.  
+
+3.  To add a contributor, click on the 'Contributors' link or small '+' icon. A 
+    dialog will open with the list of all available users of the application.
+   
+3.  Select required users to add as contributors to the document and click 
+    'Save'. The users will be added to the list of contributors and will be 
+    visible below the 'Contributors' link. Now, this document will be available 
+    in repository browser of all the contributors for viewing and editing.
+   
+4.  To remove an existing contributor, click on the small '-' icon before the
+    contributor's name. The user will be removed from the list of contributors 
+    of the document and hence will not be able to view or edit the document.
+
+                            USER ROLES - HOWTO
+--------------------------------------------------------------------------------
+For LEOS user roles description 
+                - refer to User Roles HOWTO

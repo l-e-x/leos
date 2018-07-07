@@ -26,7 +26,7 @@
     <parent>
         <groupId>org.apache.chemistry.opencmis</groupId>
         <artifactId>chemistry-opencmis</artifactId>
-        <version>0.12.0</version>
+        <version>0.13.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
@@ -45,7 +45,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-war-plugin</artifactId>
-                <version>2.3</version>
                 <configuration>
                     <archive>
                         <manifestEntries>
@@ -128,7 +127,7 @@
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
-                <version>9.2.5.v20141112</version>
+                <version>9.2.14.v20151106</version>
                 <configuration>
                     <httpConnector>
                         <port>9090</port>
@@ -137,6 +136,15 @@
                         <contextPath>/${project.build.finalName}</contextPath>
                         <descriptor>target/${project.build.finalName}/WEB-INF/web.xml</descriptor>
                     </webAppConfig>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <version>2.2</version>
+                <configuration>
+                    <port>9090</port>
+                    <path>/${project.build.finalName}</path>
                 </configuration>
             </plugin>
         </plugins>
@@ -181,6 +189,13 @@
             <scope>provided</scope>
             <type>war</type>
         </dependency>
+        <!-- Uncomment for CORS support 
+        <dependency>
+            <groupId>com.thetransactioncompany</groupId>
+            <artifactId>cors-filter</artifactId>
+            <version>2.1.2</version>
+        </dependency>
+        -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>servlet-api</artifactId>

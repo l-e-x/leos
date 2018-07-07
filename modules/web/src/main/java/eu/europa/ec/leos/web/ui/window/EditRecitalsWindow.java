@@ -13,10 +13,16 @@
  */
 package eu.europa.ec.leos.web.ui.window;
 
+import java.util.List;
+
 import com.google.common.eventbus.EventBus;
 import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
 
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.web.event.view.document.LoadCrossReferenceTocEvent;
+import eu.europa.ec.leos.web.event.view.document.LoadElementContentEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
 import eu.europa.ec.leos.web.event.view.document.SaveRecitalsRequestEvent;
 import eu.europa.ec.leos.web.event.window.CloseRecitalsEditorEvent;
@@ -24,28 +30,29 @@ import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.CKEditorComponent;
 
-
 public class EditRecitalsWindow extends AbstractEditChangeMonitorWindow {
     private static final long serialVersionUID = 2324679729171812974L;
 
     private CKEditorComponent ckEditor;
     private String recitalsId;
-    private  final String EDITOR_NAME = "leosAknRecitalsEditor";
-    private  final String PROFILE_ID = "aknRecitals";
-    
-    public EditRecitalsWindow(MessageHelper messageHelper, EventBus eventBus, String recitalsId, String recitalsContentData, ConfigurationHelper cfgHelper) {
+    private static final String WINDOW_NAME = "editRecitalsWindow";
+    private static final String EDITOR_NAME = "leosAknRecitalsEditor";
+    private static final String PROFILE_ID = "aknRecitals";
+
+    public EditRecitalsWindow(MessageHelper messageHelper, EventBus eventBus, String recitalsId, String recitalsContentData, ConfigurationHelper cfgHelper,
+            User user) {
         super(messageHelper, eventBus);
 
         setWidth(880, Unit.PIXELS);
         setHeight(685, Unit.PIXELS);
         setCaption(messageHelper.getMessage("edit.recitals.window.title"));
         addButtonOnLeft(buildDapButton(cfgHelper.getProperty("leos.dap.edit.recitals.url")));
-        
-        ckEditor = new CKEditorComponent(PROFILE_ID , EDITOR_NAME,recitalsContentData);
+
+        ckEditor = new CKEditorComponent(PROFILE_ID, EDITOR_NAME, recitalsContentData, user, messageHelper);
         setBodyComponent(ckEditor);
-        
+
         addCKEditorListeners();
-        this.recitalsId=recitalsId;
+        this.recitalsId = recitalsId;
     }
 
     @Override
@@ -56,37 +63,63 @@ public class EditRecitalsWindow extends AbstractEditChangeMonitorWindow {
     @Override
     public void close() {
         ckEditor.actionDone(CKEditorComponent.CLOSE);
-        
+
     }
-    
+
     public void updateContent(String newContent) {
         ckEditor.setContent(newContent);
     }
+
+    public void setCrossReferenceTableOfContent(List<TableOfContentItemVO> tocItemList, List<String> ancestorsIds) {
+        ckEditor.setCrossReferenceTableOfContent(tocItemList, ancestorsIds);
+    }
     
-    private void addCKEditorListeners(){
-        
+    public void setElementContent(String elementContent) {
+    	ckEditor.setElementContent(elementContent);
+    }
+
+    private void addCKEditorListeners() {
+
         ckEditor.addChangeListener(new ValueChangeListener() {
             @Override
             public void valueChange(ValueChangeEvent event) {
-                enableSave();                
+                enableSave();
             }
         });
-        
+
         ckEditor.addSaveListener(new CKEditorComponent.SaveListener() {
             @Override
             public void saveClick(String content) {
                 eventBus.post(new SaveRecitalsRequestEvent(recitalsId, content));
                 EditRecitalsWindow.super.onSave();
             }
-        });                       
-         
+        });
+
         ckEditor.addCloseListener(new CKEditorComponent.CloseListener() {
             @Override
             public void close() {
+                EditRecitalsWindow.super.close();
                 eventBus.post(new CloseRecitalsEditorEvent(recitalsId));
                 eventBus.post(new RefreshDocumentEvent());
-                EditRecitalsWindow.super.close();
             }
         });
+
+        ckEditor.addCrossReferenceTocListener(new CKEditorComponent.CrossReferenceTocListener() {
+            @Override
+            public void loadCrossReferenceToc(String selectedNodeId) {
+                eventBus.post(new LoadCrossReferenceTocEvent(WINDOW_NAME, selectedNodeId));
+            }
+        });
+        
+    	ckEditor.addLoadElementContentListener(new CKEditorComponent.LoadElementContentListener() {
+			@Override
+			public void loadElementContent(String elementId, String elementType) {
+				eventBus.post(new LoadElementContentEvent(WINDOW_NAME, elementId, elementType));
+			}
+		});
+    }
+
+    public String getWindowName() {
+        return WINDOW_NAME;
     }
 }

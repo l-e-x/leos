@@ -21,7 +21,7 @@ define(function configNormalizerModule(require) {
     function _initializeRegexForConfigNormalizer() {
         var matchThePath = "(?:\\w*\\/)+";
         var matchTheElement="\\w*";
-        var matchTheAttributeWithValue="([\\w-_\:]+)(?:=([\\w-_]+)?)?";
+        var matchTheAttributeWithValue="([\\w-_\:]+)(?:=([\~?\\w-_\*\(\)\\s]+)?)?";
         var matchTheEnclosedAttributeWithValue="\\[matchTheAttributeWithValue\\]".replace("matchTheAttributeWithValue", matchTheAttributeWithValue);
         var matchThePathWithElementAndAttribute = "(matchThePath)?(?:(matchTheElement)?(?:matchTheEnclosedAttributeWithValue)?)?".replace("matchThePath",matchThePath).replace("matchTheElement",matchTheElement).replace("matchTheEnclosedAttributeWithValue",matchTheEnclosedAttributeWithValue);
         var matchPossibleSeparatorsInConfig = /[\/\[\]=]/g;
@@ -59,6 +59,7 @@ define(function configNormalizerModule(require) {
                     this._init();
                     this._.rawConfig = params.rawConfig;
                     this._normalizeRawConfig(params.rawConfig);
+                    this._.normalizedConfig.transformer = params.rawConfig.transformer;
                     return this._.normalizedConfig;
 
                 },

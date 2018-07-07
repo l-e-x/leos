@@ -24,5 +24,9 @@ public interface WorkspaceService {
      * @return a list of object properties, excluding content.
      */
     public List<LeosObjectProperties> browseUserWorkspace();
+    /**
+     * @return folder path in repository in string format
+     */
+    public String generateUserWorkspacePath();
 
 }

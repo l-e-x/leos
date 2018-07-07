@@ -21,7 +21,8 @@ define(function attributeTransformerModule(require) {
         "addClassAttributeTransformer": {
             isSupported: function(normAttr) {
                 if (!!normAttr.to) {
-                    if (normAttr.to === "class") {
+                    // valid for {html:"class=leos"} or {akn:"class=leos", html:"class=leos"}
+                    if (normAttr.to === "class" && (normAttr.from === "class" || !normAttr.from)) {
                         return true;
                     }
                 }
@@ -31,11 +32,31 @@ define(function attributeTransformerModule(require) {
                 var classValue = this.toElement.attributes[this.attrConfig.to];
                 if (!classValue) {
                     classValue = "";
-                } else if (classValue !== "") {
-                    classValue += " ";
+                } 
+                // handle the class name attribute at run-time. for eg: class=leos-highlight* (where * is calculated at run-time)
+                if (this.attrConfig.toValue) {
+                    var toValueArray = this.attrConfig.toValue.split(" ");
+                    var currentClassValueArray = []
+                    if (this.fromElement.attributes && this.fromElement.attributes[this.attrConfig.to]) {
+                        currentClassValueArray = this.fromElement.attributes[this.attrConfig.to].split(" ")
+                    }
+                    for (var j = 0; j < toValueArray.length; j++) {
+                        var toValueClass = toValueArray[j];
+                        var toValueRegex = new RegExp(toValueClass);
+                        var wasMatched = false;
+                        for (var i = 0; i < currentClassValueArray.length; i++) {
+                            var currentClassValue = currentClassValueArray[i];
+                            if (toValueClass.indexOf("*") != -1 && toValueRegex.test(currentClassValue)) {
+                                classValue = classValue + " " + currentClassValue;
+                                wasMatched = true;
+                            }
+                        }
+                        if (!wasMatched) {
+                            classValue = classValue + " " +  toValueClass;
+                        }
+                    }
                 }
-                classValue = classValue + this.attrConfig.toValue;
-                this.toElement.attributes['class'] = classValue;
+                this.toElement.attributes[this.attrConfig.to] = classValue.trim();
             }
         },
 

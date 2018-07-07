@@ -42,12 +42,22 @@ li > ol {
 	padding-left: 2.5em;
 }
 
+/********Styles for Subparagraphs and Alinea************/
+li > p {
+	margin-top:0;
+}
+
+p:last-child {
+	margin-bottom:0;
+}
+
+
 /* show block section */
  .cke_show_blocks  ol {
     border: 1px dotted #808080;
     display: block;
     padding: 20px 2px 4px 0px;
-    margin: 1px;
+    margin: 1px 1px 1px 13px;
     position: relative;
 }
 
@@ -63,11 +73,25 @@ li > ol {
 	background-repeat: no-repeat;
 	border: 1px dotted #808080;
 	padding: 1.5em 0.25em 0.5em 2.8em; 
-	margin: 1px;
+	margin: 1px 1px 1px 13px;
 	position: relative;
 	display: block;
 }
 
 .cke_show_blocks ol > li:after {
 	content: "POINT";
+}
+
+/**show blocks for alinea**/
+.cke_show_blocks li > p {
+	background-repeat: no-repeat;
+	border: 1px dotted #808080;
+	padding: 1.5em 0 0 1.6em; 
+	margin: 1px 1px 1px 13px;
+	position: relative;
+	display: block;
+}
+
+.cke_show_blocks li > p:after {
+	content: "ALINEA";
 }

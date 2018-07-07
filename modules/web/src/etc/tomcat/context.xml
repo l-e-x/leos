@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Context>
+    <Resource type="javax.sql.DataSource"
+              name="jdbc/leosDB"
+              url="jdbc:h2:tcp://localhost:8082/mem:leosDB;MODE=Oracle"
+              driverClassName="org.h2.jdbcx.JdbcConnectionPool"
+              auth="Container" username="sa" password="leos"/>
+</Context>

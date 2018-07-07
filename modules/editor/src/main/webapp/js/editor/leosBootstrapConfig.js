@@ -24,12 +24,15 @@ define(function leosBootstrapConfigModule() {
             domReady : "lib/requirejs-domready_2.0.1/domReady",
             promise : "lib/requirejs-promise_1.2.0/requirejs-promise",
             // JavaScript libraries
-            npo : "lib/native-promise-only_0.7.6-a/npo",
-            logger : "lib/loglevel_1.2.0/loglevel",
+            npo : "lib/native-promise-only_0.8.1/npo",
+            logger : "lib/loglevel_1.4.0/loglevel",
             lodash : "lib/lodash_2.4.1/lodash",
             stampit : "lib/stampit_1.1.0/stampit",
-            jquery: "lib/jquery_2.1.3/jquery",
-            ckEditor : "lib/ckeditor_4.4.7/ckeditor",
+            jquery: "lib/jquery_2.1.4/jquery",
+            ckEditor : "lib/ckeditor_4.5.3/ckeditor",
+            ck_jquery: "lib/ckeditor_4.5.3/adapters/jquery",
+            dateFormat : "lib/dateFormat_1.2.3/dateFormat",
+            jsTree : "lib/jsTree_3.2.1/jstree",
             // Other paths
             plugins : "plugins",
             /*=> start section with external ckEditor plugins, 
@@ -38,10 +41,8 @@ define(function leosBootstrapConfigModule() {
              * In order to add new external ckEditor plugin put it in this section and prefix it with
              * 'ck_' value.
              */
-            ck_scayt : "lib/plugins/scayt_4.4.7/plugin.js",
-            ck_lite  : "lib/plugins/lite_1.1.30/plugin.js"
+            ck_scayt : "lib/plugins/scayt_4.5.3/plugin.js"
             /*<= end section with external ckEditor plugins */
-
         },
         shim : {
             ckEditor : {
@@ -64,11 +65,20 @@ define(function leosBootstrapConfigModule() {
                     }
                     return new Promise(ckPromise);
                 }
+            },
+            ck_jquery: {
+                exports: "jQuery.fn.ckeditor",
+                deps: ["jquery", "promise!ckEditor"]
+            }, 
+            dateFormat : {
+                    exports : "dateFormat" 
             }
         },
         // initial modules to load asynchronously asap
-        deps : [ "npo", "logger" ],
+        deps : [ "npo", "logger", "jquery", "lodash" ],
         // enforce define to improve catching load failures in IE
-        enforceDefine : true
+        enforceDefine : true,
+        // loading modules/resources timeout (default is 7 seconds)
+        waitSeconds: 60
     });
 });

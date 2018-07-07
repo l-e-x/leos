@@ -36,6 +36,12 @@ public class LeosDocument extends LeosFile implements LeosDocumentProperties {
         return cmisDocument.getProperty(TITLE).getValueAsString();
     }
 
+    /** for LeosDocuments Title property is to be used as Name*/
+    @Override
+    public String getName() {
+        return getTitle();
+    }
+
     @Override
     public String getTemplate() {
         return cmisDocument.getProperty(TEMPLATE).getValueAsString();
@@ -44,5 +50,15 @@ public class LeosDocument extends LeosFile implements LeosDocumentProperties {
     @Override
     public String getLanguage() {
         return cmisDocument.getProperty(LANGUAGE).getValueAsString();
+    }
+    
+    @Override
+    public Stage getStage() {
+        return Stage.getStage(cmisDocument.getProperty(STAGE).getValueAsString());
+    }
+
+    @Override
+    public OwnerSystem getOwnerSystem() {
+        return OwnerSystem.getOwnerSystem(cmisDocument.getProperty(SYSTEM).getValueAsString());
     }
 }

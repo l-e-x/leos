@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="leosServer" class="org.eclipse.jetty.server.Server">
+    <New id="leosDataSource" class="org.eclipse.jetty.plus.jndi.Resource">
+        <Arg>jdbc/leosDB</Arg>
+        <Arg>
+            <Call class="org.h2.jdbcx.JdbcConnectionPool" name="create">
+                <Arg>jdbc:h2:tcp://localhost:8082/mem:leosDB;MODE=Oracle</Arg>
+                <Arg>sa</Arg>
+                <Arg>leos</Arg>
+            </Call>
+        </Arg>
+    </New>
+</Configure>

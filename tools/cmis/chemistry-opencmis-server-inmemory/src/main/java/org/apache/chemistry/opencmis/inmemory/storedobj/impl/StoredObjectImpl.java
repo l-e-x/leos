@@ -36,7 +36,6 @@ import org.apache.chemistry.opencmis.commons.PropertyIds;
 import org.apache.chemistry.opencmis.commons.data.AllowableActions;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.chemistry.opencmis.commons.data.PropertyData;
-import org.apache.chemistry.opencmis.commons.data.RenditionData;
 import org.apache.chemistry.opencmis.commons.impl.IOUtils;
 import org.apache.chemistry.opencmis.commons.spi.BindingsObjectFactory;
 import org.apache.chemistry.opencmis.inmemory.DataObjectCreator;
@@ -143,7 +142,16 @@ public class StoredObjectImpl implements StoredObject {
 
     @Override
     public void setModifiedAtNow() {
-        this.fModifiedAt = getNow();
+    	GregorianCalendar now = getNow();
+    	// ensure a larger time for modification date and change token:
+    	while (now.getTimeInMillis() == fModifiedAt.getTimeInMillis()) {
+    		try {
+    			Thread.sleep(1);
+    		} catch (InterruptedException ex) {    			
+    		}
+    		now = getNow();
+    	}
+        this.fModifiedAt = now;
     }
 
     @Override

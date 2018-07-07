@@ -18,7 +18,9 @@ define(function aknNumberedParagraphPluginModule(require) {
     // load module dependencies
     var LODASH = require("lodash");
     var pluginTools = require("plugins/pluginTools");
+    var pluginTools = require("plugins/pluginTools");
     var CKEDITOR = require("promise!ckEditor");
+    var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
 
     var LOG = require("logger");
     var ENTER_KEY = 13;
@@ -40,7 +42,7 @@ define(function aknNumberedParagraphPluginModule(require) {
                 action : stop
             });
 
-          editor.on("change", function(event) {
+            editor.on("change", function(event) {
                 var jqEditor = $(event.editor.editable().$);
                 var article = jqEditor.find("*[data-akn-name='article']");
                 if (article.length !== 0) {
@@ -50,7 +52,6 @@ define(function aknNumberedParagraphPluginModule(require) {
                         event.editor.getSelection().selectElement(new CKEDITOR.dom.node(article.find(">ol>li>br")[0]));
                     }
                 }
-
             });
 
             editor.on("change", resetDataAknNameForOrderedList, null, null, 0);
@@ -63,16 +64,16 @@ define(function aknNumberedParagraphPluginModule(require) {
      * Resets the numbering of the points depending on nesting level
      */
     function resetNumbering(event) {
-        event.editor.fire( 'lockSnapshot');
+        event.editor.fire('lockSnapshot');
         var jqEditor = $(event.editor.editable().$);
         var paragraphs = jqEditor.find("*[data-akn-name='aknNumberedParagraph']");
-        if (paragraphs.length>0) {
+        if (paragraphs.length > 0) {
             var sequence = generateSequenceForParagraph(paragraphs.length);
-            for (var ii=0;ii<paragraphs.length;ii++) {
+            for (var ii = 0; ii < paragraphs.length; ii++) {
                 paragraphs[ii].setAttribute(DATA_AKN_NUM, sequence[ii]);
             }
         }
-        event.editor.fire( 'unlockSnapshot' );
+        event.editor.fire('unlockSnapshot');
     }
 
     /*
@@ -116,7 +117,7 @@ define(function aknNumberedParagraphPluginModule(require) {
     var isFirstLevelLi = function isFirstLevelLi(liElement) {
         return !liElement.getAscendant('li');
     };
-    
+
     var isFirstLevelOl = function isFirstLevelOl(olElement) {
         return !olElement.getAscendant('ol');
     };
@@ -177,7 +178,7 @@ define(function aknNumberedParagraphPluginModule(require) {
     }
 
     function resetDataAknNameForOrderedList(event) {
-        event.editor.fire( 'lockSnapshot' );
+        event.editor.fire('lockSnapshot');
         var closestOlAncestor = getClosestOlAncestor(event.editor.getSelection());
         if (closestOlAncestor) {
             var firstLevelLi = true;
@@ -191,64 +192,37 @@ define(function aknNumberedParagraphPluginModule(require) {
                 }
                 if (currentNodeName === "li" && firstLevelLi) {
                     currentNode.setAttribute("data-akn-name", "aknNumberedParagraph");
-                    //returning false so the iterator won't go to its children
+                    // returning false so the iterator won't go to its children
                     return false;
                 }
             });
         }
-        event.editor.fire( 'unlockSnapshot' );
+        event.editor.fire('unlockSnapshot');
     }
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
-
-    var PARAGRAPH_NAME = "paragraph";
-
-    var transformationConfig = {
-        akn : PARAGRAPH_NAME,
-        html : 'li',
-        attr : [ {
-            akn : "leos:editable",
-            html : "contenteditable"
-        }, {
-            akn : "id",
-            html : "id"
-        }, {
-            html : "data-akn-name=aknNumberedParagraph"
-        } ],
-        sub : [ {
-            akn : 'num',
-            html : 'li',
-            attr : [ {
-                akn : "id",
-                html : "data-akn-num-id"
-            } ],
-            sub : {
-                akn : "text",
-                html : "li[data-akn-num]"
-
-            }
-        }, {
-            akn : "content",
-            html : "li",
-            attr : [ {
-                akn : "id",
-                html : "data-akn-content-id"
-            } ],
-            sub : {
-                akn : "mp",
-                html : "li",
-                attr : [ {
-                    akn : "id",
-                    html : "data-akn-mp-id"
-                } ],
-                sub : {
-                    akn : "text",
-                    html : "li/text"
-                }
-            }
-        } ]
-    };
-
+    
+    var leosHierarchicalElementTransformer = leosHierarchicalElementTransformerStamp({
+        firstLevelConfig: {
+            akn: 'paragraph',
+            html: 'li',
+            attr: [{
+                akn: "leos:editable",
+                html: "contenteditable"
+            }, {
+                akn: "id",
+                html: "id"
+            }, {
+                html: "data-akn-name=aknNumberedParagraph"
+            }]
+        },
+        rootElementsForFrom: ["paragraph"],
+        contentWrapperForFrom: "subparagraph",
+        rootElementsForTo: ["li"]
+    });
+    
+    var transformationConfig = leosHierarchicalElementTransformer.getTransformationConfig();
+    
     // return plugin module
     var pluginModule = {
         name : pluginName,

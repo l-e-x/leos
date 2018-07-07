@@ -13,22 +13,39 @@
  */
 package eu.europa.ec.leos.model.user;
 
-import java.io.Serializable;
+import eu.europa.ec.leos.model.AbstractAuditableEntity;
+import eu.europa.ec.leos.model.AbstractBaseEntity;
 
-public class User implements Serializable {
+import javax.persistence.*;
+
+@Entity
+@Table(name = "LEOS_USER")
+@AttributeOverrides({
+        @AttributeOverride(name = AbstractBaseEntity.STATE_FIELD_NAME, column = @Column(name = "USR_STATE", nullable = false, insertable = false, updatable = false)),
+        @AttributeOverride(name = AbstractAuditableEntity.CREATED_ON_FIELD_NAME, column = @Column(name = "USR_CREATED_ON", nullable = false, insertable = false, updatable = false)),
+        @AttributeOverride(name = AbstractAuditableEntity.UPDATED_ON_FIELD_NAME, column = @Column(name = "USR_UPDATED_ON", insertable = false, updatable = false))})
+@AssociationOverrides({
+        @AssociationOverride(name = AbstractAuditableEntity.CREATED_BY_FIELD_NAME, joinColumns = @JoinColumn(name = "USR_CREATED_BY", nullable = false, insertable = false, updatable = false)),
+        @AssociationOverride(name = AbstractAuditableEntity.UPDATED_BY_FIELD_NAME, joinColumns = @JoinColumn(name = "USR_UPDATED_BY", insertable = false, updatable = false))})
+@SequenceGenerator(name = "Generator.LeosUser", sequenceName = "SEQ_LEOS_USER", allocationSize = 1)
+public class User extends AbstractAuditableEntity<Long> {
+    // Because the application should not be managing users,
+    // fields should be insertable=false and updatable=false.
 
     private static final long serialVersionUID = 2524826537916551014L;
 
+    @Id
+    @Column(name = "USR_ID", nullable = false, insertable = false, updatable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "Generator.LeosUser")
     private Long id;
+
+    @Column(name = "USR_LOGIN", nullable = false, insertable = false, updatable = false, unique = true)
     private String login;
+
+    @Column(name = "USR_NAME", nullable = false, insertable = false, updatable = false)
     private String name;
 
-    public User(Long id, String login, String name) {
-        this.id = id;
-        this.login = login;
-        this.name = name;
-    }
-
+    @Override
     public Long getId() {
         return id;
     }
@@ -40,7 +57,7 @@ public class User implements Serializable {
     public String getName() {
         return name;
     }
-
+    
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("User{");
@@ -49,5 +66,16 @@ public class User implements Serializable {
         sb.append(", name='").append(name).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+    
+    @Transient
+    private Department dg;
+    
+    public Department getDepartment() {
+    	return dg;    
+    }   
+    
+    public void setDepartment(Department department) {
+    	dg=department;
     }
 }

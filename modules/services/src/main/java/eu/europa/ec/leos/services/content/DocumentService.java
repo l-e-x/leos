@@ -15,12 +15,11 @@ package eu.europa.ec.leos.services.content;
 
 import java.util.List;
 
-import javax.annotation.Nonnull;
-
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
 import eu.europa.ec.leos.vo.MetaDataVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.UserVO;
 
 public interface DocumentService {
 
@@ -84,6 +83,15 @@ public interface DocumentService {
     List<TableOfContentItemVO> getTableOfContent(LeosDocument document);
 
     /**
+     * Get the ancestors ids for given element id
+     * 
+     * @param elementId
+     * @return the ancestors ids.
+     */
+    List<String> getAncestorsIdsForElementId(LeosDocument document,
+            String elementId);
+
+    /**
      * Update the document with the new toc list
      * @param document 
      * @param userLogin      * 
@@ -95,7 +103,26 @@ public interface DocumentService {
     /**
      * @param leosId
      * @return
-     */
+    */
     List<LeosDocumentProperties> getDocumentVersions(String leosId);
+
+    /**
+     * delete the document with the given leosId.
+     * @param leosId the leosId of the document to delete.
+     */
+    void deleteDocument(String leosId);
+    /**
+     * @param leosId
+     * @param List<UserVO> contributors
+     * @return void
+     */
+    void setContributors (String leosId, List<UserVO> contributors) ;
+    /**
+     * Update Stage of the document
+     *
+     * @param document leosId
+     * @return updated document
+    */
+     LeosDocument updateStage(String leosId, LeosDocumentProperties.Stage newStage);
 
 }

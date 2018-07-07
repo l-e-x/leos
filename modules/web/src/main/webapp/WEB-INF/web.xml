@@ -36,7 +36,8 @@
     </context-param>
     <context-param>
         <param-name>heartbeatInterval</param-name>
-        <param-value>120</param-value><!-- heartbeat should always be smaller then half of the session timeout  -->
+        <param-value>120</param-value>
+        <!-- heartbeat should always be smaller then half of the session timeout  -->
     </context-param>
 
     <!-- SLF4J bridge listener -->
@@ -58,7 +59,7 @@
         <servlet-class>eu.europa.ec.leos.web.support.vaadin.LeosSpringVaadinServlet</servlet-class>
         <init-param>
             <param-name>sessionInitListenerBeans</param-name>
-            <param-value>eventBusSessionListener, authenticationSessionListener, presenterSessionListener</param-value>
+            <param-value>eventBusSessionListener, authenticationSessionListener, jsBootstrapSessionListener</param-value>
         </init-param>
         <init-param>
             <param-name>beanName</param-name>
@@ -83,44 +84,92 @@
     </servlet>
 
     <!-- Jersey REST Servlet -->
-    <servlet>
+      <servlet>
         <servlet-name>Jersey REST Servlet</servlet-name>
-        <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
-        <init-param>
-            <param-name>com.sun.jersey.config.property.packages</param-name>
-            <param-value>eu.europa.ec.leos.webservices.rest</param-value>
+        <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <!-- Static Resources Servlet -->
+    <servlet>
+        <servlet-name>StaticResources</servlet-name>
+        <servlet-class>eu.europa.ec.leos.web.support.resources.StaticResourcesServlet</servlet-class>
+         <init-param>
+            <param-name>basePath</param-name>
+            <param-value>/VAADIN/themes</param-value>
         </init-param>
     </servlet>
 
-    <!-- REST servlet -->
-    <servlet-mapping>
-        <servlet-name>Jersey REST Servlet</servlet-name>
-        <url-pattern>/rest/*</url-pattern>
-    </servlet-mapping>
-
-    <!-- LEOS servlet mappings -->
+    <!-- LEOS Web Application Servlet mappings -->
     <servlet-mapping>
         <servlet-name>LEOS Web Application Servlet</servlet-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/ui/*</url-pattern>
     </servlet-mapping>
     <servlet-mapping>
         <servlet-name>LEOS Web Application Servlet</servlet-name>
         <url-pattern>/VAADIN/*</url-pattern>
     </servlet-mapping>
 
-    <!-- Logback servlet mappings -->
+    <!-- Logback Status Servlet mappings -->
     <servlet-mapping>
         <servlet-name>Logback Status Servlet</servlet-name>
         <url-pattern>/logStatus</url-pattern>
     </servlet-mapping>
 
+    <!-- Jersey REST Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>Jersey REST Servlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Static Resources Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>StaticResources</servlet-name>
+        <url-pattern>/static/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- User authentication -->
+    <login-config>
+        <auth-method>BASIC</auth-method>
+    </login-config>
+
+    <!-- User roles -->
+    <security-role>
+        <description>Role to allow authentication</description>
+        <role-name>${leos.security.role.name}</role-name>
+    </security-role>
+
+    <!-- User access privileges -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>leos-private</web-resource-name>
+            <description>Require users to authenticate</description>
+            <url-pattern>/ui/*</url-pattern>
+            <url-pattern>/VAADIN/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Allow only users with role</description>
+            <role-name>${leos.security.role.name}</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <description>Encryption is not required</description>
+            <transport-guarantee>NONE</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- MIME mappings -->
     <mime-mapping>
         <extension>js</extension>
         <mime-type>application/javascript</mime-type>
     </mime-mapping>
+    <mime-mapping>
+        <extension>svg</extension>
+        <mime-type>image/svg+xml</mime-type>
+    </mime-mapping>
 
+    <!-- Session configuration -->
     <session-config>
-        <session-timeout>5</session-timeout><!-- session timeout should always be more then double of heartbeat  -->
+        <session-timeout>5</session-timeout>
+        <!-- session timeout should always be more then double of heartbeat  -->
     </session-config>
-
 </web-app>

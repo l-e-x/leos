@@ -20,7 +20,7 @@ define(function ckEditorFragmentFactoryModule(require) {
 
     var ckEditorFragmentFactoryStamp = STAMPIT().methods({
         getCkFragmentForHtml: function getCkFragmentForHtml(html) {
-            var ckEditorFragment = CKEDITOR.htmlParser.fragment.fromHtml(html);
+            var ckEditorFragment = CKEDITOR.htmlParser.fragment.fromHtml(html, '', false);
             return ckEditorFragment;
         },
 

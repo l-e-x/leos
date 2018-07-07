@@ -21,8 +21,7 @@
 	content: none;
 }
 
-
-.cke_show_blocks article>ol>li {
+.cke_show_blocks article > ol > li {
 	background-repeat: no-repeat;
 	border: 1px dotted #808080;
 	padding: 1.5em 0.25em 0.5em 0.25em; 
@@ -31,12 +30,20 @@
 	display: block;
 }
 
-.cke_show_blocks article>ol>li:before {
-	margin-left: 0;
-	padding-right: 1.5em;
-}
-
-
 .cke_show_blocks article>ol>li:after {
 	content: "PARAGRAPH";
+}
+
+/**show blocks for subparagraphs**/
+.cke_show_blocks article > ol > li > p {
+	background-repeat: no-repeat;
+	border: 1px dotted #808080;
+	padding: 1.5em 0.25em 0.5em 1.6em; 
+	margin: 1px 1px 1px 13px;
+	position: relative;
+	display: block;
+}
+
+.cke_show_blocks article > ol > li > p:after {
+	content: "SUBPARAGRAPH";
 }

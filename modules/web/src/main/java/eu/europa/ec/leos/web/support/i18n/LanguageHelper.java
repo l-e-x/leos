@@ -87,8 +87,7 @@ public class LanguageHelper {
         LOG.trace("Configured locales are initialized! [count={}]", configuredLocales.size());
     }
 
-    private @Nonnull
-    Optional<Locale> resolveLocale(@Nullable String languageTag) {
+    private @Nonnull Optional<Locale> resolveLocale(@Nullable String languageTag) {
         LOG.trace("Resolving locale from language tag... [langTag={}]", languageTag);
         Optional<Locale> localeOptional = Optional.absent();
 
@@ -111,8 +110,7 @@ public class LanguageHelper {
         return localeOptional;
     }
 
-    private @Nonnull
-    Locale getDefaultLocale() {
+    private @Nonnull Locale getDefaultLocale() {
         Locale defaultLocale;
 
         try {
@@ -131,10 +129,14 @@ public class LanguageHelper {
         return getDefaultLocale();
     }
 
-    public @Nonnull
-    Set<Locale> getConfiguredLocales() {
+    public @Nonnull Set<Locale> getConfiguredLocales() {
         Validate.notNull(configuredLocales, "The set of configured locales must not be null!");
         return configuredLocales;
+    }
+
+    public @Nonnull String getLanguageDescription(String languageCode) {
+        Validate.notNull(languageCode, "The languageCode parameter must not be null!");
+        return Locale.forLanguageTag(languageCode).getDisplayLanguage(getCurrentLocale());
     }
 
     private class DefaultLocaleInitializer extends LazyInitializer<Locale> {
@@ -155,5 +157,17 @@ public class LanguageHelper {
             LOG.trace("Default locale is initialized: {}", defaultLocale.getDisplayName(Locale.ENGLISH));
             return defaultLocale;
         }
+    }
+
+    public String getLanguageCode(String languageDescription) {
+        String languageCode = null;
+        Locale currentLocale = getCurrentLocale();
+        for (Locale loc : currentLocale.getAvailableLocales()) {
+            if (loc.getDisplayLanguage().equals(languageDescription)) {
+                languageCode = loc.getISO3Language();
+                break;
+            }
+        }
+        return languageCode;
     }
 }

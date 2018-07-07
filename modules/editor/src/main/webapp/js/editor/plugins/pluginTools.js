@@ -67,6 +67,15 @@ define(function pluginToolsModule(require) {
         transformationConfigManager.addTransformationConfigForPlugin(transformationConfig, pluginName);
     }
     
+    function getCurrentUTCDateAsString() {
+        return new Date().format("UTC:yyyy-mm-dd'T'HH:MM'Z'"); 
+    }
+    
+    
+    function getLocalDateFromUTCAsString(utcDate) {
+       return new Date(utcDate).format("yyyy-mm-dd HH:MM");
+    }
+    
     // return module definition
     var pluginTools = {
         addPlugin: addPlugin,
@@ -74,6 +83,8 @@ define(function pluginToolsModule(require) {
         addDialog: addDialog,
         getResourceUrl: getResourceUrl,
         toUrl: toUrl,
+        getCurrentUTCDateAsString : getCurrentUTCDateAsString,
+        getLocalDateFromUTCAsString : getLocalDateFromUTCAsString,
         addTransformationConfigForPlugin: addTransformationConfigForPlugin
     };
 

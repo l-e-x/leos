@@ -15,8 +15,6 @@ package eu.europa.ec.leos.web.ui.window;
 
 import java.util.List;
 
-import org.apache.commons.lang3.Validate;
-
 import com.google.common.eventbus.EventBus;
 import com.vaadin.ui.Button;
 
@@ -40,13 +38,8 @@ public class VersionsListWindow extends AbstractWindow {
     }
 
     public void prepareWindow(List<LeosDocumentProperties> documentVersions) {
-
         setWidth("650px");
         setHeight("400px");
-
-        setResizable(false);
-        setClosable(true);
-        setModal(true);
 
         Button compareButton = buildCompareButton();
         addButton(compareButton);
@@ -88,6 +81,7 @@ public class VersionsListWindow extends AbstractWindow {
     private Button buildCompareButton() {
         // create compare Button
         Button compareButton = new Button(messageHelper.getMessage("document.versions.button.compare"));
+        compareButton.addStyleName("primary");
         compareButton.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent event) {

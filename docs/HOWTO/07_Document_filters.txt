@@ -1,0 +1,22 @@
+                        FILTERS - HOWTO
+--------------------------------------------------------------------------------
+
+1.  In the repository view, on the left pane, filters are available
+    to filter the list of documents in the view based on different criteria.
+   
+2.  The filters consists of:
+   
+      - STAGES: A document can be in one the three stages 'IN REVIEW',
+        'IN DRAFTING' or 'FOR EDITION'. Documents with selected stages
+        will appear in the list.
+      
+      - TEMPLATES: Shows the list of documents created using the selected
+        templates.
+       
+      - LANGUAGES: Shows the list of documents created using the selected
+        languages.
+       
+      - ROLES: Shows the list of documents with the selected user roles.
+            
+3.  A 'Reset' button is provided on top-right side of filter pane to reset the 
+    changed filters to initial state.

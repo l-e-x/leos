@@ -13,18 +13,7 @@
  */
 package eu.europa.ec.leos.web.support;
 
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import javax.servlet.http.HttpSession;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import com.google.common.eventbus.EventBus;
-
 import eu.europa.ec.leos.model.security.SecurityContext;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.locking.LockingService;
@@ -33,7 +22,18 @@ import eu.europa.ec.leos.vo.lock.LockData;
 import eu.europa.ec.leos.vo.lock.LockLevel;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent.Type;
+import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.servlet.http.HttpSession;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+/**This class is intended to help presenters with locks and encapsulate locking implementation
+ * This class shall not make any changes to UI doirectly but request Presenter to make the change */
 @Component
 public class LockHelper {
 
@@ -49,7 +49,11 @@ public class LockHelper {
     @Autowired
     private HttpSession session;
 
-    private static final  String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
+    @Autowired
+    private MessageHelper messageHelper;
+
+    private static final String DATE_FORMAT = "dd-MM-yyyy HH:mm:ss";
+    private static final SimpleDateFormat dateFormatter = new SimpleDateFormat(DATE_FORMAT);
 
     public boolean lockElement(String elementId){
         String documentId = getDocumentId();
@@ -62,15 +66,19 @@ public class LockHelper {
         if (!lockActionInfo.sucesss()) {
             handleLockFailure(lockActionInfo);
         }
-        return lockActionInfo.sucesss(); 
+        return lockActionInfo.sucesss();
     }
 
+    /** get doc id fvorm session*/
     public boolean lockDocument(){
-        String documentId = getDocumentId();
+        return lockDocument(getDocumentId());
+    }
+
+    public boolean lockDocument(String documentId){
         if (documentId == null) {
             return false;
         }
-        
+
         User user = leosSecurityContext.getUser();
         LockActionInfo lockActionInfo = lockingService.lockDocument(documentId, user, session.getId(), LockLevel.DOCUMENT_LOCK);
         if (!lockActionInfo.sucesss()) {
@@ -79,8 +87,12 @@ public class LockHelper {
         return lockActionInfo.sucesss();
     }
 
+    /** get doc id fvorm session*/
     public boolean unlockDocument() {
-        String documentId = getDocumentId();
+        return unlockDocument(getDocumentId());
+    }
+
+    public boolean unlockDocument(String documentId) {
         if (documentId == null) {
             return false;
         }
@@ -130,13 +142,13 @@ public class LockHelper {
 
         if(!documentLocks.isEmpty()){
             LockData lockingInfo = documentLocks.get(0);//Max one docuemnt level lock is expected
-            eventBus.post(new NotificationEvent(Type.WARNING, "document.locked", lockingInfo.getUserName(), lockingInfo.getUserLoginName(),
-                    (new SimpleDateFormat(DATE_FORMAT)).format(new Date(lockingInfo.getLockingAcquiredOn()))));
+            eventBus.post(new NotificationEvent(Type.ERROR, "document.locked", lockingInfo.getUserName(), lockingInfo.getUserLoginName(),
+                    dateFormatter.format(new Date(lockingInfo.getLockingAcquiredOn()))));
         }
         else if(!elementLocks.isEmpty()){
             LockData lockingInfo = elementLocks.get(0);//TODO need to check the appropriate lock to send
-            eventBus.post(new NotificationEvent(Type.WARNING, "document.locked.article", lockingInfo.getUserName(), lockingInfo.getUserLoginName(), lockingInfo.getElementId(),
-                    (new SimpleDateFormat(DATE_FORMAT)).format(new Date(lockingInfo.getLockingAcquiredOn()))));
+            eventBus.post(new NotificationEvent(Type.ERROR, "document.locked.article", lockingInfo.getUserName(), lockingInfo.getUserLoginName(), lockingInfo.getElementId(),
+                    dateFormatter.format(new Date(lockingInfo.getLockingAcquiredOn()))));
         }//end else
     }//end method 
 
@@ -156,5 +168,29 @@ public class LockHelper {
 
     private String getDocumentId() {
         return (String) session.getAttribute(SessionAttribute.DOCUMENT_ID.name());
+    }
+
+    public String constructUserNote(String leosId, List<LockData> arrLocks){
+        StringBuilder sb= new StringBuilder();
+        for(LockData lockData: arrLocks){
+            if(messageHelper!=null){
+                switch (lockData.getLockLevel()){
+                    case READ_LOCK:
+                        sb.append(messageHelper.getMessage("document.locked.read", lockData.getUserName(), lockData.getUserLoginName(),
+                                dateFormatter.format(new Date(lockData.getLockingAcquiredOn()))));
+                        break;
+                    case ELEMENT_LOCK:
+                        sb.append(messageHelper.getMessage("document.locked.article", lockData.getUserName(), lockData.getUserLoginName(),lockData.getElementId(),
+                                dateFormatter.format(new Date(lockData.getLockingAcquiredOn()))));
+                        break;
+                    case DOCUMENT_LOCK:
+                        sb.append(messageHelper.getMessage("document.locked", lockData.getUserName(), lockData.getUserLoginName(),
+                                dateFormatter.format(new Date(lockData.getLockingAcquiredOn()))));
+                        break;
+                }//end switch
+                sb.append("<br> ");
+            }
+        }
+        return sb.toString();
     }
 }

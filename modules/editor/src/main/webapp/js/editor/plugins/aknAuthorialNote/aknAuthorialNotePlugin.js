@@ -81,6 +81,8 @@ define(function aknAuthorialNotePluginModule(require) {
         }, {
             akn : "id",
             html : "id"
+        }, {
+            html : ["data-akn-name", "aknAuthorialNote"].join("=")
         } ],
         sub : {
             akn : 'mp',

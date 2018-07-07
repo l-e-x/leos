@@ -21,7 +21,7 @@ public class TableOfContentItemVO {
 
     public static enum Type {
         PREFACE(true),
-        PREAMBLE(true),
+        PREAMBLE(false),
         BODY(true),
         PART(false),
         TITLE(false),
@@ -29,6 +29,8 @@ public class TableOfContentItemVO {
         SECTION(false),
         SUBSECTION(false),
         ARTICLE(false),
+        CITATIONS(false),
+        RECITALS(false),
         CONCLUSIONS(true);
 
         private boolean isRoot;
@@ -51,19 +53,19 @@ public class TableOfContentItemVO {
         }
     }
 
-    private final Type type;
-    private final String id;
-
-    private final String number;
-    private final String heading;
-
-    private final Integer numTagIndex;
-    private final Integer headingTagIndex;
-    private final Integer vtdIndex;
-
+    private Type type;
+    private String id;
+    private String number;
+    private String heading;
+    private Integer numTagIndex;
+    private Integer headingTagIndex;
+    private Integer vtdIndex;
     private final List<TableOfContentItemVO> childItems = new ArrayList<>();
     private TableOfContentItemVO parentItem;
 
+    public TableOfContentItemVO(){
+
+    }
     public TableOfContentItemVO(Type type, String id, String number, String heading, Integer numTagIndex, Integer headingTagIndex, Integer vtdIndex) {
         this.type = type;
         this.id = id;
@@ -72,6 +74,31 @@ public class TableOfContentItemVO {
         this.numTagIndex = numTagIndex;
         this.headingTagIndex = headingTagIndex;
         this.vtdIndex = vtdIndex;
+    }
+
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
+    }
+
+    public void setHeading(String heading) {
+        this.heading = heading;
+    }
+
+    public void setNumTagIndex(Integer numTagIndex) {
+        this.numTagIndex = numTagIndex;
+    }
+
+    public void setHeadingTagIndex(Integer headingTagIndex) {
+        this.headingTagIndex = headingTagIndex;
     }
 
     public Type getType() {
@@ -133,7 +160,8 @@ public class TableOfContentItemVO {
     }
 
     public boolean areChildrenAllowed() {
-        if (type.equals(TableOfContentItemVO.Type.ARTICLE) ||
+        if (type.equals(TableOfContentItemVO.Type.ARTICLE) || type.equals(TableOfContentItemVO.Type.CITATIONS) ||
+                type.equals(TableOfContentItemVO.Type.RECITALS) ||
                 (type.isRoot() && !type.equals(TableOfContentItemVO.Type.BODY))) {
             return false;
         }

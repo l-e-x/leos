@@ -328,7 +328,6 @@ public class TemplateSelectionStep extends CustomComponent implements WizardStep
 
         // make tree scrollable by wrapping it in a panel
         Panel container = new Panel();
-        container.setStyleName("light");
         container.setContent(tree);
         container.setSizeFull();
         return container;
@@ -369,7 +368,7 @@ public class TemplateSelectionStep extends CustomComponent implements WizardStep
             documentCreateWizardVO.setTemplateId(selectedItemId);
             documentCreateWizardVO.setTemplateName((String) item.getItemProperty(CatalogUtil.NAME_PROPERTY).getValue());
             documentCreateWizardVO.setTemplateDescription((String) item.getItemProperty(CatalogUtil.DESC_PROPERTY).getValue());
-            documentCreateWizardVO.setTemplateLanguage(langSelector.getItemCaption(langSelector.getValue()));
+            documentCreateWizardVO.setTemplateLanguage((String)langSelector.getValue());
         }
 
         return isValid;

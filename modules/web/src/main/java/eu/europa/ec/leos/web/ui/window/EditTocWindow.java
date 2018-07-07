@@ -16,6 +16,7 @@ package eu.europa.ec.leos.web.ui.window;
 import java.util.List;
 import java.util.Map;
 
+import com.vaadin.ui.*;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,18 +29,6 @@ import com.vaadin.data.Item;
 import com.vaadin.data.Property;
 import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.shared.ui.MarginInfo;
-import com.vaadin.ui.AbstractSelect;
-import com.vaadin.ui.Alignment;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.DragAndDropWrapper;
-import com.vaadin.ui.FormLayout;
-import com.vaadin.ui.GridLayout;
-import com.vaadin.ui.HorizontalLayout;
-import com.vaadin.ui.Label;
-import com.vaadin.ui.Panel;
-import com.vaadin.ui.TextField;
-import com.vaadin.ui.Tree;
-import com.vaadin.ui.VerticalLayout;
 
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
@@ -86,6 +75,7 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
 
         HorizontalLayout treeAndItemsArea = new HorizontalLayout();
         treeAndItemsArea.setSizeFull();
+        treeAndItemsArea.setSpacing(true);
         Panel tocPanel = buildTocTree();
         treeAndItemsArea.addComponent(tocPanel);
         treeAndItemsArea.setExpandRatio(tocPanel, 0.7f);
@@ -96,6 +86,7 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
         VerticalLayout windowBodyArea = new VerticalLayout();
         windowBodyArea.setSizeFull();
         windowBodyArea.setMargin(true);
+        windowBodyArea.setSpacing(true);
         windowBodyArea.addComponent(treeAndItemsArea);
         windowBodyArea.setExpandRatio(treeAndItemsArea, 1.0f);
         windowBodyArea.addComponent(buildTocItemEditionPanel());
@@ -243,6 +234,7 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
         gridLayout.setWidth(100, Unit.PERCENTAGE);
         gridLayout.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
         gridLayout.setSpacing(true);
+        gridLayout.setMargin(true);
         for (TableOfContentItemVO.Type type : TableOfContentItemVO.Type.values()) {
             if (!type.isRoot()) {
                 Label itemLabel = new Label(TableOfContentItemConverter.getDisplayableItemType(type, messageHelper));

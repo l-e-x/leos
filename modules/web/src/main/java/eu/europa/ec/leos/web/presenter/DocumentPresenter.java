@@ -13,29 +13,12 @@
  */
 package eu.europa.ec.leos.web.presenter;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
-
-import javax.annotation.PostConstruct;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.stereotype.Component;
-
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.server.VaadinServletService;
-
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.model.user.User;
-import eu.europa.ec.leos.services.content.ArticleService;
-import eu.europa.ec.leos.services.content.DocumentService;
-import eu.europa.ec.leos.services.content.RulesService;
-import eu.europa.ec.leos.services.content.WorkspaceService;
+import eu.europa.ec.leos.services.content.*;
+import eu.europa.ec.leos.services.exception.LeosPermissionDeniedException;
 import eu.europa.ec.leos.services.locking.LockUpdateBroadcastListener;
 import eu.europa.ec.leos.services.locking.LockingService;
 import eu.europa.ec.leos.support.web.UrlBuilder;
@@ -49,25 +32,28 @@ import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent.Type;
 import eu.europa.ec.leos.web.event.component.EditTocRequestEvent;
 import eu.europa.ec.leos.web.event.component.ReleaseAllLocksEvent;
-import eu.europa.ec.leos.web.event.view.document.CloseDocumentEvent;
-import eu.europa.ec.leos.web.event.view.document.DeleteArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.DownloadXmlRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EditArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EditMetadataRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.EnterDocumentViewEvent;
-import eu.europa.ec.leos.web.event.view.document.InsertArticleRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
-import eu.europa.ec.leos.web.event.view.document.SaveArticleRequestEvent;
-import eu.europa.ec.leos.web.event.window.CloseArticleEditorEvent;
-import eu.europa.ec.leos.web.event.window.CloseMetadataEditorEvent;
-import eu.europa.ec.leos.web.event.window.CloseTocEditorEvent;
-import eu.europa.ec.leos.web.event.window.SaveMetaDataRequestEvent;
-import eu.europa.ec.leos.web.event.window.SaveTocRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.*;
+import eu.europa.ec.leos.web.event.window.*;
 import eu.europa.ec.leos.web.support.LockHelper;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.view.DocumentView;
 import eu.europa.ec.leos.web.view.RepositoryView;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.PostConstruct;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Component
@@ -85,7 +71,10 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
 
     @Autowired
     private ArticleService articleService;
-
+    
+    @Autowired
+    private PreambleService preambleService;
+   
     @Autowired
     private DocumentView documentView;
 
@@ -116,7 +105,6 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
 
     @Subscribe
     public void enterDocumentView(EnterDocumentViewEvent event) throws IOException {
-
         String documentId = getDocumentId();
         if(documentId == null ){
             rejectView(RepositoryView.VIEW_ID, "document.id.missing");
@@ -127,10 +115,16 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
         LockActionInfo lockActionInfo = lockingService.lockDocument(documentId, user, session.getId(), LockLevel.READ_LOCK);
 
         if (lockActionInfo.sucesss()) {
-            LeosDocument document = getDocument();
-            populateViewWithDocumentDetails(document);
-            lockingService.registerLockInfoBroadcastListener(this);
-            documentView.updateLocks(lockActionInfo);
+            try {
+                LeosDocument document = getDocument();
+                populateViewWithDocumentDetails(document);
+                lockingService.registerLockInfoBroadcastListener(this);
+                documentView.updateLocks(lockActionInfo);
+                //TODO :dirty fix .below part needs to be rethought and enginnered again
+            }catch (LeosPermissionDeniedException permissionException){
+                eventBus.post(new NotificationEvent(Type.INFO, "permission.denied.message"));
+                rejectView(RepositoryView.VIEW_ID, "permission.denied.message");
+            }
         } else {
             LockData lockingInfo = lockActionInfo.getCurrentLocks().get(0); 
             rejectView(RepositoryView.VIEW_ID, "document.locked", lockingInfo.getUserName(), lockingInfo.getUserLoginName(),
@@ -140,7 +134,7 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
 
     @Override
     public void onViewLeave() {
-        // cleanup 
+        // cleanup
         lockingService.unregisterLockInfoBroadcastListener(this);
         String documentId = getDocumentId();
         if(documentId!=null){
@@ -304,6 +298,39 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
     }
 
     @Subscribe
+    public void loadCrossReferenceToc(LoadCrossReferenceTocEvent event) {
+        LeosDocument document = getDocument();
+        List<String> ancestorsIds = null;
+        if (event.getSelectedNodeId() != null) {
+            ancestorsIds = documentService.getAncestorsIdsForElementId(document, event.getSelectedNodeId());
+        }
+        documentView.setCrossReferenceToc(getTableOfContent(document), ancestorsIds, event.getWindowName());
+    }
+    
+    
+    @Subscribe
+    public void loadElementContent(LoadElementContentEvent event) {
+        LeosDocument document = getDocument();
+        String contentForType="";
+        if(event.getElementType().equals("ARTICLE")) {
+            contentForType = articleService.getArticle(document, event.getElementId());
+        } else if(event.getElementType().equals("CITATIONS")) {
+            contentForType = preambleService.getCitations(document, event.getElementId());
+        } else if(event.getElementType().equals("RECITALS")) {
+            contentForType = preambleService.getRecitals(document, event.getElementId());
+        }
+        String wrappedContentXml = wrapXmlFragment(contentForType);
+        InputStream contentStream = new ByteArrayInputStream(wrappedContentXml.getBytes(StandardCharsets.UTF_8));
+        contentForType = transformationManager.toXmlFragmentWrapper(contentStream, urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest()));
+
+        documentView.setElementContent(contentForType, event.getWindowName());
+    }
+    
+    private String wrapXmlFragment(String xmlFragment) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aknFragment xmlns=\"http://www.akomantoso.org/2.0\" xmlns:leos=\"urn:eu:europa:ec:leos\">" + xmlFragment + "</aknFragment>";
+    }
+    
+    @Subscribe
     public void saveMetaData(SaveMetaDataRequestEvent event) {
         if (lockHelper.isDocumentLockedFor()) {
             LeosDocument document = getDocument();
@@ -326,15 +353,21 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
     }
 
     private String getDocumentContent(LeosDocument document) {
-        return transformationManager.toEditableXml(document, urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest()));
+        return transformationManager.toEditableXml(document.getContentStream(), urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest()));
     }
 
     private LeosDocument getDocument() {
         String documentId=getDocumentId();
         LeosDocument document = null;
-        if (documentId != null) {
-            document =  documentService.getDocument(documentId);
+        try{
+            if (documentId != null) {
+                document =  documentService.getDocument(documentId);
+            }
+        } catch(IllegalArgumentException iae){
+            LOG.debug("Document {} can not be retrieved due to exception {}, Rejecting view", documentId, iae);
+            rejectView(RepositoryView.VIEW_ID, "document.not.found", documentId);
         }
+
         return document;
     }
 
@@ -350,7 +383,8 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
 
     private void populateViewWithDocumentDetails(LeosDocument document) throws IOException {
         if (document != null) {
-            documentView.setDocumentName(document.getName());
+            documentView.setDocumentTitle(document.getTitle());
+            documentView.setDocumentStage(document.getStage());
             documentView.refreshContent(getDocumentContent(document));
             documentView.setToc(getTableOfContent(document));
             String documentId = getDocumentId();

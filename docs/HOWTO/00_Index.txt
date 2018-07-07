@@ -1,0 +1,45 @@
+                            LEOS - HOWTO
+--------------------------------------------------------------------------------
+
+                            REPOSITORY BROWSER
+--------------------------------------------------------------------------------
+1.  Create a document
+        - refer to Create document HOWTO
+2.  Open a document
+        - refer to Open document HOWTO
+3.  Delete a document
+        - refer to Delete document HOWTO
+4.  Search documents
+        - refer to Search documents HOWTO
+5.  Manage contributors
+       - refer to Manage contributors HOWTO
+6.  Document stages
+        - refer to Document Stages HOWTO
+7.  Document filters
+        - refer to Document filters HOWTO
+
+                            DOCUMENT VIEWER
+--------------------------------------------------------------------------------
+8.  Edit document
+    8a.Edit Citations
+        - refer to CITATION EDITION in Leos Editor HOWTO 
+    8b. Edit Recitals
+        - refer to RECITAL EDITION in Leos Editor HOWTO
+    8c. Edit Articles
+        - refer to ARTICLE EDITION in Leos Editor HOWTO
+9.  Insert and delete Articles
+        - refer to Articles HOWTO
+10. Preview document as HTML/PDF
+        - refer to Preview document HOWTO
+11. Compare two versions
+        - refer to Compare two versions HOWTO
+12. Edit metadata
+       - refer to Edit metadata HOWTO
+13. Edit table of contents
+        - refer to Table of Content HOWTO
+14. Collaborative editing
+
+                            COMMENTS VIEWER
+--------------------------------------------------------------------------------
+15. Insert, edit and delete comments
+        - refer to Comments viewer HOWTO

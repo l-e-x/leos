@@ -13,12 +13,15 @@
  */
 package eu.europa.ec.leos.support.xml;
 
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
-
 import java.util.List;
+import java.util.Map;
+
+import eu.europa.ec.leos.vo.CommentVO;
+import eu.europa.ec.leos.vo.TableOfContentItemVO;
 
 public interface XmlContentProcessor {
 
+	public List<String> getAncestorsIdsForElementId(byte[] xmlContent, String idAttributeValue);
     /**
      * 
      * @param xmlContent
@@ -38,7 +41,7 @@ public interface XmlContentProcessor {
 
     public byte[] createDocumentContentWithNewTocList(List<TableOfContentItemVO> tableOfContentItemVOs, byte[] contentStream);
 
-    public byte[] replaceElementWithTagName(byte[] xmlContent, String tagName, String newContent);
+    public byte[] replaceElementsWithTagName(byte[] xmlContent, String tagName, String newContent);
 
     public byte[] appendElementToTag(byte[] xmlContent, String tagName, String newContent);
 
@@ -47,5 +50,23 @@ public interface XmlContentProcessor {
     public byte[] injectTagIdsinXML(byte[] xmlContent) ;
     
     public byte[] doXMLPostProcessing(byte[] xmlContent) ;
+
+    public byte[] updateReferedAttributes(byte[] xmlContent, Map<String, String> referenceValueMap);
+
+    /** Finds the element with the id and updates its content with comment String
+    * @param xmlContent
+    * @param id elementId 
+    * @param comment comment in xml format
+    * @param start true with comment to go in start, false if comment is added in end
+    * @return updated document
+     * @throws Exception in case element not found/error
+    */        
+    public byte[] insertCommentInElement(byte[] xmlContent, String elementId, String comment, boolean start) throws Exception;
+    
+    /** Finds all the comments and creates the structure
+    * @param xmlContent
+    * @return list of comments in commentVO
+    */            
+    public List<CommentVO> getAllComments(byte[] xmlContent);
 
 }

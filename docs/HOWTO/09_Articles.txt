@@ -1,0 +1,21 @@
+                        ARTICLES - HOWTO
+--------------------------------------------------------------------------------
+
+1.  To insert an article in the document, mouse-over an existing article in the
+    document viewer, the action buttons will be visible on the right side of the
+    highlighted article.
+   
+2.  Click on the 'Insert article after' or 'Insert article before' action button
+    to insert a new article before or after an existing article. The article
+    numbering will be adjusted accordingly.
+   
+3.  To delete an article click on the 'Delete article' action button, the 
+    article will be deleted from the document and  the article numbering will be
+    adjusted accordingly.
+   
+4.  To edit an article refer to 'ARTICLE EDITION' in 'Leos Editor HOWTO'.
+
+    Note: Some of the article may have only few of these actions available. This
+    is due to a functional requirement that some of articles are mandatory for 
+    the document type.
+   

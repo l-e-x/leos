@@ -65,8 +65,7 @@
         <appender-ref ref="ADMINLOGFILE" />
     </logger>
     
-    <logger name="org.apache.chemistry"  level="DEBUG" additivity="false">
-        <appender-ref ref="STDOUT"/>
+    <logger name="org.apache.chemistry"  level="ERROR" additivity="false">
         <appender-ref ref="FILE" />
     </logger>
     

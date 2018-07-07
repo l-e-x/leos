@@ -31,11 +31,12 @@
             // regex that matches the script filename
             var srcRegex = /(^|.*[\\\/])leosBootstrap.js(?:\?.*)?$/i;
             var scripts = document.getElementsByTagName("script");
-            var match, path;
+            var src, match, path;
 
             if (scripts && scripts.length > 0) {
                 for (var i in scripts) {
-                    match = scripts[i].src.match(srcRegex);
+                    src = scripts[i].src || "";
+                    match = src.match(srcRegex);
                     if (match) {
                         path = match[1];
                         break;
@@ -103,21 +104,67 @@
     });
 
     // export function that creates an editor instance with the specified profile
-    global.LEOS.createEditor = function createLeosEditor(profileId, htmlElementId, successCallback) {
-        require(["logger", "promise!ckEditor", "profiles/" + profileId], function createEditor(log, ckEditor, profile) {
-            log.debug("Creating Leos Editor with profile [name=%s] and replacing HTML element [id=%s]...", profile.name, htmlElementId);
+    /*
+     * @param params.profileId - id of the profile to be activated
+     * @param params.htmlElementId - id of the html element which is to be replaced by ckEditor instance
+     * @param params.successCallback - function to be executed on successful load of ckEditor instance
+     * @param params.userInfo - object containing user info with expected keys: 'userLogin' and 'userName'
+     */
+    global.LEOS.createEditor = function createLeosEditor(params) {
+        require(["logger", "promise!ckEditor", "profiles/" + params.profileId], function createEditor(log, ckEditor, profile) {
+            log.debug("Creating Leos Editor with profile [name=%s] and replacing HTML element [id=%s]...", profile.name, params.htmlElementId);
 
             // create CKEditor instance
-            var ckInstance = ckEditor.replace(htmlElementId, profile.config);
+            var ckInstance = ckEditor.replace(params.htmlElementId, profile.config);
 
             if (ckInstance) {
                 // store LEOS profile
                 ckInstance.LEOS = {
                     profile: profile
                 };
+                //pass user info to the instance
+                ckInstance.LEOS.userInfo = params.userInfo;
+                
                 // execute success callback
-                if (typeof successCallback === "function") {
-                    successCallback(ckInstance);
+                if (typeof params.successCallback === "function") {
+                    params.successCallback(ckInstance);
+                }
+            } else {
+                throw new Error("Unable to create Leos Editor instance!");
+            }
+        });
+    };
+
+    // export function that creates an editor instance with the specified profile
+    /*
+     * @param params.profileId - id of the profile to be activated
+     * @param params.htmlElementId - id of the html element which is to be replaced by ckEditor instance
+     * @param params.successCallback - function to be executed on successful load of ckEditor instance
+     * @param params.userInfo - object containing user info with expected keys: 'userLogin' and 'userName'
+     */
+    global.LEOS.createInlineEditor = function createInlineEditor(params) {
+        require([ "logger", "promise!ckEditor", "profiles/" + params.profileId ], function createEditor(log, ckEditor, profile) {
+            log.debug("Creating Leos Editor with profile [name=%s] and replacing HTML element [id=%s]...", profile.name, params.htmlElementId);
+            // The inline editor should be enabled on an element with "contenteditable" attribute set to "true".
+            // Otherwise CKEditor will start in read-only mode.
+            var editorContainer = document.getElementById(params.htmlElementId);
+            editorContainer.setAttribute('contenteditable', true);
+            // Turn off automatic editor creation first.
+            CKEDITOR.disableAutoInline = true;
+            // create CKEditor instance
+            var ckInstance = ckEditor.inline(params.htmlElementId, profile.config);
+
+            if (ckInstance) {
+                // store LEOS profile
+                ckInstance.LEOS = {
+                    profile : profile
+                };
+                //pass user info to the instance
+                ckInstance.LEOS.userInfo = params.userInfo;
+
+                // execute success callback
+                if (typeof params.successCallback === "function") {
+                    params.successCallback(ckInstance);
                 }
             } else {
                 throw new Error("Unable to create Leos Editor instance!");

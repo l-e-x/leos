@@ -13,11 +13,8 @@
  */
 package eu.europa.ec.leos.web.ui;
 
-import java.util.ArrayList;
-
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.vaadin.annotations.JavaScript;
 import com.vaadin.annotations.PreserveOnRefresh;
 import com.vaadin.annotations.Theme;
 import com.vaadin.navigator.Navigator;
@@ -26,30 +23,36 @@ import com.vaadin.navigator.ViewChangeListener;
 import com.vaadin.navigator.ViewDisplay;
 import com.vaadin.server.DefaultErrorHandler;
 import com.vaadin.server.VaadinRequest;
-import com.vaadin.ui.*;
-import com.vaadin.ui.Notification.Type;
-
+import com.vaadin.ui.ComponentContainer;
+import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
+import com.vaadin.ui.Window;
 import eu.europa.ec.leos.model.security.SecurityContext;
-import eu.europa.ec.leos.web.event.LeosUIComponentsStateUpdateEvent;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NavigationUpdateEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
-import eu.europa.ec.leos.web.support.LeosCacheToken;
+import eu.europa.ec.leos.web.presenter.AbstractPresenter;
+import eu.europa.ec.leos.web.support.NotificationManager;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.layout.Footer;
 import eu.europa.ec.leos.web.ui.component.layout.Header;
 import eu.europa.ec.leos.web.ui.screen.LeosScreen;
+import eu.europa.ec.leos.web.ui.screen.external.ExternalLinkHandler;
+import eu.europa.ec.leos.web.ui.themes.Themes;
 import eu.europa.ec.leos.web.view.UnauthorizedView;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.core.ResolvableType;
 import org.springframework.stereotype.Component;
-
 import ru.xpoft.vaadin.DiscoveryNavigator;
+import ru.xpoft.vaadin.SpringApplicationContext;
+
+import java.util.ArrayList;
 
 /**
  * LEOS web application main entry point.
@@ -57,8 +60,7 @@ import ru.xpoft.vaadin.DiscoveryNavigator;
 @Scope("session")
 @Component("leosUI")
 @PreserveOnRefresh
-@Theme("leos")
-@JavaScript({"vaadin://js/web/bootstrapLeosEditor.js" + LeosCacheToken.TOKEN})
+@Theme(Themes.DECIDE)
 public class LeosUI extends UI {
 
     private static final long serialVersionUID = 3748690254562200999L;
@@ -79,6 +81,9 @@ public class LeosUI extends UI {
 
     @Autowired
     private LanguageHelper langHelper;
+
+    @Autowired
+    private ExternalLinkHandler externalLinkHandler;
 
     private ComponentContainer body;
 
@@ -119,7 +124,7 @@ public class LeosUI extends UI {
         body.setSizeFull();
 
         // classic header/body/footer layout
-        final Header header = new Header(langHelper, messageHelper, eventBus, securityContext);
+        final Header header =  new Header(langHelper, messageHelper, eventBus, securityContext);
         leosLayout.addComponent(header);
 
         leosLayout.addComponent(body);
@@ -129,17 +134,6 @@ public class LeosUI extends UI {
 
         // expand body to use all available space
         leosLayout.setExpandRatio(body, 1.0f);
-
-        eventBus.register(new Object() {
-            @Subscribe
-            public void updateComponentsState(LeosUIComponentsStateUpdateEvent leosUIComponentsStateUpdateEvent) {
-                boolean state = leosUIComponentsStateUpdateEvent.isDisabled();
-
-                header.setEnabled(state);
-                body.setEnabled(state);
-                footer.setEnabled(state);
-            }
-        });
     }
 
     private void initNavigator() {
@@ -176,9 +170,9 @@ public class LeosUI extends UI {
         navigator.addViewChangeListener(new ViewChangeListener() {
             @Override
             public boolean beforeViewChange(ViewChangeEvent viewChangeEvent) {
-            	ArrayList<Window> arrWindows = new ArrayList<Window>();
-            	arrWindows.addAll(UI.getCurrent().getWindows());
-            	for(Window window: arrWindows){
+                ArrayList<Window> arrWindows = new ArrayList<Window>();
+                arrWindows.addAll(UI.getCurrent().getWindows());
+                for (Window window : arrWindows) {
                     LOG.info("Automatic closing of the window {}", window.getCaption());
                     window.close();
                 }
@@ -245,6 +239,69 @@ public class LeosUI extends UI {
                 eventBus.post(new NavigationUpdateEvent(newView.getViewId(), newView.getViewKey()));
             }
         });
+
+        // create view change listener to handle automatic registration for listening events
+        navigator.addViewChangeListener(new ViewChangeListener() {
+
+            ApplicationContext applicationContext = SpringApplicationContext.getApplicationContext();
+
+            @Override
+            public boolean beforeViewChange(ViewChangeEvent viewChangeEvent) {
+                if (viewChanged(viewChangeEvent)) {
+                    handlePresenters((LeosScreen) viewChangeEvent.getNewView(), true);
+                }
+                return true;
+            }
+
+            @Override
+            public void afterViewChange(ViewChangeEvent viewChangeEvent) {
+                if (viewChanged(viewChangeEvent)) {
+                    handlePresenters((LeosScreen) viewChangeEvent.getOldView(), false);
+                }
+            }
+
+            private boolean viewChanged(ViewChangeEvent viewChangeEvent) {
+                LeosScreen oldView = (LeosScreen) viewChangeEvent.getOldView();
+                LeosScreen newView = (LeosScreen) viewChangeEvent.getNewView();
+
+                boolean viewsChanged = (oldView != newView);
+
+                String oldViewId = (oldView != null) ? oldView.getViewId() : null;
+                String newViewId = (newView != null) ? newView.getViewId() : null;
+
+                if (viewsChanged) {
+                    LOG.trace("Views are changing! [oldViewId={}, newViewId={}]", oldViewId, newViewId);
+                } else {
+                    LOG.trace("Views are the same! [oldViewId={}, newViewId={}]", oldViewId, newViewId);
+                }
+
+                return viewsChanged;
+            }
+
+            private void handlePresenters(LeosScreen view, boolean register) {
+                if (view != null) {
+                    for (Class<?> clazz : view.getClass().getInterfaces()) {
+                        String[] presenters = applicationContext.getBeanNamesForType(ResolvableType.forClassWithGenerics(AbstractPresenter.class, clazz));
+                        for (String presenter : presenters) {
+                            if (presenter.contains("scopedTarget.")) {
+                                AbstractPresenter<?> presenterBean = (AbstractPresenter<?>) applicationContext.getBean(presenter);
+                                if (register) {
+                                    eventBus.register(presenterBean);
+                                    LOG.trace("Registered {} for Events", presenterBean.toString());
+
+                                } else {
+                                    eventBus.unregister(presenterBean);
+                                    LOG.trace("De-registered {} for Events", presenterBean.toString());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        navigator.addView(ExternalLinkHandler.EXTERNAL_LINK, defaultView);//registering default view to avoid exceptions
+        navigator.addViewChangeListener(externalLinkHandler);
     }
 
     // Error handler method to customize vaadin error messages
@@ -265,28 +322,6 @@ public class LeosUI extends UI {
     }
 
     private void registerNotificationSubscriber() {
-        eventBus.register(new Object() {
-            @Subscribe
-            public void showNotificationMessage(NotificationEvent notificationEvent) {
-
-                String message = messageHelper.getMessage(notificationEvent.getMessageKey(), notificationEvent.getArgs());
-                Notification.Type notificationType;
-                switch (notificationEvent.getType()) {
-                    case INFO:
-                        notificationType = Type.HUMANIZED_MESSAGE;
-                        break;
-                    case WARNING:
-                        notificationType = Type.WARNING_MESSAGE;
-                        break;
-                    case ERROR:
-                        notificationType = Type.ERROR_MESSAGE;
-                        break;
-                    default:
-                        // default handle it as an error
-                        notificationType = Type.ERROR_MESSAGE;
-                }
-                Notification.show(message, notificationType);
-            }
-        });
+        eventBus.register(new NotificationManager(messageHelper));
     }
 }

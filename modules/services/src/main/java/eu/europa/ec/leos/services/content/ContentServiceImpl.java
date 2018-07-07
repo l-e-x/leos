@@ -13,14 +13,27 @@
  */
 package eu.europa.ec.leos.services.content;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.List;
-
-import javax.annotation.Nonnull;
-import javax.xml.stream.XMLStreamException;
-
+import com.google.common.base.Stopwatch;
+import com.google.common.net.MediaType;
+import eu.europa.ec.leos.model.content.*;
+import eu.europa.ec.leos.model.content.LeosDocumentProperties.OwnerSystem;
+import eu.europa.ec.leos.model.content.LeosDocumentProperties.Stage;
+import eu.europa.ec.leos.model.security.SecurityContext;
+import eu.europa.ec.leos.model.user.Permission;
+import eu.europa.ec.leos.repositories.content.ContentRepository;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties;
+import eu.europa.ec.leos.repositories.support.cmis.StorageProperties.EditableProperty;
+import eu.europa.ec.leos.services.exception.LeosDocumentLockException;
+import eu.europa.ec.leos.services.exception.LeosPermissionDeniedException;
+import eu.europa.ec.leos.services.locking.LockingService;
+import eu.europa.ec.leos.services.user.PermissionService;
+import eu.europa.ec.leos.support.xml.XmlContentProcessor;
+import eu.europa.ec.leos.support.xml.XmlMetaDataProcessor;
+import eu.europa.ec.leos.vo.MetaDataVO;
+import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.UserVO;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,19 +41,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.common.net.MediaType;
-
-import eu.europa.ec.leos.model.content.LeosDocument;
-import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.model.content.LeosObjectProperties;
-import eu.europa.ec.leos.repositories.content.ContentRepository;
-import eu.europa.ec.leos.services.exception.LeosDocumentLockException;
-import eu.europa.ec.leos.services.locking.LockingService;
-import eu.europa.ec.leos.support.xml.XmlContentProcessor;
-import eu.europa.ec.leos.support.xml.XmlHelper;
-import eu.europa.ec.leos.support.xml.XmlMetaDataProcessor;
-import eu.europa.ec.leos.vo.MetaDataVO;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import javax.annotation.Nonnull;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class ContentServiceImpl implements WorkspaceService, DocumentService  {
@@ -59,6 +67,12 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
     @Autowired
     private XmlMetaDataProcessor xmlMetaDataProcessor;
 
+    @Autowired
+    private PermissionService permissionService;
+
+    @Autowired
+    protected SecurityContext leosSecurityContext;
+
     @Value("${leos.templates.path}")
     private String templatesPath;
 
@@ -72,10 +86,11 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
     public List<LeosObjectProperties> browseUserWorkspace() {
         String userWsPath = generateUserWorkspacePath();
         LOG.trace("Browsing user workspace... [path={}]", userWsPath);
-        return contentRepository.browse(userWsPath);
+        return contentRepository.getUserLeosObjectProperties(userWsPath, leosSecurityContext.getUser());
     }
 
-    private String generateUserWorkspacePath() {
+    @Override
+    public String generateUserWorkspacePath() {
         // TODO working directory should be defined per user (workspacesPath/userLogin)
         return samplesPath;
     }
@@ -85,8 +100,9 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
     public LeosDocument getDocument(String leosId) {
         LOG.trace("Getting document... [leosId={}]", leosId);
         Validate.notNull(leosId, "The document id must not be null!");
-
-        return contentRepository.retrieveById(leosId,LeosDocument.class);
+        LeosDocument leosDocument=contentRepository.retrieveById(leosId, LeosDocument.class);
+        checkPermission(leosDocument);
+        return leosDocument;
     }
     
     @Override
@@ -102,16 +118,17 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
 
         Validate.notNull(leosId, "The document id must not be null!");
         Validate.notNull(content, "The document content must not be null!");
-
-        return contentRepository.updateContent(leosId, null, (long) content.length, MediaType.XML_UTF_8,
-                new ByteArrayInputStream(content),checkinComment, LeosDocument.class);
+        StorageProperties properties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        properties.set(EditableProperty.CHECKIN_COMMENT, checkinComment);
+        
+        return contentRepository.updateContent(leosId, (long) content.length, MediaType.XML_UTF_8,
+                new ByteArrayInputStream(content), properties, LeosDocument.class);
     }
 
     public List<LeosDocumentProperties> getDocumentVersions(String leosId){
             Validate.notNull(leosId, "The document leosId must not be null!");
             return contentRepository.getVersions(leosId);
     }
-    
 
     @Override
     public LeosDocument createDocumentFromTemplate(String templateId, MetaDataVO metaDataVO) {
@@ -124,7 +141,17 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
         LOG.trace("Document name = {}", documentName);
         String workspacePath = generateUserWorkspacePath();
         LOG.trace("Workspace path = {}", workspacePath);
-        LeosDocument document = contentRepository.copy(templatePath, documentName, workspacePath,"operation.intial.version");
+        
+        StorageProperties properties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        properties.set(EditableProperty.NAME, documentName);
+        properties.set(EditableProperty.STAGE, Stage.DRAFT.getValue());
+        properties.set(EditableProperty.SYSTEM, OwnerSystem.LEOS.getValue());
+        properties.set(EditableProperty.TEMPLATE, templateId);
+        properties.set(EditableProperty.CHECKIN_COMMENT, "operation.initial.version");
+        properties.set(EditableProperty.AUTHOR_ID, leosSecurityContext.getUser().getLogin());
+        properties.set(EditableProperty.AUTHOR_NAME, leosSecurityContext.getUser().getName());
+        
+        LeosDocument document = contentRepository.copy(templatePath, workspacePath, properties);
         document = updateMetaData(document, metaDataVO);
         return document;
     }
@@ -144,8 +171,8 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
         Validate.notNull(document, "Document is required");
 
         try {
-            String metaData = xmlContentProcessor.getElementByNameAndId(IOUtils.toByteArray(document.getContentStream()), "proprietary", null);
-            return xmlMetaDataProcessor.createMetaDataVOFromXml(metaData);
+            String metaData = xmlContentProcessor.getElementByNameAndId(IOUtils.toByteArray(document.getContentStream()), "meta", null);
+            return xmlMetaDataProcessor.fromXML(metaData);
         } catch (IOException e) {
             throw new RuntimeException("Unable to fetch the metadata");
         }
@@ -171,17 +198,21 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
 
         byte[] content;
         try {
-            content = xmlContentProcessor
-                    .createDocumentContentWithNewTocList(tocList, IOUtils.toByteArray(document.getContentStream()));
+            content = xmlContentProcessor.createDocumentContentWithNewTocList(tocList, IOUtils.toByteArray(document.getContentStream()));
             // TODO validate bytearray for being valid xml/AKN content
 
             content = xmlContentProcessor.renumberArticles(content, document.getLanguage());
+            
+            StorageProperties properties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+            properties.set(EditableProperty.CHECKIN_COMMENT, "operation.toc.updated");
+            
             document = contentRepository.updateContent(
                         document.getLeosId(), 
-                        null, 
                         (long) content.length, 
                         MediaType.XML_UTF_8,
-                        new ByteArrayInputStream(content),"operation.toc.updated",LeosDocument.class); 
+                        new ByteArrayInputStream(content),
+                        properties,
+                        LeosDocument.class); 
         } catch (IOException e) {
             throw new RuntimeException("Unable to save the table of content");
         }
@@ -190,8 +221,12 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
 
     private String generateDocumentName(MetaDataVO metadataVO) {
         StringBuffer sb = new StringBuffer();
-        sb.append(metadataVO.getDocType());
-        sb.append(" ");
+        if (StringUtils.isNotBlank(metadataVO.getDocStage())) {
+            sb.append(StringUtils.appendIfMissing(metadataVO.getDocStage(), StringUtils.SPACE));
+        }
+        if (StringUtils.isNotBlank(metadataVO.getDocType())) {
+            sb.append(StringUtils.appendIfMissing(metadataVO.getDocType(), StringUtils.SPACE));
+        }
         sb.append(metadataVO.getDocPurpose());
         return sb.toString();
     }
@@ -202,49 +237,116 @@ public class ContentServiceImpl implements WorkspaceService, DocumentService  {
         }
     }
 
+    private void checkPermission(LeosDocument leosDocument ) {
+        if (!permissionService.getPermissions(leosSecurityContext.getUser(), leosDocument).contains(Permission.WRITE)) {
+            //TODO rethink on check permission impl
+            throw new LeosPermissionDeniedException("Permission denied for this document.Contact Owner " + leosDocument.getAuthor().getName());
+        }
+    }
+
     private LeosDocument updateMetaData(LeosDocument document, MetaDataVO metaDataVO) {
         try {
             byte[] updatedContent;
             byte[] documentContent = IOUtils.toByteArray(document.getContentStream());
-            String proprietary = xmlMetaDataProcessor.createXmlForProprietary(metaDataVO);
-            try {
-                updatedContent = xmlContentProcessor.replaceElementWithTagName(documentContent, "proprietary", proprietary);
-            } catch (IllegalArgumentException e) {
-                try {
-                    updatedContent = xmlContentProcessor.appendElementToTag(documentContent, "meta", proprietary);
-                } catch (IllegalArgumentException e1) {
-                    String metaTag = XmlHelper.buildTag("meta", proprietary);
-                    updatedContent = xmlContentProcessor.appendElementToTag(documentContent, "bill", metaTag);
-                }
-            }
+            Stopwatch stopwatch=Stopwatch.createStarted();
 
-            // KLUGE hack to sync document content with metadata
-            LOG.trace("Updating document title = {}", metaDataVO.getDocPurpose());
-            String docTitleTag = "docPurpose";
-            String docTitleXml = XmlHelper.buildTag(docTitleTag, metaDataVO.getDocPurpose());
-            updatedContent = xmlContentProcessor.replaceElementWithTagName(updatedContent, docTitleTag, docTitleXml);//TODO replace all
+            String existinMetaTag=xmlContentProcessor.getElementByNameAndId(documentContent, "meta", null);
+            String metaFragment = xmlMetaDataProcessor.toXML(metaDataVO, existinMetaTag);
+            LOG.trace("XML created for meta in :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+            try {
+                updatedContent = xmlContentProcessor.replaceElementsWithTagName(documentContent, "meta", metaFragment);
+            } catch (IllegalArgumentException e) {
+                    updatedContent = xmlContentProcessor.appendElementToTag(documentContent, "bill", metaFragment);
+            }
+            LOG.trace("Meta Tag updated in XML  :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+            Map<String, String> referencesValueMap =new HashMap<String, String>();
+            referencesValueMap.put( XmlMetaDataProcessor.DEFAULT_DOC_PURPOSE_ID, metaDataVO.getDocPurpose());
+            updatedContent = xmlContentProcessor.updateReferedAttributes(updatedContent, referencesValueMap);
+            LOG.trace("Refered attributes injected in doc XML  :{} ms",stopwatch.elapsed(TimeUnit.MILLISECONDS));
             
             updatedContent=xmlContentProcessor.doXMLPostProcessing(updatedContent);
+            LOG.trace("XML post processing done in :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             
+            String updatedTitle = generateDocumentName(metaDataVO);
+            StorageProperties properties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+            properties.set(EditableProperty.CHECKIN_COMMENT, "operation.metadata.updated");
+            properties.set(EditableProperty.TITLE, updatedTitle);
+            properties.set(EditableProperty.TEMPLATE, metaDataVO.getTemplate());
+            properties.set(EditableProperty.LANGUAGE, metaDataVO.getLanguage());
+
             LeosDocument updatedDocument = contentRepository.updateContent(
                     document.getLeosId(), 
-                    null, 
                     (long) updatedContent.length, 
                     MediaType.XML_UTF_8,
-                    new ByteArrayInputStream(updatedContent),"operation.metadata.updated",LeosDocument.class); 
-
-            // KLUGE hack to sync document name with metadata
-            String updatedName = generateDocumentName(metaDataVO);
-            if (updatedDocument.getName().equals(updatedName)) {
-                LOG.trace("Update document name is not required.");
-            } else {
-                LOG.trace("Updating document name = {}", updatedName);
-                updatedDocument = contentRepository.rename(updatedDocument.getLeosId(), updatedName,"operation.document.renamed");
-            }
-
+                    new ByteArrayInputStream(updatedContent), properties, LeosDocument.class); 
+            
+            LOG.trace("XML updated in repository :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             return updatedDocument;
-        } catch (XMLStreamException | IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException("Unable to save the metadata");
         }
+    }
+
+    @Override
+    public List<String> getAncestorsIdsForElementId(LeosDocument leosDocument,
+            String elementId) {
+        Validate.notNull(leosDocument, "Document is required");
+        Validate.notNull(elementId, "Element id is required");
+
+        try {
+            return xmlContentProcessor.getAncestorsIdsForElementId(
+                    IOUtils.toByteArray(leosDocument.getContentStream()),
+                    elementId);
+        } catch (IOException e) {
+            String errorMsg = String.format(
+                    "Unable to fetch encestors ids for element id: {}",
+                    elementId);
+            LOG.error(errorMsg);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
+
+    @Override
+    public void setContributors (String leosId, List<UserVO> contributors) {
+        LOG.trace("set contributors on ... [leosId={}]", leosId);
+        Stopwatch stopwatch=Stopwatch.createStarted();
+        contentRepository.updateProperties(leosId, getContributorStorageProperties(contributors));
+        LOG.trace("update contributors from CMIS! ({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @Override
+    public LeosDocument updateStage(String leosId, LeosDocumentProperties.Stage newStage){
+        StorageProperties storageProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        storageProperties.set(EditableProperty.STAGE, newStage.getValue());
+        storageProperties.set(EditableProperty.CHECKIN_COMMENT,"operation.stage.updated");
+        return contentRepository.updateProperties(leosId, storageProperties);
+    }
+
+    private StorageProperties getContributorStorageProperties (List<UserVO> contributors) {
+        StorageProperties storageProperties = new StorageProperties(LeosTypeId.LEOS_DOCUMENT);
+        List<String> contributorIds = new ArrayList<>();
+        List<String> contributorNames = new ArrayList<>();
+        for (UserVO userVO : contributors) {
+            if (userVO.getId() != null && userVO.getName() != null) {
+                contributorIds.add(userVO.getId());
+                contributorNames.add(userVO.getName());
+            }
+        }
+        storageProperties.set(EditableProperty.CONTRIBUTOR_IDS,contributorIds);
+        storageProperties.set(EditableProperty.CONTRIBUTOR_NAMES,contributorNames);
+
+        storageProperties.set(EditableProperty.CHECKIN_COMMENT, "operation.contributor.updated");
+
+        return storageProperties;
+    }
+
+    @Override
+    public void deleteDocument(String leosId){
+        Validate.notNull(leosId, "leosId is required");
+        Stopwatch stopwatch=Stopwatch.createStarted();
+        contentRepository.delete(leosId, LeosFile.class);
+        LOG.trace("Document deleted in repository :{} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 }
