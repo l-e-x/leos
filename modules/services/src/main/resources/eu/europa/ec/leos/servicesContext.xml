@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd">
+            
+    <!-- Repositories Context -->
+    <import resource="classpath:eu/europa/ec/leos/repositoriesContext.xml"/>
+    
+        
+    <task:annotation-driven scheduler="taskScheduler"/>
+    <task:scheduler id="taskScheduler" />
+
+    <bean class="eu.europa.ec.leos.services.content.RulesServiceImpl">
+        <property name="defaultRules">
+            <map>
+                <entry key="PREFACE">
+                    <list/>
+                </entry>
+                <entry key="PREAMBLE">
+                    <list/>
+                </entry>
+                <entry key="BODY">
+                    <list>
+                        <value>PART</value>
+                        <value>TITLE</value>
+                        <value>CHAPTER</value>
+                        <value>SECTION</value>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="PART">
+                    <list>
+                        <value>TITLE</value>
+                        <value>CHAPTER</value>
+                        <value>SECTION</value>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="TITLE">
+                    <list>
+                        <value>CHAPTER</value>
+                        <value>SECTION</value>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="CHAPTER">
+                    <list>
+                        <value>SECTION</value>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="SECTION">
+                    <list>
+                        <value>SUBSECTION</value>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="SUBSECTION">
+                    <list>
+                        <value>ARTICLE</value>
+                    </list>
+                </entry>
+                <entry key="ARTICLE">
+                    <list/>
+                </entry>
+                <entry key="CONCLUSIONS">
+                    <list/>
+                </entry>
+            </map>
+        </property>
+    </bean>
+  	<bean class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" id="lockHandlerFactory">
+  		<property name="serviceLocatorInterface" value="eu.europa.ec.leos.services.locking.handler.LockHandlerFactory"></property>
+ 	</bean>
+ 
+</beans>

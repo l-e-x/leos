@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=$sourceEncoding$">
+  $if(autoRefresh)$
+  <meta http-equiv="refresh" content="$autoRefreshInterval$">
+  $endif$
+  <title>Jasmine Spec Runner</title>
+  <script type="text/javascript">
+    window.onerror = function(msg,url,line) {
+      if (document.head) {
+        var jserror = document.head.getAttribute('jmp_jserror') || '';
+        if (jserror) {
+          jserror += ':!:';
+        }
+        jserror += msg;
+        document.head.setAttribute('jmp_jserror',jserror);
+      }
+    };
+  </script>
+  $cssDependencies$
+  $javascriptDependencies$
+  $preloadScriptTags$
+</head>
+<body>
+  <script type="text/javascript">
+    if(window.location.href.indexOf("ManualSpecRunner.html") !== -1) {
+      document.body.appendChild(document.createTextNode("Warning: Opening this HTML file directly from the file system is deprecated. You should instead try running `mvn jasmine:bdd` from the command line, and then visit `http://localhost:8234` in your browser. "))
+    }
+    
+    var specs = $specsList$;
+				
+    var configuration = {
+      $if(customRunnerConfiguration)$
+      $customRunnerConfiguration$
+      $endif$
+    };
+    
+    if (!configuration.baseUrl) {
+    	configuration.baseUrl = '$sourceDir$';
+    }
+    
+    if (!configuration.paths) {
+    	configuration.paths = {};
+    }
+    
+    if (!configuration.paths.specs) {
+    	var specDir = '$specDir$';
+    	if (!specDir.match(/^file/)) {
+    		specDir = '/'+specDir;
+    	}
+    	configuration.paths.specs = specDir;
+    }
+          
+    require.config(configuration);
+		
+    require(["leosBootstrapConfig"], function() {
+        require(specs, function() {
+          jasmine.boot();
+        });
+    });
+  </script>
+</body>
+</html>

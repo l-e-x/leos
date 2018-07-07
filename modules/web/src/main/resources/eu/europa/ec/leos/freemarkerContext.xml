@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:util="http://www.springframework.org/schema/util"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+    <!-- FreeMarker Properties -->
+    <util:properties id="freemarkerProperties" location="classpath:eu/europa/ec/leos/freemarker.properties"/>
+
+    <!-- FreeMarker Logging -->
+    <bean id="freemarkerLogger" class="org.springframework.beans.factory.config.MethodInvokingBean">
+        <property name="staticMethod" value="freemarker.log.Logger.selectLoggerLibrary"/>
+        <property name="arguments" value="#{T(freemarker.log.Logger).LIBRARY_SLF4J}"/>
+    </bean>
+
+    <!-- FreeMarker Configuration -->
+    <bean id="freemarkerConfiguration" class="org.springframework.ui.freemarker.FreeMarkerConfigurationFactoryBean" depends-on="freemarkerLogger">
+        <property name="templateLoaderPath" value="${leos.freemarker.ftl.path}"/>
+        <property name="preferFileSystemAccess" value="false"/>
+        <property name="freemarkerSettings" ref="freemarkerProperties"/>
+    </bean>
+</beans>

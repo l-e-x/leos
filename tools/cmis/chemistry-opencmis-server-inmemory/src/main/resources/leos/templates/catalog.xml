@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<catalog lang="EN">
+    <item type="CATEGORY" id="c1" enabled="true">
+        <names>
+            <name lang="EN">Interinstitutional proposals - Law Initiative (COM/JOIN)</name>
+            <name lang="FR">Propositions interinstitutionnelles - Droit d'initiative (COM/JOIN)</name>
+        </names>
+        <descriptions>
+            <description lang="EN">Interinstitutional proposals - Law Initiative (COM/JOIN)</description>
+            <description lang="FR">Propositions interinstitutionnelles - Droit d'initiative (COM/JOIN)</description>
+        </descriptions>
+        <item type="CATEGORY" id="c1.1" enabled="true">
+            <names>
+                <name lang="EN">For a new interinstitutional procedure</name>
+                <name lang="FR">En vue d'une nouvelle procédure interinstitutionelle</name>
+            </names>
+            <descriptions>
+                <description lang="EN"><![CDATA[The Manual of Operating Procedures of the Commission - Decision-making: interinstitutional stage (<a href="http://www.cc.cec/home/dgserv/sg/manupro/index.cfm?lang=en&amp;menu=on&amp;src=chapter&amp;chp=2" target="_blank">Manual of Procedures</a>)]]></description>
+                <description lang="FR"><![CDATA[Manuel des procédures opérationnelles de la Commission - Processus décisionnel: phase interinstitutionnelle (<a href="http://www.cc.cec/home/dgserv/sg/manupro/index.cfm?lang=fr&amp;menu=on&amp;src=chapter&amp;chp=2" target="_blank">Manuel des Procédures</a>)]]></description>
+            </descriptions>
+            <item type="CATEGORY" id="c1.1.1" enabled="true">
+                <names>
+                    <name lang="EN">Proposal for a</name>
+                    <name lang="FR">Proposition de</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Proposal for a</description>
+                    <description lang="FR">Proposition de</description>
+                </descriptions>
+                <item type="CATEGORY" id="c1.1.1.1" enabled="true">
+                    <names>
+                        <name lang="EN">Proposal for a regulation</name>
+                        <name lang="FR">Proposition de règlement</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Regulation to be adopted by the European Parliament and the Council or by the Council alone</description>
+                        <description lang="FR">Règlement à adopter conjointement par le Parlement Européen et le Conseil ou uniquement par le Conseil</description>
+                    </descriptions>
+                    <item type="TEMPLATE" id="SJ-023" enabled="false">
+                        <names>
+                            <name lang="EN">SJ-023 - Proposal for a Regulation of the European Parliament and of the Council</name>
+                            <name lang="FR">SJ-023 - Proposition de règlement du Parlement européen et du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 23 of the LS: Proposal for a REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</description>
+                            <description lang="FR">Template 23 du SJ: Proposition de RÈGLEMENT DU PARLEMENT EUROPÉEN ET DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-016" enabled="true">
+                        <names>
+                            <name lang="EN">SJ-016 - Proposal for a Council Regulation</name>
+                            <name lang="FR">SJ-016 - Proposition de règlement du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 16 of the LS: Proposal for a COUNCIL REGULATION</description>
+                            <description lang="FR">Template 16 du SJ: Proposition de RÈGLEMENT DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <!--<language lang="FR">Français</language>-->
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-015" enabled="false">
+                        <names>
+                            <name lang="EN">SJ-015 - Proposal for a Council Implementing Regulation</name>
+                            <name lang="FR">SJ-015 - Proposition de règlement d'exécution du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 15 of the LS: Proposal for a COUNCIL IMPLEMENTING REGULATION</description>
+                            <description lang="FR">Template 15 du SJ: Proposition de RÈGLEMENT D'EXÉCUTION DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                </item>
+                <item type="CATEGORY" id="c1.1.1.2" enabled="true">
+                    <names>
+                        <name lang="EN">Proposal for a directive</name>
+                        <name lang="FR">Proposition de directive</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Directive to be adopted by the European Parliament and the Council or by the Council alone</description>
+                        <description lang="FR">Directive à adopter conjointement par le Parlement Européen et le Conseil ou uniquement par le Conseil</description>
+                    </descriptions>
+                    <item type="TEMPLATE" id="SJ-024" enabled="true">
+                        <names>
+                            <name lang="EN">SJ-024 - Proposal for a Directive of the European Parliament and of the Council</name>
+                            <name lang="FR">SJ-024 - Proposition de directive du Parlement européen et du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 24 of the LS: Proposal for a DIRECTIVE OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</description>
+                            <description lang="FR">Template 24 du SJ: Proposition de DIRECTIVE DU PARLEMENT EUROPÉEN ET DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <!--<language lang="FR">Français</language>-->
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-017">
+                        <names>
+                            <name lang="EN">SJ-017 - Proposal for a Council Directive</name>
+                            <name lang="FR">SJ-017 - Proposition de directive du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 17 of the LS: Proposal for a COUNCIL DIRECTIVE</description>
+                            <description lang="FR">Template 17 du SJ: Proposition de DIRECTIVE DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-018">
+                        <names>
+                            <name lang="EN">SJ-018 - Proposal for a Council Implemeting Directive</name>
+                            <name lang="FR">SJ-018 - Proposition de directive d'exécution du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 18 of the LS: Proposal for a COUNCIL IMPLEMENTING DIRECTIVE</description>
+                            <description lang="FR">Template 18 du SJ: Proposition de DIRECTIVE D'EXÉCUTION DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                </item>
+                <item type="CATEGORY" id="c1.1.1.3">
+                    <names>
+                        <name lang="EN">Proposal for a decision</name>
+                        <name lang="FR">Proposition de décision</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Decision to be adopted by the European Parliament and the Council or by the Council alone</description>
+                        <description lang="FR">Décision à adopter conjointement par le Parlement Européen et le Conseil ou uniquement par le Conseil</description>
+                    </descriptions>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                    <item type="TEMPLATE" id="SJ-025">
+                        <names>
+                            <name lang="EN">SJ-025 - Proposal for a Decision of the European Parliament and of the Council</name>
+                            <name lang="FR">SJ-025 - Proposition de décision du Parlement européen et du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 25 of the LS: Proposal for a DECISION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</description>
+                            <description lang="FR">Template 25 du SJ: Proposition de DÉCISION DU PARLEMENT EUROPÉEN ET DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-019">
+                        <names>
+                            <name lang="EN">SJ-019 - Proposal for a Council Decision</name>
+                            <name lang="FR">SJ-019 - Proposition de décision du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 19 of the LS: Proposal for a COUNCIL DECISION</description>
+                            <description lang="FR">Template 19 du SJ: Proposition de DÉCISION DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-026">
+                        <names>
+                            <name lang="EN">SJ-026 - Proposal for a Decision of the European Parliament and of the Council (without addressees)</name>
+                            <name lang="FR">SJ-026 - Proposition de décision du Parlement européen et du Conseil (sans destinataires)</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 26 of the LS: Proposal for a DECISION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL without addressees</description>
+                            <description lang="FR">Template 26 du SJ: Proposition de DÉCISION DU PARLEMENT EUROPÉEN ET DU CONSEIL sans destinataires</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-021">
+                        <names>
+                            <name lang="EN">SJ-021 - Proposal for a Council Implementing (without addressees)</name>
+                            <name lang="FR">SJ-021 - Proposition de décision d'exécution du Conseil (sans destinataires)</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 21 of the LS: Proposal for a COUNCIL implementing DECISION without addressees</description>
+                            <description lang="FR">Template 21 du SJ: Proposition de DÉCISION d'exécution DU CONSEIL sans destinataires</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                    <item type="TEMPLATE" id="SJ-020">
+                        <names>
+                            <name lang="EN">SJ-020 - Proposal for a Council Implementing Decision (with addressees)</name>
+                            <name lang="FR">SJ-020 - Proposition de décision d'exécution du Conseil (avec destinataires)</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 20 of the LS: Proposal for a COUNCIL IMPLEMENTING DECISION with addressees</description>
+                            <description lang="FR">Template 20 du SJ: Proposition de DÉCISION d'exécution DU CONSEIL avec destinataires</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                </item>
+                <item type="CATEGORY" id="c1.1.1.4">
+                    <names>
+                        <name lang="EN">Proposal for a recommendation</name>
+                        <name lang="FR">Proposition de recommandation</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Recommendation to be adopted by the Council</description>
+                        <description lang="FR">Recommandation à adopter par le Conseil</description>
+                    </descriptions>
+                    <item type="TEMPLATE" id="SJ-022">
+                        <names>
+                            <name lang="EN">SJ-022 - Proposal for a Council Recommendation</name>
+                            <name lang="FR">SJ-022 - Proposition de recommandation du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 22 of the LS:Proposal for a COUNCIL RECOMMENDATION</description>
+                            <description lang="FR">Template 22 du SJ: Proposition de RECOMMANDATION DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <language lang="FR">Français</language>
+                        </languages>
+                    </item>
+                </item>
+            </item>
+            <item type="CATEGORY" id="c1.1.2">
+                <names>
+                    <name lang="EN">Joint Proposal for a</name>
+                    <name lang="FR">Proposition conjointe de</name>
+                </names>
+                <item type="TEMPLATE" id="SG-054">
+                    <names>
+                        <name lang="EN">SG-054 - Joint proposal for a Regulation of the European Parliament and of the Council</name>
+                        <name lang="FR">SG-054 - Proposition conjointe de règlement du Parlement européen et du Conseil</name>
+                    </names>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                </item>
+                <item type="TEMPLATE" id="SG-055">
+                    <names>
+                        <name lang="EN">SG-055 - Joint proposal for a Directive of the European Parliament and of the Council</name>
+                        <name lang="FR">SG-055 - Proposition conjointe de directive du Parlement européen et du Conseil</name>
+                    </names>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                </item>
+                <item type="TEMPLATE" id="SG-056">
+                    <names>
+                        <name lang="EN">SG-056 - Joint proposal for a Decision of the European Parliament and of the Council</name>
+                        <name lang="FR">SG-056 - Proposition conjointe de décision du Parlement européen et du Conseil</name>
+                    </names>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                </item>
+                <item type="TEMPLATE" id="SG-057">
+                    <names>
+                        <name lang="EN">SG-057 - Joint proposal for a Council Regulation</name>
+                        <name lang="FR">SG-057 - Proposition conjointe de règlement du Conseil</name>
+                    </names>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                </item>
+                <item type="TEMPLATE" id="SG-064">
+                    <names>
+                        <name lang="EN">SG-064 - Joint proposal for a Council Decision</name>
+                        <name lang="FR">SG-064 - Proposition conjointe de décision du Conseil</name>
+                    </names>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                </item>
+            </item>
+            <item type="CATEGORY" id="c1.1.3">
+                <names>
+                    <name lang="EN">Recommendation for a</name>
+                    <name lang="FR">Recommandation de</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Recommendation for a</description>
+                    <description lang="FR">Recommandation de</description>
+                </descriptions>
+            </item>
+        </item>
+        <item type="CATEGORY" id="c1.2">
+            <names>
+                <name lang="EN">During an ongoing interinstitutional procedure</name>
+                <name lang="FR">Dans le cadre d'une procédure interinstitutionelle en cours</name>
+            </names>
+            <descriptions>
+                <description lang="EN"><![CDATA[The Manual of  Operating Procedures of the Commission - Decision-making: interinstitutional stage (<a href="http://www.cc.cec/home/dgserv/sg/manupro/index.cfm?lang=en&amp;menu=on&amp;src=chapter&amp;chp=2" target="_blank">Manual of Procedures</a>)]]></description>
+                <description lang="FR"><![CDATA[Manuel des procédures opérationnelles de la Commissionn  - Processus décisionnel : phase interinstitutionnelle (<a href="http://www.cc.cec/home/dgserv/sg/manupro/index.cfm?lang=fr&amp;menu=on&amp;src=chapter&amp;chp=2" target="_blank">Manuel des Procédures</a>)]]></description>
+            </descriptions>
+        </item>
+        <item type="CATEGORY" id="c1.3">
+            <names>
+                <name lang="EN">Annex to be adopted (*)</name>
+                <name lang="FR">Annexe à adopter (*)</name>
+            </names>
+            <descriptions>
+                <description lang="EN">(*) As a rule, annexes to proposals must be included with the proposals. However, if the file is too big or the institutions have granted a linguistic derogation, an annex may be separate in which case it must have a proper LegisWrite cover page.</description>
+                <description lang="FR">(*) En règle générale, l'annexe à une proposition interinstitutionnelle doit être incluse dans l'acte. Si, pour des raisons de taille de fichier ou dans le cas d'une dérogation linguistique obtenue auprès des institutions, l'annexe doit être encodée séparément, celle-ci doit présenter une page de couverture LegisWrite conforme.</description>
+            </descriptions>
+        </item>
+    </item>
+    <item type="CATEGORY" id="c2">
+        <names>
+            <name lang="EN">Autonomous acts (article 288, article 290, article 291 TFEU and internal decisions)</name>
+            <name lang="FR">Actes autonomes (article 288, article 290, article 291 TFUE et décisions internes)</name>
+        </names>
+    </item>
+    <item type="CATEGORY" id="c3">
+        <names>
+            <name lang="EN">Other acts to be approved by the Commission (to be transmitted to the other institutions COM/JOIN)</name>
+            <name lang="FR">Autres actes à approuver par la Commission (destinés aux autres institutions COM/JOIN)</name>
+        </names>
+    </item>
+    <item type="CATEGORY" id="c4">
+        <names>
+            <name lang="EN">Staff working document</name>
+            <name lang="FR">Documents de travail des services</name>
+        </names>
+    </item>
+</catalog>

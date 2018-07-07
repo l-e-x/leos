@@ -1,0 +1,85 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin header {
+    
+    /* LEOS header styles */
+    .leos-header {
+    }
+
+    .leos-header-layout {
+        background: white;
+    }
+
+    .leos-header-logo {
+        height: 80px;
+        width: auto;
+        padding-top: 10px;
+        padding-left: 25px;
+    }
+
+    .leos-header-services {
+        color: #396EA2;
+        font-size: 90%;
+        padding-top: 2px;
+        padding-right: 2px;
+    }
+
+    .leos-header-title {
+        color: #0065A2;
+        font-size: 28px;
+        line-height: 100%;
+        padding-left: 25px;
+    }
+
+    .leos-header-subtitle {
+        background: #0065A2;
+        color: white;
+        font-size: 16px;
+        height: 25px;
+        padding-left: 25px;
+    }
+
+    .leos-header-user {
+        color: #0065A2;
+        padding-right: 25px;
+    }
+
+    .leos-header-logout {
+        background: #0065A2;
+        height: 25px;
+        padding-right: 25px;
+        text-align: center;
+        padding-top: 5px;
+    }
+
+    .leos-header-tools {
+        background: #074A8B;
+        color: white;
+        font-size: 90%;
+        height: 20px;
+        padding-left: 10px;
+    }
+
+    .leos-header-navigation {
+    }
+
+    .leos-header-breadcrumb {
+        color: white;
+        text-decoration: none;
+        text-shadow: none;
+        cursor: pointer;
+    }
+}

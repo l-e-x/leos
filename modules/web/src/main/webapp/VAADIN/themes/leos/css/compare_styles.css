@@ -1,0 +1,114 @@
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/** styles for comparision windows **/
+.leos-content-removed {
+    text-decoration: line-through;
+    color: red;
+}
+
+.leos-content-new {
+    color: green;
+}
+
+.leos-content-modified {
+    display: block;
+}
+
+.leos-marker-content-removed {
+    color: #ffffff;
+}
+
+.leos-marker-content-added {
+    color: #ffffff;
+}
+
+.leos-marker-content-added .leos-toc-item .leos-toc-link {
+    color: #ffffff;
+}
+
+.leos-marker-content-removed .leos-toc-link {
+    color: #ffffff;
+}
+
+.leos-compare-style .leos-coverpage {
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.leos-compare-style .leos-toc {
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.leos-compare-style akomantoso {
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.leos-two-column-compare {
+    -ms-transform-origin-x: 5%;
+    -ms-transform-origin-y: top;
+    -ms-transform: scale(0.85);
+    transform: scale(0.85);
+    transform-origin: 5% top;
+    overflow: visible;
+}
+
+.leos-two-column-compare .leos-coverpage {
+    padding: 0 0 0 0;
+}
+
+.leos-two-column-compare .leos-toc {
+    padding: 0 0 0 0;
+}
+
+.leos-two-column-compare akomantoso {
+    padding: 0 0 0 0;
+}
+
+.leos-marker-content-added authorialNote {
+    color: #ffffff;
+}
+
+.leos-content-new authorialNote {
+    color: green;
+}
+
+.leos-marker-content-removed authorialNote {
+    color: #ffffff;
+}
+
+.leos-content-removed authorialNote {
+    text-decoration: line-through;
+    color: red;
+}
+
+.leos-marker-content-added marker {
+    color: #ffffff;
+}
+
+.leos-content-new marker {
+    color: green;
+}
+
+.leos-marker-content-removed marker {
+    color: #ffffff;
+}
+
+.leos-content-removed marker {
+    text-decoration: line-through;
+    color: red;
+}
+
+.leos-content-removed * {
+    text-decoration: line-through;
+}
+

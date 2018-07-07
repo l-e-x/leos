@@ -1,0 +1,121 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin documentview {
+
+/* LEOS document view styles */
+    .leos-document {
+    }
+
+/* LEOS document title style*/
+    .leos-docview-doctitle {
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .leos-document-layout {
+    }
+
+    .leos-docview-header-layout {
+        padding-left: 10px;
+        margin-bottom: 10px;
+    }
+
+    .leos-viewdoc-icon {
+        width: 32px;
+        height: 32px;
+        margin-top: -15px;
+        margin-right: -5px;
+    }
+
+    .leos-viewdoc-close .v-button-wrap {
+        width: 32px;
+        height: 32px;
+        margin-top: -10px;
+    }
+
+    .leos-viewdoc-close .v-button-wrap:hover:after {
+        position: relative;
+        top: 5px;
+        left: -27px;
+    }
+
+    .leos-viewdoc-tabs .v-tabsheet-tabitem-selected {
+        background-color: #DDD;
+        background: #DDD;
+    }
+
+    .leos-viewdoc-tabs .v-tabsheet-spacertd div {
+        margin: 0px;
+    }
+
+    .leos-viewdoc-docbar, .leos-viewdoc-tocbar {
+        font-size: 75%;
+        background: #DDD;
+        border-bottom: 1px solid #AAA;
+        border-top: 1px solid #AAA;
+        
+    }
+
+    .leos-viewdoc-padbar-both {
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+
+    .v-label-leos-viewdoc-content {
+        overflow: auto;
+    }
+
+    .leos-toolbar-button .v-icon {
+        margin: 0px;
+    }
+
+    .leos-dimmed-button .v-icon {
+        opacity: 0.25;
+    }
+
+    .leos-viewdoc-toctree .v-tree-node span {
+        /* LegisWrite Normal style */
+        font-family: "Times New Roman", Times, serif;
+        font-size: 10pt;
+        line-height: normal;
+    }
+
+    .leos-exp-mem-pagelayout {
+
+        color: black;
+        display: block;
+        background-color: white;
+        /* LegisWrite Normal style */
+        font-family: "Times New Roman", Times, serif;
+        font-size: 12pt;
+        font-style: normal;
+        font-weight: normal;
+        text-align: justify;
+        /* Normal: Line spacing: single */
+        line-height: 1.25em;        /* extra spacing for improved readability */
+    
+        /**page layout**/
+        padding: 2.0cm 2.5cm;       /* LegisWrite page margins */
+        margin: 0.5cm auto;
+        width: 18.2cm;
+        min-height: 24.7cm;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        white-space: normal;
+        overflow:hidden;
+    }
+
+
+}

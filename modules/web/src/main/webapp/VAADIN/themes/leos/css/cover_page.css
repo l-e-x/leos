@@ -1,0 +1,76 @@
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+
+.leos-coverpage {
+    display: block;
+    /**page layout**/
+    padding: 2.0cm 2.5cm; /* LegisWrite page margins */
+    margin: 0.5cm auto;
+    width: 18.2cm;
+    min-height: 24.7cm;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    white-space: normal;
+    overflow: hidden;
+    background-color: white;
+    font-family: "Times New Roman", Times, serif;
+    position: relative;
+    font-size: 12pt;
+    
+}
+
+.leos-cover-logo {
+    display: block;
+}
+
+.leos-cover-cote {
+    display: block;
+    margin: 2cm auto 2cm 9cm;
+    line-height: 1.5em; /* extra spacing for improved readability */
+    text-align: left;
+}
+
+.leos-cover-placeholder {
+    display: inline;
+    color: red;
+}
+
+.leos-cover-legal-text {
+    display: table;
+    width: 100%;
+    font-weight: bold;
+    text-align: center;
+    font-size: 13pt;
+    margin: 2cm auto auto auto;
+}
+
+@media screen {
+    .leos-cover-lang {
+        display: table;
+        font-weight: bold;
+        position: absolute;
+        bottom: 0;
+        font-size: 12pt;
+        top: 95%;
+    }
+    .leos-cover-lang::before {
+        content: attr(data-lang);
+        float: left;
+    }
+    .leos-cover-lang::after {
+        content: attr(data-lang);
+        float: right;
+        margin-left: 16cm;
+    }
+}

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015 European Commission
+
+    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.europa.ec.leos.prototype</groupId>
+        <artifactId>leos-modules</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>leos-editor</artifactId>
+    <packaging>war</packaging>
+
+    <name>Editor</name>
+
+    <description>LEOS Prototype Editor Module</description>
+
+    <properties>
+        <!-- Project -->
+        <project.final.name>leos-prototype-editor</project.final.name>
+        <project.web.context.path>/leos-editor</project.web.context.path>
+    </properties>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.samaxes.filter</groupId>
+            <artifactId>cachefilter</artifactId>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <finalName>${project.final.name}-${leos.build.env}</finalName>
+        <plugins>
+            <!-- WAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webapp/WEB-INF</directory>
+                            <includes>
+                                <include>web.xml</include>
+                            </includes>
+                            <targetPath>WEB-INF</targetPath>
+                        </resource>
+                    </webResources>
+                </configuration>
+            </plugin>
+            <!-- TOMCAT -->
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <configuration>
+                    <tomcatWebXml>src/etc/tomcat/web.xml</tomcatWebXml>
+                    <contextReloadable>true</contextReloadable>
+                    <path>${project.web.context.path}</path>
+                </configuration>
+            </plugin>
+            <!-- JETTY -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <configuration>
+                    <stopPort>9999</stopPort>
+                    <stopKey>stopLeos</stopKey>
+                    <webApp>
+                        <defaultsDescriptor>src/etc/jetty/webdefault.xml</defaultsDescriptor>
+                        <contextPath>${project.web.context.path}</contextPath>
+                    </webApp>
+                </configuration>
+            </plugin>
+            <!-- JASMINE -->
+            <plugin>
+                <groupId>com.github.searls</groupId>
+                <artifactId>jasmine-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jasmine-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <customRunnerTemplate>${project.basedir}/src/test/etc/leosSpecRunner.template</customRunnerTemplate>
+                    <customRunnerConfiguration>${project.basedir}/src/test/etc/leosCustomConfig.txt</customRunnerConfiguration>
+                    <preloadSources>
+                        <source>lib/requirejs_2.1.16/require.js</source>
+                    </preloadSources>
+                    <jsSrcDir>${project.basedir}/src/main/webapp/js/editor</jsSrcDir>
+                    <jsTestSrcDir>${project.basedir}/src/test/webapp/js/editor</jsTestSrcDir>
+                    <skipJasmineTests>${skipTests}</skipJasmineTests>
+                    <haltOnFailure>true</haltOnFailure>
+                    <!-- Browser specific drivers require an instance to be installed and accessible -->
+                    <webDriverClassName>org.openqa.selenium.firefox.FirefoxDriver</webDriverClassName>
+                    <!-- <webDriverClassName>org.openqa.selenium.ie.InternetExplorerDriver</webDriverClassName> -->
+                    <!-- webDriverClassName>org.openqa.selenium.chrome.ChromeDriver</webDriverClassName -->
+                </configuration>
+            </plugin>
+            <!-- JSHint -->
+            <plugin>
+                <groupId>com.cj.jshintmojo</groupId>
+                <artifactId>jshint-maven-plugin</artifactId>
+                <configuration>
+                    <version>2.4.1</version>
+                    <configFile>src/etc/linters/jshintConfig.js</configFile>
+                    <directories>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlBold</directory>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlItalic</directory>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlUnderline</directory>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlOrderedList</directory>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlUnorderedList</directory>
+                        <directory>src/main/webapp/js/editor/plugins/aknHtmlParagraph</directory>
+                        <directory>src/main/webapp/js/editor/plugins/leosTools</directory>
+                        <directory>src/main/webapp/js/editor/plugins/leosCore</directory>
+                    </directories>
+                    <!--<excludes>-->
+                        <!--<exclude>src/main/webapp/js/editor/lib</exclude>-->
+                        <!--<exclude>src/main/webapp/js/lib</exclude>-->
+                    <!--</excludes>-->
+                    <reporter>jslint</reporter>
+                    <reportFile>${project.build.directory}/jshint.xml</reportFile>
+                    <failOnError>true</failOnError>
+                </configuration>
+            </plugin>
+        </plugins>
+        <extensions>
+            <!-- Enabling the use of FTP for deployment -->
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>${wagon-ftp-extension.version}</version>
+            </extension>
+        </extensions>
+    </build>
+</project>

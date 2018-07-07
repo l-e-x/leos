@@ -1,0 +1,87 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@import "../reindeer/reindeer.scss";
+
+@mixin leos {
+
+// Include Reindeer standard Vaadin theme styles
+    @include reindeer;
+
+/* LEOS custom Vaadin theme styles. */
+
+/* LEOS main styles */
+    .leos {
+        color: black;
+        font-family: Verdana, Arial, Helvetica, "DejaVu Sans", sans-serif;
+    }
+
+    .leos-dimmed-button:hover .v-icon {
+        opacity: 1.0;
+    }
+
+    .leos-relative-full-wdth {
+        width: 100%;
+    }
+
+    .leos-dragItem {
+        // this style is copied from the v-tree-node-caption-drag-center
+        // but the border is made 1 pixel
+        border: 1px solid #1d9dff;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border-radius: 4px;
+        margin: -2px 2px -2px -2px;
+        background-color: #bcdcff;
+        // only this part is proprietary
+        text-align: center;
+    }
+
+    .leos-page-layout {
+        display: block;
+        color: black;
+        background-color: white;
+        padding: 2.0cm 2.5cm;       /* LegisWrite page margins */
+        margin: 0.5cm auto;
+        width: 18.2cm;
+        min-height: 24.7cm;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        white-space: normal;
+        overflow:hidden;
+    }
+
+    .leos-disclaimer {
+        background: #3b3c3e url(./icons/32/cross-circle.png) no-repeat right top;
+        border: 2px solid #585b5c;
+        margin: 0 5px 5px 0;
+        padding: 0.8em 0.9em;
+        color: white;
+        font-size: 1.5em;
+        font-weight: normal;
+    }
+
+    .leos-disclaimer h1 {
+        display: block;
+        padding-bottom: 0.5em;
+    }
+
+    .leos-disclaimer p {
+        display: block;
+    }
+
+    .leos-disclaimer li {
+        padding-bottom: 0.5em;
+    }
+}

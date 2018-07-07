@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration debug="false" scan="true" scanPeriod="5 minutes">
+    <!-- Ignore or print logback internal status messages on the console -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+    <!--<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>-->
+
+    <!-- Propagate changes to logging level onto the java.util.logging framework. -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <!-- Transaction indicator turbo filter -->
+    <turboFilter class="eu.europa.ec.leos.support.log.SpringTransactionIndicator">
+        <name>xaIndicatorTurboFilter</name>
+        <level>ALL</level>
+    </turboFilter>
+
+    <contextName>${leos.log.contextName}</contextName>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>./logs/${leos.log.filePrefix}-${leos.build.env}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+    
+    <appender name="ADMINLOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>./logs/${leos.log.filePrefix}-admin-${leos.build.env}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="eu.europa.ec.leos" level="ALL"/>
+
+    <logger name="freemarker" level="INFO"/>
+
+    <logger name="org.springframework.orm" level="INFO"/>
+    <logger name="org.springframework.orm.jpa" level="INFO"/>
+
+    <logger name="org.hibernate" level="INFO"/>
+    <logger name="org.hibernate.SQL" level="INFO"/>
+    <logger name="org.hibernate.type" level="INFO"/>
+
+    <logger name="eu.europa.ec.leos.services.locking"  level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ADMINLOGFILE" />
+    </logger>
+    
+    <logger name="org.apache.chemistry"  level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE" />
+    </logger>
+    
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

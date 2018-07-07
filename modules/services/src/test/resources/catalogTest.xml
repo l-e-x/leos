@@ -1,0 +1,50 @@
+<catalog lang="EN">
+    <item type="CATEGORY" id="c1" enabled="true">
+        <names>
+            <name lang="EN">Interinstitutional proposals - Law Initiative (COM/JOIN)</name>
+            <name lang="FR">Propositions interinstitutionnelles - Droit d'initiative (COM/JOIN)</name>
+        </names>
+        <descriptions>
+            <description lang="EN">Interinstitutional proposals - Law Initiative (COM/JOIN)</description>
+            <description lang="FR">Propositions interinstitutionnelles - Droit d'initiative (COM/JOIN)</description>
+        </descriptions>
+        <item type="CATEGORY" id="c1.1.1" enabled="true">
+            <names>
+                <name lang="EN">Proposal for a</name>
+                <name lang="FR">Proposition de</name>
+            </names>
+            <descriptions>
+                <description lang="EN">Proposal for a</description>
+                <description lang="FR">Proposition de</description>
+            </descriptions>
+            <item type="TEMPLATE" id="SJ-023" enabled="false">
+                <names>
+                    <name lang="EN">SJ-023 - Proposal for a Regulation of the European Parliament and of the Council</name>
+                    <name lang="FR">SJ-023 - Proposition de règlement du Parlement européen et du Conseil</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Template 23 of the LS: Proposal for a REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</description>
+                    <description lang="FR">Template 23 du SJ: Proposition de RÈGLEMENT DU PARLEMENT EUROPÉEN ET DU CONSEIL</description>
+                </descriptions>
+                <languages>
+                    <language lang="EN">English</language>
+                    <language lang="FR">Français</language>
+                </languages>
+            </item>
+            <item type="TEMPLATE" id="SJ-016" enabled="true">
+                <names>
+                    <name lang="EN">SJ-016 - Proposal for a Council Regulation</name>
+                    <name lang="FR">SJ-016 - Proposition de règlement du Conseil</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Template 16 of the LS: Proposal for a COUNCIL REGULATION</description>
+                    <description lang="FR">Template 16 du SJ: Proposition de RÈGLEMENT DU CONSEIL</description>
+                </descriptions>
+                <languages>
+                    <language lang="EN">English</language>
+                    <language lang="FR">Français</language>
+                </languages>
+            </item>
+        </item>
+    </item>
+</catalog>

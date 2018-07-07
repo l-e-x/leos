@@ -1,0 +1,64 @@
+<akomaNtoso>
+    <bill>
+        <meta>
+            <identification>aaaa</identification>
+        </meta>
+        <preface>
+            <heading>
+                on
+                <placeholder>[...]</placeholder>
+                preface
+                and half bo<b>ld</b>
+                text
+            </heading>
+        </preface>
+        <preamble>
+            <formula>
+                forumla 1
+            </formula>
+        </preamble>
+        <body>
+            <part id="part1">
+                <heading>part-head</heading>
+                <title id="title1">
+                    <heading>title-head</heading>
+                    <num>on
+                        <placeholder>[...]</placeholder>
+                        preface
+                        and half bo<b>ld</b>
+                        text
+                    </num>
+                    <chapter id="chap1">
+                        <num>chapter-num</num>
+                        <heading>chapter-head</heading>
+                        <section id="sect1">
+                            <num>section-num</num>
+                            <heading>section-head</heading>
+                            <subsection id="subsec1">
+                                <num>Subsection 1</num>
+                                <heading>subsection-head</heading>
+                                <article id="art1">
+                                    art 1
+                                </article>
+                            </subsection>
+                            <subsection id="subsec2">
+                                sub 2
+                            </subsection>
+                        </section>
+                        <article id="art2">
+                            art 2
+                            <num>Title I</num>
+                            <heading>title</heading>
+                        </article>
+                    </chapter>
+                </title>
+            </part>
+            <hcontainer id="app1">
+                bla bla
+            </hcontainer>
+        </body>
+        <conclusions>
+            <p>Done</p>
+        </conclusions>
+    </bill>
+</akomaNtoso>

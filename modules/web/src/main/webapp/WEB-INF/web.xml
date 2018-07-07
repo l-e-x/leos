@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015 European Commission
+
+    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0" id="LeosWebModuleID">
+    <display-name>${project.description}</display-name>
+
+    <!-- Context parameters -->
+    <context-param>
+        <description>Spring context configuration</description>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:eu/europa/ec/leos/applicationContext.xml</param-value>
+    </context-param>
+    <context-param>
+        <description>Vaadin production mode</description>
+        <param-name>productionMode</param-name>
+        <param-value>${leos.vaadin.productionMode}</param-value>
+    </context-param>
+    <context-param>
+        <description>Vaadin Property.toString() behavior</description>
+        <param-name>legacyPropertyToString</param-name>
+        <param-value>false</param-value>
+    </context-param>
+    <context-param>
+        <param-name>heartbeatInterval</param-name>
+        <param-value>120</param-value><!-- heartbeat should always be smaller then half of the session timeout  -->
+    </context-param>
+
+    <!-- SLF4J bridge listener -->
+    <listener>
+        <listener-class>eu.europa.ec.leos.support.log.SLF4JBridgeListener</listener-class>
+    </listener>
+
+    <!-- Spring framework listeners -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    <listener>
+        <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+    </listener>
+
+    <!-- LEOS Web Application Servlet -->
+    <servlet>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <servlet-class>eu.europa.ec.leos.web.support.vaadin.LeosSpringVaadinServlet</servlet-class>
+        <init-param>
+            <param-name>sessionInitListenerBeans</param-name>
+            <param-value>eventBusSessionListener, authenticationSessionListener, presenterSessionListener</param-value>
+        </init-param>
+        <init-param>
+            <param-name>beanName</param-name>
+            <param-value>leosUI</param-value>
+        </init-param>
+        <init-param>
+            <description>LEOS main UI</description>
+            <param-name>UI</param-name>
+            <param-value>eu.europa.ec.leos.web.ui.LeosUI</param-value>
+        </init-param>
+        <init-param>
+            <description>LEOS WidgetSet</description>
+            <param-name>widgetset</param-name>
+            <param-value>eu.europa.ec.leos.web.LeosWidgetSet</param-value>
+        </init-param>
+    </servlet>
+
+    <!-- Logback Status Servlet -->
+    <servlet>
+        <servlet-name>Logback Status Servlet</servlet-name>
+        <servlet-class>ch.qos.logback.classic.ViewStatusMessagesServlet</servlet-class>
+    </servlet>
+
+    <!-- Jersey REST Servlet -->
+    <servlet>
+        <servlet-name>Jersey REST Servlet</servlet-name>
+        <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+        <init-param>
+            <param-name>com.sun.jersey.config.property.packages</param-name>
+            <param-value>eu.europa.ec.leos.webservices.rest</param-value>
+        </init-param>
+    </servlet>
+
+    <!-- REST servlet -->
+    <servlet-mapping>
+        <servlet-name>Jersey REST Servlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- LEOS servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <url-pattern>/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <url-pattern>/VAADIN/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Logback servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>Logback Status Servlet</servlet-name>
+        <url-pattern>/logStatus</url-pattern>
+    </servlet-mapping>
+
+    <mime-mapping>
+        <extension>js</extension>
+        <mime-type>application/javascript</mime-type>
+    </mime-mapping>
+
+    <session-config>
+        <session-timeout>5</session-timeout><!-- session timeout should always be more then double of heartbeat  -->
+    </session-config>
+
+</web-app>

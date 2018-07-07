@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<akomaNtoso xmlns="http://www.akomantoso.org/2.0"
+            xmlns:leos="urn:eu:europa:ec:leos">
+    <bill contains="originalVersion">
+        <meta>
+            <identification source="EC DIGIT LEOS PROTOTYPE">
+                <FRBRWork>
+                    <FRBRthis id="frbrwork__frbrthis" value=""/>
+                    <FRBRuri id="frbrwork__frbruri" value=""/>
+                    <FRBRdate id="frbrwork__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrwork__frbrauthor_1" href="~COM" as="~docIntroducer"/>
+                    <FRBRauthor id="frbrwork__frbrauthor_2" href="~EP" as="~docAuthority"/>
+                    <FRBRauthor id="frbrwork__frbrauthor_3" href="~CONSIL" as="~docAuthority"/>
+                    <FRBRcountry id="frbrwork__frbrcountry" value="eu"/>
+                    <FRBRsubtype id="frbrwork__frbrsubtype_1" value="directive"/>
+                    <FRBRnumber id="frbrwork__frbrnumber_1" value=""/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis id="frbrexpression__frbrthis" value=""/>
+                    <FRBRuri id="frbrexpression__frbruri" value=""/>
+                    <FRBRdate id="frbrexpression__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrexpression__frbrauthor_1" href="~COM" as="~docIntroducer"/>
+                    <FRBRauthor id="frbrexpression__frbrauthor_2" href="~EP" as="~docAuthority"/>
+                    <FRBRauthor id="frbrexpression__frbrauthor_3" href="~CONSIL" as="~docAuthority"/>
+                    <FRBRlanguage id="frbrexpression__frbrlanguage_1" language="en"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis id="frbrmanifestation__frbrthis" value=""/>
+                    <FRBRuri id="frbrmanifestation__frbruri" value=""/>
+                    <FRBRdate id="frbrmanifestation__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrmanifestation__frbrauthor_1" href="~leos"/>
+                    <FRBRformat id="frbrmanifestation__frbrformat_1" value="akn+xml"/>
+                </FRBRManifestation>
+            </identification>
+            <analysis source="EC DIGIT LEOS PROTOTYPE">
+                <otherAnalysis source="EC DIGIT LEOS PROTOTYPE">
+                    <leos:procType id="analysis__otheranalysis__proctype" refersTo="~COD"/>
+                    <leos:docLocation id="analysis__otheranalysis__doclocation" refersTo="~BEL_BRU"/>
+                    <leos:docClass leos:category="~categoryDirective" leos:stage="~stageProposal"/>
+                    <leos:stakeholder id="analysis__otheranalysis__stakeholder_1" href="~COM" as="~initiator"/>
+                    <leos:stakeholder id="analysis__otheranalysis__stakeholder_2" href="~EP" as="~authority"/>
+                    <leos:stakeholder id="analysis__otheranalysis__stakeholder_3" href="~CONSIL" as="~authority"/>
+                </otherAnalysis>
+            </analysis>
+            <references source="EC DIGIT LEOS PROTOTYPE">
+                <TLCConcept id="categoryDirective" href="http://publications.europa.eu/resource/authority/resource-type/DIR" showAs="directive"/>
+                <TLCConcept id="stageProposal" href="/doc/stage/proposal" showAs="proposal"/>
+                <TLCConcept id="citationLegalBasis" href="/doc/component/citation/citationLegalBasis" showAs="legal basis for the act"/>
+                <TLCConcept id="citationPreparatoryActsInitial" href="/doc/component/citation/citationPreparatoryActs/Initial" showAs="preparatory acts: initial document"/>
+                <TLCConcept id="citationPreparatoryActsOpinion" href="/doc/component/citation/citationPreparatoryActs/Opinion" showAs="preparatory acts: opinion"/>
+                <TLCConcept id="citationProcedureInfo" href="/doc/component/citation/citationProcedureInfo" showAs="the interinstitutional procedure followed"/>
+                <TLCConcept id="transposition" href="/doc/component/enactingTerms/Transposition" showAs="the text related to the transposition"/>
+                <TLCConcept id="eif" href="/doc/component/enactingTerms/entryIntoForce" showAs="the text related to the entry into force"/>
+                <TLCConcept id="addressee" href="/doc/component/enactingTerms/Addressee" showAs="the text related to the addressee"/>
+                <TLCRole id="initiator" href="/doc/role/initiator" showAs="initiator"/>
+                <TLCRole id="authority" href="/doc/role/authority" showAs="authority"/>
+                <TLCRole id="president" href="/organisation/role/president" showAs="president"/>
+                <TLCProcess id="COD" href="https://webgate.ec.europa.eu/fpfis/wikis/display/REGISTRY/Legislative+procedure~COD" showAs="COD"/>
+                <TLCOrganization id="COM" href="http://publications.europa.eu/resource/authority/corporate-body/COM" showAs="European Commission"/>
+                <TLCOrganization id="EP" href="http://publications.europa.eu/resource/authority/corporate-body/EP" showAs="European Parliament"/>
+                <TLCOrganization id="HRUFASP" href="http://publications.europa.eu/resource/authority/corporate-body/HRUFASP" showAs="High Representative of the Union"/>
+                <TLCOrganization id="CONSIL" href="http://publications.europa.eu/resource/authority/corporate-body/CONSIL" showAs="Council of the European Union"/>
+                <TLCOrganization id="COR" href="http://publications.europa.eu/resource/authority/corporate-body/COR" showAs="Committee of the Regions"/>
+                <TLCOrganization id="EESC" href="http://publications.europa.eu/resource/authority/corporate-body/EESC" showAs="European Economic and Social Committee"/>
+                <TLCLocation id="BEL_BRU" href="http://publications.europa.eu/resource/authority/place/BEL_BRU" showAs="Brussels"/>
+                <TLCLocation id="FRA_SXB" href="http://publications.europa.eu/resource/authority/place/FRA_SXB" showAs="Strasbourg"/>
+                <TLCReference id="leos" href="/software/leos" showAs="EC DIGIT LEOS PROTOTYPE" name="software"/>
+            </references>
+            <proprietary source="EC DIGIT LEOS PROTOTYPE">
+                <leos:template id="proprietary__template">SJ-024</leos:template>
+                <leos:docStage id="proprietary__docstage">Proposal for a </leos:docStage>
+                <leos:docType id="proprietary__doctype">Directive of the European Parliament and of the Council</leos:docType>
+                <leos:docPurpose id="proprietary__docpurpose">on [...]</leos:docPurpose>
+            </proprietary>
+        </meta>
+        <preface id="preface">
+            <longTitle id="preface__longtitle_1" leos:ref="longTitle-bill_ep-cnl+proposal+directive">
+                <p>
+                    <docTitle>
+                        <docStage refersTo="~proprietary__docstage">Proposal for a</docStage>
+                        <docType refersTo="~proprietary__doctype">DIRECTIVE OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</docType>
+                        <docPurpose refersTo="~proprietary__docpurpose">on [...]</docPurpose>
+                    </docTitle>
+                </p>
+            </longTitle>
+        </preface>
+        <preamble id="preamble">
+            <formula id="preamble__formula_1" leos:name="authorities" leos:ref="formula-authorities_EP-CNL" >
+                <p>THE EUROPEAN PARLIAMENT AND THE COUNCIL OF THE EUROPEAN UNION,</p>
+            </formula>
+            <citations id="cits">
+                <citation id="cit_1" refersTo="~citationLegalBasis" leos:ref="citation-legalBase-TFEU-art">
+                    <p>Having regard to the Treaty on the Functioning of the European Union, and in particular Article [...] thereof,</p>
+                </citation>
+                <citation id="cit_2" refersTo="~citationPreparatoryActsInitial" leos:ref="citation-proposal-COM">
+                    <p>Having regard to the proposal from the European Commission,</p>
+                </citation>
+                <citation id="cit_3" leos:ref="citation-natParl_transmission">
+                    <p>After transmission of the draft legislative act to the national Parliaments,</p>
+                </citation>
+                <citation id="cit_4" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_EESC" leos:multiplicity="optional"  >
+                    <p>Having regard to the opinion of the European Economic and Social Committee
+                        <authorialNote id="cit_4__authorialNote_1" marker="1" placement="bottom">
+                            <p>OJ C [...], [...], p.[...]</p>
+                        </authorialNote>
+                        ,
+                    </p>
+                </citation>
+                <citation id="cit_5" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_CoR" leos:multiplicity="optional">
+                    <p>Having regard to the opinion of the Committee of the Regions
+                        <authorialNote id="cit_5__authorialNote_1" marker="2" placement="bottom">
+                            <p>OJ C [...], [...], p.[...]</p>
+                        </authorialNote>
+                        ,
+                    </p>
+                </citation>
+                <citation id="cit_6" refersTo="~citationProcedureInfo" leos:ref="citation-proc_OLP">
+                    <p>Acting in accordance with the ordinary legislative procedure,</p>
+                </citation>
+            </citations>
+            <block name="recitalsIntro">Whereas:</block>
+            <recitals id="recs">
+                <recital id="rec_1">
+                    <num>(1)</num>
+                    <p>Recital...</p>
+                </recital>
+                <recital id="rec_2">
+                    <num>(2)</num>
+                    <p>Recital...</p>
+                </recital>
+                <recital id="rec_3">
+                    <num>(3)</num>
+                    <p>In accordance with the Joint Political Declaration of Member States and the Commission of 28 September 2011 on explanatory documents , Member States have undertaken to accompany, in justified cases, the notification of their transposition measures with one or more documents explaining the relationship between the components of a directive and the corresponding parts of national transposition instruments. With regard to this Directive, the legislator considers the transmission of such documents to be justified.</p>
+                </recital>
+                <recital id="rec_4">
+                    <num>(4)</num>
+                    <p>Recital...</p>
+                </recital>
+            </recitals>
+            <formula id="preamble__formula_2" leos:name="adoption" leos:ref="formula-adoption_adopt_plur+directive">
+                <p>HAVE ADOPTED THIS DIRECTIVE:</p>
+            </formula>
+        </preamble>
+        <body id="body">
+            <article id="art_1">
+                <num>Article 1</num>
+                <heading>Scope</heading>
+                <paragraph id="art_1__para_1">
+                    <num>1.</num>
+                    <content>
+                        <p>Text...</p>
+                    </content>
+                </paragraph>
+            </article>
+            <article id="art_n1" refersTo="~transposition" leos:ref="article-transposition" leos:choice="transposition__alternative" leos:editable="false">
+                <num>Article #</num>
+                <heading>Transposition</heading>
+                    <paragraph id="art_n1__para_1">
+                        <num>1.</num>
+                        <subparagraph id="art_n1__para_1__subpara_1">
+                            <content>
+                                <p>Member States shall bring into force the laws, regulations and administrative provisions necessary to comply with this Directive by [...] at the latest. They shall forthwith communicate to the Commission the text of those provisions.</p>
+                            </content>
+                        </subparagraph>
+                        <subparagraph id="art_n1__para_1__subpara_2">
+                            <content>
+                                <p>When Member States adopt those provisions, they shall contain a reference to this Directive or be accompanied by such a reference on the occasion of their official publication. Member States shall determine how such reference is to be made.</p>
+                            </content>
+                        </subparagraph>
+                    </paragraph>
+                    <paragraph id="art_n1__para_2">
+                        <num>2.</num>
+                        <content>
+                            <p>Member States shall communicate to the Commission the text of the main provisions of national law which they adopt in the field covered by this Directive.</p>
+                        </content>
+                    </paragraph>
+            </article>
+            <article id="art_n2" refersTo="~transposition" leos:ref="article-transposition_same_date_validity" leos:choice="transposition__alternative" leos:editable="false">
+                <num>Article #</num>
+                <heading>Transposition</heading>
+                    <paragraph id="art_n2__para_1">
+                        <num>1.</num>
+                        <subparagraph id="art_n2__para_1__subpara_1">
+                            <content>
+                                <p>Member States shall adopt and publish, by [...] at the latest, the laws, regulations and administrative provisions necessary to comply with this Directive. They shall forthwith communicate to the Commission the text of those provisions.</p>
+                            </content>
+                        </subparagraph>
+                        <subparagraph id="art_n2__para_1__subpara_2">
+                            <content>
+                                <p>They shall apply those provisions from [...].</p>
+                            </content>
+                        </subparagraph>
+                        <subparagraph id="art_n2__para_1__subpara_3">
+                            <content>
+                                <p>When Member States adopt those provisions, they shall contain a reference to this Directive or be accompanied by such a reference on the occasion of their official publication. Member States shall determine how such reference is to be made.</p>
+                            </content>
+                        </subparagraph>
+                    </paragraph>
+                    <paragraph id="art_n2__para_2">
+                        <num>2.</num>
+                        <content>
+                            <p>Member States shall communicate to the Commission the text of the main provisions of national law which they adopt in the field covered by this Directive.</p>
+                        </content>
+                    </paragraph>
+            </article>
+            <article id="art_n3" refersTo="~eif" leos:ref="article-inforce_day_after_pub+directive" leos:editable="false" leos:deletable="false">
+                <num>Article #</num>
+                <heading>Entry into force</heading>
+                <content>
+                    <p>This Directive shall enter into force on the [...] day following that of its publication in the
+                        <i>Official Journal of the European Union</i>
+                        .
+                    </p>
+                </content>
+            </article>
+            <article id="art_n4" refersTo="~addressee" leos:ref="article-addressee+directive" leos:choice="addressee__alternative" leos:editable="false">
+                <num>Article #</num>
+                <heading>Addressees</heading>
+                <content>
+                    <p>This Directive is addressed to the Member States.</p>
+                </content>
+            </article>
+            <article id="art_n5" refersTo="~addressee" leos:ref="article-addressee_Treaties+directive" leos:choice="addressee__alternative" leos:editable="false">
+                <num>Article #</num>
+                <heading>Addressees</heading>
+                <content>
+                    <p>This Directive is addressed to the Member States in accordance with the Treaties.</p>
+                </content>
+            </article>
+        </body>
+        <conclusions id="conclusions">
+            <p>Done at
+                <location id="conclusions__location_1" refersTo="~analysis__otheranalysis__doclocation">Brussels</location>
+                ,
+            </p>
+            <p>
+                <signature id="conclusions__signature_1" leos:ref="signature-ep">
+                    <organization id="conclusions__signature_1__org_1" refersTo="~EP">For the European Parliament</organization>
+                    <role id="conclusions__signature_1__role_1" refersTo="~president">The President</role>
+                    <person id="conclusions__signature_1__person_1" refersTo="">[...]</person>
+                </signature>
+                <signature id="conclusions__signature_2" leos:ref="signature-cnl">
+                    <organization id="conclusions__signature_2__org_1" refersTo="~CONSIL">For the Council</organization>
+                    <role id="conclusions__signature_2__role_1" refersTo="~president">The President</role>
+                    <person id="conclusions__signature_2__person_1" refersTo="">[...]</person>
+                </signature>
+            </p>
+        </conclusions>
+    </bill>
+</akomaNtoso>

@@ -1,0 +1,96 @@
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/**For PDF **/
+@page :first { 
+    @bottom-center { 
+        content:none;
+    }
+}
+@page { 
+    
+    @bottom-left-corner { 
+        content:"EN";
+        font-weight: bold;
+    }
+
+    @bottom-center {
+        content: "Page " counter(page) " of " counter(pages);
+    }
+    
+    @bottom-right-corner {
+        content: "EN";
+        font-weight: bold;
+    }
+}
+
+@media print {
+    .leos-coverpage {
+        padding: 0cm 0cm;
+        page-break-after: always;
+    }
+    .leos-toc {
+        page-break-after: always;
+    }
+    .akn-table {
+        page-break-inside: avoid;
+        -fs-table-paginate: paginate;
+    }
+    .leos-toc-item a::after {
+        content: leader('.') target-counter(attr(href), page);
+    }
+    bill article p {
+        padding-left: 25px;
+        padding-right: 5px;
+        word-wrap: break-word;
+    }
+    bill authorialNote[data-tooltip] {
+        width: 100%;
+    }
+    bill authorialNote[data-tooltip]:after {
+        content: none;
+        display: block;
+        vertical-align: bottom;
+        height: 20px;
+        bottom: 0;
+        width: 100%;
+    }
+
+    bill authorialNote[data-tooltip]:hover:before,authorialNote[data-tooltip]:hover:after{
+        display: none;
+    }
+
+    docStage {
+        display: block;
+        padding-bottom: 9pt;
+        padding-top: 9pt;
+        font-weight: normal;
+        text-align: center;
+    }
+
+    docType {
+        display: block;
+        padding-bottom: 9pt;
+        padding-top: 9pt;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    docPurpose {
+        display: block;
+        padding-bottom: 9pt;
+        padding-top: 9pt;
+        font-weight: bold;
+        text-align: center;
+    }
+}

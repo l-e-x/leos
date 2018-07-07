@@ -1,0 +1,73 @@
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+ol > li:before {
+    display: block;
+    color: darkgray;
+    content: attr(data-akn-num);
+    float: left;
+    min-width: 2.5em;
+}
+
+ol {
+	display: block;
+	list-style-type: none;
+	/*removing default padding and margin*/
+	padding-left: 0px;
+    margin-top: 0px;
+}
+
+ol > li {
+	display: block;
+	padding: 0.5em 0;
+	margin-top: 0;
+}
+
+/* Specific styles for nested lists*/
+li > ol > li:before {
+    margin-left: -2.5em;
+}
+
+li > ol {
+	padding-left: 2.5em;
+}
+
+/* show block section */
+ .cke_show_blocks  ol {
+    border: 1px dotted #808080;
+    display: block;
+    padding: 20px 2px 4px 0px;
+    margin: 1px;
+    position: relative;
+}
+
+ .cke_show_blocks li > ol {
+	padding-left: 0.4em;
+}
+
+.cke_show_blocks ol:after {
+    content: "LIST";
+}
+
+.cke_show_blocks ol > li {
+	background-repeat: no-repeat;
+	border: 1px dotted #808080;
+	padding: 1.5em 0.25em 0.5em 2.8em; 
+	margin: 1px;
+	position: relative;
+	display: block;
+}
+
+.cke_show_blocks ol > li:after {
+	content: "POINT";
+}
