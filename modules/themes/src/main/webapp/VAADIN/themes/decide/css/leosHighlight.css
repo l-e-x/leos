@@ -1,0 +1,42 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/**********************Styles for leos-highlight*****************************/
+
+.leos-highlight-yellow {
+    background-color: #FFFF00;
+}
+
+.leos-highlight-green {
+    background-color: #00FF00;
+}
+
+.leos-highlight-cyan {
+    background-color: #00FFFF;
+}
+
+.leos-highlight-pink {
+    background-color: #FF00FF;
+}
+
+.leos-highlight-blue {
+    background-color: #0000FF;
+}
+
+.leos-highlight-red {
+    background-color: #FF0000;
+}
+
+.leos-highlight-grey {
+    background-color: #C0C0C0;
+}

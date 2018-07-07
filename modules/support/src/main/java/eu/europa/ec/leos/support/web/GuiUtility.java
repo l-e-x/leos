@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,9 +21,9 @@ public class GuiUtility {
 												:departmentNumber.length())
 			    :null;
 	}
-	
+
 	public static String getAvatarUrl() {
-		return "VAADIN/js/web/sideComments/images/user.png";
+		return "assets/img/user.png";
 	}
 	
 }

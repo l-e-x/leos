@@ -1,0 +1,31 @@
+define(['./at', './countBy', './each', './eachRight', './every', './filter', './find', './findLast', './flatMap', './forEach', './forEachRight', './groupBy', './includes', './invokeMap', './keyBy', './map', './orderBy', './partition', './reduce', './reduceRight', './reject', './sample', './sampleSize', './shuffle', './size', './some', './sortBy'], function(at, countBy, each, eachRight, every, filter, find, findLast, flatMap, forEach, forEachRight, groupBy, includes, invokeMap, keyBy, map, orderBy, partition, reduce, reduceRight, reject, sample, sampleSize, shuffle, size, some, sortBy) {
+  return {
+    'at': at,
+    'countBy': countBy,
+    'each': each,
+    'eachRight': eachRight,
+    'every': every,
+    'filter': filter,
+    'find': find,
+    'findLast': findLast,
+    'flatMap': flatMap,
+    'forEach': forEach,
+    'forEachRight': forEachRight,
+    'groupBy': groupBy,
+    'includes': includes,
+    'invokeMap': invokeMap,
+    'keyBy': keyBy,
+    'map': map,
+    'orderBy': orderBy,
+    'partition': partition,
+    'reduce': reduce,
+    'reduceRight': reduceRight,
+    'reject': reject,
+    'sample': sample,
+    'sampleSize': sampleSize,
+    'shuffle': shuffle,
+    'size': size,
+    'some': some,
+    'sortBy': sortBy
+  };
+});

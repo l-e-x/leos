@@ -1,0 +1,21 @@
+@mixin leos-optiongroup-ext($primary-stylename: v-select-optiongroup, $include-additional-styles: contains($v-included-additional-styles, optiongroup)) {
+    .#{$primary-stylename}-right {
+        @include leos-optiongroup-right;
+    }
+}
+
+@mixin leos-optiongroup-right() {
+    .v-checkbox {/* we could not use v-checkbox-right as it is auto generated*/
+        @include valo-checkbox-style;
+        @include leos-checkbox-right;
+    }
+}
+
+@mixin leos-checkbox-right() {
+    & > input {
+        & ~ label:before,
+        & ~ label:after {
+            left: 81% !important;
+        }
+    }
+}

@@ -1,0 +1,108 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/*-----------------------------------------------------------------------------
+    AKN authorial note styles
+-----------------------------------------------------------------------------*/
+authorialNote {
+    display: inline;
+    font-size: 0.8em;
+    line-height: 0.8em;
+    vertical-align: baseline;
+    position: relative;
+    bottom: 0.5em;
+    cursor: pointer;
+    font-weight: bold;
+    color: blue;
+}
+
+authorialNote[data-tooltip] {
+    cursor: pointer;
+    font-weight: bold;
+    color: blue;
+}
+
+authorialNote[data-tooltip]:before,authorialNote[data-tooltip]:after
+    {
+    bottom: 0;
+    display: none;
+    position: absolute;
+}
+
+authorialNote[data-tooltip]:before {
+    content: "";
+    border-top: 0.6em solid blue;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    left: -0.25em;
+    margin-bottom: 1.25em;
+}
+
+authorialNote[data-tooltip]:after {
+    content: attr(data-tooltip);
+    color: white;
+    background-color: blue;
+    border-radius: 7px;
+    padding: 5px 15px;
+    left: -1.5em;
+    margin-bottom: 1.75em;
+    white-space: nowrap;
+}
+/*----------------------------------------------------------------------------
+ For Display at end of page
+ ----------------------------------------------------------------------------*/
+.leos-authnote-table{
+    display: table;
+    padding-right:2em;
+    padding-left: 3em;
+    word-break: break-all;
+    word-wrap: break-word;
+    table-layout: fixed;
+}
+
+.leos-authnote{
+    display: table-row;
+}
+
+.leos-authnote marker {
+    display: block;
+    font-size: 0.7em;
+    vertical-align: baseline;
+    position: relative;
+    bottom: 0.5em;
+    font-weight: bold;
+    color: blue;
+    float:left;
+    padding-bottom: 1em;
+}
+
+.leos-authnote text {
+    display: block;
+    margin-left: 1.2em;
+}
+
+.leos-authnote[id]{
+    cursor: pointer;
+}
+
+@media screen {
+     authorialNote:before,authorialNote:after {
+        bottom: 0;
+        display: none;
+        position: absolute;
+    }
+ 
+     authorialNote[data-tooltip]:hover:before, authorialNote[data-tooltip]:hover:after {
+       display: block;
+    }
+}

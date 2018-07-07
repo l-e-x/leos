@@ -1,0 +1,100 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/*Styles for Fragment in Cross-reference dialog box.*/
+aknFragment {
+	display: block;
+	color: black;
+	background-color: white;
+	/* LegisWrite Normal style */
+	font-family: "Times New Roman", Times, serif;
+	font-size: 12pt;
+	font-style: normal;
+	font-weight: normal;
+	text-align: justify;
+	line-height: 1.25em; /* extra spacing for improved readability */
+}
+
+article subparagraph {
+	clear: inherit;
+	display: block;
+}
+
+.crDialogbox {
+	border-collapse: collapse;
+	font: normal normal normal 12px Arial,Helvetica,Tahoma,Verdana,Sans-Serif;
+	white-space: normal;
+}
+
+.crTableOfContent {
+	border: 2px;
+	border-style: solid;
+	padding: 5px;
+	height: 100%;
+	overflow: auto;
+	width: 250px;
+}
+
+.crContent {
+	height: 100%;
+}
+
+.crContent #contentContainer {
+	border: 2px;
+	border-style: solid;
+	padding: 5px;
+	height: 80%;
+	max-height: 465px;
+}
+
+.crContent #lblRefAsValue {
+	border: 1px;
+	border-style: solid;
+}
+
+.crContent #referenceElement {
+	padding: 10px 0 5px 0;
+}
+
+.crContent #refAs {
+	padding: 10px 0;
+}
+
+.crContent #refrenceTextLabel {
+	width: 80%;
+	font-size: inherit;
+	padding-left: 2px;
+}
+
+.selectable-element {
+	border: 1px transparent solid;
+}
+
+.selectable-element:hover {
+	border: 1px #ADBDCE solid;
+}
+
+.selectable-element-selected {
+	background-color: cornsilk;
+}
+
+.selected-content {
+	width: 600px;
+	word-wrap: break-word;
+	overflow: auto;
+}
+
+.error-label {
+	font-size: 12px;
+	color: red;
+}

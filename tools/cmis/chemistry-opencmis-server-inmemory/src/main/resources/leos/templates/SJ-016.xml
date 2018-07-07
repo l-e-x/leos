@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<akomaNtoso xmlns="http://www.akomantoso.org/2.0"
-            xmlns:leos="urn:eu:europa:ec:leos">
+<akomaNtoso xmlns="http://www.akomantoso.org/2.0" xmlns:leos="urn:eu:europa:ec:leos">
     <bill contains="originalVersion">
         <meta>
-            <identification source="EC DIGIT LEOS PROTOTYPE">
+            <identification source="~leos">
                 <FRBRWork>
                     <FRBRthis id="frbrwork__frbrthis" value=""/>
                     <FRBRuri id="frbrwork__frbruri" value=""/>
@@ -30,8 +29,8 @@
                     <FRBRformat id="frbrmanifestation__frbrformat_1" value="akn+xml"/>
                 </FRBRManifestation>
             </identification>
-            <analysis source="EC DIGIT LEOS PROTOTYPE">
-                <otherAnalysis source="EC DIGIT LEOS PROTOTYPE">
+            <analysis source="~leos">
+                <otherAnalysis source="~leos">
                     <leos:procType id="analysis__otheranalysis__proctype" refersTo="~SLP"/>
                     <leos:docLocation id="analysis__otheranalysis__doclocation" refersTo="~BEL_BRU"/>
                     <leos:docClass leos:category="~categoryRegulation" leos:stage="~stageProposal"/>
@@ -39,7 +38,7 @@
                     <leos:stakeholder id="analysis__otheranalysis__stakeholder_2" href="~CONSIL" as="~authority"/>
                 </otherAnalysis>
             </analysis>
-            <references source="EC DIGIT LEOS PROTOTYPE">
+            <references source="~leos">
                 <TLCConcept id="categoryRegulation" href="http://publications.europa.eu/resource/authority/resource-type/REG" showAs="regulation"/>
                 <TLCConcept id="stageProposal" href="/doc/stage/proposal" showAs="proposal"/>
                 <TLCConcept id="citationLegalBasis" href="/doc/component/citation/citationLegalBasis" showAs="legal basis for the act"/>
@@ -62,6 +61,7 @@
                 <TLCLocation id="FRA_SXB" href="http://publications.europa.eu/resource/authority/place/FRA_SXB" showAs="Strasbourg"/>
                 <TLCReference id="leos" href="/software/leos" showAs="EC DIGIT LEOS PROTOTYPE" name="software"/>
                 <TLCConcept id="leosComment" href="/software/leos/comment" showAs="comment"/>
+                <TLCConcept id="leosSuggestion" href="/software/leos/suggestion" showAs="suggestion"/>
                 <TLCConcept id="leosHighlight" href="/software/leos/highlight" showAs="highlight"/>
             </references>
             <proprietary source="~leos">

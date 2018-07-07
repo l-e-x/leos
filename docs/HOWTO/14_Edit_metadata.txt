@@ -1,0 +1,13 @@
+                        EDIT METADATA - HOWTO
+--------------------------------------------------------------------------------
+
+1.  Open the document by clicking on the 'Open' button in the repository browser
+    .The document will open for editing in the document viewer.
+
+2.  Click on the 'Metadata' menu item on the right-hand side of the page and
+    select 'Edit'. The 'Edit document metadata' dialog will open with metadata
+    values populated for the document.
+   
+3. Only the 'Document title' field is available for editing. After the edition
+   click on 'Save' and the changes will be saved. Close the dialog by clicking
+   the 'Close' button.

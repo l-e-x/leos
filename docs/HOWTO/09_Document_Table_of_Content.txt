@@ -1,0 +1,33 @@
+                        TABLE OF CONTENT - HOWTO
+--------------------------------------------------------------------------------
+
+1. By Default, document viewer is divided into two columns. Left-hand side is
+   document area and right-hand side is table of content. The table of content 
+   is a tree consists of hierarchical structure of the document. 
+   
+2. The tool-bar of the table of content consists of three buttons -
+      - The expand/collapse button to expand or collapse the tree.
+      - The edit button to edit the tree structure.
+      - The refresh button to refresh the table of content.
+      
+3. To edit the table of content, click on the icon with label 'Edit'. A dialog
+   will open with title 'Edit table of content'.
+   
+4. The dialog is divided into 3 parts, left-hand side is the table of content
+   displays the document tree, right-hand side consists of the elements that
+   can be added to the tree using 'drag n drop' and the bottom area consists of
+   meta-data of the selected element in the tree.
+   
+5. The meta-data section consists of three fields: Type, Number and Heading.
+   The 'Heading' field is editable and the rest are read-only. On selection of
+   an element from the table of content, these fields are populated. A 'Delete'
+   button is also provided to delete an element from the tree if possible.
+   
+6. New elements can be added to the tree from the right-hand side column using
+   'drag n drop'.This feature is bounded by the rules of the document structure,
+   so the elements can only be added at a valid level in the hierarchy.
+   
+7. After the edition, click on the 'Save' button to save the changes. To close
+   the dialog click on 'Close', the dialog will be closed and the changes will
+   be reflected in the Table of Content and document.
+   

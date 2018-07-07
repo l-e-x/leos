@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,11 @@
  */
 package eu.europa.ec.leos.support.xml.vtd;
 
+/**
+ * @author: micleva
+ * @date: 4/25/13 8:55 AM
+ * @project: ETX
+ */
 public enum FragmentType {
 	ELEMENT,
 	CONTENT

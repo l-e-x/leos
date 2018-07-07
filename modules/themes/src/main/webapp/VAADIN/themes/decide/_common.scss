@@ -1,0 +1,62 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+//global variables
+$WHITE:#FFFFFF;
+$GREY:#EEEEEE;
+
+$MAIN_BLUE:#0066A5;         //Navigation Blue
+$HEADER_BLUE:#0065A2;
+$ACTION_BLUE:#004697;       //Action blue/ from decide palette /alternate #003f59
+$PALE_BG_BLUE:#E5F0F6;      //left menu background/ from decide palette
+$LIGHT_BLUE:#7bd2f6;        //Focus color/ from decide palette
+$TAB_BACKGROUND:#F6f9fb;    //Tab BackGround from decide palette
+$MENU_BORDER_COLOR:#6E6969;       //picked from Decide
+
+$G_BORDER_COLOR:#B7B7B7;//#7ec6e3;
+$G_GREEN_COLOR:#38b64b;     //picked from Decide
+$G_BROWN_COLOR:#ee7c08;
+
+//global font definitions
+@font-face {
+    font-family: 'Vaadin-Icons';
+    src: url('./fonts/Vaadin-Icons.eot');
+    src: url('./fonts/Vaadin-Icons.eot?#iefix') format('embedded-opentype'),
+    url('./fonts/Vaadin-Icons.woff') format('woff'),
+    url('./fonts/Vaadin-Icons.ttf') format('truetype'),
+    url('./fonts/Vaadin-Icons.svg#icomoon') format('svg');
+}
+
+//global style definition
+
+//for usages by vaadin-icons addon
+.Vaadin-Icons {
+    font-family: 'Vaadin-Icons';
+}
+
+
+@function stage-color($stage-value) {
+    $draft-color: $MAIN_BLUE;
+    $edit-color: $G_BROWN_COLOR;
+    $feedback-color: $G_GREEN_COLOR;
+
+    @if $stage-value == "draft" {
+        @return $draft-color;
+    }
+    @else if $stage-value == "feedback" {
+        @return $feedback-color;
+    }
+    @else if $stage-value == "edit" {
+        @return $edit-color;
+    }
+}

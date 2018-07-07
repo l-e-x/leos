@@ -1,0 +1,102 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin documentView {
+
+    .leos-docview-doctitle {
+        font-size: 16px;
+    }
+
+    .leos-docview-icon .v-icon{
+        font-size: 32px;
+        padding-left: 5px;
+    }
+
+    @each $stage in draft, edit, feedback {
+    .#{$stage}.leos-docview-icon {
+        color: stage-color($stage);
+    }
+}
+
+    .leos-viewdoc-docbar,
+    .leos-viewdoc-tocbar,
+    .leos-markedtext-bar {
+        background: $GREY;
+        border-top: 1px solid lighten($MENU_BORDER_COLOR, 30%);
+        border-bottom: 1px solid lighten($MENU_BORDER_COLOR, 45%);
+    }
+
+    .leos-markedtext-bar {
+        padding-left: 80px;
+    }
+
+    .leos-toolbar-button.v-button {
+        padding: 0 5px;
+        color: $MAIN_BLUE; //#474747;
+        .v-icon {
+            font-size: 16px;
+        }
+    }
+
+    .leos-viewdoc-toctree-panel {
+        border: 0;
+    }
+
+    .v-label-leos-viewdoc-content {
+        overflow: auto;
+        color: black;
+        background: $GREY;
+        position: relative;
+    }
+
+    .leos-marked-content {
+        overflow: auto;
+        position: relative;
+    }
+
+    .bookmark-container {
+        background:  $HEADER_BLUE;
+        position: fixed;
+        bottom: 125px;
+        border-top-right-radius: 5px;
+        border-bottom-right-radius: 5px;
+        cursor: pointer;
+        width:0;
+        opacity:0;
+        height:30px;
+        transition: opacity .4s ease-in, width .4s ease-out;
+        display:block;
+        white-space: nowrap;
+        .bookmark-link {
+            color: $WHITE;
+            display:none;
+        }
+        .bookmark-icon {
+            font-family: "Vaadin-Icons";
+        }
+        &.displayed {
+            width:105px;
+            display: block;
+            opacity:1;
+            padding:5px;
+            .bookmark-link  {
+                display:initial;
+            }
+        }
+    }
+    .leos-hidden {
+        display: none;
+    }
+}

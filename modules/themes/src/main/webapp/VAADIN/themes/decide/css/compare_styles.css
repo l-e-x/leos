@@ -1,0 +1,82 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/** styles for comparision windows **/
+.leos-content-removed ,
+.leos-content-removed marker,
+.leos-content-removed authorialNote {
+    text-decoration: line-through;
+    color: red;
+}
+.leos-content-removed * {
+    text-decoration: line-through;
+}
+
+.leos-content-new,
+.leos-content-new marker,
+.leos-content-new authorialNote{
+    color: green;
+}
+
+.leos-content-modified {
+    display: block;
+}
+
+/* do not show these*/
+.leos-marker-content-removed,
+.leos-marker-content-added,
+.leos-marker-content-added authorialNote,
+.leos-marker-content-removed authorialNote,
+.leos-marker-content-removed .leos-toc-link,
+.leos-marker-content-added .leos-toc-item .leos-toc-link,
+.leos-marker-content-added marker,
+.leos-marker-content-removed marker
+{
+    color: #ffffff;
+}
+
+
+/* vaadin Window Styles*/
+
+/* styles for containing div of single column layout*/
+.leos-single-column-layout .leos-coverpage ,
+.leos-single-column-layout .leos-toc ,
+.leos-single-column-layout akomantoso {
+     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+ }
+/* styles for containing div of two columns*/
+.leos-two-column-layout{
+    -ms-transform-origin-x: 0%;
+    -ms-transform-origin-y: top;
+    -ms-transform: scale(0.85);
+    transform: scale(0.85);
+    transform-origin: 0% top;
+}
+
+.leos-two-column-layout .leos-coverpage ,
+.leos-two-column-layout .leos-toc ,
+.leos-two-column-layout akomantoso {
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    margin-left: 6px;
+}
+
+/* styles for each of two columns*/
+.leos-two-column-compare {
+    overflow: visible;
+}
+
+.leos-two-column-compare .leos-coverpage ,
+.leos-two-column-compare .leos-toc,
+.leos-two-column-compare akomantoso {
+    padding: 0 0 0 0;
+}

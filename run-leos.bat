@@ -7,7 +7,7 @@ echo "---------------------LEOS COMPILING...----------------------------------"
 call mvn clean install
 echo "---------------------LEOS COMPILED.-------------------------------------"
 
-cd ./modules/web
+cd ./modules/web-os
 
 echo "---------------------LEOS STARTING...-----------------------------------"
 call mvn jetty:run-war

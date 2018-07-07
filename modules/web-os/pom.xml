@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2016 European Commission
+
+    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.europa.ec.leos.prototype</groupId>
+        <artifactId>leos-modules</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>leos-web-os</artifactId>
+    <packaging>war</packaging>
+
+    <name>Web-OS</name>
+
+    <description>LEOS Prototype Joinup Release</description>
+
+    <properties>
+        <!-- Project -->
+        <project.final.name>leos-prototype-web-os</project.final.name>
+        <project.web.context.path>/leos-prototype</project.web.context.path>
+        <leos.build.env>local</leos.build.env> <!-- always local -->
+    </properties>
+
+    <dependencies>
+        <!-- Leos modules -->
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-model</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-support</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-services</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-webservices</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-groovy-support</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-widgetset</artifactId>
+            <version>${project.version}</version>
+        </dependency>        
+        <dependency>
+            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <artifactId>leos-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Libraries -->
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.final.name}-${leos.build.env}</finalName>
+        <filters>
+            <filter>src/main/filters/leos.properties</filter>
+            <filter>src/main/filters/${leos.build.env}.properties</filter>
+        </filters>
+        <resources>
+            <resource>
+                <!-- Filtered resource files. -->
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <!-- Non-filtered resource files. -->
+                <filtering>false</filtering>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/*.properties</exclude>
+                    <exclude>**/*.xml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- CLEAN -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <!-- Ensure overlays are cleaned properly. -->
+                            <directory>overlays</directory>
+                        </fileset>
+                        <fileset>
+                            <!-- Ensure logs are cleaned properly. -->
+                            <directory>logs</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <!-- WAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webapp/WEB-INF</directory>
+                            <includes>
+                                <include>web.xml</include>
+                            </includes>
+                            <targetPath>WEB-INF</targetPath>
+                        </resource>
+                    </webResources>
+                    <overlays>
+                        <overlay>
+                            <!-- empty overlay represents the current build -->
+                        </overlay>
+                    </overlays> 
+                </configuration>
+            </plugin>
+
+            <!-- JETTY -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <configuration>
+                    <jettyXml>src/etc/jetty/jetty.xml</jettyXml>
+                    <loginServices>
+                        <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                            <name>default</name>
+                            <config>src/etc/jetty/realm.properties</config>
+                        </loginService>
+                    </loginServices>
+                    <webApp>
+                        <contextPath>${project.web.context.path}</contextPath>
+                        <descriptor>target/${project.build.finalName}/WEB-INF/web.xml</descriptor>
+                    </webApp>
+                    <war>target/${project.build.finalName}</war>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.h2database</groupId>
+                        <artifactId>h2</artifactId>
+                        <version>${h2db.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- TOMCAT -->
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <configuration>
+                    <path>${project.web.context.path}</path>
+                    <server>leosServer</server>
+                    <contextFile>src/etc/tomcat/context.xml</contextFile>
+                    <tomcatUsers>src/etc/tomcat/tomcat-users.xml</tomcatUsers>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.h2database</groupId>
+                        <artifactId>h2</artifactId>
+                        <version>${h2db.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+        <extensions>
+            <!-- Enabling the use of FTP for deployment -->
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>${wagon-ftp-extension.version}</version>
+            </extension>
+        </extensions>	
+    </build>
+</project>

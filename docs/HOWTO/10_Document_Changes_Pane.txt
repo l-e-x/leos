@@ -1,0 +1,29 @@
+                        DOCUMENT CHANGES - HOWTO
+--------------------------------------------------------------------------------
+
+1. An additional column can be enabled in document viewer by clicking on
+   Menu Bar> Setting menu> "Change ON". On enabling via sub menu, a column 
+   appears on left side of document viewer called changes pane. The changes 
+   pane contains a tool-bar and document content with highlighted changes. 
+      
+2. The tool-bar of the changes pane consists of following -
+      	- A popup button to select versions to compare. 
+	- Navigation buttons to move to previous/next change
+      	- Button to reset/hide the changes pane 
+      
+3. On click of popup button, it opens a window which contains a slider and
+   a checkbox. Slider can be used to select versions to show changes between 
+   two versions. If the checkbox is selected, it maintains second version at
+   latest available version. 
+
+4. When slider is moved and two different versions are selected, the content 
+   reflects the changes between two versions. Removed content is marked with red
+   and added content is marked with green colour. Changes are also marked on the 
+   scroll-bar.
+   
+5. Navigation Buttons on toolbar are for easy navigation between changes. Click
+   on 'Next' button scroll the content to next change. Changes can also be 
+   navigated through the markers placed on scroll bar.
+
+6. The right most button on toolbar, hides the changes pane which can be
+    restored by leftmost button on document area.

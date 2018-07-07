@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -37,6 +37,11 @@ import com.ximpleware.VTDNav;
 import eu.europa.ec.leos.support.xml.vtd.Element;
 import eu.europa.ec.leos.support.xml.vtd.IntHolder;
 
+/**
+ * @author: micleva
+ * @date: 4/18/13 12:16 PM
+ * @project: ETX
+ */
 @Service
 public class XMLContentComparator implements ContentComparatorService {
 

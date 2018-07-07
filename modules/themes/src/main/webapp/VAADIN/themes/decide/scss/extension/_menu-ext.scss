@@ -1,0 +1,13 @@
+@mixin leos-menu-ext () {
+    .v-menubar {
+        box-shadow: none;
+    }
+
+    .v-menubar-popup {
+        padding: 0;
+        margin: 1px !important;
+        .v-menubar-submenu {
+            border: 1px solid lighten($MENU_BORDER_COLOR, 30%);
+        }
+    }
+}

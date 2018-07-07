@@ -1,0 +1,64 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+//this file should be used to for application level styles
+@import "common";
+
+//setting valo params
+$v-border: 1px solid $G_BORDER_COLOR;
+$v-background-color: $WHITE;
+$v-app-loading-text: "Loading LEOS...";
+
+$v-font-size: 13px;
+$v-font-weight: 400;
+$v-font-color: $MAIN_BLUE;
+$v-font-family: "Open Sans";
+
+$v-unit-size: 26px;
+$v-unit-size--small: 20px;
+$v-unit-size--tiny: 18px;
+
+$v-selection-color: $LIGHT_BLUE;
+$v-overlay-shadow: 0 0 0 2px (v-tint 10);
+$v-focus-color: $LIGHT_BLUE;
+$v-focus-style: $LIGHT_BLUE;
+$v-border-radius: 0px;
+$v-gradient: false;
+
+@import "../valo/valo";
+
+$v-included-components: remove($v-included-components, button);
+$v-included-components: remove($v-included-components, datafield);
+$v-included-components: remove($v-included-components, dragwrapper);
+$v-included-components: remove($v-included-components, nativebutton);
+$v-included-components: remove($v-included-components, tabsheet);
+$v-included-components: remove($v-included-components, richtextarea);
+$v-included-components: remove($v-included-components, twincolselect);
+$v-included-components: remove($v-included-components, upload);
+
+@import "scss/extension/_optiongroup-ext";
+@import "scss/extension/_button-ext";
+@import "scss/extension/_menu-ext";
+
+@include valo;
+
+@mixin decide {
+
+    @include leos-optiongroup-ext;
+
+    $v-background-color: $WHITE;
+    $v-border: 1px solid $MAIN_BLUE;
+    @include leos-button-ext();
+    @include leos-menu-ext();
+}
+

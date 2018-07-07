@@ -1,6 +1,6 @@
 PROJECT: LEOS
-Joinup Release: 2.0.0-SNAPSHOT
-Date: 2015-11-20
+Joinup Release: 3.0.0-SNAPSHOT
+Date: 2016-06-17
 
 INTRODUCTION
 ============
@@ -21,8 +21,7 @@ DEPENDENCIES
 ============
 
 To compile the supplied source files and run the generated WAR the following software should be configured:
-    * Java SDK version 7+
-      (Java 8 is recommended due to better memory performance)
+    * Java SDK version 8.0
     * Maven version 3.0.5+
       (Maven runtime memory might need to be set: MAVEN_OPTS=-Xms256m -Xmx512m)
       (Maven settings, proxy and mirrors, might need to be adjusted to your environment and internet access requirements)
@@ -109,7 +108,7 @@ Note: database and repository must already be running.
 
 You must run LEOS on the command line.
 
-    1) Traverse to folder {LEOS}\modules\web
+    1) Traverse to folder {LEOS}\modules\web-os
     2) Execute the following command:
             mvn jetty:run-war
 
@@ -122,6 +121,20 @@ There might be bugs or incomplete features present in this version as it is a pr
 
 CHANGE LOG
 ==========
+
+3.0.0 (Prototype)
+-----------------
+    * Updated HOWTO documentation
+    * Document Viewer
+        - Document changes pane
+          - Version selector
+          - Change markers
+          - Change navigation
+    * Editor
+        - New inline edition
+        - Improved user comments
+    * Updated dependencies (frameworks and libraries)
+    * Technical improvements, updated module structure and bug fixes
 
 2.0.0 (Prototype)
 -----------------

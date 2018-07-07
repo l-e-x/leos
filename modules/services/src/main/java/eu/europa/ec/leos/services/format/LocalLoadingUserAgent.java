@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -40,6 +40,7 @@ public class LocalLoadingUserAgent extends ITextUserAgent {
      * @return open input stream of resource
      */
     protected InputStream resolveAndOpenStream(String uri) {
+        LOG.trace("Requested resource uri: {}", uri);
         InputStream is = null;
         try {
             if(uri==null)

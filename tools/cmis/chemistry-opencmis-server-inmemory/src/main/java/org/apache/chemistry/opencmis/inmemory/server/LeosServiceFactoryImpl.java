@@ -119,6 +119,7 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
         LOG.info("Creating files...");
         String files = parameters.get(paramKey);
         StringTokenizer filesTokenizer = new StringTokenizer(files, ";", false);
+        ClassLoader classLoader = getClass().getClassLoader();
         ArrayList<String> contributors = new ArrayList<String>();
 
         if(setContributors) {
@@ -136,10 +137,7 @@ public class LeosServiceFactoryImpl extends InMemoryServiceFactoryImpl {
             LOG.info("Creating document: {} [{}]", fileName, mimeType);
 
             String filePath = folderPath + fileName;
-            InputStream is = getClass().getResourceAsStream(filePath);
-            if (is == null) {
-                LOG.error("Unable to load file: {}", filePath);
-            }
+            InputStream is = classLoader.getResourceAsStream(filePath);
             ContentStream cs = new ContentStreamImpl(fileName, null, mimeType, is);
 
             String documentName = renameFiles ? parameters.get(paramKey + "." + fileName) : fileName;

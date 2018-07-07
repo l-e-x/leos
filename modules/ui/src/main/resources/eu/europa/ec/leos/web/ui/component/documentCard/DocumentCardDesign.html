@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8" name="package-mapping" content="leos:eu.europa.ec.leos.web.ui.component.documentCard">
+</head>
+<body>
+
+<vaadin-vertical-layout style-name="leos-card" height="130px">
+
+ <vaadin-horizontal-layout spacing="true" style-name="leos-card-header" width-full="true">
+  <vaadin-label style-name="leos-card-header-left" size-auto="true" plain-text="" _id="template"></vaadin-label>
+  <vaadin-label size-auto="true" :center="" :expand="">&nbsp;</vaadin-label>
+  <leos-stage-popup-view primary-style-name="leos-card-header-right" size-auto="true" _id="stage" immediate="true" :right=""></leos-stage-popup-view>
+ </vaadin-horizontal-layout>
+
+ <vaadin-horizontal-layout style-name="leos-card-details" spacing="true" size-full="true":expand="1.0">
+  <vaadin-vertical-layout size-full="true" :expand="0.1">
+   <vaadin-label style-name="leos-card-icon" _id="docIcon"></vaadin-label>
+   <leos-property-bound-button icon="fonticon://Vaadin-Icons/e80d" style-name="leos-lock-icon icon-only link hidden" _id="lockButton"></leos-property-bound-button>
+  </vaadin-vertical-layout>
+
+  <vaadin-vertical-layout size-full="true" :expand="0.65">
+   <vaadin-label primary-style-name="leos-card-title" plain-text="" _id="title"></vaadin-label>
+   <vaadin-label style-name="leos-caption-on-left leos-card-language" plain-text="" _id="language" :bottom=""></vaadin-label>
+  </vaadin-vertical-layout>
+
+  <vaadin-vertical-layout  size-full="true" :expand="0.15">
+   <vaadin-button icon="fonticon://FontAwesome/f055" style-name="add-contributor link center icon-green" plain-text="" icon-alt="Add Contributor" _id="addContributorButton"></vaadin-button>
+   <vaadin-panel style-name="leos-contributors-panel" primary-style-name="light" height-full="true" :expand=".95">
+   <leos-contributor-list style-name="leos-contributor-list" size-auto="true" _id="contibutorList"></leos-contributor-list>
+   </vaadin-panel>
+  </vaadin-vertical-layout>
+
+  <vaadin-vertical-layout style-name="leos-card-actions"  spacing="true" width-auto="true" height-full="true" _id="actions" :right="" :expand="0.1">
+   <vaadin-button icon="fonticon://FontAwesome/f061" plain-text="" _id="openButton" :center=""></vaadin-button>
+   <vaadin-button icon="fonticon://FontAwesome/f061" style-name="link" plain-text="" _id="deleteButton" :bottom="" :center=""></vaadin-button>
+  </vaadin-vertical-layout>
+ </vaadin-horizontal-layout>
+
+ <vaadin-horizontal-layout spacing="true" style-name="leos-card-footer" width-full="true" :bottom="">
+  <vaadin-label style-name="footer-caption" size-auto="true" plain-text="" _id="createdCaption" :bottom=""></vaadin-label>
+  <vaadin-label size-auto="true" plain-text="" _id="createdBy" :bottom=""></vaadin-label>
+  <vaadin-label size-auto="true" plain-text="" _id="createdOn" :bottom=""></vaadin-label>
+  <vaadin-label size-auto="true" :middle="" :center="" :expand="">&nbsp;</vaadin-label>
+  <vaadin-label style-name="footer-caption" size-auto="true" plain-text="" _id="updatedCaption" :bottom="" :right=""></vaadin-label>
+  <vaadin-label size-auto="true" plain-text="" _id="updatedBy" :bottom="" :right=""></vaadin-label>
+  <vaadin-label size-auto="true" plain-text="" _id="updatedOn" :bottom="" :right=""></vaadin-label>
+ </vaadin-horizontal-layout>
+</vaadin-vertical-layout>
+</body>
+</html>

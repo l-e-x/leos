@@ -1,0 +1,19 @@
+                      COMPARE VERSIONS - HOWTO
+--------------------------------------------------------------------------------
+
+1. 	In the document viewer, click the icon on the tool-bar with label 'Compare
+  	two versions'. A dialog will open with the title 'Version History'.
+   
+2. 	The dialog consists of the list of all versions for the document. Select two 
+	versions to compare by clicking on each version and click 'Compare'.
+   
+3. 	A new dialog will be displayed with title 'Compare revision v1 with
+   	revision v2'. where v1 and v2 are the version numbers selected to compare.
+   	The dialog consists of the header with all the relevant information of the
+   	document versions.
+
+4. 	The header also consist of two radio-buttons on the top-right corner to 
+	change the how the result of the comparison are displayed.
+   
+5. 	The comparison result displays the addition of the text in 'Green' colour 
+	and deletion of text in 'Red' colour with a strike-through.

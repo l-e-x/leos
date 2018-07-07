@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,11 @@
  */
 package eu.europa.ec.leos.services.compare;
 
+/**
+ * @author: micleva
+ * @date: 4/2/13 2:51 PM
+ * @project: ETX
+ */
 public interface ContentComparatorService {
 
     final static String CONTENT_BLOCK_REMOVED_CLASS = "leos-marker-content-removed";

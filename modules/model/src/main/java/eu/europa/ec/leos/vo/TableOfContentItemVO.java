@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,27 +20,33 @@ import java.util.List;
 public class TableOfContentItemVO {
 
     public static enum Type {
-        PREFACE(true),
-        PREAMBLE(false),
-        BODY(true),
-        PART(false),
-        TITLE(false),
-        CHAPTER(false),
-        SECTION(false),
-        SUBSECTION(false),
-        ARTICLE(false),
-        CITATIONS(false),
-        RECITALS(false),
-        CONCLUSIONS(true);
+        PREFACE(true, false),
+        PREAMBLE(true, false),
+        BODY(true, false),
+        PART(false, true),
+        TITLE(false, true),
+        CHAPTER(false, true),
+        SECTION(false, true),
+        SUBSECTION(false, true),
+        ARTICLE(false, true),
+        CITATIONS(false, false),
+        RECITALS(false, false),
+        CONCLUSIONS(true, true);
 
         private boolean isRoot;
+        private boolean draggable;
 
-        Type(boolean isRoot) {
+        Type(boolean isRoot, boolean draggable) {
             this.isRoot = isRoot;
+            this.draggable = draggable;
         }
 
         public boolean isRoot() {
             return isRoot;
+        }
+        
+        public boolean isDraggable() {
+            return draggable;
         }
 
         public static Type forName(String name) {
@@ -161,8 +167,8 @@ public class TableOfContentItemVO {
 
     public boolean areChildrenAllowed() {
         if (type.equals(TableOfContentItemVO.Type.ARTICLE) || type.equals(TableOfContentItemVO.Type.CITATIONS) ||
-                type.equals(TableOfContentItemVO.Type.RECITALS) ||
-                (type.isRoot() && !type.equals(TableOfContentItemVO.Type.BODY))) {
+                type.equals(TableOfContentItemVO.Type.RECITALS) ||(type.isRoot()
+                && !(type.equals(TableOfContentItemVO.Type.BODY)  || type.equals(TableOfContentItemVO.Type.PREAMBLE)))) {
             return false;
         }
         return true;

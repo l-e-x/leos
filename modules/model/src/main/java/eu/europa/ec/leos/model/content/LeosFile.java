@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,16 +13,15 @@
  */
 package eu.europa.ec.leos.model.content;
 
-import java.io.InputStream;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-
 import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.input.AutoCloseInputStream;
 import org.apache.commons.lang3.Validate;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.InputStream;
 
 
 public class LeosFile extends LeosObject implements LeosFileProperties {
@@ -81,5 +80,28 @@ public class LeosFile extends LeosObject implements LeosFileProperties {
     @Override
     public String getVersionComment() {
         return cmisDocument.getCheckinComment();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null)
+            return false;
+        if (!(o instanceof LeosFile))
+            return false;
+
+        LeosFile leosFile = (LeosFile) o;
+        if (!getLeosId().equals(leosFile.getLeosId()))
+            return false;
+        if (getVersionLabel() != null ? !getVersionLabel().equals(leosFile.getVersionLabel()) : leosFile.getVersionLabel() != null)
+            return false;
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return getLeosId().hashCode()
+                + (getVersionLabel() == null ? getVersionLabel().hashCode() : 0);
     }
 }

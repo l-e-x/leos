@@ -1,0 +1,34 @@
+@mixin leos-button-ext () {
+    @include valo-button();
+
+    .v-button {
+        color: $ACTION_BLUE;
+        background: $WHITE;
+        box-shadow: none;
+        &:hover:not(.disabled):not(.v-button-link) {
+            background: $LIGHT_BLUE;
+            border: 1px solid $LIGHT_BLUE;
+            color: $WHITE;
+            transition: none;
+        }
+    }
+
+    .v-button.v-button-primary {
+        background: $MAIN_BLUE;
+        color: $WHITE;
+        box-shadow: none;
+        &:hover:not(.disabled):not(.v-button-link) {
+            background: $LIGHT_BLUE;
+            border: 1px solid $LIGHT_BLUE;
+            color: $WHITE;
+            transition: none;
+        }
+    }
+
+    .v-button-link, .v-button-icon-only {
+        background: transparent;
+        &:hover {
+            color: $LIGHT_BLUE;
+        }
+    }
+}

@@ -1,0 +1,188 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin card {
+
+    .leos-card-holder {
+        background: $v-background-color;
+        .v-table-body {
+            border: none;
+        }
+        .v-table-row-odd {
+            background: $v-background-color;
+        }
+        .v-table-table td {
+            border-top: none;
+        }
+        .v-table-cell-wrapper {
+            margin: 0 0px 5px 0px;
+        }
+    }
+
+    .leos-card {
+        box-sizing: border-box;
+        position: relative;
+        overflow: hidden;
+        color: $MAIN_BLUE;
+        background: $PALE_BG_BLUE;
+        border: 1px solid darken($PALE_BG_BLUE, 5%);;
+
+        .leos-card-header {
+            padding: 3px 10px;
+            font-weight: bold;
+            opacity: 0;
+            background: $MAIN_BLUE;
+            color: $WHITE;
+        }
+
+        .leos-card-footer {
+            position: absolute;
+            bottom: 6px;
+            padding: 0 10px;
+            width: 100%;
+            opacity: 0;
+            font-size: 12px;
+            .footer-caption {
+                font-weight: bold;
+            }
+        }
+        &:hover {
+            border: 1px solid $MAIN_BLUE;
+            .leos-card-footer,
+            .leos-card-header {
+                opacity: 1;
+            }
+        }
+    }
+
+    @each $stage in draft, edit, feedback {
+        .#{$stage} .leos-card-icon {
+            color: stage-color($stage);
+        }
+    }
+
+    .leos-card-details {
+        padding: 3px 10px 10px 10px;
+        .leos-card-title {
+            font-size: 14px;
+            line-height: 1.1em;
+        }
+    }
+
+    .leos-card-icon .v-icon {
+        font-size: 50px;
+        line-height: 70px;
+    }
+
+    .leos-card .leos-card-actions * {
+        font-weight: bold;
+        font-size: 12px;
+        line-height: 1em;
+        text-align: left;
+    }
+
+    .leos-card .v-caption-leos-caption-on-left {
+        float: left;
+        padding-right: 5px;
+        line-height: 12px;
+    }
+
+    .leos-card .v-caption-leos-caption-on-left +
+    .v-label-leos-caption-on-left {
+        color: #00b4f0;
+        font-weight: bold;
+        display: inline;
+    }
+
+    /*shifting the lock button over image*/
+    .leos-lock-icon * {
+        margin-left: 17px;
+        margin-top: 3px;
+        font-size: 20px;
+    }
+
+    .hidden * {
+        display: none
+    }
+
+    .leos-contributors-panel{
+        .v-scrollable{
+            overflow-x:hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
+
+        ::-webkit-scrollbar-track {
+            -webkit-box-shadow: inset 0 0 3px rgba(0,0,0,0.3);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            border-radius: 10px;
+            -webkit-box-shadow: inset 0 0 3px rgba(0,0,0,0.5);
+        }
+   }
+
+   .leos-contributor-list {
+       font-size: 12px;
+       .v-button {
+           height: 12px;
+           width: 12px;
+       }
+       .v-label{
+           padding-left:4px;
+           color:black;
+       }
+   }
+
+   .add-contributor.v-button {
+       padding:0;
+       height:15px;
+    }
+
+    .v-button {
+        &.icon-red .v-icon {
+            color: #a31515;
+        }
+        &.icon-green .v-icon{
+            color:$G_GREEN_COLOR;
+        }
+    }
+
+    //styles realed to popup view
+    .v-popupview-popup{
+        box-shadow: none;
+        background-color:initial;
+    }
+
+    .stage-popup-view{
+        font-size: 12px;
+        position: relative;
+        background-color:inherit;
+         select {
+            padding: 0;
+            border: 1px solid $MAIN_BLUE;
+            cursor: pointer;
+            width: 107px;
+             option {
+                color: $ACTION_BLUE;
+                text-align: left;
+                line-height: 12px;
+            }
+        }
+    }
+}

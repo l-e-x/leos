@@ -1,0 +1,17 @@
+@mixin versionSlider {
+
+    .leos-version-slider-popup{
+        color:$MAIN_BLUE;
+        vertical-align: baseline;
+    }
+    .leos-version-slider-popup-max {
+        background: white;
+        color:#1a1a1a;//menubar color
+        border: 1px solid $G_BORDER_COLOR;
+        box-shadow: 1px 1px 7px 1px $G_BORDER_COLOR;
+
+        .v-slot-leos-version-slider{
+            padding-bottom: 45px;
+        }
+    }
+}

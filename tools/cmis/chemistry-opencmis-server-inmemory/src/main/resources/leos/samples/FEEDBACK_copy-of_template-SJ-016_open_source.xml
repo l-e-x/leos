@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<akomaNtoso xmlns="http://www.akomantoso.org/2.0"
+            xmlns:leos="urn:eu:europa:ec:leos">
+    <bill contains="originalVersion">
+        <meta>
+            <identification source="EC DIGIT LEOS PROTOTYPE">
+                <FRBRWork>
+                    <FRBRthis id="frbrwork__frbrthis" value=""/>
+                    <FRBRuri id="frbrwork__frbruri" value=""/>
+                    <FRBRdate id="frbrwork__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrwork__frbrauthor_1" href="~COM" as="~docIntroducer"/>
+                    <FRBRauthor id="frbrwork__frbrauthor_2" href="~CONSIL" as="~docAuthority"/>
+                    <FRBRcountry id="frbrwork__frbrcountry" value="eu"/>
+                    <FRBRsubtype id="frbrwork__frbrsubtype_1" value="regulation"/>
+                    <FRBRnumber id="frbrwork__frbrnumber_1" value=""/>
+                </FRBRWork>
+                <FRBRExpression>
+                    <FRBRthis id="frbrexpression__frbrthis" value=""/>
+                    <FRBRuri id="frbrexpression__frbruri" value=""/>
+                    <FRBRdate id="frbrexpression__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrexpression__frbrauthor_1" href="~COM" as="~docIntroducer"/>
+                    <FRBRauthor id="frbrexpression__frbrauthor_2" href="~CONSIL" as="~docAuthority"/>
+                    <FRBRlanguage id="frbrexpression__frbrlanguage_1" language="EN"/>
+                </FRBRExpression>
+                <FRBRManifestation>
+                    <FRBRthis id="frbrmanifestation__frbrthis" value=""/>
+                    <FRBRuri id="frbrmanifestation__frbruri" value=""/>
+                    <FRBRdate id="frbrmanifestation__frbrdate_1" date="1970-01-01" name="official"/>
+                    <FRBRauthor id="frbrmanifestation__frbrauthor_1" href="~leos"/>
+                    <FRBRformat id="frbrmanifestation__frbrformat_1" value="akn+xml"/>
+                </FRBRManifestation>
+            </identification>
+            <analysis source="EC DIGIT LEOS PROTOTYPE">
+                <otherAnalysis source="EC DIGIT LEOS PROTOTYPE">
+                    <leos:procType id="analysis__otheranalysis__proctype" refersTo="~SLP"/>
+                    <leos:docLocation id="analysis__otheranalysis__doclocation" refersTo="~BEL_BRU"/>
+                    <leos:docClass leos:category="~categoryRegulation" leos:stage="~stageProposal"/>
+                    <leos:stakeholder id="analysis__otheranalysis__stakeholder_1" href="~COM" as="~initiator"/>
+                    <leos:stakeholder id="analysis__otheranalysis__stakeholder_2" href="~CONSIL" as="~authority"/>
+                </otherAnalysis>
+            </analysis>
+            <references source="EC DIGIT LEOS PROTOTYPE">
+                <TLCConcept id="categoryRegulation" href="http://publications.europa.eu/resource/authority/resource-type/REG" showAs="regulation"/>
+                <TLCConcept id="stageProposal" href="/doc/stage/proposal" showAs="proposal"/>
+                <TLCConcept id="citationLegalBasis" href="/doc/component/citation/citationLegalBasis" showAs="legal basis for the act"/>
+                <TLCConcept id="citationPreparatoryActsInitial" href="/doc/component/citation/citationPreparatoryActs/Initial" showAs="preparatory acts: initial document"/>
+                <TLCConcept id="citationPreparatoryActsOpinion" href="/doc/component/citation/citationPreparatoryActs/Opinion" showAs="preparatory acts: opinion"/>
+                <TLCConcept id="citationProcedureInfo" href="/doc/component/citation/citationProcedureInfo" showAs="the interinstitutional procedure followed"/>
+                <TLCConcept id="eif" href="/doc/component/enactingTerms/entryIntoForce" showAs="the text related to the entry into force"/>
+                <TLCConcept id="addressee" href="/doc/component/enactingTerms/Addressee" showAs="the text related to the addressee"/>
+                <TLCRole id="initiator" href="/doc/role/initiator" showAs="initiator"/>
+                <TLCRole id="authority" href="/doc/role/authority" showAs="authority"/>
+                <TLCRole id="president" href="/organisation/role/president" showAs="president"/>
+                <TLCProcess id="SLP" href="https://webgate.ec.europa.eu/fpfis/wikis/display/REGISTRY/Legislative+procedure~SLP" showAs="COD"/>
+                <TLCOrganization id="COM" href="http://publications.europa.eu/resource/authority/corporate-body/COM" showAs="European Commission"/>
+                <TLCOrganization id="EP" href="http://publications.europa.eu/resource/authority/corporate-body/EP" showAs="European Parliament"/>
+                <TLCOrganization id="HRUFASP" href="http://publications.europa.eu/resource/authority/corporate-body/HRUFASP" showAs="High Representative of the Union"/>
+                <TLCOrganization id="CONSIL" href="http://publications.europa.eu/resource/authority/corporate-body/CONSIL" showAs="Council of the European Union"/>
+                <TLCOrganization id="COR" href="http://publications.europa.eu/resource/authority/corporate-body/COR" showAs="Committee of the Regions"/>
+                <TLCOrganization id="EESC" href="http://publications.europa.eu/resource/authority/corporate-body/EESC" showAs="European Economic and Social Committee"/>
+                <TLCLocation id="BEL_BRU" href="http://publications.europa.eu/resource/authority/place/BEL_BRU" showAs="Brussels"/>
+                <TLCLocation id="FRA_SXB" href="http://publications.europa.eu/resource/authority/place/FRA_SXB" showAs="Strasbourg"/>
+                <TLCReference id="leos" href="/software/leos" showAs="EC DIGIT LEOS PROTOTYPE" name="software"/>
+                <TLCConcept id="leosComment" href="/software/leos/comment" showAs="comment"/>
+                <TLCConcept id="leosSuggestion" href="/software/leos/suggestion" showAs="suggestion"/>
+                <TLCConcept id="leosHighlight" href="/software/leos/highlight" showAs="highlight"/>
+            </references>       
+            <proprietary source="~leos">
+                <leos:template id="proprietary__template">SJ-016</leos:template>
+                <leos:docStage id="proprietary__docstage">Proposal for a</leos:docStage>
+                <leos:docType id="proprietary__doctype">Council Regulation</leos:docType>
+                <leos:docPurpose id="proprietary__docpurpose">on [...]</leos:docPurpose>
+            </proprietary>
+        </meta>
+        <preface id="preface">
+            <longTitle id="preface__longtitle_1" leos:ref="longTitle-bill_cnl+proposal+regulation">
+                <p id="akn_wNlLjr">
+                    <docTitle id="akn_48Nbn9">
+                        <docStage id="akn_2SsbeS" refersTo="~proprietary__docstage">Proposal for a</docStage>
+                        <docType  id="akn_2Ssbe2" refersTo="~proprietary__doctype">COUNCIL REGULATION</docType>
+                        <docPurpose id="akn_2Ssbe3" refersTo="~proprietary__docpurpose">on [...]</docPurpose>
+                    </docTitle>
+                </p>
+            </longTitle>
+        </preface>
+        <preamble id="preamble">
+            <formula id="preamble__formula_1" leos:name="authorities" leos:ref="formula-authorities_CNL">
+                <p id="akn_68xVaQ" >THE COUNCIL OF THE EUROPEAN UNION,</p>
+            </formula>
+            <citations id="cits">
+                <citation id="cit_1" refersTo="~citationLegalBasis" leos:ref="citation-legalBase-TFEU-art">
+                    <p id="cits_GOdCmr" >Having regard to the Treaty on the Functioning of the European Union, and in particular Article [...] thereof,</p>
+                </citation>
+                <citation id="cit_2" refersTo="~citationPreparatoryActsInitial" leos:ref="citation-proposal-COM">
+                    <p id="cits_7Td9O6" >Having regard to the proposal from the European Commission,</p>
+                </citation>
+                <citation id="cit_3" leos:ref="citation-natParl_transmission">
+                    <p id="cits_EdN0Ga" >After transmission of the draft legislative act to the national Parliaments,</p>
+                </citation>
+                <citation id="cit_4" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_EP" leos:multiplicity="optional">
+                    <p id="cits_b28ZJm" >Having regard to the opinion of the European Parliament
+                        <authorialNote id="cit_4__authorialNote_1" marker="1" placement="bottom">
+                            <p id="cits_PS8nIb" >OJ C [...], [...], p.[...]</p>
+                        </authorialNote>
+                        ,
+                    </p>
+                </citation>
+                <citation id="cit_5" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_EESC" leos:multiplicity="optional">
+                    <p id="cits_bTZJeY" >Having regard to the opinion of the European Economic and Social Committee
+                        <authorialNote id="cit_5__authorialNote_1" marker="2" placement="bottom">
+                            <p id="cits_SuZ2gE" >OJ C [...], [...], p.[...]</p>
+                        </authorialNote>
+                        ,
+                    </p>
+                </citation>
+                <citation id="cit_6" refersTo="~citationPreparatoryActsOpinion" leos:ref="citation-opinion_CoR" leos:multiplicity="optional">
+                    <p id="cits_7jIf6L" >Having regard to the opinion of the Committee of the Regions
+                        <authorialNote id="cit_6__authorialNote_1" marker="3" placement="bottom">
+                            <p id="cits_tyn3M3" >OJ C [...], [...], p.[...]</p>
+                        </authorialNote>
+                        ,
+                    </p>
+                </citation>
+                <citation id="cit_7" refersTo="~citationProcedureInfo" leos:ref="citation-proc_SLP">
+                    <p id="cits_2BVLDb" >Acting in accordance with a special legislative procedure,</p>
+                </citation>
+            </citations>
+            <block id="akn_ZVaQON"  name="recitalsIntro">Whereas:</block>
+            <recitals id="recs">
+                <recital id="rec_1">
+                    <num id="recs_uUP1mj" >(1)</num>
+                    <p id="recs_uZYyjv" >Recital...</p>
+                </recital>
+                <recital id="rec_2">
+                    <num id="recs_6Y3ZYa" >(2)</num>
+                    <p id="recs_uWp72y" >Recital...</p>
+                </recital>
+            </recitals>
+            <formula id="preamble__formula_2" leos:name="adoption" leos:ref="formula-adoption_adopt_sg+regulation">
+                <p id="akn_Q3GNBi" >HAS ADOPTED THIS REGULATION:</p>
+            </formula>
+        </preamble>
+        <body id="body">
+            <article id="art_1">
+                <num id="art_1_SCmCAM" >Article 1</num>
+                <heading id="art_1_rkGSV7" >Scope</heading>
+                <paragraph id="art_1__para_1">
+                    <num id="art_1_7JolIs" >1.</num>
+                    <content id="art_1_zEnvSV" >
+                        <p id="art_1_YKxGga" >Text...</p>
+                    </content>
+                </paragraph>
+            </article>
+            <article id="art_n1" refersTo="~eif" leos:ref="article-inforce_day_after_pub+regulation" leos:editable="false" leos:deletable="false">
+                <num id="art_n1_8oFFp8" >Article #</num>
+                <heading id="art_n1_wJmdeY" >Entry into force</heading>
+                <content id="art_n1_AOkPpY" >
+                    <p id="art_n1_RCJAQV" >This Directive shall enter into force on the [...] day following that of its publication in the
+                        <i id="art_n1_vSsBeG" >Official Journal of the European Union</i>
+                        .
+                    </p>
+                </content>
+            </article>
+            <clause id="clause_1" refersTo="~addressee" leos:ref="content-binding_all+regulation" leos:choice="addressee__alternative" leos:editable="false">
+                <content id="akn_GiLyhj"  leos:ref="~content-addressee+regulation">
+                    <p id="akn_fiKUe7" >This Regulation shall be binding in its entirety and directly applicable in all Member States.</p>
+                </content>
+            </clause>
+            <clause id="clause_2" refersTo="~addressee" leos:ref="article-binding_treaty+regulation" leos:choice="addressee__alternative" leos:editable="false">
+                <content id="akn_BQFJ8r" >
+                    <p id="akn_XJZ05D" >This Regulation shall be binding in its entirety and directly applicable in the Member States in accordance with the Treaties.</p>
+                </content>
+            </clause>
+        </body>
+        <conclusions id="conclusions">
+            <p id="akn_B8CSvb" >Done at
+                <location id="conclusions__location_1" refersTo="~analysis__otheranalysis__doclocation">Brussels</location>
+                ,
+            </p>
+            <p id="akn_R6XA50" >
+                <signature id="akn_Nvusyj"  leos:ref="signature-cnl">
+                    <organization id="conclusions__signature_2__org_1" refersTo="~CONSIL">For the Council</organization>
+                    <role id="conclusions__signature_2__role_1" refersTo="~president">The President</role>
+                    <person id="conclusions__signature_2__person_1" refersTo="">[...]</person>
+                </signature>
+            </p>
+        </conclusions>
+    </bill>
+</akomaNtoso>

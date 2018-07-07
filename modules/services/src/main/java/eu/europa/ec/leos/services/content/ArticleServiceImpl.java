@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -36,40 +36,6 @@ public class ArticleServiceImpl implements ArticleService {
     public String getArticleTemplate() {
         return XmlHelper.getArticleTemplate("Article #", "Article heading...");
 
-    }
-
-    @Override
-    public String getArticle(LeosDocument document, String articleId) {
-        Validate.notNull(document, "Document is required.");
-        Validate.notNull(articleId, "Article id is required.");
-
-        String article;
-        try {
-            article = xmlContentProcessor.getElementByNameAndId(IOUtils.toByteArray(document.getContentStream()),
-                    "article", articleId);
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to retrieve the article.");
-        }
-        return article;
-    }
-
-    @Override
-    public LeosDocument saveArticle(LeosDocument document, String userLogin, String article, String articleId) {
-        Validate.notNull(document, "Document is required.");
-        Validate.notNull(articleId, "Article id is required.");
-
-        // merge the updated content with the actual document and return updated document
-        byte[] updatedXmlContent;
-        try {
-            updatedXmlContent = xmlContentProcessor.replaceElementByTagNameAndId(IOUtils.toByteArray(document.getContentStream()),
-                    article, "article", articleId);
-
-            // save document into repository
-            document = documentService.updateDocumentContent(document.getLeosId(), userLogin, updatedXmlContent, "operation.article.updated");
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to save the article.");
-        }
-        return document;
     }
 
     @Override

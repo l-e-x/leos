@@ -1,0 +1,75 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin cardFilters {
+
+    .leos-card-filters {
+        background: $PALE_BG_BLUE;
+        border: 1px solid darken($PALE_BG_BLUE,5%);;
+        overflow:hidden;
+
+        .leos-filter-header {
+            padding: 3px 10% 2px 10px;
+            color:white;
+            font-weight:bold;
+            background: $MAIN_BLUE;
+            border: 1px solid $MAIN_BLUE;
+            .icon-only-caption {
+                font-weight: normal;
+            }
+            .reset-button{
+                cursor: pointer;
+            }
+        }
+
+        .v-caption {
+            padding: 5px 10px;
+            font-weight: bold;
+            color: $MAIN_BLUE;
+        }
+
+        .v-select-optiongroup {
+            .v-checkbox {
+                background: $WHITE;
+                line-height: inherit;
+                margin: 0;
+                label {
+                    line-height: inherit;
+                    display: inline-block;
+                    color: $ACTION_BLUE;
+                    &:before,
+                    &:after{
+                        margin: 3px;
+                    }
+                }
+            }
+        }
+    }
+
+    .leos-refresh-button{
+        margin-left: 5px;
+        font-size: 16px;
+    }
+
+    .resetbuttonfortextfield-resetbutton {
+        vertical-align: top;
+        z-index: 11;
+    }
+
+    .group-button.enabled  {
+        background: $LIGHT_BLUE;
+        color: $WHITE;
+    }
+}

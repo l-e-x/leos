@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,12 +20,7 @@ import static eu.europa.ec.leos.support.xml.XmlHelper.skipNodeOnly;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
@@ -65,6 +60,8 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     
     private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final String BILL = "bill";
+    private static final String BODY = "body";
+
     private static final String HEADING = "heading";
     private static final String NUM = "num";
     
@@ -473,11 +470,6 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
 
     }
 
-    private String buildSequenceNum(TableOfContentItemVO tableOfContentItemVO) {
-        // TODO generate proper number
-        return tableOfContentItemVO.getType().name().substring(0, 3) + "_" + tableOfContentItemVO.getNumber() == null ? "0" : tableOfContentItemVO.getNumber();
-    }
-
     private String getFragmentAsString(VTDNav contentNavigator, long fragmentLocation, boolean removeTags) throws NavException {
         String fragmentContent = null;
         if (fragmentLocation > -1) {
@@ -511,21 +503,22 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             int docLength = content.length;
 
             int endOfBillContent = 0;
-            if (contentNavigator.toElement(VTDNav.FIRST_CHILD, BILL)) {
+            //fix 2082 // we are rebuilding only body tag of document
+            if (navigateToElementByNameAndId(BODY, null, contentNavigator)){ //Body
                 int index = contentNavigator.getCurrentIndex();
 
-                // append everything up until the bill tag
-                long billContentFragment = contentNavigator.getContentFragment();
+                // append everything up until the body tag
+                long billContentFragment = contentNavigator.getElementFragment();
                 int offset = (int) billContentFragment;
                 int length = (int) (billContentFragment >> 32);
                 mergedContent.append(contentNavigator.getXML().getBytes(0, offset));
 
-                for (TableOfContentItemVO child : tableOfContentItemVOs) {
-                    mergedContent.append(buildTocItemContent(contentNavigator, child));
+                TableOfContentItemVO body = findContentVoForType(tableOfContentItemVOs, Type.BODY);
+                if(body != null){
+                    mergedContent.append(buildTocItemContent(contentNavigator, body));
                 }
-
                 contentNavigator.recoverNode(index);
-                mergedContent.append(extractLevelNonTocItems(contentNavigator));
+                //mergedContent.append(extractLevelNonTocItems(contentNavigator));
 
                 // append everything after the bill content
                 endOfBillContent = offset + length;
@@ -542,6 +535,18 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         }
 
     }
+
+    private TableOfContentItemVO findContentVoForType(List<TableOfContentItemVO> tableOfContentItemVOs, Type type){
+        ListIterator<TableOfContentItemVO> iterator = tableOfContentItemVOs.listIterator();
+        while (iterator.hasNext()){
+            TableOfContentItemVO nextVO = iterator.next();
+            if(nextVO.getType().equals(type)){
+                return nextVO;
+            }
+        }
+        return null;
+    }
+
 
     private byte[] buildTocItemContent(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO) throws NavException {
         ByteArrayBuilder tocItemContent = new ByteArrayBuilder();
@@ -564,7 +569,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         } else if (tableOfContentItemVO.getType().equals(Type.ARTICLE)) {
             return XmlHelper.getArticleTemplate(tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading()).getBytes(UTF_8);
         } else {
-            String startTagStr = "<" + tocTagName + " id=\"" + buildSequenceNum(tableOfContentItemVO) + "\">";
+            String startTagStr = "<" + tocTagName + " id=\"" + IdGenerator.generateId(tocTagName.substring(0,3), 7)  + "\">";
             startTag = startTagStr.getBytes(UTF_8);
         }
 
@@ -736,7 +741,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     }
     
     /** Finds the first element with the id,if there are others, XML is incorrect
-    * @param vtdNav
+    * @param xmlContent
     * @param id id Attribute valyue 
     * @return complete Tag or null
     */

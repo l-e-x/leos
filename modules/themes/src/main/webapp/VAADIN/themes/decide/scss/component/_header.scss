@@ -1,0 +1,178 @@
+@charset "UTF-8";
+/**
+ * Copyright 2015 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin ec-header {
+
+    .ec-header {
+        background: $WHITE;
+        position: absolute;
+        top: 0;
+        width: 100%;
+        min-width: 1200px;
+    }
+    .minimize {/*LEOS-1975*/
+        .top, .title {
+            display: none;
+        }
+    }
+    .top,
+    .title .content,
+    .sub-title .content {
+        margin: 0 40px 0 40px;
+        /*max-width: 1200px;*/
+    }
+
+    .top {
+        position: relative;
+        z-index: 1000;
+    }
+    .top .content {
+        float: right;
+        font-size: 12px;
+        padding-top: 6px;
+    }
+
+    .top .ec-header-languages {
+        display: inline;
+        float: left;
+        position: relative;
+        font-size: 12px;
+    }
+    .top select {
+        padding: 0 0 0 0;
+        border: 1px solid #99AABB;
+        cursor: pointer;
+        width: 107px;
+
+        option {
+            color: #396EA2;
+            text-align: left;
+            line-height: 12px;
+        }
+    }
+
+    .title {
+        position: relative;
+        z-index: 999;
+    }
+    .title .content {
+        position: relative;
+        padding-top: 31px;
+        padding-left: 25px;
+        font-size: 14px;
+    }
+
+    .title .content .ec-header-application-title {
+        font-weight: 600; //semibold
+        font-size: 250%;
+        color: $HEADER_BLUE;
+        display: block;
+        padding: 0 10px 2px 169px;
+        line-height: 1.2em;
+        .emphasis {
+            font-weight: 700;
+            font-style: italic; //"Open Sans ITalic";
+            color: $G_GREEN_COLOR;
+            margin-left: -4px;
+            margin-right: 2px;
+        }
+    }
+
+    .sub-title {
+        background: $HEADER_BLUE;
+        height: 48px;
+
+        .content {
+            position: relative;
+            min-height: 45px;
+
+            .ec-header-logo {
+                position: absolute;
+                top: -85px;
+                left: 3px;
+                width: 172px;
+                height: 119px;
+            }
+        }
+    }
+
+    #header-menu {
+        padding-left: 179px;
+
+        .home-icon {
+            padding: 8px 0 0;
+            position: relative;
+            top: 3px;
+            width: auto;
+            cursor: pointer;
+            img {
+                width: 28px;
+                height: 26px;
+            }
+        }
+
+        .breadcrumb {
+            color: $WHITE;
+            top: 12px;
+            position: relative;
+            font-size: 20px;
+            padding: 0 0.6em;
+            cursor: pointer;
+        }
+
+        .resize-button {
+            float: right;
+            top: 12px;
+            right: 4px;
+            font-size: 16px;
+            position: relative;
+            color: $WHITE;
+            cursor: pointer;
+        }
+    }
+
+    #header-menu > * {
+        display: inline-block;
+    }
+
+    .ec-header-user, .logout-button {
+        display: inline-block;
+        clear: both;
+    }
+
+    .ec-header-user {
+        width: 240px;
+        white-space: nowrap;
+        height: 18px;
+        line-height: 18px;
+        overflow: hidden;
+        max-width: 260px; //80+180
+        margin: 1px 0 0 3px;
+        text-overflow: ellipsis;
+        font-size: 110%;
+        .v-icon {
+            height: 20px;
+            vertical-align: bottom;
+            padding: 0 3px 2px 5px;
+            cursor: default;
+        }
+        * {
+            display: inline-block;
+            vertical-align: top;
+            color: $HEADER_BLUE;
+            cursor: default;
+        }
+    }
+}

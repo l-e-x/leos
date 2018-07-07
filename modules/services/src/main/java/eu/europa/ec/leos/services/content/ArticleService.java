@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,7 +16,6 @@ package eu.europa.ec.leos.services.content;
 import eu.europa.ec.leos.model.content.LeosDocument;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public interface ArticleService {
 
@@ -26,26 +25,6 @@ public interface ArticleService {
      */
     @Nonnull
     String getArticleTemplate();
-
-    /**
-     * Retrieves the article from the given document
-     * @param document The document containing the article
-     * @param articleId The article id
-     * @return the xml string representation of the article
-     */
-    @Nullable
-    String getArticle(LeosDocument document, String articleId);
-
-    /**
-     * Saves the new article content of an existing article to the given document 
-     * or deletes the article if the given article is null
-     * @param document The document to update
-     * @param sessionId The login name of the user trying to save the article
-     * @param article The new article content, or null to delete the article
-     * @param articleId The id of the article
-     * @return The updated document or throws a LeosDocumentNotLockedByCurrentUserException if the given user doesn't have a lock on the document
-     */
-    LeosDocument saveArticle(LeosDocument document, String userLoginName, @Nullable String article, String articleId);
 
     /**
      * Inserts a new article before or after the article with the given id. And saved the document

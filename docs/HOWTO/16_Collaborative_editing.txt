@@ -1,0 +1,27 @@
+                        COLLABORATIVE EDITING - HOWTO
+--------------------------------------------------------------------------------
+1. In Leos application, it is possible to edit a document by two or more
+   different users simultaneously. One document can be opened by two or more
+   users and each user can edit different elements(articles, citations, recitals
+   etc.) at the same time. It is not allowed to modify the
+   meta-data if there are more than one user working on the document.
+   
+2. If a user is already working on a document, a user icon will be displayed in 
+   the repository browser, below the document icon and on mouse-over, user 
+   details will be shown as tool-tip.
+   
+3. If some users are already working on a document and any user performs any 
+   action such as open/edit/save, all users working on same document will 
+   gets a notification about action performed in the document viewer.
+   
+4. Multiple users can edit different elements simultaneously but is not allowed
+   to make changes to the structure of the document if the editing is being 
+   performed. For e.g. it is not allowed to edit the metadata, table of content 
+   or insert and delete an article from the document if any other user has 
+   editor open.
+   
+5. If the editing is not being done, it is allowed to perform the structural 
+   changes to the document.
+   
+6. If one user close the document, the other users gets the notification about 
+   it.

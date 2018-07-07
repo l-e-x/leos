@@ -1,0 +1,91 @@
+/**
+ * Copyright 2016 European Commission
+ *
+ * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/**********************Styles for leos-popover*****************************/
+
+bill .leos-comment {
+    min-width: 276px;
+    padding:0;
+}
+
+bill .leos-comment .popover-title {
+    padding: 0 5px;
+    margin-top: 0;
+    display: table-cell;
+    border: 1px solid transparent;
+    border-radius: 6px 0 0 0;
+}
+
+.leos-comment .popover-content {
+    padding: 5px 5px;
+}
+
+.leos-popover-nav {
+    display: table-cell;
+    border-bottom: 1px solid transparent;
+    border-radius: 0 6px 0 0;
+}
+
+.leos-popover-header {
+    display: table;
+    background-color: #f7f7f7;
+    width: 100%;
+    font-weight:bold;
+    border: none;
+    border-radius: 6px 6px 0 0;
+}
+
+.leos-comment.selected {
+    z-index: 9999;
+    background-color:#ffd5d6;
+    border: 1px solid #ffa7aa;
+}
+
+.leos-comment.selected.right > .arrow:after {
+    border-right-color: #ffd5d6;
+}
+
+.leos-comment.selected.right > .arrow {
+    border-right-color: #ffa7aa;
+}
+
+.leos-comment.right > .arrow {
+    top: 15px !important;
+}
+
+.leos-comment.selected .leos-popover-header * {
+    background-color: #ffa7aa;
+}
+
+.leos-comment.selected .popover-title {
+    border: 1px solid transparent;
+}
+
+.leos-comment.selected .leos-popover-nav {
+    border-bottom: 1px solid transparent;
+}
+
+popup {
+    display:inline;
+    position:absolute;
+    margin-left:-3px;
+}
+
+popup:after {
+    content:url('../icons/16/left-brace.png');
+}
+
+popup:before {
+    content:url('../icons/16/right-brace.png');
+}
+

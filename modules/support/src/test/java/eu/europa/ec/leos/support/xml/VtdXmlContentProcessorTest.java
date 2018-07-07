@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -520,7 +520,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_boldTagInHeading() throws Exception {
-        String xml = "<akomaNtoso><bill>    "
+        String xml = "<akomaNtoso><bill><body>    "
                 + "<article id=\"art486\">" +
                 "<num>  Article 486</num>" +
                 "   <heading><content><p>1ste article</p></content></heading>" +
@@ -536,23 +536,30 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading>3th <b>test</b> article</heading>" +
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486",
-                "<content><p>1ste article</p></content>", null, null, 3);
+                "<content><p>1ste article</p></content>", null, null, 4);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488 moved", "3th article became 2the",
-                null, null, 31);
+                null, null, 32);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "<content><p>Article 487 moved</p></content>",
-                "<content><p>2de article became 3the</p></content>", null, null, 16);
+                "<content><p>2de article became 3the</p></content>", null, null, 17);
 
-        tableOfContentItemVOList.add(art1);
-        tableOfContentItemVOList.add(art3);
-        tableOfContentItemVOList.add(art2);
+        articleVOs.add(art1);
+        articleVOs.add(art3);
+        articleVOs.add(art2);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        bodyVO.addAllChildItems(articleVOs);
+
+        tableOfContentItemVOList.add(bodyVO);
+
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<article id=\"art486\">" +
                 "<num>Article 486</num>" +
                 "<heading><content><p>1ste article</p></content></heading>" +
@@ -568,24 +575,30 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading><content><p>2de article became 3the</p></content></heading>" +
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_oldContainedutf8() {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<article id=\"art486\">" +
                 "<num>Article 486 <placeholder>[…]</placeholder></num>" +
                 "<heading><content><p>1ste article</p></content></heading>" +
                 "<alinea id=\"art486-aln1\">bla bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486 <placeholder>[…]</placeholder>",
-                "<content><p>1ste article</p></content>", null, null, 3);
+                "<content><p>1ste article</p></content>", null, null, 4);
 
-        tableOfContentItemVOList.add(art1);
+        articleVOs.add(art1);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        bodyVO.addAllChildItems(articleVOs);
+        tableOfContentItemVOList.add(bodyVO);
+
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes(UTF_8));
 
@@ -596,19 +609,25 @@ public class VtdXmlContentProcessorTest extends LeosTest {
     // amounts and L &lt; K
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_oldContainedEscapedXML() {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<article id=\"art486\">" +
                 "<num>Article 486 <placeholder>[…]</placeholder></num>" +
                 "<heading><content><p>1ste article</p></content></heading>" +
                 "<alinea id=\"art486-aln1\">bla amounts and L &lt; K bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486 <placeholder>[…]</placeholder>",
-                "<content><p>1ste article</p></content>", null, null, 3);
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
 
-        tableOfContentItemVOList.add(art1);
+        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486 <placeholder>[…]</placeholder>",
+                "<content><p>1ste article</p></content>", null, null, 4);
+
+        articleVOs.add(art1);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        bodyVO.addAllChildItems(articleVOs);
+        tableOfContentItemVOList.add(bodyVO);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes(UTF_8));
 
@@ -618,7 +637,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_2newAreAddedAtSameOffset() throws Exception {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<article id=\"art486\">" +
                 "<num>Article 486</num>" +
                 "<heading><content><p>1ste article</p></content></heading>" +
@@ -630,26 +649,31 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading>4th article</heading>" +
                 "<alinea id=\"art488-aln1\">bla bla 4</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                3);
+                4);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 487 added", "2de article added", null, null,
                 null);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 488 added", "3th article added", null, null,
                 null);
         TableOfContentItemVO art4 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art489", "Article 489", "4th article", null, null,
-                16);
+                17);
 
-        tableOfContentItemVOList.add(art1);
-        tableOfContentItemVOList.add(art2);
-        tableOfContentItemVOList.add(art3);
-        tableOfContentItemVOList.add(art4);
+        articleVOs.add(art1);
+        articleVOs.add(art2);
+        articleVOs.add(art3);
+        articleVOs.add(art4);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        bodyVO.addAllChildItems(articleVOs);
+        tableOfContentItemVOList.add(bodyVO);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<article id=\"art486\">"
                 +
                 "<num>Article 486</num>"
@@ -674,7 +698,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading>4th article</heading>" +
                 "<alinea id=\"art488-aln1\">bla bla 4</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
 
@@ -684,7 +708,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_articlesAreRemoved() throws Exception {
         String xml = "<akomaNtoso><bill><preface id =\"1\"><p>preface</p></preface>"
-                + "<article id=\"art486\">" +
+                + "<body><article id=\"art486\">" +
                 "<num>Article 486</num>" +
                 "<heading>1ste article</heading>" +
                 "<alinea id=\"art486-aln1\">bla bla</alinea>" +
@@ -699,22 +723,28 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading>3th article</heading>" +
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
+
         TableOfContentItemVO pref = new TableOfContentItemVO(TableOfContentItemVO.Type.PREFACE, "1", null, null, null, null, 3);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article became 1the", null,
-                null, 19);
+                null, 20);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488", "3th article became 2the", null,
-                null, 30);
+                null, 31);
         tableOfContentItemVOList.add(pref);
-        tableOfContentItemVOList.add(art2);
-        tableOfContentItemVOList.add(art3);
+        articleVOs.add(art2);
+        articleVOs.add(art3);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 8);
+        bodyVO.addAllChildItems(articleVOs);
+        tableOfContentItemVOList.add(bodyVO);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
         String expected = "<akomaNtoso><bill><preface id =\"1\"><p>preface</p></preface>"
-                + "<article id=\"art487\">" +
+                + "<body><article id=\"art487\">" +
                 "<num>Article 487</num>" +
                 "<heading>2de article became 1the</heading>" +
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
@@ -724,35 +754,41 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<heading>3th article became 2the</heading>" +
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_numAndHeadingAreAdded() throws Exception {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 3);
+        List<TableOfContentItemVO> articleVOs = new ArrayList<TableOfContentItemVO>();
 
-        tableOfContentItemVOList.add(sec1);
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 4);
+
+        articleVOs.add(sec1);
+
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        bodyVO.addAllChildItems(articleVOs);
+        tableOfContentItemVOList.add(bodyVO);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_articlesMovedFromSection() throws Exception {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading >Paragraphs</heading>"
@@ -776,27 +812,30 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 3);
-        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                10);
-        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect2", "Section 2", "Paragraphs", null, null, 32);
-        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article", null, null,
-                21);
-        TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488", "3th article", null, null,
-                39);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        tableOfContentItemVOList.add(bodyVO);
 
-        tableOfContentItemVOList.add(sec1);
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 4);
+        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
+                11);
+        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect2", "Section 2", "Paragraphs", null, null, 33);
+        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article", null, null,
+                22);
+        TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488", "3th article", null, null,
+                40);
+
+        bodyVO.addChildItem(sec1);
         sec1.addChildItem(art1);
-        tableOfContentItemVOList.add(sec2);
+        bodyVO.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -820,14 +859,14 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_allArticlesRemovedFromSection() throws Exception {
         String xml = "<akomaNtoso><bill>"
-                + "<section id=\"sect1\">"
+                + "<body><section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
                 + "<article id=\"art486\">" +
@@ -850,24 +889,27 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 3);
-        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect2", "Section 2", "Paragraphs", null, null, 34);
-        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
-                null, null, 21);
-        TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488", "3th article",
-                null, null, 41);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        tableOfContentItemVOList.add(bodyVO);
 
-        tableOfContentItemVOList.add(sec1);
-        tableOfContentItemVOList.add(sec2);
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 4);
+        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect2", "Section 2", "Paragraphs", null, null, 35);
+        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
+                null, null, 22);
+        TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art488", "Article 488", "3th article",
+                null, null, 42);
+
+        bodyVO.addChildItem(sec1);
+        bodyVO.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -886,13 +928,13 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art488-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_sectionAdded() throws Exception {
-        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -907,26 +949,29 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 4);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 4);
+        tableOfContentItemVOList.add(bodyVO);
+
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 5);
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                11);
+                12);
         TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, null, "Section 2", null, null, null, null);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
-                null, null, 22);
+                null, null, 23);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 488", "3th article", null, null, null);
 
-        tableOfContentItemVOList.add(sec1);
+        bodyVO.addChildItem(sec1);
         sec1.addChildItem(art1);
-        tableOfContentItemVOList.add(sec2);
+        bodyVO.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -940,7 +985,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "</article>"
                 + "</section>"
-                + "<section id=\"Section 2\">"
+                + "<section id=\".+\">"
                 + "<num>Section 2</num>"
                 + "<article id=\"art487\">"
                 +
@@ -958,7 +1003,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "                <content>                  <p>Text...</p>                </content>              </paragraph>            </article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
@@ -968,7 +1013,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_sectionAddedWithHeaderAndNumberTagsPreserved() throws Exception {
-        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -983,26 +1028,29 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", 7, 9, 4);
-        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", 14, 18,
-                11);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 4);
+        tableOfContentItemVOList.add(bodyVO);
+
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", 8, 10, 5);
+        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", 15, 19,
+                12);
         TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, null, "Section 2", null, null, null, null);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
-                29, 33, 26);
+                30, 34, 27);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 488", "3th article", null, null, null);
 
-        tableOfContentItemVOList.add(sec1);
+        bodyVO.addChildItem(sec1);
         sec1.addChildItem(art1);
-        tableOfContentItemVOList.add(sec2);
+        bodyVO.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -1016,7 +1064,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "</article>"
                 + "</section>"
-                + "<section id=\"Section 2\">"
+                + "<section id=\".+\">"
                 + "<num>Section 2</num>"
                 + "<article id=\"art487\">"
                 +
@@ -1033,7 +1081,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "                <content>                  <p>Text...</p>                </content>              </paragraph>            </article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
 
@@ -1044,7 +1092,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_articleAddedAndHcontainerAtTheEnd() throws Exception {
         String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.-->"
                 + "<akomaNtoso>" +
-                "<bill>"
+                "<bill><body>"
                 + "<article id=\"art486\">" +
                 "<num>Article 486</num>" +
                 "<heading>1ste article</heading>" +
@@ -1052,20 +1100,23 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "</article>"
                 + "<hcontainer><content><p>test</p></content>"
                 + "</hcontainer>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 4);
+        tableOfContentItemVOList.add(bodyVO);
+
         TableOfContentItemVO artNew = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 485", "0ste article", null, null,
                 null);
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                4);
+                5);
 
-        tableOfContentItemVOList.add(artNew);
-        tableOfContentItemVOList.add(art1);
+        bodyVO.addChildItem(artNew);
+        bodyVO.addChildItem(art1);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
 
                 + "            <article id=\".+\">              <num>Article 485</num>              "
                 +
@@ -1079,7 +1130,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "</article>"
                 + "<hcontainer><content><p>test</p></content>"
                 + "</hcontainer>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
 
@@ -1088,7 +1139,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_sectionMoved() throws Exception {
-        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String xml = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -1106,24 +1157,27 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 4);
-        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                11);
-        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "Section 2", "Section 2", null, null, null, 22);
-        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
-                null, null, 27);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 4);
+        tableOfContentItemVOList.add(bodyVO);
 
-        tableOfContentItemVOList.add(sec1);
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 5);
+        TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
+                12);
+        TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "Section 2", "Section 2", null, null, null, 23);
+        TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
+                null, null, 28);
+
+        bodyVO.addChildItem(sec1);
         sec1.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec1.addChildItem(art1);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill>"
+        String expected = "<!--This AkomaNtoso document was created via a LegisWrite export.--><akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<num>Section 1</num>"
                 + "<heading>Paragraphs</heading>"
@@ -1142,13 +1196,13 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "</article>"
                 + "</section>"
 
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_sectionHasNoNumOrHeading() throws Exception {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<article id=\"art486\">" +
                 "<num>Article 486</num>" +
@@ -1161,26 +1215,29 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<alinea id=\"art487-aln1\">bla bla</alinea>" +
                 "</article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", null, null, null, null, 3);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        tableOfContentItemVOList.add(bodyVO);
+
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", null, null, null, null,4 );
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                6);
+                7);
         TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, null, "Section 2", "Paragraphs", null, null, null);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article", null, null,
-                17);
+                18);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 488", "3th article", null, null, null);
 
-        tableOfContentItemVOList.add(sec1);
+        bodyVO.addChildItem(sec1);
         sec1.addChildItem(art1);
-        tableOfContentItemVOList.add(sec2);
+        bodyVO.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<section id=\"sect1\">"
                 + "<article id=\"art486\">"
                 +
@@ -1192,7 +1249,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "</article>"
                 + "</section>"
-                + "<section id=\"Section 2\">"
+                + "<section id=\".+\">"
                 + "<num>Section 2</num>"
                 + "<heading>Paragraphs</heading>"
                 + "<article id=\"art487\">"
@@ -1210,7 +1267,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 +
                 "                <content>                  <p>Text...</p>                </content>              </paragraph>            </article>"
                 + "</section>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
 
@@ -1219,7 +1276,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
     @Test
     public void test_mergeTableOfContentIntoDocument_should_returnUpdatedByteArray_when_sectionAddedin3levelBill() throws Exception {
-        String xml = "<akomaNtoso><bill>"
+        String xml = "<akomaNtoso><bill><body>"
                 + "<part id=\"part1\">"
                 + "<num>Part 1</num>"
                 + "<heading>part1</heading>"
@@ -1238,30 +1295,33 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "</article>"
                 + "</section>"
                 + "</part>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
 
         List<TableOfContentItemVO> tableOfContentItemVOList = new ArrayList<TableOfContentItemVO>();
-        TableOfContentItemVO part1 = new TableOfContentItemVO(TableOfContentItemVO.Type.PART, "part1", "Part 1", "part1", null, null, 3);
-        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 10);
+        TableOfContentItemVO bodyVO = new TableOfContentItemVO(TableOfContentItemVO.Type.BODY, "body", null, null, null, null, 3);
+        tableOfContentItemVOList.add(bodyVO);
+
+        TableOfContentItemVO part1 = new TableOfContentItemVO(TableOfContentItemVO.Type.PART, "part1", "Part 1", "part1", null, null, 4);
+        TableOfContentItemVO sec1 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, "sect1", "Section 1", "Paragraphs", null, null, 11);
         TableOfContentItemVO art1 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art486", "Article 486", "1ste article", null, null,
-                17);
+                18);
         TableOfContentItemVO part2 = new TableOfContentItemVO(TableOfContentItemVO.Type.PART, null, "Part 2", "part2", null, null, null);
         TableOfContentItemVO sec2 = new TableOfContentItemVO(TableOfContentItemVO.Type.SECTION, null, "Section 2", "Paragraphs", null, null, null);
         TableOfContentItemVO art2 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, "art487", "Article 487", "2de article",
-                null, null, 28);
+                null, null, 29);
         TableOfContentItemVO art3 = new TableOfContentItemVO(TableOfContentItemVO.Type.ARTICLE, null, "Article 488", "3th article", null, null, null);
 
-        tableOfContentItemVOList.add(part1);
+        bodyVO.addChildItem(part1);
         part1.addChildItem(sec1);
         sec1.addChildItem(art1);
-        tableOfContentItemVOList.add(part2);
+        bodyVO.addChildItem(part2);
         part2.addChildItem(sec2);
         sec2.addChildItem(art2);
         sec2.addChildItem(art3);
 
         byte[] result = xmlContentProcessor.createDocumentContentWithNewTocList(tableOfContentItemVOList, xml.getBytes());
 
-        String expected = "<akomaNtoso><bill>"
+        String expected = "<akomaNtoso><bill><body>"
                 + "<part id=\"part1\">"
                 + "<num>Part 1</num>"
                 + "<heading>part1</heading>"
@@ -1279,10 +1339,10 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "</article>"
                 + "</section>"
                 + "</part>"
-                + "<part id=\"Part 2\">"
+                + "<part id=\".+\">"
                 + "<num>Part 2</num>"
                 + "<heading>part2</heading>"
-                + "<section id=\"Section 2\">"
+                + "<section id=\".+\">"
                 + "<num>Section 2</num>"
                 + "<heading>Paragraphs</heading>"
                 + "<article id=\"art487\">"
@@ -1301,7 +1361,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "                <content>                  <p>Text...</p>                </content>              </paragraph>            </article>"
                 + "</section>"
                 + "</part>"
-                + "</bill></akomaNtoso>";
+                + "</body></bill></akomaNtoso>";
         Pattern pattern = Pattern.compile(expected);
         Matcher matcher = pattern.matcher(new String(result));
 

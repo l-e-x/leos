@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2016 European Commission
+
+    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd" version="3.0" id="LeosWebModuleID">
+    <display-name>${project.description}</display-name>
+
+    <!-- Context parameters -->
+    <context-param>
+        <description>Spring context configuration</description>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:eu/europa/ec/leos/applicationContext.xml</param-value>
+    </context-param>
+    <context-param>
+        <description>Vaadin production mode</description>
+        <param-name>productionMode</param-name>
+        <param-value>${leos.vaadin.productionMode}</param-value>
+    </context-param>
+    <context-param>
+        <description>Vaadin Property.toString() behavior</description>
+        <param-name>legacyPropertyToString</param-name>
+        <param-value>false</param-value>
+    </context-param>
+    <context-param>
+        <param-name>heartbeatInterval</param-name>
+        <param-value>120</param-value>
+        <!-- heartbeat should always be smaller then half of the session timeout  -->
+    </context-param>
+
+    <!-- SLF4J bridge listener -->
+    <listener>
+        <listener-class>eu.europa.ec.leos.support.log.SLF4JBridgeListener</listener-class>
+    </listener>
+
+    <!-- Spring framework listeners -->
+    <listener>
+        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+    </listener>
+    <listener>
+        <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
+    </listener>
+
+    <!-- LEOS Web Application Servlet -->
+    <servlet>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <servlet-class>eu.europa.ec.leos.web.support.vaadin.LeosSpringVaadinServlet</servlet-class>
+        <init-param>
+            <param-name>sessionInitListenerBeans</param-name>
+            <param-value>eventBusSessionListener, authenticationSessionListener, leosBootstrapSessionListener</param-value>
+        </init-param>
+        <init-param>
+            <param-name>beanName</param-name>
+            <param-value>leosUI</param-value>
+        </init-param>
+        <init-param>
+            <description>LEOS main UI</description>
+            <param-name>UI</param-name>
+            <param-value>eu.europa.ec.leos.web.ui.LeosUI</param-value>
+        </init-param>
+        <init-param>
+            <description>LEOS WidgetSet</description>
+            <param-name>widgetset</param-name>
+            <param-value>eu.europa.ec.leos.web.LeosWidgetSet</param-value>
+        </init-param>
+    </servlet>
+
+    <!-- Logback Status Servlet -->
+    <servlet>
+        <servlet-name>Logback Status Servlet</servlet-name>
+        <servlet-class>ch.qos.logback.classic.ViewStatusMessagesServlet</servlet-class>
+    </servlet>
+
+    <!-- Jersey REST Servlet -->
+      <servlet>
+        <servlet-name>Jersey REST Servlet</servlet-name>
+        <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
+    <!-- Static Resources Servlet -->
+    <servlet>
+        <servlet-name>StaticResources</servlet-name>
+        <servlet-class>eu.europa.ec.leos.web.support.resources.StaticResourcesServlet</servlet-class>
+         <init-param>
+            <param-name>basePath</param-name>
+            <param-value>/VAADIN/themes</param-value>
+        </init-param>
+    </servlet>
+
+    <!-- LEOS Web Application Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <url-pattern>/ui/*</url-pattern>
+    </servlet-mapping>
+    <servlet-mapping>
+        <servlet-name>LEOS Web Application Servlet</servlet-name>
+        <url-pattern>/VAADIN/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Logback Status Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>Logback Status Servlet</servlet-name>
+        <url-pattern>/logStatus</url-pattern>
+    </servlet-mapping>
+
+    <!-- Jersey REST Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>Jersey REST Servlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- Static Resources Servlet mappings -->
+    <servlet-mapping>
+        <servlet-name>StaticResources</servlet-name>
+        <url-pattern>/static/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- User authentication -->
+    <login-config>
+        <auth-method>BASIC</auth-method>
+    </login-config>
+
+    <!-- User roles -->
+    <security-role>
+        <description>Role to allow authentication</description>
+        <role-name>${leos.security.role.name}</role-name>
+    </security-role>
+
+    <!-- User access privileges -->
+    <security-constraint>
+        <web-resource-collection>
+            <web-resource-name>leos-private</web-resource-name>
+            <description>Require users to authenticate</description>
+            <url-pattern>/ui/*</url-pattern>
+            <url-pattern>/VAADIN/*</url-pattern>
+        </web-resource-collection>
+        <auth-constraint>
+            <description>Allow only users with role</description>
+            <role-name>${leos.security.role.name}</role-name>
+        </auth-constraint>
+        <user-data-constraint>
+            <description>Encryption is not required</description>
+            <transport-guarantee>NONE</transport-guarantee>
+        </user-data-constraint>
+    </security-constraint>
+
+    <!-- MIME mappings -->
+    <mime-mapping>
+        <extension>js</extension>
+        <mime-type>application/javascript</mime-type>
+    </mime-mapping>
+    <mime-mapping>
+        <extension>svg</extension>
+        <mime-type>image/svg+xml</mime-type>
+    </mime-mapping>
+
+    <!-- Session configuration -->
+    <session-config>
+        <session-timeout>5</session-timeout>
+        <!-- session timeout should always be more then double of heartbeat  -->
+    </session-config>
+</web-app>

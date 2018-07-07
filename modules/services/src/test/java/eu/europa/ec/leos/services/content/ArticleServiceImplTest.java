@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,10 +20,8 @@ import eu.europa.ec.leos.test.support.LeosTest;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import eu.europa.ec.leos.services.content.DocumentService;
 
 import java.io.ByteArrayInputStream;
-
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.is;
@@ -49,77 +47,7 @@ public class ArticleServiceImplTest extends LeosTest {
 
     // TODO test getArticleTemplate
 
-    @Test
-    public void testGetArticle() {
-
-        byte[] byteContent = new byte[]{1, 2, 3};
-
-        LeosDocument document = mock(LeosDocument.class);
-        when(document.getContentStream()).thenReturn(new ByteArrayInputStream(byteContent));
-
-        String articleTag = "article";
-        String articleId = "7474";
-        String articleContent = "article content";
-
-        when(xmlContentProcessor.getElementByNameAndId(byteContent, articleTag, articleId)).thenReturn(articleContent);
-
-        String article = articleServiceImpl.getArticle(document, articleId);
-
-        assertThat(article, is(articleContent));
-    }
-
-    @Test
-    public void saveArticle() {
-
-        String docId = "555";
-        byte[] originalByteContent = new byte[]{1, 2, 3};
-        byte[] updatedByteContent = new byte[]{4, 5, 6};
-
-        LeosDocument originalDocument = mock(LeosDocument.class);
-        when(originalDocument.getLeosId()).thenReturn(docId);
-        when(originalDocument.getContentStream()).thenReturn(new ByteArrayInputStream(originalByteContent));
-
-        LeosDocument updatedDocument = mock(LeosDocument.class);
-        when(updatedDocument.getLeosId()).thenReturn(docId);
-        when(updatedDocument.getContentStream()).thenReturn(new ByteArrayInputStream(updatedByteContent));
-        String articleTag = "article";
-        String articleId = "486";
-        String newArticleText = "new article text";
-
-        when(xmlContentProcessor.replaceElementByTagNameAndId(originalByteContent, newArticleText, articleTag, articleId)).thenReturn(updatedByteContent);
-        when(documentService.updateDocumentContent(docId, "sessionID", updatedByteContent, "operation.article.updated")).thenReturn(updatedDocument);
-
-        LeosDocument result = articleServiceImpl.saveArticle(originalDocument, "sessionID", newArticleText, articleId);
-
-        assertThat(result, is(updatedDocument));
-    }
-
-    @Test
-    public void saveArticle_when_articleNull_should_DeleteArticle() {
-
-        String docId = "555";
-        byte[] originalByteContent = new byte[]{1, 2, 3};
-        byte[] updatedByteContent = new byte[]{4, 5, 6};
-
-        LeosDocument originalDocument = mock(LeosDocument.class);
-        when(originalDocument.getLeosId()).thenReturn(docId);
-        when(originalDocument.getContentStream()).thenReturn(new ByteArrayInputStream(originalByteContent));
-
-        LeosDocument updatedDocument = mock(LeosDocument.class);
-        when(updatedDocument.getLeosId()).thenReturn(docId);
-        when(updatedDocument.getContentStream()).thenReturn(new ByteArrayInputStream(updatedByteContent));
-        String articleTag = "article";
-        String articleId = "486";
-
-        when(xmlContentProcessor.replaceElementByTagNameAndId(originalByteContent, null, articleTag, articleId)).thenReturn(updatedByteContent);
-        when(documentService.updateDocumentContent(docId, "sessionID", updatedByteContent ,"operation.article.updated")).thenReturn(updatedDocument);
-
-        LeosDocument result = articleServiceImpl.saveArticle(originalDocument, "sessionID", null, articleId);
-
-        assertThat(result, is(updatedDocument));
-    }
-
-    @Test
+      @Test
     public void insertNewArticle() {
 
         String docId = "555";

@@ -66,6 +66,9 @@
                                 <include>**</include>
                                 <include>META-INF/THIRD-PARTY-LICENSES</include>
                             </includes>
+                            <excludes>
+                                <exclude>WEB-INF/web.xml</exclude>
+                            </excludes>
                         </overlay>
                     </overlays>
                     <archiveClasses>true</archiveClasses>
@@ -129,6 +132,12 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <version>9.2.14.v20151106</version>
                 <configuration>
+                    <loginServices>
+                        <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                            <name>default</name>
+                            <config>etc/jetty/realm.properties</config>
+                        </loginService>
+                    </loginServices>
                     <httpConnector>
                         <port>9090</port>
                     </httpConnector>

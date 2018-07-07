@@ -1,2 +1,0 @@
-waitSeconds: 0,
-urlArgs: "ts=" + (new Date()).getTime()

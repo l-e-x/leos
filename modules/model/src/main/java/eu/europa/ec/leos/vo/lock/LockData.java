@@ -1,5 +1,5 @@
 /**
- * Copyright 2015 European Commission
+ * Copyright 2016 European Commission
  *
  * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,7 +28,7 @@ public final class LockData  {
 
 
 
-    public LockData(String lockId, Long lockingAcquiredOn, String userLoginName, String userName, String sessionId, LockLevel lockLevel,String elementId) {
+    public LockData(String lockId, Long lockingAcquiredOn, String userLoginName, String userName, String sessionId, LockLevel lockLevel, String elementId) {
         this.lockId = lockId;
         this.userLoginName = userLoginName;
         this.lockLevel = lockLevel;
@@ -39,14 +39,10 @@ public final class LockData  {
     }
 
     public LockData(String lockId, Long lockingAcquiredOn, String userLoginName, String userName, String sessionId, LockLevel lockLevel) {
-    	this( lockId,  lockingAcquiredOn,  userLoginName,  userName,  sessionId, lockLevel, null);
+    	this(lockId,  lockingAcquiredOn,  userLoginName,  userName,  sessionId, lockLevel, null);
     }
     
-    public LockData(String lockId, String userLoginName, LockLevel lockLevel) {
-    	this( lockId,  null,  userLoginName,  null,  null, lockLevel, null);
-    }
-    
-	   public String getLockId() {
+	public String getLockId() {
         return lockId;
     }
 

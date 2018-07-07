@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2015 European Commission
+
+    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+         version="3.0">
+    <servlet>
+        <servlet-name>default</servlet-name>
+        <init-param>
+            <!-- disable generation of HTTP ETags -->
+            <param-name>etags</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <!-- disable cache of static resources -->
+            <param-name>cacheControl</param-name>
+            <param-value>no-store,no-cache,must-revalidate</param-value>
+        </init-param>
+        <init-param>
+            <!-- disable memory-mapped files to avoid locked files on Windows -->
+            <param-name>useFileMappedBuffer</param-name>
+            <param-value>false</param-value>
+        </init-param>
+    </servlet>
+    <filter>
+        <!-- servlet filter to transparently disable HTTP ETag headers -->
+        <filter-name>noEtag</filter-name>
+        <filter-class>com.samaxes.filter.NoETagFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <!-- ensure that requested resources are not stamped with HTTP ETag -->
+        <filter-name>noEtag</filter-name>
+        <servlet-name>default</servlet-name>
+    </filter-mapping>
+    <filter>
+        <!-- servlet filter to transparently disable browser caching of resources -->
+        <filter-name>noCache</filter-name>
+        <filter-class>com.samaxes.filter.NoCacheFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <!-- ensure that requested resources are not cached by the browser -->
+        <filter-name>noCache</filter-name>
+        <servlet-name>default</servlet-name>
+        <dispatcher>REQUEST</dispatcher>
+        <dispatcher>FORWARD</dispatcher>
+    </filter-mapping>
+    <mime-mapping>
+        <!-- ensure that JavaScript resources are served with the correct MIME type -->
+        <extension>js</extension>
+        <mime-type>application/javascript</mime-type>
+    </mime-mapping>
+</web-app>

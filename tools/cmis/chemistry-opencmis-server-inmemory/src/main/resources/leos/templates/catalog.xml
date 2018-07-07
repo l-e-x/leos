@@ -47,7 +47,7 @@
                         </descriptions>
                         <languages>
                             <language lang="EN">English</language>
-                            <language lang="FR">Français</language>
+                            <!--<language lang="FR">Français</language>-->
                         </languages>
                     </item>
                     <item type="TEMPLATE" id="SJ-016" enabled="true">
@@ -102,7 +102,7 @@
                             <!--<language lang="FR">Français</language>-->
                         </languages>
                     </item>
-                    <item type="TEMPLATE" id="SJ-017">
+                    <item type="TEMPLATE" id="SJ-017" enabled="false">
                         <names>
                             <name lang="EN">SJ-017 - Proposal for a Council Directive</name>
                             <name lang="FR">SJ-017 - Proposition de directive du Conseil</name>
@@ -113,10 +113,10 @@
                         </descriptions>
                         <languages>
                             <language lang="EN">English</language>
-                            <language lang="FR">Français</language>
+                            <!--<language lang="FR">Français</language>-->
                         </languages>
                     </item>
-                    <item type="TEMPLATE" id="SJ-018">
+                    <item type="TEMPLATE" id="SJ-018" enabled="false">
                         <names>
                             <name lang="EN">SJ-018 - Proposal for a Council Implemeting Directive</name>
                             <name lang="FR">SJ-018 - Proposition de directive d'exécution du Conseil</name>
@@ -127,11 +127,11 @@
                         </descriptions>
                         <languages>
                             <language lang="EN">English</language>
-                            <language lang="FR">Français</language>
+                            <!--<language lang="FR">Français</language>-->
                         </languages>
                     </item>
                 </item>
-                <item type="CATEGORY" id="c1.1.1.3">
+                <item type="CATEGORY" id="c1.1.1.3" enabled="false">
                     <names>
                         <name lang="EN">Proposal for a decision</name>
                         <name lang="FR">Proposition de décision</name>
@@ -158,7 +158,7 @@
                             <language lang="FR">Français</language>
                         </languages>
                     </item>
-                    <item type="TEMPLATE" id="SJ-019">
+                    <item type="TEMPLATE" id="SJ-019" enabled="false">
                         <names>
                             <name lang="EN">SJ-019 - Proposal for a Council Decision</name>
                             <name lang="FR">SJ-019 - Proposition de décision du Conseil</name>
@@ -169,7 +169,7 @@
                         </descriptions>
                         <languages>
                             <language lang="EN">English</language>
-                            <language lang="FR">Français</language>
+                            <!--<language lang="FR">Français</language>-->
                         </languages>
                     </item>
                     <item type="TEMPLATE" id="SJ-026">
