@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,18 +13,13 @@
  */
 package eu.europa.ec.leos.services.compare;
 
-/**
- * @author: micleva
- * @date: 4/2/13 2:51 PM
- * @project: ETX
- */
 public interface ContentComparatorService {
 
-    final static String CONTENT_BLOCK_REMOVED_CLASS = "leos-marker-content-removed";
-    final static String CONTENT_BLOCK_ADDED_CLASS = "leos-marker-content-added";
-    final static String CONTENT_BLOCK_MODIFIED_CLASS = "leos-content-modified";
-    final static String CONTENT_REMOVED_CLASS = "leos-content-removed";
-    final static String CONTENT_ADDED_CLASS = "leos-content-new";
+    String CONTENT_BLOCK_REMOVED_CLASS = "leos-marker-content-removed";
+    String CONTENT_BLOCK_ADDED_CLASS = "leos-marker-content-added";
+    String CONTENT_BLOCK_MODIFIED_CLASS = "leos-content-modified";
+    String CONTENT_REMOVED_CLASS = "leos-content-removed";
+    String CONTENT_ADDED_CLASS = "leos-content-new";
 
     /** this service compares the two XHTML input string passed 
      * and marks the modifed content with SPAN containing class in this interface for dispaly in single document form

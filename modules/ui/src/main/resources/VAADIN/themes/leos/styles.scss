@@ -1,0 +1,51 @@
+@charset "UTF-8";
+/**
+ * Copyright 2017 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+@import "addons.scss";
+@import "customization";
+@import "scss/component/card";
+@import "scss/component/cardFilters";
+@import "scss/component/header";
+@import "scss/component/footer";
+@import "scss/component/banner";
+@import "scss/component/repositoryView";
+@import "scss/component/documentView";
+@import "scss/component/window";
+@import "scss/component/versionSlider";
+@import "scss/component/searchAndReplace";
+@import "scss/component/proposalView";
+@import "scss/component/memorandumView";
+@import "scss/component/annexView";
+@import "scss/component/timeLine";
+@import "scss/component/import";
+
+.leos {
+    @include addons;
+    @include leos;
+    @include card;
+    @include cardFilters;
+    @include ec-header;
+    @include footer;
+    @include banner;
+    @include repositoryView;
+    @include documentView;
+    @include window;
+    @include versionSlider;
+    @include searchAndReplace;
+    @include proposalView;
+    @include memorandumView;
+    @include annexView;
+    @include timeLine;
+    @include import;
+}

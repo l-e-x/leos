@@ -1,0 +1,86 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$LIST_SPACING: 40px;
+
+//--------------------------------XML list------------------------------------/
+%xmlList {
+    list {
+
+        point,
+        indent {
+            display: block;
+            padding-left: $LIST_SPACING;
+            position: relative;
+
+            & > num {
+                @extend %paddedText;
+                display: block;
+                min-width: $LIST_SPACING;
+                margin-left: -$LIST_SPACING;
+                float: left;
+            }
+
+            & > content {
+                & > table {
+                    @extend %tableMargin;         
+                }
+                
+                & > aknP {
+                    @extend %paddedText;
+                    display: block;
+                }
+            }
+        }
+    }
+}
+
+//--------------------------------Editor list---------------------------------/
+%editorList {
+    li > ol,
+    li > ul {
+        list-style-type: none;
+        padding-left: 0;  // override default list padding
+        margin: 0;        // override default list margin
+
+        & > li {
+            @extend %paddedText;
+            padding-left: $LIST_SPACING;
+            position: relative;
+
+            &:before {
+                color: $GREY_COLOR;
+                content: attr(data-akn-num);
+                min-width: $LIST_SPACING;
+                margin-left: -$LIST_SPACING;
+                float: left;
+            }
+        }
+    }
+}
+
+//--------------------------------Showblock list------------------------------/
+%showblockList {
+    li > ol {
+        & li {
+            @include blockOutline("POINT", $LIST_SPACING);
+        }
+    }
+
+    li > ul {
+        & li {
+            @include blockOutline("INDENT", $LIST_SPACING);
+        }
+    }
+}

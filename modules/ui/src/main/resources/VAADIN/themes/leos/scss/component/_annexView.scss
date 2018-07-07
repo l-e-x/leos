@@ -1,0 +1,37 @@
+@mixin annexView {
+
+    .leos-annex-view {
+
+        .close-button {
+            float: right;
+            font-weight: normal;
+            border: 1px solid $G_BORDER_COLOR;
+            
+           .v-icon {
+             color: #B92222;        
+           }
+        }
+
+        .leos-annexview-title {
+            font-size: 16px;
+        }
+
+        .leos-annexview-icon {
+            color: $G_BROWN_COLOR;
+            font-size: 32px;
+            padding-left: 5px;
+            font-family: Vaadin-Icons;
+        }
+
+        .leos-doc-content {
+            overflow: auto;
+            color: black;
+            background: $GREY;
+            position: relative;
+        }
+    
+        .leos-padbar {
+            border-bottom: 1px solid $G_BORDER_COLOR;
+        }
+    }
+}

@@ -7,10 +7,10 @@
    
 2. The tool-bar of the table of content consists of three buttons -
       - The expand/collapse button to expand or collapse the tree.
-      - The edit button to edit the tree structure.
+      - The edit button to edit the tree structure. (if you have editing rights)
       - The refresh button to refresh the table of content.
       
-3. To edit the table of content, click on the icon with label 'Edit'. A dialog
+3. To change the document structure, click on the icon with label 'Edit'. A dialog
    will open with title 'Edit table of content'.
    
 4. The dialog is divided into 3 parts, left-hand side is the table of content
@@ -30,4 +30,7 @@
 7. After the edition, click on the 'Save' button to save the changes. To close
    the dialog click on 'Close', the dialog will be closed and the changes will
    be reflected in the Table of Content and document.
+   
+8. Note: it exist at the bottom left a "DAP (Drafter's Assistance Package)" button used to lead to guidance website
+   on elements (disabled)
    

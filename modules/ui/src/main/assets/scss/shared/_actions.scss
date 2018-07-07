@@ -1,0 +1,53 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+%elementActions {
+    .leos-wrap {
+         position:relative;
+        
+        .leos-wrap-content {
+            border: solid 1px transparent;
+            margin: 0 -5px;
+            padding: 0 5px;
+        }
+        
+        &:hover {
+            & > .leos-wrap-content {
+                background-color: #FFFAFF;
+                border-color: #ADBDCE;
+            }
+            & > .leos-wrap-widgets * {
+                visibility:visible;
+            }
+        }
+        
+        .leos-wrap-widgets {
+            float: right;
+            vertical-align: top;
+            height:100%;
+            position: absolute;
+            right: -5px;
+            top: 0;
+            width: 0;
+            * {
+                padding-top: 5px;
+                cursor: pointer;
+                visibility:hidden;
+            }
+            .leos-inactive {
+                display:none;
+            }
+        }
+    }
+}

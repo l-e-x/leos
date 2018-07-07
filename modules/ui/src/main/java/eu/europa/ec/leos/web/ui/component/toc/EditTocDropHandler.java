@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -14,9 +14,6 @@
 package eu.europa.ec.leos.web.ui.component.toc;
 
 import com.google.common.eventbus.EventBus;
-import com.vaadin.data.Item;
-import com.vaadin.data.util.HierarchicalContainer;
-import com.vaadin.event.DataBoundTransferable;
 import com.vaadin.event.Transferable;
 import com.vaadin.event.dd.DragAndDropEvent;
 import com.vaadin.event.dd.DropHandler;
@@ -24,26 +21,32 @@ import com.vaadin.event.dd.acceptcriteria.AcceptCriterion;
 import com.vaadin.shared.ui.dd.VerticalDropLocation;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.DragAndDropWrapper;
-import com.vaadin.ui.Tree;
+import com.vaadin.v7.data.Item;
+import com.vaadin.v7.data.util.HierarchicalContainer;
+import com.vaadin.v7.event.DataBoundTransferable;
+import com.vaadin.v7.ui.Tree;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 public class EditTocDropHandler implements DropHandler {
 
+    private static final long serialVersionUID = -804544966570987338L;
     private final Tree tocTree;
     private final MessageHelper messageHelper;
-    private final EventBus eventBus;
-    private final Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules;
+    private final Map<TocItemType, List<TocItemType>> tableOfContentRules;
+    private final Function<String, TocItemType> getTocItemType;
 
-    public EditTocDropHandler(Tree tocTree, MessageHelper messageHelper, EventBus eventBus, Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules) {
+    public EditTocDropHandler(Tree tocTree, MessageHelper messageHelper, EventBus eventBus, Map<TocItemType, List<TocItemType>> tableOfContentRules, Function<String, TocItemType> getTocItemType) {
         this.tocTree = tocTree;
         this.messageHelper = messageHelper;
-        this.eventBus = eventBus;
         this.tableOfContentRules = tableOfContentRules;
+        this.getTocItemType = getTocItemType;
     }
 
     @Override
@@ -56,25 +59,29 @@ public class EditTocDropHandler implements DropHandler {
         final HierarchicalContainer container = (HierarchicalContainer) tocTree.getContainerDataSource();
         // Location describes on which part of the node the drop took place
         final VerticalDropLocation location = dropData.getDropLocation();
+        
         final Object targetItemId = dropData.getItemIdOver();
-
+        Item targetItem = container.getItem(targetItemId);
+        TableOfContentItemVO targetItemVO = TableOfContentItemConverter.buildTableOfContentItemVO(targetItem);
+        container.setChildrenAllowed(targetItemId, targetItemVO.areChildrenAllowed()); //Set children allowed for targetItem
+        
         if (sourceComponent instanceof DragAndDropWrapper) {
-            TableOfContentItemVO.Type sourceItemType = (TableOfContentItemVO.Type) ((DragAndDropWrapper) sourceComponent).getData();
+            TocItemType sourceItemType = getTocItemType.apply((String) ((DragAndDropWrapper) sourceComponent).getData());
 
-            String itemId = TableOfContentItemConverter.getItemId(container, sourceItemType);
-            Item item = container.addItem(itemId);
+            String sourceItemId = TableOfContentItemConverter.getItemId(container, sourceItemType);
+            Item sourceItem = container.addItem(sourceItemId);
 
-            String typeName = sourceItemType.name().toLowerCase();
+            String typeName = sourceItemType.getName().toLowerCase();
             String number = messageHelper.getMessage("toc.item.type." + typeName + ".number"); // LEOS-787 Put default text for number & heading
             String heading = messageHelper.getMessage("toc.item.type." + typeName + ".heading");
 
-            TableOfContentItemVO itemVO = new TableOfContentItemVO(sourceItemType, null, number, heading, null, null, null);
-            TableOfContentItemConverter.populateItemDetails(itemVO, item, Integer.MAX_VALUE, messageHelper);
+            TableOfContentItemVO sourceItemVO = new TableOfContentItemVO(sourceItemType, null, number, heading, null, null, null);
+            TableOfContentItemConverter.populateItemDetails(sourceItemVO, sourceItem, Integer.MAX_VALUE, messageHelper);
+            
+            container.setChildrenAllowed(sourceItemId, sourceItemVO.areChildrenAllowed()); //Set children allowed for sourceItem
 
-            container.setChildrenAllowed(itemId, itemVO.areChildrenAllowed());
-
-            moveNode(itemId, targetItemId, location);
-            tocTree.select(itemId);
+            moveNode(sourceItemId, targetItemId, location);
+            tocTree.select(sourceItemId);
         } else if (sourceComponent instanceof Tree) {
             final Object sourceItemId = ((DataBoundTransferable) transferable).getItemId();
             moveNode(sourceItemId, targetItemId, location);
@@ -115,7 +122,7 @@ public class EditTocDropHandler implements DropHandler {
 
     @Override
     public AcceptCriterion getAcceptCriterion() {
-        return new TocRulesClientSideCriterion(tableOfContentRules);
+        return new TocRulesClientSideCriterion(tableOfContentRules, getTocItemType);
     }
 
 }

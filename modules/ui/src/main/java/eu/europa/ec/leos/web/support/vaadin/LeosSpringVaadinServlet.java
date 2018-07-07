@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -14,12 +14,11 @@
 package eu.europa.ec.leos.web.support.vaadin;
 
 import com.vaadin.server.SessionInitListener;
+import com.vaadin.spring.server.SpringVaadinServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNotOfRequiredTypeException;
-import org.springframework.context.ApplicationContext;
-import ru.xpoft.vaadin.SpringApplicationContext;
-import ru.xpoft.vaadin.SpringVaadinServlet;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import javax.servlet.ServletException;
 import java.util.ArrayList;
@@ -50,11 +49,10 @@ public class LeosSpringVaadinServlet extends SpringVaadinServlet {
     private void processSessionInitListenerBeans() throws ServletException {
         if (isParameterConfigured(SERVLET_PARAMETER_SESSION_INIT_LISTENER_BEANS)) {
             LOG.trace("Processing session init listener beans...");
-            ApplicationContext applicationContext = SpringApplicationContext.getApplicationContext();
             for (String paramBeanName : getParameterValues(SERVLET_PARAMETER_SESSION_INIT_LISTENER_BEANS)) {
                 LOG.trace("Loading bean: '{}'", paramBeanName);
                 try {
-                    SessionInitListener listenerBean = applicationContext.getBean(paramBeanName, SessionInitListener.class);
+                    SessionInitListener listenerBean = WebApplicationContextUtils.getWebApplicationContext(getServletContext()).getBean(paramBeanName, SessionInitListener.class);
                     registerListener(listenerBean);
                 } catch (BeanNotOfRequiredTypeException ex) {
                     LOG.error("Bean '{}' is not a subtype of '{}'", paramBeanName, SessionInitListener.class.getCanonicalName());

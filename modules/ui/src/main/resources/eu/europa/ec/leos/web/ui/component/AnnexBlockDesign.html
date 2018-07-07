@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" name="package-mapping" content="leos:eu.europa.ec.leos.web.ui.component">
+</head>
+<body>
+<vaadin7-vertical-layout style-name="ui-block" width-full>
+    <leos-heading-component _id="heading" width-full></leos-heading-component>
+    <vaadin7-horizontal-layout style-name="ui-block-content" width-full spacing>
+        <vaadin-button _id="moveUpButton" icon="fonticon://FontAwesome/f062" primary-style-name="icon-only" style-name="borderless move-up-button" :top :left/>
+        <vaadin7-label _id="titleCaption" size-auto :top :left/>
+        <leos-edit-box-component _id="title" style-name="title" immediate :top :left :expand=""/>
+        <vaadin-button _id="openButton" icon="fonticon://FontAwesome/f061" style-name="open-button" plain-text :top :right/>
+    </vaadin7-horizontal-layout>
+    <vaadin7-horizontal-layout style-name="ui-block-content" width-full spacing>
+        <vaadin-button _id="moveDownButton" icon="fonticon://FontAwesome/f063" primary-style-name="icon-only" style-name="borderless move-down-button" :top :left/>
+        <vaadin7-label _id="language" style-name="leos-caption-on-left" size-auto plain-text :top :left :expand=".1"></vaadin7-label>
+        <vaadin7-label size-auto="true" :center="" :expand=".5">&nbsp;</vaadin7-label>
+        <vaadin7-label _id="lastUpdated" style-name="last-updated" size-auto plain-text  :top :right :expand=".4">Updated: Updated by Updated on</vaadin7-label>
+    </vaadin7-horizontal-layout>
+</vaadin7-vertical-layout>
+</body>
+</html>

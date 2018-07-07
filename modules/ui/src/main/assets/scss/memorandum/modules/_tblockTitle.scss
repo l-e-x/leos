@@ -1,0 +1,55 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+%titleElement {
+    @extend %simpleText;
+    font-weight: bold;
+    display: table-cell;
+}
+
+//------------------------------- XML Styles --------------------------------//
+%xmlTblockTitle {
+    // level n block title
+    tblock {
+        & > num {
+            @extend %titleElement;
+            min-width: 1.5cm;
+        }
+        & > heading {
+            @extend %titleElement;
+        }
+    }
+
+    // level 1 block title
+    mainBody > tblock {
+        & > num,
+        & > heading {
+            font-variant: small-caps;
+            padding: 18pt 0 6pt 0;
+        }
+    }
+
+    // level 2 block title
+    mainBody > tblock > tblock {
+        & > num,
+        & > heading {
+            padding: 6pt 0;
+        }
+    }
+}
+
+//------------------------------- Editor Styles -----------------------------//
+
+
+//------------------------------- Showblock Styles --------------------------//

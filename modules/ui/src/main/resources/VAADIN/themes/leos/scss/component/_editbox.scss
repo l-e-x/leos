@@ -1,0 +1,67 @@
+@mixin editbox {
+
+    .editboxLayout {
+        position:relative;
+        .v-textfield.v-disabled{
+            opacity: 1;
+            color: $GREY_COLOUR;
+        }
+    }
+
+    .editboxLayout:not(.v-disabled) {
+        &:hover {
+            .editboxText {
+                padding-right:calc($v-font-size * 2); //avoiding pen over text
+                border-color: $GREY;
+                border-style: solid;
+                border-width: 1px;
+            }
+            &:after {
+                font-family: "Vaadin-Icons";
+                font-size:$v-font-size;
+                content:'\e7fa';
+                cursor:pointer;
+                position: absolute;
+                right:calc($v-font-size/2);
+                top:5px;
+            }
+        }
+    }
+
+    .editboxText {
+        border-color: transparent;
+        background:none; //for read-only textfield
+        box-shadow:none; //overriding default
+        height:inherit;
+        text-overflow: ellipsis;
+        &:focus:not(:disabled),
+        &.editboxTextFocus {
+            border-color: $LIGHT_BLUE;
+            padding-right:inherit;
+        }
+    }
+
+    .v-button.save-btn,
+    .v-button.cancel-btn {
+        height: 100%;
+        //compensating below for input box styles
+        letter-spacing:normal;
+        line-height:normal;
+        padding-top:3px;
+        padding-bottom:3px;
+        .v-icon{
+            font-size:$v-font-size;
+        }
+    }    
+     // avoid showing required indicator
+    .v-required-field-indicator{
+        display: none;
+    }   
+    .v-caption-editboxText .v-errorindicator {
+            display: none;
+    }
+    .v-errorindicator {
+            height: 20px;
+    }
+    
+}

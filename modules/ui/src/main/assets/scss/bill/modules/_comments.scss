@@ -1,0 +1,121 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+%comments {
+    
+    .leos-balloon {
+        min-width: 276px;
+        padding:0;
+        
+        aknp {
+            padding: 0;
+        }
+
+        .popover-title {
+            display: table-cell;
+            border: solid 1px transparent;
+            padding: 0 5px;
+            margin-top: 0;
+            border-radius: 6px 0 0 0;
+            &:before{
+                font-family:  "Vaadin-Icons";
+            }
+        }
+
+        .\~leosComment .popover-title:before {
+            content:'\e767  ';
+        }
+
+        .popover-content {
+            padding: 5px 5px;
+        }
+
+        &.selected {
+            z-index: 9999;
+            background-color:#ffd5d6;
+            border: 1px solid #ffa7aa;
+            
+            &.right > .arrow {
+                border-right-color: #ffa7aa;
+                &:after {
+                    border-right-color: #ffd5d6;
+                }
+            }
+        
+            .leos-popover-header * {
+                background-color: #ffa7aa;
+            }
+        
+            .popover-title {
+                border: 1px solid transparent;
+            }
+        
+            .leos-popover-nav {
+                border-bottom: 1px solid transparent;
+            }
+        }
+
+        &.right > .arrow {
+            top: 15px !important;
+        }
+    }
+
+    .leos-popover-nav {
+        display: table-cell;
+        border: solid 1px transparent;
+        border-radius: 0 6px 0 0;
+    }
+    
+    .leos-popover-header {
+        display: table;
+        background-color: #f7f7f7;
+        width: 100%;
+        font-weight:bold;
+        border: none;
+        border-radius: 6px 6px 0 0;
+    }
+
+    /* styling of the comments markers */
+    [refersTo="~leosComment"]{
+        display:inline;
+        position:relative;
+        margin-left:-3px;
+        
+        &:after {
+            position:absolute;
+            content:url('../img/left-brace.png');
+            left:3px;
+        }
+        &:before {
+            position:absolute;
+            content:url('../img/right-brace.png');
+        }
+        & > * {
+            display:none;
+        }
+    }
+    
+    .balloon-actions {
+        display:none;
+        float:right;
+        font-size: 13px;
+        font-family: "Open Sans";
+
+        & > * {
+            color: #B3B3B1;
+            text-decoration: none;
+            padding-right:10px;
+        }
+    }
+}

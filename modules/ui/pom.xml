@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
 
-    Copyright 2016 European Commission
+    Copyright 2017 European Commission
 
-    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -14,15 +14,13 @@
     See the Licence for the specific language governing permissions and limitations under the Licence.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>eu.europa.ec.leos.prototype</groupId>
+        <groupId>eu.europa.ec.leos.pilot</groupId>
         <artifactId>leos-modules</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>leos-ui</artifactId>
@@ -37,57 +35,34 @@
         <project.final.name>leos-ui</project.final.name>
         <!-- LEOS -->
         <leos.generated-sources.path>${project.build.directory}/generated-sources/leos</leos.generated-sources.path>
+        <assetsOutputPath>META-INF/resources/assets</assetsOutputPath>
     </properties>
 
     <dependencies>
         <!-- Leos modules -->
         <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-js-core</artifactId>
+            <groupId>eu.europa.ec.leos.pilot</groupId>
+            <artifactId>leos-js</artifactId>
             <version>${project.version}</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-js-web</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-js-editor</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <groupId>eu.europa.ec.leos.pilot</groupId>
             <artifactId>leos-model</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-support</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <groupId>eu.europa.ec.leos.pilot</groupId>
             <artifactId>leos-services</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-webservices</artifactId>
+            <groupId>eu.europa.ec.leos.pilot</groupId>
+            <artifactId>leos-use-cases</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-groovy-support</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
-            <artifactId>leos-themes</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.prototype</groupId>
+            <groupId>eu.europa.ec.leos.pilot</groupId>
             <artifactId>leos-test-support</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
@@ -100,24 +75,20 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>jcl-over-slf4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
+            <scope>compile</scope>
+            <optional>true</optional>
         </dependency>
         <!-- Spring framework -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -129,17 +100,8 @@
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
-            <artifactId>spring-context-support</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-tx</artifactId>
-            <scope>runtime</scope>
         </dependency>
         <!-- Vaadin framework -->
         <dependency>
@@ -152,15 +114,7 @@
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-client-compiled</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.vaadin</groupId>
             <artifactId>vaadin-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.vaadin</groupId>
-            <artifactId>vaadin-client-compiler</artifactId>
         </dependency>
         <dependency>
             <groupId>com.vaadin</groupId>
@@ -170,27 +124,44 @@
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-sass-compiler</artifactId>
         </dependency>
-        <!-- Vaadin add-ons -->
         <dependency>
-            <groupId>ru.xpoft.vaadin</groupId>
-            <artifactId>spring-vaadin-integration</artifactId>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-spring</artifactId>
         </dependency>
+        <!-- Vaadin 7 compatibility packages -->
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-compatibility-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-compatibility-shared</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.vaadin</groupId>
+            <artifactId>vaadin-compatibility-client</artifactId>
+        </dependency>
+        <!-- Vaadin add-ons -->
         <dependency>
             <groupId>org.vaadin.addon</groupId>
             <artifactId>confirmdialog</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.vaadin.icons</groupId>
-            <artifactId>vaadin-icons</artifactId>
+            <groupId>de.datenhahn.vaadin</groupId>
+            <artifactId>componentrenderer</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.vaadin</groupId>
-            <artifactId>resetbuttonfortextfield</artifactId>
+            <groupId>com.vaadin.addon</groupId>
+            <artifactId>vaadin-onoffswitch</artifactId>
         </dependency>
         <!-- Libraries -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.inject</groupId>
+            <artifactId>javax.inject</artifactId>
         </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -204,20 +175,23 @@
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <includes>
-                    <include>**/*.properties</include>
-                    <include>**/*.xml</include>
-                    <include>**/*.html</include>
-                </includes>
             </resource>
             <resource>
-                <directory>src/main/webapp</directory>
+                <directory>src/main/assets</directory>
+                <targetPath>${assetsOutputPath}</targetPath>
+                <excludes>
+                    <exclude>**/*.scss</exclude>
+                </excludes>
             </resource>
             <resource>
                 <!-- Filtered java template files as LEOS generated sources. -->
@@ -244,8 +218,11 @@
                 <configuration>
                     <filesets>
                         <fileset>
-                            <!-- Ensure overlays are cleaned properly. -->
-                            <directory>overlays</directory>
+                            <!-- Ensure the theme css is cleaned properly. -->
+                            <directory>src/main/webapp/VAADIN/themes/leos</directory>
+                            <includes>
+                                <include>styles.css</include>
+                            </includes>
                         </fileset>
                     </filesets>
                 </configuration>
@@ -269,6 +246,70 @@
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <!-- VAADIN -->
+            <plugin>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-maven-plugin</artifactId>
+                <configuration>
+                    <extraJvmArgs>-Xmx1G -Xss1024k</extraJvmArgs>
+                    <noServer>true</noServer>
+                    <draftCompile>${project.vaadin.draftCompile}</draftCompile>
+                    <persistentunitcache>false</persistentunitcache>
+                    <style>OBF</style>
+                    <webappDirectory>${basedir}/target/classes/VAADIN/widgetsets</webappDirectory>
+                    <compileReport>false</compileReport>
+                    <strict>true</strict>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>resources</goal>
+                            <goal>update-theme</goal>
+                            <goal>compile-theme</goal>
+                            <goal>update-widgetset</goal>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <Vaadin-Package-Version>1</Vaadin-Package-Version>
+                            <Vaadin-Widgetsets>eu.europa.ec.leos.ui.LeosWidgetSet</Vaadin-Widgetsets>
+                        </manifestEntries>
+                    </archive>
+                    <!-- Exclude some unnecessary files generated by the GWT compiler. -->
+                    <excludes>
+                        <exclude>VAADIN/gwt-unitCache/**</exclude>
+                        <exclude>VAADIN/widgetsets/WEB-INF/**</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>nl.geodienstencentrum.maven</groupId>
+                <artifactId>sass-maven-plugin</artifactId>
+                <version>${sass-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>update-stylesheets</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sassOptions>
+                        <always_update>true</always_update>
+                        <style>:expanded</style>
+                        <sourcemap>:none</sourcemap>
+                    </sassOptions>
+                    <sassSourceDirectory>${basedir}/src/main/assets/scss</sassSourceDirectory>
+                    <destination>${basedir}/src/main/assets/css</destination>
+                </configuration>
             </plugin>
         </plugins>
     </build>

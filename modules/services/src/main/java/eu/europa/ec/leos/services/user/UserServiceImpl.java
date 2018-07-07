@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,36 +13,32 @@
  */
 package eu.europa.ec.leos.services.user;
 
-import eu.europa.ec.leos.model.BaseEntity;
+import eu.europa.ec.leos.integration.UsersProvider;
 import eu.europa.ec.leos.model.user.User;
-import eu.europa.ec.leos.repositories.user.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
-@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private final UserRepository userRepository;
-
     @Autowired
-    public UserServiceImpl(final UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private UsersProvider usersClient;
 
     @Override
+    @Cacheable(value="users", cacheManager = "cacheManager")
     public User getUser(String login) {
-        // match login only against active users
-        return userRepository.findByLoginAndState(login, BaseEntity.State.A);
+        User result = usersClient.getUserByLogin(login);
+
+        return result;
     }
 
     @Override
-    public List<User> findAll() {
-        return userRepository.findAll();
+    public List<User> searchUsersByKey(String key) {
+        List<User> result = usersClient.searchUsers(key);
+
+        return result;
     }
 }

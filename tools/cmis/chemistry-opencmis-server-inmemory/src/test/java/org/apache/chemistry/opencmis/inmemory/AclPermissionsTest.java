@@ -1,3 +1,21 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 package org.apache.chemistry.opencmis.inmemory;
 
 import static org.junit.Assert.assertEquals;
@@ -739,7 +757,8 @@ public class AclPermissionsTest extends AbstractServiceTest {
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, testUserAcl, null, AclPropagation.OBJECTONLY, null);
         switchCallContext("TestUser");
-        fVerSvc.checkOut(fRepositoryId, new Holder<String>(docId), null, new Holder<Boolean>(false));
+        Holder<String> idHolder = new Holder<String>(docId);
+        fVerSvc.checkOut(fRepositoryId, idHolder, null, new Holder<Boolean>(false));
 
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, null, testUserAcl, AclPropagation.OBJECTONLY, null);
@@ -747,7 +766,7 @@ public class AclPermissionsTest extends AbstractServiceTest {
         switchCallContext("TestUser");
         exceptionThrown = false;
         try {
-            fVerSvc.checkIn(fRepositoryId, new Holder<String>(docId), true, null, null, null, null, null, null, null);
+            fVerSvc.checkIn(fRepositoryId, idHolder, true, null, null, null, null, null, null, null);
         } catch (CmisPermissionDeniedException e) {
             exceptionThrown = true;
         }
@@ -757,14 +776,14 @@ public class AclPermissionsTest extends AbstractServiceTest {
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, testUserAcl, null, AclPropagation.OBJECTONLY, null);
         switchCallContext("TestUser");
-        fVerSvc.checkIn(fRepositoryId, new Holder<String>(docId), true, null, null, null, null, null, null, null);
+        fVerSvc.checkIn(fRepositoryId, idHolder, true, null, null, null, null, null, null, null);
 
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, null, testUserAcl, AclPropagation.OBJECTONLY, null);
 
         // writer looses write permission
         switchCallContext("Writer");
-        fVerSvc.checkOut(fRepositoryId, new Holder<String>(docId), null, new Holder<Boolean>(false));
+        fVerSvc.checkOut(fRepositoryId, idHolder, null, new Holder<Boolean>(false));
 
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, null, readWriteAcl, AclPropagation.OBJECTONLY, null);
@@ -772,7 +791,7 @@ public class AclPermissionsTest extends AbstractServiceTest {
         switchCallContext("Writer");
         exceptionThrown = false;
         try {
-            fVerSvc.checkIn(fRepositoryId, new Holder<String>(docId), true, null, null, null, null, null, null, null);
+            fVerSvc.checkIn(fRepositoryId, idHolder, true, null, null, null, null, null, null, null);
         } catch (CmisPermissionDeniedException e) {
             exceptionThrown = true;
         }
@@ -782,7 +801,7 @@ public class AclPermissionsTest extends AbstractServiceTest {
         switchCallContext("TestAdmin");
         fAclSvc.applyAcl(fRepositoryId, docId, readWriteAcl, null, AclPropagation.OBJECTONLY, null);
         switchCallContext("Writer");
-        fVerSvc.checkIn(fRepositoryId, new Holder<String>(docId), true, null, null, null, null, null, null, null);
+        fVerSvc.checkIn(fRepositoryId, idHolder, true, null, null, null, null, null, null, null);
 
         // TestUser has no permission at all
         switchCallContext("TestUser");

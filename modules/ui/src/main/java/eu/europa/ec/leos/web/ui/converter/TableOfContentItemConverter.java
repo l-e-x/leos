@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,9 +13,10 @@
  */
 package eu.europa.ec.leos.web.ui.converter;
 
-import com.vaadin.data.Item;
-import com.vaadin.data.util.HierarchicalContainer;
+import com.vaadin.v7.data.Item;
+import com.vaadin.v7.data.util.HierarchicalContainer;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -75,8 +76,8 @@ public class TableOfContentItemConverter {
         return list;
     }
 
-    private static TableOfContentItemVO buildTableOfContentItemVO(Item item) {
-        TableOfContentItemVO.Type type = (TableOfContentItemVO.Type) item.getItemProperty(TYPE_PROPERTY).getValue();
+    public static TableOfContentItemVO buildTableOfContentItemVO(Item item) {
+        TocItemType type = (TocItemType) item.getItemProperty(TYPE_PROPERTY).getValue();
         String id = (String) item.getItemProperty(XML_ID_PROPERTY).getValue();
         String number = (String) item.getItemProperty(NUMBER_PROPERTY).getValue();
         String heading = (String) item.getItemProperty(HEADING_PROPERTY).getValue();
@@ -94,7 +95,7 @@ public class TableOfContentItemConverter {
         HierarchicalContainer container = new HierarchicalContainer();
 
         // create container properties
-        container.addContainerProperty(TYPE_PROPERTY, TableOfContentItemVO.Type.class, null);
+        container.addContainerProperty(TYPE_PROPERTY, TocItemType.class, null);
         container.addContainerProperty(XML_ID_PROPERTY, String.class, null);
         container.addContainerProperty(NUMBER_PROPERTY, String.class, null);
         container.addContainerProperty(HEADING_PROPERTY, String.class, null);
@@ -120,8 +121,9 @@ public class TableOfContentItemConverter {
                 if (parentId != null) {
                     container.setParent(itemId, parentId);
                 }
-
-                container.setChildrenAllowed(itemId, tocItem.areChildrenAllowed());
+                
+                Boolean areChildrenAllowed = areChildrenAllowed(tocItem);
+                container.setChildrenAllowed(itemId, areChildrenAllowed);
 
                 // recursively populate container with child items
                 populate(container, itemId, tocItem.getChildItemsView(), captionMaxSize, messageHelper);
@@ -129,11 +131,15 @@ public class TableOfContentItemConverter {
         }
     }
 
-    public static String getItemId(HierarchicalContainer container, TableOfContentItemVO.Type tocItemType) {
+    private static Boolean areChildrenAllowed(TableOfContentItemVO tocItem) {
+        return (tocItem.getChildItems().size() > 0 && tocItem.areChildrenAllowed());
+    }
+
+    public static String getItemId(HierarchicalContainer container, TocItemType tocItemType) {
         int itemCount = 0;
         String itemId;
         do {
-            itemId = itemCount++ + "_" + tocItemType.name();
+            itemId = itemCount++ + "_" + tocItemType.getName();
         } while (container.containsId(itemId));
 
         return itemId;
@@ -159,11 +165,11 @@ public class TableOfContentItemConverter {
         item.getItemProperty(CAPTION_PROPERTY).setValue(itemCaption);
     }
 
-    public static String buildItemDescription(String itemNumber, String itemHeading, TableOfContentItemVO.Type itemType, MessageHelper messageHelper) {
+    public static String buildItemDescription(String itemNumber, String itemHeading, TocItemType itemType, MessageHelper messageHelper) {
         String itemDescription;
 
         if (!StringUtils.isEmpty(itemNumber) && !StringUtils.isEmpty(itemHeading)) {
-            itemDescription = itemNumber + " - " + itemHeading;
+            itemDescription = itemNumber + itemType.getNumHeadingSeparator() + itemHeading;
         } else if (!StringUtils.isEmpty(itemNumber)) {
             itemDescription = itemNumber;
         } else if (!StringUtils.isEmpty(itemHeading)) {
@@ -174,7 +180,7 @@ public class TableOfContentItemConverter {
         return itemDescription;
     }
 
-    public static String getDisplayableItemType(TableOfContentItemVO.Type itemType, MessageHelper messageHelper) {
-        return messageHelper.getMessage("toc.item.type." + itemType.name().toLowerCase());
+    public static String getDisplayableItemType(TocItemType itemType, MessageHelper messageHelper) {
+        return messageHelper.getMessage("toc.item.type." + itemType.getName().toLowerCase());
     }
 }

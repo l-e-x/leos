@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -15,57 +15,71 @@ package eu.europa.ec.leos.web.ui.component;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.vaadin.data.Property;
-import com.vaadin.shared.ui.label.ContentMode;
 import com.vaadin.ui.*;
-import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.support.comparators.VersionComparator;
+import com.vaadin.shared.ui.ContentMode;
+import eu.europa.ec.leos.domain.document.LeosDocument;
+import eu.europa.ec.leos.ui.component.RangeSliderComponent;
 import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
 import eu.europa.ec.leos.web.event.component.VersionListResponseEvent;
 import eu.europa.ec.leos.web.event.view.document.DocumentUpdatedEvent;
-import eu.europa.ec.leos.web.event.view.document.MarkedContentRequestEvent;
+import eu.europa.ec.leos.web.event.component.MarkedContentRequestEvent;
+import eu.europa.ec.leos.web.support.VersionComparator;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.user.UserHelper;
+import eu.europa.ec.leos.web.ui.converter.UserLoginDisplayConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class VersionSliderPopup extends PopupView {
+public class VersionSliderPopup<T extends LeosDocument.XmlDocument> extends PopupView {
     private static final long serialVersionUID = -5435432434L;
     private static final Logger LOG = LoggerFactory.getLogger(VersionSliderPopup.class);
     private final static SimpleDateFormat dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     private MessageHelper messageHelper;
     private EventBus eventBus;
+    private UserHelper userHelper;
 
     // components that contain display data
     private String minimizedLabel;
     private VerticalLayout popupMaximizedLayout = new VerticalLayout();
-    private VerticalLayout oldSelectedDetails = new VerticalLayout();
-    private VerticalLayout newSelectedDetails = new VerticalLayout();
-    private CheckBox alwaysLatest;
-    private RangeSliderComponent rangeSliderComponent;
+    private HorizontalLayout oldSelectedDetails = new HorizontalLayout();
+    private static final boolean HIDE_ALL_MINOR_BEFORE_LAST_MAJOR = true;
+    private static final boolean PEG_MAX_TO_LATEST = true;
+    private VerticalLayout sliderLayout;
 
     // data
-    private List<LeosDocumentProperties> documentVersions;
-    private Selection min = new Selection();
-    private Selection max = new Selection();
+    private List<T> filteredVersions;
+    private Selection minSelection = new Selection();
+    private Selection maxSelection = new Selection();
+
+    private final VersionHistory versionHistory;
+    private final VersionsObserver versionsObserver;
 
     // init is a stateless function which should not be tied to item/card data
-    protected VersionSliderPopup(MessageHelper messageHelper, final EventBus eventBus) {
+    protected VersionSliderPopup(MessageHelper messageHelper, final EventBus eventBus, final UserHelper userHelper) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
+        this.userHelper = userHelper;
+
+        versionHistory = new VersionHistory();
+        versionsObserver = new VersionsObserver();
+        versionHistory.addObserver(versionsObserver);
 
         init();
+
+        // FIXME one of parent class constructors should be called for proper component hierarchy initialization
     }
 
     @Override public void attach() {
         super.attach();
         eventBus.register(this);
-        max.setVersion(null);
-        min.setVersion(null);
-        eventBus.post(new VersionListRequestEvent());
+        maxSelection.setVersion(null);
+        minSelection.setVersion(null);
+        eventBus.post(new VersionListRequestEvent<T>());
     }
 
     @Override public void detach() {
@@ -81,135 +95,163 @@ public class VersionSliderPopup extends PopupView {
         initMaximizedComponent();
 
         VersionSliderPopupContent content = new VersionSliderPopupContent();
-        max.addObserver(content);//popup component needs to react to changes in selections
-        min.addObserver(content);
+        maxSelection.addObserver(content);//popup component needs to react to changes in selections
+        minSelection.addObserver(content);
 
         setContent(content);
     }
 
     @Subscribe
-    public void setDocumentVersions(VersionListResponseEvent event) {
-        // when data is received , update Slider
-        documentVersions = event.getDocumentVersions();
-        setEnabled(documentVersions.size() > 1 ? true : false);
-        updateSliderSteps();
-        setDefaultVersions();
-        setMaxToLatest();
-    }
-
-    @Subscribe
-    public void requestVersionList(DocumentUpdatedEvent event){
-        eventBus.post(new VersionListRequestEvent());
-    }
-
-    private void updateSliderSteps() {
-        rangeSliderComponent.setSteps(getVersionLabels(documentVersions));
-    }
-
-    private void setDefaultVersions() {
-        if (min.getVersion() == null) {
-            min.setVersion(documentVersions.size() < 2 ? documentVersions.get(0) : documentVersions.get(1));
-        }
-
-        if (max.getVersion() == null ) {
-            max.setVersion(documentVersions.get(0));
-        }
-    }
-
-    private void setMaxToLatest(){
-        if(alwaysLatest.getValue()== true) {
-            max.setVersion(documentVersions.get(0));
-        }
+    public void requestVersionList(DocumentUpdatedEvent event) {
+        eventBus.post(new VersionListRequestEvent<T>());
     }
 
     private void initMaximizedComponent() {
         // initialize Maximized layout
         popupMaximizedLayout.setStyleName("leos-version-slider-popup-max");
         popupMaximizedLayout.removeAllComponents();
-        popupMaximizedLayout.setSpacing(true);
-        popupMaximizedLayout.setMargin(true);
-        popupMaximizedLayout.setWidth(500.0f, Unit.PIXELS);
+        popupMaximizedLayout.setWidth(500, Unit.PIXELS);
 
         HorizontalLayout hLayout = new HorizontalLayout();
         hLayout.setWidth(100, Unit.PERCENTAGE);
-
-        Label popupCaption = new Label(messageHelper.getMessage("document.versions.table.caption"));
-        hLayout.addComponent(popupCaption);
-
-        alwaysLatest = createCheckBox();
-        hLayout.addComponent(alwaysLatest);
-        hLayout.setComponentAlignment(alwaysLatest, Alignment.TOP_RIGHT);
-
         popupMaximizedLayout.addComponent(hLayout);
 
-        rangeSliderComponent = createSliderComponent();
-        popupMaximizedLayout.addComponent(rangeSliderComponent);
-        popupMaximizedLayout.setComponentAlignment(rangeSliderComponent, Alignment.MIDDLE_CENTER);
-        popupMaximizedLayout.setExpandRatio(rangeSliderComponent, .5f);
+        final Label popupCaption = new Label(messageHelper.getMessage("popup.header.caption"));
+        hLayout.addComponent(popupCaption);
 
-        HorizontalLayout horizontalLayout = new HorizontalLayout();
-        horizontalLayout.setWidth(100, Unit.PERCENTAGE);
-        horizontalLayout.addComponent(oldSelectedDetails);
-        horizontalLayout.addComponent(newSelectedDetails);
-        popupMaximizedLayout.addComponent(horizontalLayout);
-    }
+        final Label currentMarker = new Label(messageHelper.getMessage("popup.header.current.caption"), ContentMode.HTML);
+        currentMarker.addStyleName("popup-current-caption");
+        hLayout.addComponent(currentMarker);
 
-    private CheckBox createCheckBox() {
-        CheckBox cBox = new CheckBox(messageHelper.getMessage("popup.versions.checkbox.latest"), true);
-        cBox.addValueChangeListener(new Property.ValueChangeListener() {
-            @Override
-            public void valueChange(Property.ValueChangeEvent event) {
-                    setMaxToLatest();
+        sliderLayout = new VerticalLayout();
+        sliderLayout.setSizeFull();
+        sliderLayout.setMargin(false);
+        popupMaximizedLayout.addComponent(sliderLayout);
+        popupMaximizedLayout.setComponentAlignment(sliderLayout, Alignment.MIDDLE_CENTER);
+        popupMaximizedLayout.setExpandRatio(sliderLayout, .5f);
+
+        addPopupVisibilityListener(event -> {
+            if(event.isPopupVisible()) {
+                LOG.trace("Popup is visible, adding range slider component...");
+                RangeSliderComponent slider = createSliderComponent();
+                sliderLayout.addComponent(slider);
+                sliderLayout.setComponentAlignment(slider, Alignment.MIDDLE_CENTER);
+            } else {
+                LOG.trace("Popup is hidden, removing range slider component...");
+                sliderLayout.removeAllComponents();
             }
         });
-        return cBox;
+
+        popupMaximizedLayout.addComponent(oldSelectedDetails);
+    }
+
+    @Subscribe
+    public void setDocumentVersions(VersionListResponseEvent<T> event) {
+        // when data is received , update Slider
+        List<T> allDocumentVersions = event.getDocumentVersions();
+        filteredVersions = applyFilter(allDocumentVersions);
+        setEnabled(filteredVersions.size() > 1 ? true : false);
+        setSelections(filteredVersions);
+        versionHistory.setHistory(filteredVersions);
+    }
+
+    private List<T> applyFilter(List<T> allDocumentVersions) {
+        List<T> filteredVersions = new ArrayList<>();
+
+        if (HIDE_ALL_MINOR_BEFORE_LAST_MAJOR) {
+            boolean versionAfterLastMajorVersion = true;
+            /*INFO: All versions of the version series, sorted by {@code cmis:creationDate}
+              descending and preceded by the PWC, if one exists, not {@code null}*/
+            for(T version : allDocumentVersions) {
+                if (version.isMajorVersion()) {
+                    versionAfterLastMajorVersion = false;
+                    filteredVersions.add(version);
+                }
+
+                if (versionAfterLastMajorVersion) {
+                    filteredVersions.add(version);
+                }
+            }
+        } else {
+            filteredVersions.addAll(allDocumentVersions);
+        }
+
+        return filteredVersions;
+    }
+
+    private void setSelections(List<T> versions) {
+        // if no version was already selected, only then modify
+        if (minSelection.getVersion() == null ||
+                !getVersionLabels(versions).contains(minSelection.getVersion().getVersionLabel())) {
+                minSelection.setVersion(versions.get(0));//set to latest version
+        }
+
+        if (maxSelection.getVersion() == null) {
+            maxSelection.setVersion(versions.get(0));
+        }
+        if (PEG_MAX_TO_LATEST) { // override if max is pegged to latest
+            maxSelection.setVersion(versions.get(0));
+        }
     }
 
     private RangeSliderComponent createSliderComponent() {
-        rangeSliderComponent = new RangeSliderComponent();
+        final RangeSliderComponent rangeSliderComponent = new RangeSliderComponent();
         rangeSliderComponent.setWidth(90, Unit.PERCENTAGE);
         rangeSliderComponent.setStyleName("leos-version-slider");
         rangeSliderComponent.addHandlesListener(new RangeSliderComponent.HandlesListener() {
+            private static final long serialVersionUID = 7505199713966444736L;
+
             @Override
             public void valuesChanged(RangeSliderComponent.HandlesEvent event) {
                 LOG.debug("Slider handles values changed!");
                 String[] updatedHandles = event.getComponent().getHandles();
 
-                if(!updatedHandles[1].equals(max.getVersion().getVersionLabel())) {
-                    alwaysLatest.setValue(false);
-                }
-
-                min.setVersion(getVersionProperties(updatedHandles[0]));
-                max.setVersion(getVersionProperties(updatedHandles[1]));
+                minSelection.setVersion(getVersionProperties(updatedHandles[0]));
             }
         });
+
+        rangeSliderComponent.addAttachListener(event -> {
+            LOG.trace("Attaching range slider component...");
+            versionsObserver.attach((RangeSliderComponent) event.getSource());
+        });
+
+        rangeSliderComponent.addDetachListener(event -> {
+            LOG.trace("Detaching range slider component...");
+            versionsObserver.detach();
+        });
+
+        rangeSliderComponent.setColouredArea(RangeSliderComponent.ColouredArea.UPPER);
+        rangeSliderComponent.setSteps(versionHistory.getVersionSteps());
+        rangeSliderComponent.setHandles(versionHistory.getVersionHandles());
+
         return rangeSliderComponent;
     }
 
-    private VerticalLayout populateItemDetails(VerticalLayout verticalLayout, LeosDocumentProperties componentItem) {
+    private HorizontalLayout populateItemDetails(HorizontalLayout horizontalLayout, T documentVersion) {
         // add the first line
-        verticalLayout.removeAllComponents();
-        verticalLayout.setWidth("100%");
-        if (componentItem != null) {
-            verticalLayout.addComponent(new Label(messageHelper.getMessage("popup.label.revision.details",
-                    componentItem.getVersionLabel(),
-                    componentItem.getUpdatedBy(),
-                    dateFormatter.format(componentItem.getUpdatedOn())), ContentMode.HTML));
+        horizontalLayout.removeAllComponents();
+        horizontalLayout.setWidth("100%");
+        if (documentVersion != null) {
+            Label details = new Label(messageHelper.getMessage("popup.label.revision.details",
+                    documentVersion.getVersionLabel(),
+                    (documentVersion.getVersionComment() != null) ? documentVersion.getVersionComment() : messageHelper.getMessage("popup.label.revision.nocomment"),
+                    dateFormatter.format(Date.from(documentVersion.getLastModificationInstant())),
+                    new UserLoginDisplayConverter(userHelper).convertToPresentation(documentVersion.getLastModifiedBy(), null, null)),
+                    ContentMode.HTML);
+            horizontalLayout.addComponent(details);
+            horizontalLayout.setComponentAlignment(details, Alignment.MIDDLE_CENTER);
         }
-        return verticalLayout;
+        return horizontalLayout;
     }
 
-    private Set<String> getVersionLabels(List<LeosDocumentProperties> documentVersions) {
+    private Set<String> getVersionLabels(List<T> displayedVersions) {
         Set<String> versions = new TreeSet<>(new VersionComparator());
-
-        for (LeosDocumentProperties version : documentVersions) {
-            versions.add(version.getVersionLabel());
-        }
+        displayedVersions.forEach(version -> versions.add(version.getVersionLabel()));
         return versions;
     }
 
-    private LeosDocumentProperties getVersionProperties(String documentLabel) {
-        for (LeosDocumentProperties version : documentVersions) {
+    private T getVersionProperties(String documentLabel) {
+        for (T version : filteredVersions) {
             if (documentLabel != null && documentLabel.equals(version.getVersionLabel())) {
                 return version;
             }
@@ -218,19 +260,21 @@ public class VersionSliderPopup extends PopupView {
     }
 
     private void updateMinimizedRepresentation() {
-        minimizedLabel = (documentVersions.size()>1)
-                    ? messageHelper.getMessage("popup.compare.caption", min.getVersion().getVersionLabel(), max.getVersion().getVersionLabel())
+        minimizedLabel = (filteredVersions.size() > 1)
+                    ? messageHelper.getMessage("popup.compare.caption", minSelection.getVersion().getVersionLabel(), maxSelection.getVersion().getVersionLabel())
                     : messageHelper.getMessage("popup.compare.caption.disabled");
         markAsDirty();// Marking Dirty to update popup label
     }
 
     private void selectionChanged(){
         updateMinimizedRepresentation();
-        rangeSliderComponent.setHandles(new String[]{min.getVersion().getVersionLabel(), max.getVersion().getVersionLabel()});
-        eventBus.post(new MarkedContentRequestEvent(min.getVersion(), max.getVersion(), 0));
+        versionHistory.setSelection(minSelection.getVersion().getVersionLabel(), maxSelection.getVersion().getVersionLabel());
+        eventBus.post(new MarkedContentRequestEvent(minSelection.getVersion(), maxSelection.getVersion(), 0));
     }
 
     private class VersionSliderPopupContent implements PopupView.Content, Observer {
+
+        private static final long serialVersionUID = 6659583160446283505L;
 
         public String getMinimizedValueAsHTML() {
             return minimizedLabel;
@@ -242,30 +286,94 @@ public class VersionSliderPopup extends PopupView {
 
         @Override
         public void update(Observable o, Object arg) {
-            if (arg != null && o.equals(max)) {
-                populateItemDetails(newSelectedDetails, max.getVersion());
-            } else if (arg != null && o.equals(min)) {
-                populateItemDetails(oldSelectedDetails, min.getVersion());
+            if (arg != null && o.equals(minSelection)) {
+                populateItemDetails(oldSelectedDetails, minSelection.getVersion());
             }
 
-            if (min.getVersion() != null && max.getVersion() != null) {
+            if (minSelection.getVersion() != null && maxSelection.getVersion() != null) {
                 selectionChanged();
             }
         }
     }
 
     private class Selection extends Observable {
-        private LeosDocumentProperties version;
+        private T version;
 
-        public LeosDocumentProperties getVersion() {
+        public T getVersion() {
             return version;
         }
 
-        public void setVersion(LeosDocumentProperties version) {
+        public void setVersion(T version) {
             if (this.version == null || !this.version.equals(version)) {
                 this.version = version;
                 setChanged();
                 notifyObservers(version);
+            }
+        }
+    }
+
+    private class VersionHistory extends Observable {
+        public static final String HISTORY = "HISTORY";
+        public static final String SELECTION = "SELECTION";
+
+        private Set<String> versionSteps = Collections.emptySet();
+        private String[] versionHandles = {};
+
+        public void setHistory(List<T> versions) {
+            versionSteps = getVersionLabels(versions);
+            setChanged();
+            notifyObservers(HISTORY);
+        }
+
+        public void setSelection(String lowerVersion, String higherVersion) {
+            versionHandles = new String[]{lowerVersion, higherVersion};
+            setChanged();
+            notifyObservers(SELECTION);
+        }
+
+        public Set<String> getVersionSteps() {
+            return Collections.unmodifiableSet(versionSteps);
+        }
+
+        public String[] getVersionHandles() {
+            return Arrays.copyOf(versionHandles, 1);//only lower version is required for this class.
+        }
+    }
+
+    private class VersionsObserver implements Observer {
+
+        private WeakReference<RangeSliderComponent> sliderRef;
+
+        public void attach(RangeSliderComponent slider) {
+            sliderRef = new WeakReference<>(slider);
+        }
+
+        public void detach() {
+            sliderRef.clear();
+        }
+
+        @Override
+        public void update(Observable obs, Object arg) {
+            if (sliderRef != null) {
+                final RangeSliderComponent rangeSlider = sliderRef.get();
+                if ((rangeSlider != null) && (VersionHistory.class.isInstance(obs)) && (String.class.isInstance(arg))) {
+                    VersionHistory versionHistory = (VersionHistory) obs;
+                    switch ((String) arg) {
+                        case VersionHistory.HISTORY: {
+                            LOG.trace("Versions observer: updating range slider steps...");
+                            rangeSlider.setSteps(versionHistory.getVersionSteps());
+                            break;
+                        }
+                        case VersionHistory.SELECTION: {
+                            LOG.trace("Versions observer: updating range slider handles...");
+                            rangeSlider.setHandles(versionHistory.getVersionHandles());
+                            break;
+                        }
+                        default: {
+                            LOG.trace("Versions observer: ignoring history update...");
+                        }
+                    }
+                }
             }
         }
     }

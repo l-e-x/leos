@@ -1,0 +1,72 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+%articleNumber {
+    display: block;
+    text-align: center;
+    font-style: italic;
+    padding-top: 18pt;
+    padding-bottom: 6pt;    
+} 
+
+%articleHeading{
+    display: block;
+    text-align: center;
+    font-weight: bold;
+    padding-top: 6pt;
+    padding-bottom: 6pt;    
+}  
+
+//--------------------------------XML article---------------------------------/
+%xmlArticle {
+    article {
+        display: block;
+        & > num {
+            @extend %articleNumber;
+        }
+        & > heading {
+            @extend %articleHeading;
+        }
+    }
+}
+
+//--------------------------------Editor article------------------------------/
+%editorArticle {
+    article {
+        .akn-article-num {
+            @extend %articleNumber;
+            @extend %inheritTypeSetting;
+            margin: 0 !important; //override default h1 margin
+        }
+
+        .akn-article-heading {
+            @extend %articleHeading;
+            @extend %inheritTypeSetting;
+            margin: 0 !important; //override default h2 margin
+        }
+    }
+}
+
+%inheritTypeSetting {
+    font-size: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+}
+
+//--------------------------------Showblock article---------------------------/
+%showblockArticle {
+    article {
+        @include blockOutline("ARTICLE");
+    }
+}

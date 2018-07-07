@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,21 +13,20 @@
  */
 package eu.europa.ec.leos.web.model;
 
-import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.model.user.Permission;
-import eu.europa.ec.leos.vo.UserVO;
-import eu.europa.ec.leos.vo.lock.LockData;
+import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.ui.model.ActType;
+import eu.europa.ec.leos.ui.model.ProcedureType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 public class DocumentVO {
 
-    public static enum LockState {
-        UNLOCKED, LOCKED
-    };
-    private String leosId;
+    private String id;
     private String title;
     private String createdBy;
     private Date createdOn;
@@ -35,43 +34,39 @@ public class DocumentVO {
     private Date updatedOn;
     private String language;
     private String template;
-    private List<UserVO> contributors;
-    private LeosDocumentProperties.OwnerSystem ownerSystem;
-    private LeosDocumentProperties.Stage stage;
+    private User author;
+    private int docNumber;//optional
+    private List<DocumentVO> childDocuments = new ArrayList<>();
 
-    private LockState lockState;
-    private String msgForUser;
-    private List<LockData> arrLockInfo;
-    private List<Permission> permissions;
-    private UserVO author;
+    private LeosCategory documentType;
+    private ProcedureType procedureType;
+    private ActType actType;
 
-    public DocumentVO() {
-
-    }
-
-    public DocumentVO(LeosDocumentProperties leosDocumentProperties) {
-        if(leosDocumentProperties!=null) {
-            this.leosId = leosDocumentProperties.getLeosId();
-            this.title = leosDocumentProperties.getTitle();
-            this.createdBy = leosDocumentProperties.getCreatedBy();
-            this.createdOn = leosDocumentProperties.getCreatedOn();
-            this.updatedBy = leosDocumentProperties.getUpdatedBy();
-            this.updatedOn = leosDocumentProperties.getUpdatedOn();
-            this.language = leosDocumentProperties.getLanguage();
-            this.template = leosDocumentProperties.getTemplate();
-            this.stage = leosDocumentProperties.getStage();
-            this.ownerSystem = leosDocumentProperties.getOwnerSystem();
-            this.author = leosDocumentProperties.getAuthor();
-            this.contributors = leosDocumentProperties.getContributors();
+    public DocumentVO(XmlDocument xmlDocument) {
+        if (xmlDocument != null) {
+            this.id = xmlDocument.getId();
+            this.createdBy = xmlDocument.getCreatedBy();
+            this.createdOn = Date.from(xmlDocument.getCreationInstant());
+            this.updatedBy = xmlDocument.getLastModifiedBy();
+            this.updatedOn = Date.from(xmlDocument.getLastModificationInstant());
+            this.template = xmlDocument.getTemplate();
+            this.language = xmlDocument.getLanguage();
+            this.title = xmlDocument.getTitle();
+            this.documentType = xmlDocument.getCategory();
+            // FIXME set remaining properties
         }
     }
 
-    public String getLeosId() {
-        return leosId;
+    public DocumentVO(String documentId, String language, LeosCategory docType, String updatedBy, Date updatedOn) {
+        this.id = documentId;
+        this.language = language;
+        this.documentType = docType;
+        this.updatedBy = updatedBy;
+        this.updatedOn = updatedOn;
     }
 
-    public void setLeosId(String leosId) {
-        this.leosId = leosId;
+    public String getId() {
+        return id;
     }
 
     public String getTitle() {
@@ -130,85 +125,62 @@ public class DocumentVO {
         this.template = template;
     }
 
-    public LeosDocumentProperties.Stage getStage() {
-        return stage;
-    }
-
-    public void setStage(LeosDocumentProperties.Stage stage) {
-        this.stage = stage;
-    }
-
-    public List<LockData> getArrLockInfo() {
-        return arrLockInfo;
-    }
-
-    public void setArrLockInfo(List<LockData> arrLockInfo) {
-        this.arrLockInfo = arrLockInfo;
-    }
-
-    public LockState getLockState() {
-        return lockState;
-    }
-
-    public void setLockState(LockState lockState) {
-        this.lockState = lockState;
-    }
-
-    public List<LockData> getLockInfo() {
-        return arrLockInfo;
-    }
-
-    public void setLockInfo(List<LockData> arrLockInfo) {
-        this.arrLockInfo = arrLockInfo;
-    }
-
-    public String getMsgForUser() {
-        return msgForUser;
-    }
-
-    public void setMsgForUser(String msgForUser) {
-        this.msgForUser = msgForUser;
-    }
-
-    public LeosDocumentProperties.OwnerSystem getOwnerSystem() {
-        return ownerSystem;
-    }
-
-    public void setOwnerSystem(LeosDocumentProperties.OwnerSystem ownerSystem) {
-        this.ownerSystem = ownerSystem;
-    }
-
-    public List<Permission> getPermissions() {
-        return permissions;
-    }
-
-    public void setPermissions(List<Permission> permissions) {
-        this.permissions = permissions;
-    }
-
-    public void setContributors(List<UserVO> contributors) {
-        this.contributors = contributors;
-    }
-
-    public List<UserVO> getContributors() {
-        return contributors;
-    }
-
-    public UserVO getAuthor() {
+    public User getAuthor() {
         return author;
     }
 
-    public void setAuthor(UserVO author) {
+    public void setAuthor(User author) {
         this.author = author;
     }
 
-    @Override public boolean equals(Object o) {
+    public LeosCategory getDocumentType() {
+        return documentType;
+    }
+
+    public void setDocumentType(LeosCategory documentType) {
+        this.documentType = documentType;
+    }
+
+    public ProcedureType getProcedureType() {
+        return procedureType;
+    }
+
+    public void setProcedureType(ProcedureType procedureType) {
+        this.procedureType = procedureType;
+    }
+
+    public ActType getActType() {
+        return actType;
+    }
+
+    public void setActType(ActType actType) {
+        this.actType = actType;
+    }
+
+    public int getDocNumber() {
+        return docNumber;
+    }
+
+    public void setDocNumber(int docNumber) {
+        this.docNumber = docNumber;
+    }
+
+    public List<DocumentVO> getChildDocuments() {
+        return Collections.unmodifiableList(childDocuments);
+    }
+
+    public void addChildDocument(DocumentVO childDocument) {
+        childDocuments.add(childDocument);
+    }
+
+    @Override
+    public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
         DocumentVO that = (DocumentVO) o;
 
-        if (!getLeosId().equals(that.getLeosId())) return false;
+        if (!getId().equals(that.getId())) return false;
         if (getTitle() != null ? !getTitle().equals(that.getTitle()) : that.getTitle() != null)
             return false;
         if (getCreatedBy() != null ? !getCreatedBy().equals(that.getCreatedBy()) : that.getCreatedBy() != null)
@@ -221,23 +193,18 @@ public class DocumentVO {
             return false;
         if (getLanguage() != null ? !getLanguage().equals(that.getLanguage()) : that.getLanguage() != null)
             return false;
-        if (!getTemplate().equals(that.getTemplate())) return false;
-        if (getOwnerSystem() != that.getOwnerSystem()) return false;
-        return getStage() == that.getStage();
-
+        return getTemplate().equals(that.getTemplate());
     }
 
     @Override public int hashCode() {
-        int result = getLeosId().hashCode();
-        result = 31 * result +  (getTitle() != null ? getTitle() .hashCode() : 0);
+        int result = getId().hashCode();
+        result = 31 * result + (getTitle() != null ? getTitle() .hashCode() : 0);
         result = 31 * result + (getCreatedBy() != null ? getCreatedBy().hashCode() : 0);
         result = 31 * result + (getCreatedOn() != null ? getCreatedOn().hashCode() : 0);
         result = 31 * result + (getUpdatedBy() != null ? getUpdatedBy().hashCode() : 0);
         result = 31 * result + (getUpdatedOn() != null ? getUpdatedOn().hashCode() : 0);
         result = 31 * result + (getLanguage() != null ? getLanguage().hashCode() : 0);
         result = 31 * result + (getTemplate() != null ? getTemplate().hashCode() : 0);
-        result = 31 * result + (getOwnerSystem() != null ? getOwnerSystem().hashCode() : 0);
-        result = 31 * result + (getStage() != null ? getStage().hashCode() : 0);
         return result;
     }
 }

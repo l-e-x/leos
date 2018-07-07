@@ -1,0 +1,69 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+//------------------------------- XML Styles --------------------------------//
+%xmlCoverPage {
+    coverPage {
+        height: 100%;
+        width: 100%;
+        top: 2.5cm;
+        bottom: 2.5cm;
+        display: block;
+
+        //Style for logo
+        img {
+            width: 326px;
+            height: 86px;
+        }
+
+        container[name=language] {
+            font-weight: bold;
+            position: absolute;
+            font-family: "Arial", "Helvetica Neue", Helvetica, sans-serif;
+            font-size: 24pt;
+            top: 95%;
+            &:before {
+                content: attr(data-lang);
+                float: left;
+                margin-left: -1.2cm;
+            }
+            &:after {
+                content: attr(data-lang);
+                float: right;
+                margin-left: 15.8cm;
+            }
+        }
+
+        container[name=institutionOwnerLogo] {
+            padding-bottom: 4.65cm; //did it because in this case missing information from metadata (Brussels 2017 draft) 
+            display: inline-block;
+        }
+
+        container[name=docLabel] {
+            & > * {
+                display: block;
+                font-weight: bold;
+                text-align: center;
+                @extend %paddedText;
+            }
+        }
+
+        @extend %xmlLongTitle;
+    }
+}
+
+//--------------------------------Editor table--------------------------------/
+
+//--------------------------------Showblock table-----------------------------/
+

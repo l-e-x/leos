@@ -23,6 +23,9 @@
         <value>en-UK</value>
     </util:list>
 
+    <!-- Enable Vaadin-Spring -->
+    <bean class="com.vaadin.spring.VaadinConfiguration"/>
+
     <!-- Message Source -->
     <bean id="webMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
         <property name="cacheSeconds" value="-1"/>
@@ -38,28 +41,18 @@
     </bean>
 
     <!-- Event Bus -->
-    <bean id="leosEventBus" class="com.google.common.eventbus.EventBus" scope="session">
-        <aop:scoped-proxy/>
+    <bean id="leosEventBus" class="com.google.common.eventbus.EventBus" scope="vaadin-ui">
         <constructor-arg>
             <bean class="eu.europa.ec.leos.web.support.vaadin.LeosSubscriberExceptionHandler"/>
         </constructor-arg>
     </bean>
 
-    <!-- Security Context -->
-    <bean id="leosSecurityContext" class="eu.europa.ec.leos.model.security.SecurityContext" scope="session">
-        <aop:scoped-proxy/>
-    </bean>
-
-    <!-- Persistence Context -->
-    <import resource="classpath:eu/europa/ec/leos/persistenceContext.xml"/>
-    
-    <!-- Support Context -->
-    <import resource="classpath:eu/europa/ec/leos/supportContext.xml"/>
+    <!-- Integration Context -->
+    <import resource="classpath:eu/europa/ec/leos/integrationContext.xml"/>
 
     <!-- Services Context -->
     <import resource="classpath:eu/europa/ec/leos/servicesContext.xml"/>
 
-    <!-- FreeMarker Context -->
-    <import resource="classpath:eu/europa/ec/leos/freemarkerContext.xml"/>
-
+    <!-- Security Context -->
+    <import resource="classpath:eu/europa/ec/leos/securityContext.xml"/>
 </beans>

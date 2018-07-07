@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,21 +13,21 @@
  */
 package eu.europa.ec.leos.services.content;
 
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
 
 import java.util.List;
 import java.util.Map;
 
 public class RulesServiceImpl implements RulesService {
 
-    private Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> defaultRules;
+    private Map<TocItemType, List<TocItemType>> defaultRules;
 
-    public void setDefaultRules(Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> defaultRules) {
+    public void setDefaultRules(Map<TocItemType, List<TocItemType>> defaultRules) {
         this.defaultRules = defaultRules;
     }
 
     @Override
-    public Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> getDefaultTableOfContentRules() {
+    public Map<TocItemType, List<TocItemType>> getDefaultTableOfContentRules() {
         return defaultRules;
     }
 }

@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,10 +13,13 @@
  */
 package eu.europa.ec.leos.web.ui.component.layout;
 
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomComponent;
+import com.vaadin.v7.ui.Label;
+import com.vaadin.v7.ui.VerticalLayout;
 import eu.europa.ec.leos.web.support.LeosBuildInfo;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-
-import com.vaadin.ui.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +65,6 @@ public class Footer extends CustomComponent {
                 LeosBuildInfo.BUILD_VERSION,
                 LeosBuildInfo.BUILD_ENVIRONMENT,
                 LeosBuildInfo.SOURCE_REVISION,
-                LeosBuildInfo.SOURCE_STATUS,
                 LeosBuildInfo.BUILD_DATE);
 
         final Label infoLabel = new Label(infoMsg);

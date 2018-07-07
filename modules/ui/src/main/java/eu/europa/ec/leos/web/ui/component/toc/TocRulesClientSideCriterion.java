@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -21,36 +21,43 @@ import com.vaadin.server.PaintTarget;
 import com.vaadin.shared.ui.dd.VerticalDropLocation;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.DragAndDropWrapper;
-import com.vaadin.ui.Tree;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import com.vaadin.v7.ui.Tree;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class TocRulesClientSideCriterion extends ClientSideCriterion {
     private static final long serialVersionUID = -1818909780865191L;
 
     private static final Logger LOG = LoggerFactory.getLogger(TocRulesClientSideCriterion.class);
 
-    private final Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules;
+    private final Map<TocItemType, List<TocItemType>> tableOfContentRules;
+    private final Function<String, TocItemType> getTocItemType;
 
-    public TocRulesClientSideCriterion(Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules) {
+    public TocRulesClientSideCriterion(Map<TocItemType, List<TocItemType>> tableOfContentRules, Function<String, TocItemType> getTocItemType) {
         this.tableOfContentRules = tableOfContentRules;
+        this.getTocItemType = getTocItemType;
     }
 
     @Override
     public void paintContent(PaintTarget target) throws PaintException {
         super.paintContent(target);
 
-        for (Map.Entry<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> typeListEntry : tableOfContentRules.entrySet()) {
+        for (Map.Entry<TocItemType, List<TocItemType>> typeListEntry : tableOfContentRules.entrySet()) {
 
-            TableOfContentItemVO.Type parent = typeListEntry.getKey();
-            List<TableOfContentItemVO.Type> allowedChildTypes = typeListEntry.getValue();
+            TocItemType parent = (TocItemType) typeListEntry.getKey();
+            List<TocItemType> allowedChildTypes = typeListEntry.getValue();
+            List<String> allowedChildNames = allowedChildTypes.stream()
+                    .map(TocItemType::toString)
+                    .collect( Collectors.toList());
 
-            target.addAttribute(parent.name(), allowedChildTypes.toArray());
+            target.addAttribute(parent.getName(), allowedChildNames.toArray());
         }
     }
 
@@ -59,13 +66,13 @@ public class TocRulesClientSideCriterion extends ClientSideCriterion {
 
         Transferable transferable = dragEvent.getTransferable();
 
-        TableOfContentItemVO.Type draggedTocType = null;
+        TocItemType draggedTocType = null;
 
         if (transferable.getSourceComponent() instanceof DragAndDropWrapper) {
             //check if we drag a new TOC type
             Component component = (Component) transferable.getData("component");
             String tocTypeAsId = component.getId();
-            draggedTocType = TableOfContentItemVO.Type.valueOf(tocTypeAsId);
+            draggedTocType = getTocItemType.apply(tocTypeAsId);
         } else if (transferable.getSourceComponent() instanceof Tree) {
             //check if we drag an existing item from the tree
             String itemId = (String) transferable.getData("itemId");
@@ -77,13 +84,20 @@ public class TocRulesClientSideCriterion extends ClientSideCriterion {
         Tree.TreeTargetDetails targetDetails = (Tree.TreeTargetDetails) dragEvent.getTargetDetails();
 
         VerticalDropLocation verticalDropLocation = targetDetails.getDropLocation();
-        String itemIdInto = (String) targetDetails.getItemIdInto();
-        TableOfContentItemVO.Type dropTocType = getDropTocType(itemIdInto, verticalDropLocation);
-
-        List<TableOfContentItemVO.Type> allowedChildrenForDropType = Collections.emptyList();
+        String itemIdOver = (String) targetDetails.getItemIdOver(); //get the id of the target node
+        TocItemType dropTocType = getDropTocType(itemIdOver, verticalDropLocation);
+        //LEOS-2334
+        List<TocItemType> allowedChildrenForDropType = Collections.emptyList();
         if (dropTocType != null) {
             allowedChildrenForDropType = tableOfContentRules.get(dropTocType);
+            
+            if(allowedChildrenForDropType.isEmpty() || !allowedChildrenForDropType.contains(draggedTocType)) {
+                String itemIdInto = (String) targetDetails.getItemIdInto(); //look for the parent node if children not allowed for target node
+                dropTocType = getDropTocType(itemIdInto, verticalDropLocation);
+                allowedChildrenForDropType = tableOfContentRules.get(dropTocType);
+            }
         }
+        
         LOG.debug("draggedTocType = " + draggedTocType +
                 "; verticalDropLocation: " + verticalDropLocation +
                 "; dropTocType: " + dropTocType +
@@ -93,8 +107,8 @@ public class TocRulesClientSideCriterion extends ClientSideCriterion {
         return allowedChildrenForDropType.contains(draggedTocType);
     }
 
-    private TableOfContentItemVO.Type getDropTocType(String itemIdInto, VerticalDropLocation verticalDropLocation) {
-        TableOfContentItemVO.Type droppedType = null;
+    private TocItemType getDropTocType(String itemIdInto, VerticalDropLocation verticalDropLocation) {
+        TocItemType droppedType = null;
 
         switch (verticalDropLocation) {
             case MIDDLE:
@@ -110,10 +124,10 @@ public class TocRulesClientSideCriterion extends ClientSideCriterion {
         return droppedType;
     }
 
-    private TableOfContentItemVO.Type extractTocTypeFromTreeItemId(String itemId) {
-        TableOfContentItemVO.Type tocType = null;
+    private TocItemType extractTocTypeFromTreeItemId(String itemId) {
+        TocItemType tocType = null;
         if (itemId != null) {
-            tocType = TableOfContentItemVO.Type.valueOf(itemId.substring(itemId.indexOf('_') + 1));
+            tocType = getTocItemType.apply(itemId.substring(itemId.indexOf('_') + 1));
         }
         return tocType;
     }

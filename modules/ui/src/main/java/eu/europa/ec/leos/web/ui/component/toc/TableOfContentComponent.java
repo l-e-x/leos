@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -14,31 +14,34 @@
 package eu.europa.ec.leos.web.ui.component.toc;
 
 import com.google.common.eventbus.EventBus;
-import com.vaadin.annotations.JavaScript;
-import com.vaadin.data.Container;
-import com.vaadin.data.Item;
-import com.vaadin.data.Property;
-import com.vaadin.server.VaadinSession;
-import com.vaadin.shared.ui.label.ContentMode;
+import com.vaadin.icons.VaadinIcons;
+import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.ui.*;
-import eu.europa.ec.leos.vo.lock.LockActionInfo;
-import eu.europa.ec.leos.vo.lock.LockData;
-import eu.europa.ec.leos.vo.lock.LockLevel;
+import com.vaadin.v7.data.Container;
+import com.vaadin.v7.data.Item;
+import com.vaadin.v7.data.Property;
+import com.vaadin.v7.shared.ui.label.ContentMode;
+import com.vaadin.v7.ui.*;
+import com.vaadin.v7.ui.HorizontalLayout;
+import com.vaadin.v7.ui.Label;
+import com.vaadin.v7.ui.Tree;
+import com.vaadin.v7.ui.VerticalLayout;
 import eu.europa.ec.leos.web.event.component.EditTocRequestEvent;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
-import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.ui.component.ContentPane;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
-import eu.europa.ec.leos.web.ui.screen.ViewSettings;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vaadin.teemu.VaadinIcons;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 
-@JavaScript({"vaadin://../js/web/legacy/navigate.js" + LeosCacheToken.TOKEN})
-public class TableOfContentComponent extends CustomComponent {
+@SpringComponent
+@Scope("prototype")
+public class TableOfContentComponent extends CustomComponent implements ContentPane {
 
     private static final long serialVersionUID = -4752609567267410718L;
     private static final Logger LOG = LoggerFactory.getLogger(TableOfContentComponent.class);
@@ -50,22 +53,28 @@ public class TableOfContentComponent extends CustomComponent {
     private Tree tocTree;
     private Button tocExpandCollapseButton;
     private Button tocEditButton;
-    private ViewSettings viewSettings;
-    
+
+    private boolean editTocEditEnabled = false;
+
     public enum TreeAction {
         EXPAND,
         COLLAPSE
     }
 
-    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus, ViewSettings viewSettings) {
+    @Autowired
+    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus) {
+        this(messageHelper, eventBus, false);
+    }
+
+    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus, boolean bEditTocEditEnabled) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
-        this.viewSettings=viewSettings;
+        this.editTocEditEnabled = bEditTocEditEnabled;
         buildToc();
     }
 
     private void buildToc() {
-        LOG.debug("Building Legal Text table of contents...");
+        LOG.debug("Building table of contents...");
 
         // create Legal Text toc layout
         final VerticalLayout tocLayout = new VerticalLayout();
@@ -86,7 +95,7 @@ public class TableOfContentComponent extends CustomComponent {
     }
 
     private Component buildTocToolbar() {
-        LOG.debug("Building Legal Text table of contents toolbar...");
+        LOG.debug("Building table of contents toolbar...");
 
         // create toc toolbar layout
         final HorizontalLayout tocToolsLayout = new HorizontalLayout();
@@ -111,11 +120,12 @@ public class TableOfContentComponent extends CustomComponent {
         tocToolsLayout.setComponentAlignment(tocExpandCollapseButton, Alignment.MIDDLE_LEFT);
 
         // create toc edit button
-        if(viewSettings.isTocEditEnabled()){
+        if (editTocEditEnabled) {
             tocEditButton = tocEditButton();
             tocToolsLayout.addComponent(tocEditButton);
             tocToolsLayout.setComponentAlignment(tocEditButton, Alignment.MIDDLE_LEFT);
         }
+
         // spacer label will use all available space
         final Label spacerLabel = new Label("&nbsp;", ContentMode.HTML);
         tocToolsLayout.addComponent(spacerLabel);
@@ -263,7 +273,7 @@ public class TableOfContentComponent extends CustomComponent {
                 if (item != null) {
                     String xmlId = (String) item.getItemProperty(TableOfContentItemConverter.XML_ID_PROPERTY).getValue();
                     LOG.trace("ToC navigating to (xmlId={})...", xmlId);
-                    com.vaadin.ui.JavaScript.getCurrent().execute("nav_navigateToContent('" + xmlId + "');");
+                    com.vaadin.ui.JavaScript.getCurrent().execute("LEOS.scrollTo('" + xmlId + "');");
                 }
             }
         });
@@ -279,32 +289,21 @@ public class TableOfContentComponent extends CustomComponent {
     public void setTableOfContent(Container tocContainer) {
         tocTree.setContainerDataSource(tocContainer);
     }
-    
-    public void updateLocks(LockActionInfo lockActionInfo) {
-        if(!viewSettings.isTocEditEnabled()){
-                return;
-        }
-        
-        LockData lock= lockActionInfo.getLock();
-        String currentSessionId= VaadinSession.getCurrent().getSession().getId();
-        boolean tocEnabaled=true;
-        for (LockData lockData : lockActionInfo.getCurrentLocks()) {
-            if( !currentSessionId.equals(lockData.getSessionId())
-                    && (LockLevel.DOCUMENT_LOCK.equals(lockData.getLockLevel())
-                        || LockLevel.ELEMENT_LOCK.equals(lockData.getLockLevel()))){
-                //if some other session has acquired the element or doc lock.                
-                tocEnabaled=false;
-                break;
-            }
-        }
-        if(tocEnabaled){
-            tocEditButton.setEnabled(true);
-            tocEditButton.setDescription(messageHelper.getMessage("toc.edit.button.description"));
-        }
-        else {
-            tocEditButton.setEnabled(false);
-            tocEditButton.setDescription(messageHelper.getMessage("toc.edit.button.description.locked.tooltip", lock.getUserName()));
 
-        }
+    @Override
+    public float getDefaultPaneWidth(int numberOfFeatures) {
+        float featureWidth=0f;
+        switch(numberOfFeatures){
+            case 1:
+                featureWidth=100f;
+                break;
+            case 2:
+                featureWidth=20f;
+                break;
+            default:
+                featureWidth = 12f;
+                break;
+        }//end switch
+        return featureWidth;
     }
 }

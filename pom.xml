@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016 European Commission
+    Copyright 2017 European Commission
 
-    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -14,29 +14,41 @@
     See the Licence for the specific language governing permissions and limitations under the Licence.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>eu.europa.ec.leos.prototype</groupId>
+    <groupId>eu.europa.ec.leos.pilot</groupId>
     <artifactId>leos</artifactId>
-    <version>3.1.0-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>LEOS Prototype</name>
+    <name>LEOS Pilot</name>
 
     <description>Legislation Editing Open Software, developed by the European Commission - DIGIT.B2</description>
-    <url>http://ec.europa.eu/isa/actions/01-trusted-information-exchange/1-13action_en.htm</url>
+    <url>https://joinup.ec.europa.eu/software/leos</url>
+
+    <licenses>
+        <license>
+            <name>European Union Public Licence (EUPL)</name>
+            <url>https://joinup.ec.europa.eu/software/page/eupl</url>
+            <comments>European Free/Open Source Software (F/OSS) licence.</comments>
+        </license>
+    </licenses>
 
     <organization>
         <name>European Commission</name>
-        <url>http://ec.europa.eu</url>
+        <url>https://ec.europa.eu</url>
     </organization>
 
     <repositories>
         <repository>
             <id>vaadin-addons</id>
             <url>http://maven.vaadin.com/vaadin-addons</url>
+        </repository>
+        <repository>
+            <id>spring-repo</id>
+            <name>Spring Repository</name>
+            <url>https://repo.spring.io/release</url>
         </repository>
     </repositories>
 
@@ -46,7 +58,7 @@
 
     <properties>
         <!-- Project -->
-        <project.maven.version>3.0.5</project.maven.version>
+        <project.maven.version>3.3.9</project.maven.version>
         <project.java.version>1.8</project.java.version>
         <project.java.debug>false</project.java.debug>
         <project.java.optimize>true</project.java.optimize>
@@ -57,87 +69,99 @@
         <js.skipTests>true</js.skipTests>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.weblogic.version>12.1.1.0</project.weblogic.version>
+        <project.weblogic.version>12.1.3.0</project.weblogic.version>
         <!-- LEOS -->
         <leos.build.version>${project.version}</leos.build.version>
         <leos.build.date.format>yyyy-MM-dd HH:mm z</leos.build.date.format>
         <leos.build.date>${buildnumber.date}</leos.build.date>
         <leos.build.timestamp>${buildnumber.timestamp}</leos.build.timestamp>
-        <leos.source.status>${svn.status}</leos.source.status>
-        <leos.source.specialStatus>${svn.specialStatus }</leos.source.specialStatus>
-        <leos.source.revision>${svn.revision}</leos.source.revision>
-        <leos.source.committedRevision>${svn.committedRevision}</leos.source.committedRevision>
-        <leos.source.committedDate>${svn.committedDate}</leos.source.committedDate>
+        <leos.source.status>${git.commit.id.describe-short}</leos.source.status>
+        <leos.source.revision>${git.commit.id.describe}</leos.source.revision>
+        <leos.source.committedRevision>${git.commit.id}</leos.source.committedRevision>
+        <leos.source.committedDate>${git.commit.time}</leos.source.committedDate>
         <!-- Plugins -->
-        <maven-enforcer-plugin.version>1.3</maven-enforcer-plugin.version>
+        <maven-enforcer-plugin.version>1.4.1</maven-enforcer-plugin.version>
         <extra-enforcer-rules.version>1.0-alpha-5</extra-enforcer-rules.version>
-        <svn-revision-plugin.version>1.13</svn-revision-plugin.version>
-        <maven-compiler-plugin.version>3.1</maven-compiler-plugin.version>
-        <maven-clean-plugin.version>2.5</maven-clean-plugin.version>
-        <maven-dependency-plugin.version>2.8</maven-dependency-plugin.version>
-        <maven-install-plugin.version>2.4</maven-install-plugin.version>
-        <maven-deploy-plugin.version>2.7</maven-deploy-plugin.version>
-        <maven-site-plugin.version>3.3</maven-site-plugin.version>
-        <maven-resources-plugin.version>2.6</maven-resources-plugin.version>
-        <maven-surefire-plugin.version>2.15</maven-surefire-plugin.version>
-        <maven-jar-plugin.version>2.4</maven-jar-plugin.version>
-        <maven-war-plugin.version>2.3</maven-war-plugin.version>
-        <jetty-maven-plugin.version>9.3.7.v20160115</jetty-maven-plugin.version>
+        <git-commit-id-plugin.version>2.2.2</git-commit-id-plugin.version>
+        <maven-compiler-plugin.version>3.6.0</maven-compiler-plugin.version>
+        <maven-clean-plugin.version>3.0.0</maven-clean-plugin.version>
+        <maven-dependency-plugin.version>2.10</maven-dependency-plugin.version>
+        <maven-install-plugin.version>2.5.2</maven-install-plugin.version>
+        <maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+        <maven-site-plugin.version>3.5.1</maven-site-plugin.version>
+        <maven-resources-plugin.version>3.0.1</maven-resources-plugin.version>
+        <maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+        <maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+        <maven-war-plugin.version>3.0.0</maven-war-plugin.version>
+        <maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+        <jetty-maven-plugin.version>9.4.3.v20170317</jetty-maven-plugin.version>
         <tomcat7-maven-plugin.version>2.2</tomcat7-maven-plugin.version>
-        <jasmine-maven-plugin.version>2.1</jasmine-maven-plugin.version>
+        <jasmine-maven-plugin.version>2.2</jasmine-maven-plugin.version>
         <selenium-webdriver.version>2.53.0</selenium-webdriver.version>
         <phantomjs-webdriver.version>1.3.0</phantomjs-webdriver.version>
         <phantomjs.version>2.1.1</phantomjs.version>
-        <cobertura-maven-plugin.version>2.6</cobertura-maven-plugin.version>
-        <build-helper-plugin.version>1.8</build-helper-plugin.version>
-        <build-number-plugin.version>1.3</build-number-plugin.version>
+        <cobertura-maven-plugin.version>2.7</cobertura-maven-plugin.version>
+        <build-helper-plugin.version>1.12</build-helper-plugin.version>
+        <build-number-plugin.version>1.4</build-number-plugin.version>
         <jshint-maven-plugin.version>1.6.0</jshint-maven-plugin.version>
-        <properties-maven-plugin.version>1.0-alpha-2</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.0.0</properties-maven-plugin.version>
         <copy-maven-plugin.version>0.2.5</copy-maven-plugin.version>
-        <maven-source-plugin.version>2.4</maven-source-plugin.version>
         <sql-maven-plugin.version>1.5</sql-maven-plugin.version>
-        <mycila-license-maven-plugin.version>2.11</mycila-license-maven-plugin.version>
-        <groovy.version>2.4.3</groovy.version>
+        <mycila-license-maven-plugin.version>3.0</mycila-license-maven-plugin.version>
         <!-- Extensions -->
         <wagon-ftp-extension.version>2.2</wagon-ftp-extension.version>
         <!-- Libraries -->
-        <slf4j.version>1.7.6</slf4j.version>
-        <logback.version>1.1.1</logback.version>
-        <junit.version>4.11</junit.version>
+        <slf4j.version>1.7.25</slf4j.version>
+        <logback.version>1.2.3</logback.version>
+        <junit.version>4.12</junit.version>
         <hamcrest.version>1.3</hamcrest.version>
-        <mockito.version>1.9.5</mockito.version>
-        <hsqldb.version>1.8.0.10</hsqldb.version>
-        <mathjax.version>2.5.3</mathjax.version>
-        <h2db.version>1.4.190</h2db.version>
-        <spring.version>4.2.0.RELEASE</spring.version>
-        <spring-data-commons.version>1.7.1.RELEASE</spring-data-commons.version>
-        <spring-data-jpa.version>1.5.1.RELEASE</spring-data-jpa.version>
-        <hibernate-jpa2-api.version>1.0.1.Final</hibernate-jpa2-api.version>
-        <hibernate-orm.version>4.2.10.Final</hibernate-orm.version>
-        <jboss-logging.version>3.1.3.GA</jboss-logging.version>
-        <chemistry-opencmis.version>0.14.0</chemistry-opencmis.version>
-        <httpclient.version>4.3.6</httpclient.version>
+        <mockito.version>2.7.22</mockito.version>
+        <mathjax.version>2.7.0</mathjax.version>
+        <spring.version>4.3.5.RELEASE</spring.version>
+        <spring-data.version>Codd-RELEASE</spring-data.version><!--UPGRADE PENDING-->
+        <hibernate-orm.version>4.2.10.Final</hibernate-orm.version><!--UPGRADE PENDING-->
+        <spring-security.version>4.2.1.RELEASE</spring-security.version>
+        <jboss-logging.version>3.3.0.Final</jboss-logging.version>
+        <chemistry-opencmis.version>1.1.0</chemistry-opencmis.version>
         <servlet.version>3.0.1</servlet.version>
-        <commons-lang3.version>3.3</commons-lang3.version>
-        <commons-io.version>2.4</commons-io.version>
-        <guava.version>19.0</guava.version>
-        <jsr305.version>2.0.3</jsr305.version>
-        <joda-time.version>2.3</joda-time.version>
+        <javax-inject.version>1</javax-inject.version>
+        <commons-lang3.version>3.5</commons-lang3.version>
+        <commons-io.version>2.5</commons-io.version>
+        <guava.version>20.0</guava.version>
+        <jsr305.version>3.0.1</jsr305.version>
+        <google-diffutils.version>1.3.0</google-diffutils.version>
         <freemarker.version>2.3.25-incubating</freemarker.version>
-        <vtd-xml.version>2.12</vtd-xml.version>
-        <xstream.version>1.4.7</xstream.version>
-        <jersey.version>1.18</jersey.version>
+        <vtd-xml.version>2.13</vtd-xml.version>
+        <xstream.version>1.4.9</xstream.version>
         <cachefilter.version>2.0</cachefilter.version>
-        <flying-saucer.version>9.0.6</flying-saucer.version>
-        <oracle.jdbc.driver.version>11.2.0.3.0</oracle.jdbc.driver.version>
+        <cuid.version>0.1.1</cuid.version>
+        <jsoup.version>1.10.3</jsoup.version>
+        <sass-maven-plugin.version>2.22</sass-maven-plugin.version>
+        <jackson-databind.version>2.8.5</jackson-databind.version>
+        <cxf-maven-plugin.version>3.1.10</cxf-maven-plugin.version>
+        <jaxb2-maven-plugin.version>2.3.1</jaxb2-maven-plugin.version>
+        <fugue.version>4.4.0</fugue.version>
+        <okio.version>1.11.0</okio.version>
+        <okhttp.version>3.7.0</okhttp.version>
+        <saxon.version>9.8.0-3</saxon.version>
+        <jena.version>3.3.0</jena.version>
         <!-- Vaadin -->
-        <vaadin.version>7.6.6</vaadin.version>
+        <vaadin.version>8.1.3</vaadin.version>
+        <vaadin-sass-compiler.version>0.9.13</vaadin-sass-compiler.version>
         <vaadin-plugin.version>${vaadin.version}</vaadin-plugin.version>
-        <spring-vaadin-integration.version>3.1</spring-vaadin-integration.version>
-        <vaadin-confirmdialog.version>2.1.2</vaadin-confirmdialog.version>
-        <vaadin-itemlayout.version>2.0.2</vaadin-itemlayout.version>
-        <vaadin-icons.version>1.0.1</vaadin-icons.version>
-        <vaadin-reset-button.version>1.2.1</vaadin-reset-button.version>
+        <vaadin-spring.version>2.0.1</vaadin-spring.version>
+        <vaadin-confirmdialog.version>3.1.1</vaadin-confirmdialog.version>
+        <vaadin-commponent-renderer.version>2.0.0</vaadin-commponent-renderer.version>
+        <vaadin-onoffswitch.version>1.0.0</vaadin-onoffswitch.version>
+        <!-- JUnit 5 -->
+        <junit-jupiter.version>5.0.0-M4</junit-jupiter.version>
+        <junit-platform.version>1.0.0-M4</junit-platform.version>
+        <junit-vintage.version>4.12.0-M4</junit-vintage.version>
+        <!-- Kotlin -->
+        <kotlin.version>1.1.3</kotlin.version>
+        <kotlin-logging.version>1.4.5</kotlin-logging.version>
+        <!-- httpclient -->
+        <httpclient.version>4.5.3</httpclient.version>
     </properties>
 
     <prerequisites>
@@ -180,81 +204,38 @@
             <!-- Spring framework -->
             <dependency>
                 <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
+                <artifactId>spring-framework-bom</artifactId>
                 <version>${spring.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-beans</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-context</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-context-support</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-orm</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-tx</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aop</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-aspects</artifactId>
-                <version>${spring.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-test</artifactId>
-                <version>${spring.version}</version>
-                <scope>test</scope>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>org.springframework.data</groupId>
-                <artifactId>spring-data-commons</artifactId>
-                <version>${spring-data-commons.version}</version>
+                <artifactId>spring-data-releasetrain</artifactId>
+                <version>${spring-data.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+            <!-- Spring security -->
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-core</artifactId>
+                <version>${spring-security.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.springframework.data</groupId>
-                <artifactId>spring-data-jpa</artifactId>
-                <version>${spring-data-jpa.version}</version>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-web</artifactId>
+                <version>${spring-security.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-config</artifactId>
+                <version>${spring-security.version}</version>
             </dependency>
             <!-- Persistence framework -->
             <dependency>
-                <groupId>org.hibernate.javax.persistence</groupId>
-                <artifactId>hibernate-jpa-2.0-api</artifactId>
-                <version>${hibernate-jpa2-api.version}</version>
-                <scope>compile</scope>
-            </dependency>
-            <dependency>
                 <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-core</artifactId>
+                <artifactId>hibernate-entitymanager</artifactId>
                 <version>${hibernate-orm.version}</version>
                 <scope>runtime</scope>
             </dependency>
@@ -262,12 +243,6 @@
                 <groupId>org.jboss.logging</groupId>
                 <artifactId>jboss-logging</artifactId>
                 <version>${jboss-logging.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-entitymanager</artifactId>
-                <version>${hibernate-orm.version}</version>
                 <scope>runtime</scope>
             </dependency>
             <!-- Apache Chemistry framework -->
@@ -290,15 +265,15 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.httpcomponents</groupId>
-                <artifactId>httpclient</artifactId>
-                <version>${httpclient.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>org.apache.chemistry.opencmis</groupId>
+                <artifactId>chemistry-opencmis-commons-api</artifactId>
+                <version>${chemistry-opencmis.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.chemistry.opencmis</groupId>
+                <artifactId>chemistry-opencmis-commons-impl</artifactId>
+                <version>${chemistry-opencmis.version}</version>
+                <scope>runtime</scope>
             </dependency>
             <!-- Libraries -->
             <dependency>
@@ -308,14 +283,40 @@
                 <scope>provided</scope>
             </dependency>
             <dependency>
+                <groupId>javax.inject</groupId>
+                <artifactId>javax.inject</artifactId>
+                <version>${javax-inject.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
+                <groupId>io.atlassian.fugue</groupId>
+                <artifactId>fugue</artifactId>
+                <version>${fugue.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okio</groupId>
+                <artifactId>okio</artifactId>
+                <version>${okio.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.squareup.okhttp3</groupId>
+                <artifactId>okhttp</artifactId>
+                <version>${okhttp.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-databind.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.google.guava</groupId>
@@ -328,10 +329,9 @@
                 <version>${jsr305.version}</version>
             </dependency>
             <dependency>
-                <groupId>joda-time</groupId>
-                <artifactId>joda-time</artifactId>
-                <version>${joda-time.version}</version>
-                <scope>runtime</scope>
+                <groupId>com.googlecode.java-diff-utils</groupId>
+                <artifactId>diffutils</artifactId>
+                <version>${google-diffutils.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.freemarker</groupId>
@@ -359,125 +359,50 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.sun.jersey.contribs</groupId>
-                <artifactId>jersey-spring</artifactId>
-                <version>${jersey.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-web</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-aop</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-asm</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-beans</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-context</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.springframework</groupId>
-                        <artifactId>spring-core</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>cool.graph</groupId>
+                <artifactId>cuid-java</artifactId>
+                <version>${cuid.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-servlet</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.jersey</groupId>
-                <artifactId>jersey-core</artifactId>
-                <version>${jersey.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.codehaus.groovy</groupId>
-                <artifactId>groovy-all</artifactId>
-                <version>${groovy.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.oracle</groupId>
-                <artifactId>oracle.jdbc.driver</artifactId>
-                <version>${oracle.jdbc.driver.version}</version>
-                <scope>runtime</scope>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
             <!-- Vaadin framework -->
             <dependency>
                 <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-server</artifactId>
+                <artifactId>vaadin-bom</artifactId>
                 <version>${vaadin.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-shared</artifactId>
-                <version>${vaadin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-client-compiled</artifactId>
-                <version>${vaadin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-client</artifactId>
-                <version>${vaadin.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-client-compiler</artifactId>
-                <version>${vaadin.version}</version>
-                <scope>provided</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>xerces</groupId>
-                        <artifactId>xercesImpl</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>xml-apis</groupId>
-                        <artifactId>xml-apis</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpclient</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>com.vaadin</groupId>
-                <artifactId>vaadin-themes</artifactId>
-                <version>${vaadin.version}</version>
+                <artifactId>vaadin-spring</artifactId>
+                <version>${vaadin-spring.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.vaadin</groupId>
                 <artifactId>vaadin-sass-compiler</artifactId>
-                <version>0.9.12</version>
+                <version>${vaadin-sass-compiler.version}</version>
+            </dependency>
+            <!-- Vaadin 7 compatibility packages -->
+            <dependency>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-compatibility-server</artifactId>
+                <version>${vaadin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-compatibility-shared</artifactId>
+                <version>${vaadin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.vaadin</groupId>
+                <artifactId>vaadin-compatibility-client</artifactId>
+                <version>${vaadin.version}</version>
             </dependency>
             <!-- Vaadin add-ons -->
-            <dependency>
-                <groupId>ru.xpoft.vaadin</groupId>
-                <artifactId>spring-vaadin-integration</artifactId>
-                <version>${spring-vaadin-integration.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.vaadin.addon</groupId>
                 <artifactId>confirmdialog</artifactId>
@@ -498,26 +423,14 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.vaadin.icons</groupId>
-                <artifactId>vaadin-icons</artifactId>
-                <version>${vaadin-icons.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.vaadin</groupId>
-                        <artifactId>vaadin-server</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>de.datenhahn.vaadin</groupId>
+                <artifactId>componentrenderer</artifactId>
+                <version>${vaadin-commponent-renderer.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.vaadin</groupId>
-                <artifactId>resetbuttonfortextfield</artifactId>
-                <version>${vaadin-reset-button.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.vaadin</groupId>
-                        <artifactId>vaadin-server</artifactId>
-                    </exclusion>
-                </exclusions>
+                <groupId>com.vaadin.addon</groupId>
+                <artifactId>vaadin-onoffswitch</artifactId>
+                <version>${vaadin-onoffswitch.version}</version>
             </dependency>
             <!-- Testing frameworks -->
             <dependency>
@@ -556,17 +469,45 @@
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
+            <!-- Kotlin core libraries -->
             <dependency>
-                <groupId>hsqldb</groupId>
-                <artifactId>hsqldb</artifactId>
-                <version>${hsqldb.version}</version>
-                <scope>test</scope>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib</artifactId>
+                <version>${kotlin.version}</version>
             </dependency>
             <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>${h2db.version}</version>
-                <scope>test</scope>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-stdlib-jre8</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-reflect</artifactId>
+                <version>${kotlin.version}</version>
+            </dependency>
+            <!-- Kotlin logging libraries -->
+            <dependency>
+                <groupId>io.github.microutils</groupId>
+                <artifactId>kotlin-logging</artifactId>
+                <version>${kotlin-logging.version}</version>
+            </dependency>
+            <!-- Jena sparql libraries -->
+            <dependency>
+                <groupId>org.apache.jena</groupId>
+                <artifactId>jena-tdb</artifactId>
+                <version>${jena.version}</version>
+            </dependency>
+            <!-- httpclient library -->
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${httpclient.version}</version>
+            </dependency>
+            <!-- Saxon -->
+            <dependency>
+                <groupId>net.sf.saxon</groupId>
+                <artifactId>Saxon-HE</artifactId>
+                <version>${saxon.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -630,29 +571,46 @@
                     </dependencies>
                 </plugin>
                 <plugin>
-                    <groupId>com.google.code.maven-svn-revision-number-plugin</groupId>
-                    <artifactId>svn-revision-number-maven-plugin</artifactId>
-                    <version>${svn-revision-plugin.version}</version>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                    <artifactId>kotlin-maven-plugin</artifactId>
+                    <version>${kotlin.version}</version>
                     <executions>
                         <execution>
-                            <phase>validate</phase>
+                            <id>compile</id>
+                            <phase>compile</phase>
                             <goals>
-                                <goal>revision</goal>
+                                <goal>compile</goal>
                             </goals>
+                            <configuration>
+                                <sourceDirs>
+                                    <sourceDir>src/main/kotlin</sourceDir>
+                                </sourceDirs>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>test-compile</id>
+                            <phase>test-compile</phase>
+                            <goals>
+                                <goal>test-compile</goal>
+                            </goals>
+                            <configuration>
+                                <sourceDirs>
+                                    <sourceDir>src/test/kotlin</sourceDir>
+                                </sourceDirs>
+                            </configuration>
                         </execution>
                     </executions>
                     <configuration>
-                        <entries>
-                            <entry>
-                                <prefix>svn</prefix>
-                            </entry>
-                        </entries>
+                        <jvmTarget>1.8</jvmTarget>
+                        <compilerPlugins>
+                            <plugin>spring</plugin>
+                        </compilerPlugins>
                     </configuration>
                     <dependencies>
                         <dependency>
-                            <groupId>org.tmatesoft.svnkit</groupId>
-                            <artifactId>svnkit</artifactId>
-                            <version>1.8.7</version>
+                            <groupId>org.jetbrains.kotlin</groupId>
+                            <artifactId>kotlin-maven-allopen</artifactId>
+                            <version>${kotlin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -712,6 +670,33 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>${maven-surefire-plugin.version}</version>
+                    <configuration>
+                        <includes>
+                            <include>**/Test*.java</include>
+                            <include>**/*Test.java</include>
+                            <include>**/*Tests.java</include>
+                            <include>**/*TestCase.java</include>
+                            <include>**/*Spec.java</include>
+                            <include>**/*Specs.java</include>
+                        </includes>
+                    </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.platform</groupId>
+                            <artifactId>junit-platform-surefire-provider</artifactId>
+                            <version>${junit-platform.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                            <version>${junit-jupiter.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.vintage</groupId>
+                            <artifactId>junit-vintage-engine</artifactId>
+                            <version>${junit-vintage.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
@@ -799,7 +784,7 @@
                     <executions>
                         <execution>
                             <id>jasmine-test</id>
-                            <phase>none</phase>
+                            <phase>test</phase>
                             <goals>
                                 <goal>test</goal>
                             </goals>
@@ -880,16 +865,17 @@
                     <artifactId>license-maven-plugin</artifactId>
                     <version>${mycila-license-maven-plugin.version}</version>
                 </plugin>
+                <plugin>
+                    <groupId>pl.project13.maven</groupId>
+                    <artifactId>git-commit-id-plugin</artifactId>
+                    <version>${git-commit-id-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>com.google.code.maven-svn-revision-number-plugin</groupId>
-                <artifactId>svn-revision-number-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -919,6 +905,53 @@
                 </executions>
             </plugin>
             <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>validate</phase>
+                        </execution>
+                    <execution>
+                        <id>validate-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>validate</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <prefix>git</prefix>
+                    <dateFormat>${leos.build.date.format}</dateFormat>
+                    <dateFormatTimeZone>${user.timezone}</dateFormatTimeZone>
+                    <verbose>false</verbose>
+                    <generateGitPropertiesFile>false</generateGitPropertiesFile>
+                    <format>properties</format>
+                    <skipPoms>false</skipPoms>
+                    <injectAllReactorProjects>true</injectAllReactorProjects>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <failOnUnableToExtractRepoInfo>true</failOnUnableToExtractRepoInfo>
+                    <skip>false</skip>
+                    <runOnlyOnce>true</runOnlyOnce>
+                    <useNativeGit>false</useNativeGit>
+                    <abbrevLength>7</abbrevLength>
+                    <commitIdGenerationMode>flat</commitIdGenerationMode>
+                    <gitDescribe>
+                        <skip>false</skip>
+                        <always>false</always>
+                        <abbrev>7</abbrev>
+                        <dirty>-dirty</dirty>
+                        <match>*.*.*</match>
+                        <tags>true</tags>
+                        <forceLongFormat>false</forceLongFormat>
+                    </gitDescribe>
+               </configuration>
+            </plugin>
+
+            <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
@@ -927,27 +960,28 @@
                         <headerDefinition>tools/license/headers/scss_definition.xml</headerDefinition>
                     </headerDefinitions>
                     <mapping>
-                        <scss>SCSS_STYLE</scss>
+                        <java>SLASHSTAR_STYLE</java>
+                        <kt>SLASHSTAR_STYLE</kt>
+                        <scss>DOUBLESLASH_STYLE</scss>
                     </mapping>
                     <excludes>
                         <exclude>**/src/main/filters/**</exclude>
                         <exclude>**/src/main/resources/**</exclude>
+                        <exclude>**/src/main/assets/css/**</exclude>
                         <exclude>**/src/test/resources/**</exclude>
                         <exclude>**/src/test/data/**</exclude>
                         <exclude>**/src/etc/**</exclude>
                         <exclude>**/src/test/etc/**</exclude>
                         <exclude>**/themes/**/layouts/**</exclude>
                         <exclude>**/themes/**/fonts/**</exclude>
-                        <exclude>**/lib/**</exclude>
+                        <exclude>**/main/lib/**</exclude>
                         <exclude>**/layouts/*.html</exclude>
                         <exclude>**/js/**/*.html</exclude>
                         <exclude>**/widgetsets/**</exclude>
                         <exclude>**/freemarker/*.ftl</exclude>
                         <exclude>tools/cmis/**</exclude>
                         <exclude>docs/**</exclude>
-                        <exclude>LICENCE.txt</exclude>
-                        <exclude>NOTICE.txt</exclude>
-                        <exclude>README.txt</exclude>
+                        <exclude>*.txt</exclude>
                     </excludes>
                 </configuration>
                 <executions>
@@ -982,6 +1016,19 @@
                 <skipTests>false</skipTests>
             </properties>
         </profile>
-    
+        <!-- DEVELOPMENT -->
+        <profile>
+            <id>env-dev</id>
+            <activation>
+                <property>
+                    <name>env</name>
+                    <value>dev</value>
+                </property>
+            </activation>
+            <properties>
+                <leos.build.env>dev</leos.build.env>
+                <project.java.debug>true</project.java.debug>
+            </properties>
+        </profile>
     </profiles>
 </project>

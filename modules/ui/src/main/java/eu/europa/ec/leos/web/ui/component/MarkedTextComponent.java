@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -14,46 +14,53 @@
 package eu.europa.ec.leos.web.ui.component;
 
 import com.google.common.eventbus.EventBus;
-import com.vaadin.annotations.StyleSheet;
-import com.vaadin.shared.ui.label.ContentMode;
+import com.vaadin.icons.VaadinIcons;
+import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
-import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
+import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.document.LeosDocument;
+import eu.europa.ec.leos.ui.component.LeosDisplayField;
+import eu.europa.ec.leos.ui.extension.MathJaxExtension;
+import eu.europa.ec.leos.ui.extension.SliderPinsExtension;
 import eu.europa.ec.leos.web.event.component.MarkedTextNavigationRequestEvent;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
-import eu.europa.ec.leos.web.support.LeosCacheToken;
+import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.extension.MathJaxExtension;
-import eu.europa.ec.leos.web.ui.extension.SliderPinsExtension;
-import eu.europa.ec.leos.web.ui.extension.MarkedTextNavigationHelper;
-import eu.europa.ec.leos.web.ui.screen.ViewSettings;
+import eu.europa.ec.leos.web.support.user.UserHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vaadin.teemu.VaadinIcons;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@StyleSheet({"theme://css/changes_xml.css" + LeosCacheToken.TOKEN})
-public class MarkedTextComponent extends CustomComponent {
+@SpringComponent
+@Scope("prototype")
+public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends CustomComponent implements ContentPane {
     private static final long serialVersionUID = -826802129383432798L;
     private static final Logger LOG = LoggerFactory.getLogger(MarkedTextComponent.class);
     private static final String LEOS_RELATIVE_FULL_WDT = "100%";
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
-    private ViewSettings viewSettings;
-    private Label markedContent;
+    private UserHelper userHelper;
+    private LeosDisplayField markedContent;
 
-    public MarkedTextComponent(final EventBus eventBus, final MessageHelper messageHelper, ViewSettings viewSettings) {
+    @Autowired
+    public MarkedTextComponent(final EventBus eventBus, final MessageHelper messageHelper, final UserHelper userHelper) {
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
-        this.viewSettings = viewSettings;
+        this.userHelper = userHelper;
 
         setSizeFull();
         VerticalLayout markedTextLayout = new VerticalLayout();
         markedTextLayout.setSizeFull();
+        markedTextLayout.setSpacing(false);
+        markedTextLayout.setMargin(false);
+        
         // create toolbar
         markedTextLayout.addComponent(buildMarkedTextToolbar());
         // create content
@@ -71,7 +78,6 @@ public class MarkedTextComponent extends CustomComponent {
         final HorizontalLayout toolsLayout = new HorizontalLayout();
         toolsLayout.setId("markedTextToolbar");
         toolsLayout.setStyleName("leos-markedtext-bar");
-        toolsLayout.setSpacing(true);
 
         // set toolbar style
         toolsLayout.setWidth(LEOS_RELATIVE_FULL_WDT);
@@ -102,14 +108,14 @@ public class MarkedTextComponent extends CustomComponent {
 
     // create popup view
     private VersionSliderPopup versionSelector() {
-        final VersionSliderPopup sliderPopup = new VersionSliderPopup(messageHelper, eventBus);
+        final VersionSliderPopup<T> sliderPopup = new VersionSliderPopup<>(messageHelper, eventBus, userHelper);
 
         sliderPopup.addPopupVisibilityListener(new PopupView.PopupVisibilityListener() {
             @Override
             public final void popupVisibilityChange(final PopupView.PopupVisibilityEvent event) {
                 if(event.isPopupVisible()) {//popup opened
                     LOG.debug("popup opened");
-                    eventBus.post(new VersionListRequestEvent());// get latest version information
+                    eventBus.post(new VersionListRequestEvent<T>());// get latest version information
                 }
                 //else{//popup closed Do Nothing
             }
@@ -172,17 +178,16 @@ public class MarkedTextComponent extends CustomComponent {
         LOG.debug("Building Marked Text content...");
 
         // create placeholder to display marked content
-        markedContent = new Label();
-        markedContent.setContentMode(ContentMode.HTML);
+        markedContent = new LeosDisplayField();
         markedContent.setSizeFull();
         markedContent.setId("leos-marked-content");
         markedContent.setStyleName("leos-marked-content");
-        MathJaxExtension mathjax = new MathJaxExtension();
-        mathjax.extend(markedContent);
-        SliderPinsExtension sliderPins=new SliderPinsExtension(eventBus, getSelectorStyleMap());
+
+        // create marked content extensions
+        new MathJaxExtension<>(markedContent);
+        SliderPinsExtension sliderPins = new SliderPinsExtension<>(markedContent, getSelectorStyleMap());
         MarkedTextNavigationHelper navHelper = new MarkedTextNavigationHelper(sliderPins);
         this.eventBus.register(navHelper);//Registering helper object to eventBus. Presently this method is called only once if multiple invocation occurs in future will need to unregister the object on close of document.
-        sliderPins.extend(markedContent);
         return markedContent;
     }
 
@@ -190,13 +195,27 @@ public class MarkedTextComponent extends CustomComponent {
         Map<String, String> selectorStyleMap = new HashMap<>();
         selectorStyleMap.put(".leos-marker-content-removed","pin-leos-marker-content-removed");
         selectorStyleMap.put(".leos-marker-content-added","pin-leos-marker-content-added");
-        selectorStyleMap.put(".leos-content-modified","pin-leos-content-modified");
         selectorStyleMap.put(".leos-content-removed","pin-leos-content-removed");
         selectorStyleMap.put(".leos-content-new", "pin-leos-content-new");
         return selectorStyleMap;
     }
 
-    public void populateMarkedContent(String markedContentText) {
+    public void populateMarkedContent(String markedContentText, LeosCategory leosCategory) {
+        markedContent.addStyleName(leosCategory.name().toLowerCase());
         markedContent.setValue(markedContentText);
+    }
+
+    @Override
+    public float getDefaultPaneWidth(int numberOfFeatures) {
+        float featureWidth=0f;
+        switch(numberOfFeatures){
+            case 1:
+                featureWidth=100f;
+                break;
+            default:
+                featureWidth = 50f;
+                break;
+        }//end switch
+        return featureWidth;
     }
 }

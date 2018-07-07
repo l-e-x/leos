@@ -10,8 +10,6 @@
             http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
             http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
             
-    <context:component-scan base-package="eu.europa.ec.leos.services.locking"/>
-        
     <task:annotation-driven scheduler="taskScheduler"/>
     <task:scheduler id="taskScheduler" />
     
@@ -80,8 +78,4 @@
             </map>
         </property>
     </bean>
-  	<bean class="org.springframework.beans.factory.config.ServiceLocatorFactoryBean" id="lockHandlerFactory">
-  		<property name="serviceLocatorInterface" value="eu.europa.ec.leos.services.locking.handler.LockHandlerFactory"></property>
- 	</bean>
- 
 </beans>

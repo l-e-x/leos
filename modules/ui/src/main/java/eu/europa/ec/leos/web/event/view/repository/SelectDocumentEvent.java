@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,32 +13,23 @@
  */
 package eu.europa.ec.leos.web.event.view.repository;
 
-import eu.europa.ec.leos.model.content.LeosDocumentProperties.Stage;
-
+import eu.europa.ec.leos.domain.document.LeosCategory;
 
 public class SelectDocumentEvent {
 
     private String documentId;
-    private Stage documentStage =Stage.DRAFT;
+    private LeosCategory docType;
 
-    public SelectDocumentEvent(String documentId, Stage docStage) {
+    public SelectDocumentEvent(String documentId, LeosCategory docType) {
         this.documentId = documentId;
-        if(docStage!=null){
-            this.documentStage= docStage;
-        }
+        this.docType = docType;
     }
 
     public String getDocumentId() {
         return documentId;
     }
 
-    public Stage getDocumentStage() {
-        return documentStage;
+    public LeosCategory getDocType() {
+        return docType;
     }
-
-    public void setDocumentStage(Stage documentStage) {
-        this.documentStage = documentStage;
-    }
-    
-
 }

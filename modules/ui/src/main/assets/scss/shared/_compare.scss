@@ -1,0 +1,83 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$GREEN_COLOR: #26BC15;
+$RED_COLOR_BACKGROUND: #FFD5D6;
+$GREEN_COLOR_BACKGROUND: #DEFDDB;
+
+%contentRemoved {
+    text-decoration: line-through;
+    color: red;  
+}
+
+%contentAdded {
+    color: $GREEN_COLOR;    
+}
+
+%compare {
+
+    .leos-content-removed {
+        @extend %contentRemoved;
+        * {
+            @extend %contentRemoved;
+        }
+    }
+
+    .leos-content-new {
+        @extend %contentAdded;
+        * {
+            @extend %contentAdded;
+        }
+    }
+
+    .leos-content-modified {
+        display: block;
+    }
+
+    .leos-marker-content-removed, .leos-marker-content-added {
+       visibility: hidden;
+    }
+
+    //--------------------------------Compare IMG-----------------------------------/
+
+    .leos-content-new img {
+        border: 3px solid $GREEN_COLOR !important;
+    }
+
+    .leos-content-removed img {
+        border: 3px solid red !important;
+    }
+    //--------------------------------Compare TABLE-----------------------------------/
+
+    table, tr, td, th{
+        &.leos-content-new {
+            border: 1px solid $GREEN_COLOR;
+            background-color: $GREEN_COLOR_BACKGROUND;
+        }
+        &.leos-content-removed {
+            border: 1px solid red;
+            background-color: $RED_COLOR_BACKGROUND;
+        }
+    }
+
+    .leos-content-removed table {
+        border: 1px solid red;
+        background-color: $RED_COLOR_BACKGROUND;
+    }
+
+    .leos-content-new table {
+        border: 1px solid $GREEN_COLOR;
+        background-color: $GREEN_COLOR_BACKGROUND;
+    }
+}

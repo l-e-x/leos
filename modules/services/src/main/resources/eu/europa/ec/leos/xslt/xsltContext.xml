@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <bean id="transformerFactory" class="net.sf.saxon.TransformerFactoryImpl">
+        <constructor-arg>
+            <bean class="net.sf.saxon.Configuration" factory-method="readConfiguration">
+                <constructor-arg>
+                    <!-- saxon config  -->
+                    <bean name="" class="javax.xml.transform.stream.StreamSource">
+                        <property name="inputStream" value="classpath:eu/europa/ec/leos/xslt/saxonConfig.xml"/>
+                    </bean>
+                </constructor-arg>
+            </bean>
+        </constructor-arg>
+    </bean>
+
+    <bean id="xsltTransformer" factory-bean="transformerFactory" factory-method="newTransformer">
+        <constructor-arg>
+            <!-- xslt to use  -->
+            <bean class="javax.xml.transform.stream.StreamSource">
+                <property name="inputStream" value="classpath:eu/europa/ec/leos/xslt/templates/fmx2akn-leos.xslt"/>
+            </bean>
+        </constructor-arg>
+    </bean>
+</beans>

@@ -9,12 +9,6 @@
         <resetJUL>true</resetJUL>
     </contextListener>
 
-    <!-- Transaction indicator turbo filter -->
-    <turboFilter class="eu.europa.ec.leos.support.log.SpringTransactionIndicator">
-        <name>xaIndicatorTurboFilter</name>
-        <level>ALL</level>
-    </turboFilter>
-
     <contextName>${leos.log.contextName}</contextName>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
@@ -52,13 +46,6 @@
     <logger name="eu.europa.ec.leos" level="ALL"/>
 
     <logger name="freemarker" level="INFO"/>
-
-    <logger name="org.springframework.orm" level="INFO"/>
-    <logger name="org.springframework.orm.jpa" level="INFO"/>
-
-    <logger name="org.hibernate" level="INFO"/>
-    <logger name="org.hibernate.SQL" level="INFO"/>
-    <logger name="org.hibernate.type" level="INFO"/>
 
     <logger name="eu.europa.ec.leos.services.locking"  level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>

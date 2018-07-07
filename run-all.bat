@@ -1,7 +1,7 @@
 @REM
-@REM Copyright 2016 European Commission
+@REM Copyright 2017 European Commission
 @REM
-@REM Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+@REM Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 @REM You may not use this work except in compliance with the Licence.
 @REM You may obtain a copy of the Licence at:
 @REM
@@ -14,12 +14,12 @@
 
 @echo off
 
-CALL "cmd /c start run-database.bat"
+CALL "cmd /c start run-user-repository.bat"
 CALL "cmd /c start run-repository.bat"
 CALL "cmd /c start run-leos.bat"
 
 echo "--------------------------------------------------------------------------"
-echo "---ALL 3 COMMAND WINDOWS NEED TO STAY OPEN FOR LEOS TO FUNCTION-----------"
+echo "---BOTH COMMAND WINDOWS NEED TO STAY OPEN FOR LEOS TO FUNCTION-----------"
 echo "---IT MIGHT TAKE FEW MINUTES TO DOWNLOAD DEPENDENCIES AND TO BE READY-----"
 echo "---USE CTRL+C TO STOP INDIVIDUAL COMPONENT--------------------------------"
 echo "--------------------------------------------------------------------------"

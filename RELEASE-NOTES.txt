@@ -1,0 +1,185 @@
+INTRODUCTION
+================================================================================
+
+    LEOS is a software created to address the need of the European Institutions 
+to generate draft legislation in a legal XML format.
+
+    It is a legislation editor and it currently supports the drafting of the 
+'secondary' legislation of the EU law which has to be adopted under the Ordinary
+Legislative Procedure.
+
+    Therefore, it covers the writing of Proposals for Directive, Decision and 
+Regulation submitted by the Commission to the Council and the Parliament.
+
+    This Beta version is currently used for a pilot across the Commission 
+services. The main differences compared to the previous prototype version are:
+-   Acts are managed as a set of elements (explanatory memorandum, legal text, 
+        annexes…) and global metadata are propagated across sub-elements
+-   Improved version management, with major versions and possibility to see 
+        differences between versions
+-   Import feature, enabling to import some content already published in the 
+        Official Journal of the EU
+-   New security layer
+-   Support of images
+
+Note that some features of the prototype were removed :
+-   The locking of the edited area and the notifications mechanism have not been
+        retained because judged too cumbersome; it might come back under another
+        form
+-	The pdf rendering is now delegated to a service external to the project 
+-   Feedback view is removed as workflows are not part of system
+
+    A significant part of the business logic being into the code, LEOS is not 
+intended to be a generic software supporting the drafting of any kind of 
+national legislative tradition. Nevertheless, it is released Open Source as we 
+believe that some parts of it could be reused and adapted by some other Public 
+Administration having similar needs. The code is available for free under EUPL 
+licence, and the development team paid attention to organise the code in a 
+structured way to ease its reusability (modules, plugins…).
+    
+    We are envisaging to create an open source community on software for 
+legislation drafting, in order to share best practices, experiences, expertise, 
+and why not code!!
+
+Should you be interested or would you just like to share with us some 
+observations on our work, you can contact us at DIGIT-LEOS-FEEDBACK@ec.europa.eu
+
+The LEOS Team
+
+
+CHANGE LOG
+================================================================================
+
+1.0.0 (LEOS-Pilot)
+------------------
+    * Updated HOWTO documentation
+   
+    * Repository Browser
+       - Redesigned user interface
+       - Create proposal
+       - Documents list as proposals
+       - Switch to display documents/proposals
+       - Document list filters
+       
+    * Proposal Viewer
+       - View/Edit proposal metadata
+       - Download a proposal
+       - Delete a proposal
+       - Management of contributors
+       - Management of Annexures
+       
+    * Legal Text Viewer
+       - View/Edit legal text
+       - LEOS Editor
+         - Save/Close
+         - Paste from MS-Word
+         - Switch to UnNumbered Paragraph 
+       - Improved document changes pane
+         - Version selector
+         - Change markers
+         - Change navigation
+       - Timeline window
+         - Single/Two column comparison
+         - Show/Hide intermediate version for comparison
+         - Version navigation using slider
+         - Change marker navigation
+       - Save as major version
+       - Import from Official Journal
+       - User guidance
+       - Search and replace text
+       
+    * Explanatory Memorandum Viewer
+       - View/Edit explanatory memorandum text
+       - Improved document changes pane
+         - Version selector
+         - Change markers
+         - Change navigation
+       - Timeline window
+         - Single/Two column comparison
+         - Show/Hide intermediate version for comparison
+         - Version navigation using slider
+         - Change marker navigation
+       - Save as major version
+       - User guidance
+       - View/Edit table of contents
+       
+    * Annex Viewer
+       - View/Edit annex text
+       - Improved document changes pane
+         - Version selector
+         - Change markers
+         - Change navigation
+       - Timeline window
+         - Single/Two column comparison
+         - Show/Hide intermediate version for comparison
+         - Version navigation using slider
+         - Change marker navigation
+       - Save as major version
+       
+    * Updated dependencies (frameworks and libraries)
+    * Updated user database management with roles
+    * Technical improvements and enhanced user experience
+    
+Note: Some features/sections which were part of the previous releases are
+    removed for e.g. Comments viewer, suggestions, document locking as they are 
+    currently being re-developed in Pilot.    
+
+3.1.0 (Prototype)
+-----------------
+    * Comments Viewer
+       - Feature to suggest a change in the text
+    * Document Viewer
+       - Accept or delete suggested changes
+       - Comments deletion with button
+    * Updated dependencies (frameworks and libraries)
+    * Technical improvements and bug fixes
+
+3.0.0 (Prototype)
+-----------------
+    * Updated HOWTO documentation
+    * Document Viewer
+        - Document changes pane
+          - Version selector
+          - Change markers
+          - Change navigation
+    * Editor
+        - New inline edition
+        - Improved user comments
+    * Updated dependencies (frameworks and libraries)
+    * Technical improvements, updated module structure and bug fixes
+
+2.0.0 (Prototype)
+-----------------
+    * New HOWTO documentation
+    * New user interface theme
+        - Colors
+        - Fonts
+        - Icons
+    * Repository Browser
+        - Redesigned user interface
+        - Document list filters
+        - Deletion of documents
+        - Management of contributors
+    * LEOS Editor
+        - User comments
+        - Text highlights
+        - Cross-references
+        - Sub-paragraphs
+    * Comments viewer
+        - View, add, edit and delete comments
+    * Collaborative work
+        - Document author (Role)
+        - Document contributor (Role)
+        - Document stages (Workflow)
+    * Updated dependencies (frameworks and libraries)
+    * Fixes (incomplete) for Firefox (ESR 38.3) and Internet Explorer (11)
+
+1.0.0 (Prototype)
+-----------------
+    * Initial joinup open source release.
+    
+BUGS
+================================================================================
+    
+    There might be bugs or incomplete features present in this version as pilot 
+is still under active development.

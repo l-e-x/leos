@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,26 +13,26 @@
  */
 package eu.europa.ec.leos.web.ui.converter;
 
-import com.vaadin.data.util.converter.Converter;
-import eu.europa.ec.leos.vo.UserVO;
+import com.vaadin.v7.data.util.converter.Converter;
+import eu.europa.ec.leos.model.user.User;
 
 import java.util.Locale;
 
-public class UserDisplayConverter implements Converter<String, UserVO> {
+public class UserDisplayConverter implements Converter<String, User> {
 
     @Override
-    public UserVO convertToModel(String value, Class<? extends UserVO> targetType, Locale locale) throws ConversionException {
+    public User convertToModel(String value, Class<? extends User> targetType, Locale locale) throws ConversionException {
         throw new ConversionException("Not Implemented Method");
     }
 
     @Override
-    public String convertToPresentation(UserVO value, Class<? extends String> targetType, Locale locale) throws ConversionException {
-        return value.getName();
+    public String convertToPresentation(User value, Class<? extends String> targetType, Locale locale) throws ConversionException {
+        return (value != null) ? value.getName() : null;
     }
 
     @Override
-    public Class<UserVO> getModelType() {
-        return UserVO.class;
+    public Class<User> getModelType() {
+        return User.class;
     }
 
     @Override

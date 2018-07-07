@@ -1,0 +1,27 @@
+                        PROPOSAL VIEWER - HOWTO
+--------------------------------------------------------------------------------
+
+1. Proposal Viewer is the main screen of a proposal used to modify
+   a proposal meta data or manage its components.   
+      
+2. It contains several area. The top section consists of 
+   document title and 3 buttons (depending of your profile) -
+         Export - Used to export document (disabled)
+         Download - Used to download the LEG format file
+         Delete - Used to export document (only available to document author)         
+
+3. Lower section of the viewer is divided into 2 areas.
+
+4. In the left one you first have the proposal details, 
+
+5. Then have the section dedicated to the Explanatory memorandum and the
+   Legal text area. Clicking "Open" next to each element will launch the
+   document viewer for their respective edition.
+   
+6. Followed by the Annex part. Clicking on the +" next to the "Annex" title
+   will let you add annexes. Once an annexe is there a "-" icon exist to 
+   delete it and an "Open" button to launch the document viewer for its
+   edition.
+
+7. To the right you have the collaborators area.
+   See the "Manage contributors" section.

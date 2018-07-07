@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="UTF-8" name="package-mapping" content="leos:eu.europa.ec.leos.web.ui.component">
+    <meta charset="UTF-8" name="package-mapping" content="users:eu.europa.ec.leos.web.ui.component.collaborators">
+</head>
+<body>
+<vaadin7-vertical-layout primary-style-name="proposal-view" size-full margin>
+
+    <vaadin7-vertical-layout style-name="top-block" width-full spacing="false">
+        <vaadin7-horizontal-layout width-full>
+            <vaadin7-label _id="docStage" style-name="doc-title doc-stage" size-auto plain-text :top="" :left=""></vaadin7-label>
+            <vaadin7-label _id="docType" style-name="doc-title doc-type" size-auto plain-text :top="" :left=""></vaadin7-label>
+            <vaadin7-label size-auto="true" :center="" :expand="">&nbsp;</vaadin7-label>
+            <vaadin-button _id="closeButton" style-name="primary" plain-text :top="" :right=""/>
+        </vaadin7-horizontal-layout>
+        <leos-edit-box-component _id="docPurpose" style-name="doc-title doc-purpose" width-full></leos-edit-box-component>
+        <vaadin7-horizontal-layout width="64.5%">
+            <vaadin-link _id="shareProposalLink" icon="fonticon://Vaadin-Icons/e76d" :left></vaadin-link>
+            <vaadin7-horizontal-layout style-name="ui-block-content" width="350px" :right>
+                <vaadin-menu-bar _id="exportProposal" style-name="friendly" :left></vaadin-menu-bar>
+                <vaadin-button _id="downloadProposal" style-name="friendly" :center>Download</vaadin-button>
+                <vaadin-button _id="deleteProposal" style-name="delete-all-button friendly">Delete</vaadin-button>
+            </vaadin7-horizontal-layout>
+        </vaadin7-horizontal-layout>
+    </vaadin7-vertical-layout>
+
+    <vaadin7-horizontal-layout :expand="1" size-full spacing>
+        <vaadin7-vertical-layout primary-style-name="first-column" :expand=".65" size-full spacing>
+            <vaadin7-vertical-layout style-name="ui-block details-block" width-full>
+                <leos-heading-component _id="detailsBlockHeading" width-full></leos-heading-component>
+                <vaadin7-horizontal-layout style-name="ui-block-content" width-full spacing>
+                    <vaadin-form-layout :expand=".7">                        
+                        <leos-edit-box-component _id="packageTitle" style-name="package-title" enabled="false"></leos-edit-box-component>
+                        <leos-edit-box-component _id="template" style-name="template" enabled="false"></leos-edit-box-component>
+                        <vaadin7-label _id="proposalLanguage" style-name="proposal-language"></vaadin7-label>
+                    </vaadin-form-layout>
+                    <vaadin-form-layout :expand=".3">
+                        <vaadin7-native-select _id="securityLevel" style-name="security-level" immediate width-full enabled="false"></vaadin7-native-select>
+                        <leos-edit-box-component _id="internalRef" enabled="false"></leos-edit-box-component>
+                        <vaadin7-check-box _id="eeaRelevance" style-name="eea-relevance" immediate enabled="false"></vaadin7-check-box>
+                    </vaadin-form-layout>
+                </vaadin7-horizontal-layout>
+            </vaadin7-vertical-layout>
+
+            <vaadin7-vertical-layout _id="memorandumBlock" style-name="ui-block" width-full>
+                <leos-heading-component _id="memorandumBlockHeading" width-full></leos-heading-component>
+                <vaadin7-horizontal-layout style-name="ui-block-content" width-full>
+                    <vaadin-button _id="memorandumOpenButton" icon="fonticon://FontAwesome/f061" style-name="open-button" plain-text :top :right></vaadin-button>
+                </vaadin7-horizontal-layout>
+                <vaadin7-horizontal-layout style-name="ui-block-content" width-full>
+                    <vaadin7-label _id="memorandumLanguage" style-name="leos-caption-on-left" size-auto plain-text :top :left :expand=".1"></vaadin7-label>
+                    <vaadin7-label size-auto="true" :center="" :expand=".5">&nbsp;</vaadin7-label>
+                    <vaadin7-label _id="memorandumLastUpdated" style-name="last-updated" size-auto plain-text :top :right :expand=".4">Updated: Updated by Updated on
+                    </vaadin7-label>
+                </vaadin7-horizontal-layout>
+            </vaadin7-vertical-layout>
+
+            <vaadin7-vertical-layout _id="legalTextBlock" style-name="ui-block" size-full :expand="">
+                <leos-heading-component _id="legalTextBlockHeading" width-full></leos-heading-component>
+                <vaadin7-horizontal-layout style-name="ui-block-content" width-full>
+                    <vaadin-button _id="legalTextOpenButton" icon="fonticon://FontAwesome/f061" style-name="open-button" plain-text :top :right></vaadin-button>
+                </vaadin7-horizontal-layout>
+                <vaadin7-horizontal-layout style-name="ui-block-content" width-full>
+                    <vaadin7-label _id="legalTextLanguage" style-name="leos-caption-on-left" size-auto plain-text :top :left :expand=".1"></vaadin7-label>
+                    <vaadin7-label size-auto="true" :center="" :expand=".5">&nbsp;</vaadin7-label>
+                    <vaadin7-label _id="legalTextLastUpdated" style-name="last-updated" size-auto plain-text :top :right :expand=".4">Updated: Updated by Updated on
+                    </vaadin7-label>
+                </vaadin7-horizontal-layout>
+
+                <vaadin7-vertical-layout style-name="sub-block annexes-block" size-full :expand="">
+                    <leos-heading-component width-full _id="annexesBlockHeading"></leos-heading-component>
+                    <vaadin-panel style-name="sub-block borderless scroll-divider" size-full :expand="">
+                        <vaadin7-vertical-layout _id="annexesLayout"></vaadin7-vertical-layout>
+                    </vaadin-panel>/
+                </vaadin7-vertical-layout>
+            </vaadin7-vertical-layout>
+        </vaadin7-vertical-layout> <!-- end of first column -->
+
+        <vaadin7-vertical-layout primary-style-name="second-column collaborator-block" :expand=".35" size-full margin-left>
+            <leos-heading-component _id="collaboratorsBlockHeading" width-full></leos-heading-component>
+            <users-collaborators-component _id="collaboratorsComponent" style-name="sub-block" :expand="" size-full></users-collaborators-component>
+        </vaadin7-vertical-layout>
+        <!-- end of second column -->
+
+    </vaadin7-horizontal-layout>
+
+</vaadin7-vertical-layout>
+</body>
+</html>

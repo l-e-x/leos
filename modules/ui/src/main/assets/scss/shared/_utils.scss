@@ -1,0 +1,62 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$GREY_COLOR: #808080;
+$BLOCK_OUTLINE: 1px dotted $GREY_COLOR;
+$OUTLINE_OFFSET: 4px;
+
+@mixin blockOutline($label, $leftOffset:0px) {
+    position: relative;
+    outline: $BLOCK_OUTLINE;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px ($OUTLINE_OFFSET + $leftOffset);
+
+    &:after {
+        content: $label;
+        color: $GREY_COLOR;
+        font-size: 9px;
+        display: block;
+        overflow: auto;
+        position: absolute;
+        top: 0;
+        left: $OUTLINE_OFFSET;
+    }
+}
+
+%editorContentColor {
+    //Styles for Non-editable Elements
+    *[contenteditable="false"] {
+        color: $GREY_COLOR;
+    }
+    
+    *[contenteditable="true"] {
+        color: black;
+    }
+}
+
+%editorBlur {
+    &.leos-editor-blur {
+        background-color: #FFFAFD;
+        border: solid 1px #ADBDCE;
+    }
+}
+
+%defaultBoxSizing{
+    *,
+    *:before,
+    *:after{
+        box-sizing: border-box;
+    }
+}

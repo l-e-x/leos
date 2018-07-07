@@ -87,10 +87,12 @@ public class InMemoryQueryProcessor {
     private ObjectStoreImpl objStore;
     private List<TypeDefinition> secondaryTypeIds;
     private CallContext callContext;
+    private boolean relaxedParserMode;
 
-    public InMemoryQueryProcessor(ObjectStoreImpl objStore, CallContext ctx) {
+    public InMemoryQueryProcessor(ObjectStoreImpl objStore, CallContext ctx, boolean relaxedParserMode) {
         this.objStore = objStore;
         this.callContext = ctx;
+        this.relaxedParserMode = relaxedParserMode;
     }
 
     /**
@@ -147,7 +149,12 @@ public class InMemoryQueryProcessor {
      *            type manager for the repository
      */
     public void processQueryAndCatchExc(String statement, TypeManager tm) {
-        QueryUtilStrict queryUtil = new QueryUtilStrict(statement, tm, null);
+        QueryUtilStrict queryUtil;
+        if (relaxedParserMode) {
+        	queryUtil = new QueryUtilStrict(statement, tm, null, true, QueryObject.ParserMode.MODE_ALLOW_RELAXED_SELECT);
+        } else {
+        	queryUtil = new QueryUtilStrict(statement, tm, null);
+        }
         queryUtil.processStatementUsingCmisExceptions();
         CmisQueryWalker walker = queryUtil.getWalker();
         queryObj = queryUtil.getQueryObject();
@@ -671,13 +678,13 @@ public class InMemoryQueryProcessor {
         }
 
         private boolean findText(String nodeText) {
-            Content cont = (Content) so;
             String pattern = StringUtil.unescape(nodeText, "\\'-");
             if (null == pattern) {
                 throw new CmisInvalidArgumentException("Illegal Escape sequence in text search expression " + nodeText);
             }
 
-            if (so instanceof Content && cont.hasContent()) {
+            if (so instanceof Content && ((Content) so).hasContent()) {
+                Content cont = (Content) so;
                 ContentStreamDataImpl cdi = (ContentStreamDataImpl) cont.getContent();
                 if (cdi.getMimeType().startsWith("text/")) {
                     byte[] ba = cdi.getBytes();
@@ -812,14 +819,7 @@ public class InMemoryQueryProcessor {
         List<JoinSpec> joins = queryObj.getJoins();
         if (null == secondaryTypeIds && joins.size() > 0) {
             throw new CmisInvalidArgumentException(
-                    "JOINs are not supported with the exception of secondary types and a LEFT OUTER JOIN");
-        } else if (null != secondaryTypeIds) {
-            for (JoinSpec join : joins) {
-                if (!join.kind.equals("LEFT")) {
-                    throw new CmisInvalidArgumentException(
-                            "JOINs are not supported with the exception of secondary types and a LEFT OUTER JOIN");
-                }
-            }
+                    "JOINs are not supported with the exception of secondary types");
         }
     }
 

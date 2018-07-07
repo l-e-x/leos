@@ -1,0 +1,18 @@
+<configuration xmlns="http://saxon.sf.net/ns/configuration" edition="HE">
+    <global
+            lazyConstructionMode="false"
+            lineNumbering="true"
+            optimizationLevel="10"
+            stripSpace="all"
+            versionOfXml="1.0"/>
+    <xslt schemaAware="false"/>
+    <xsltPackages/>
+    <xquery/>
+    <xsd/>
+    <serialization
+            method="xml"
+            indent="yes"/>
+    <localizations/>
+    <resources/>
+    <collations/>
+</configuration>

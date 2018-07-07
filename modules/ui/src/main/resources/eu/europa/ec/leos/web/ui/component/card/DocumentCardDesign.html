@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+ <meta charset="UTF-8" name="package-mapping" content="leos:eu.europa.ec.leos.web.ui.component.card">
+</head>
+<body>
+
+<vaadin7-vertical-layout style-name="leos-card" height="130px">
+
+ <vaadin7-horizontal-layout spacing="true" style-name="leos-card-header" width-full="true">
+  <vaadin7-label style-name="leos-card-header-left" size-auto="true" plain-text="" _id="template"></vaadin7-label>
+  <vaadin7-label size-auto="true" :center="" :expand="">&nbsp;</vaadin7-label>
+ </vaadin7-horizontal-layout>
+
+ <vaadin7-horizontal-layout style-name="leos-card-details" spacing="true" size-full="true":expand="1.0">
+  <vaadin7-vertical-layout size-full="true" :expand="0.1">
+   <vaadin7-label style-name="leos-card-icon" icon="fonticon://Vaadin-Icons/e7e1"/>
+   <leos-property-bound-button icon="fonticon://Vaadin-Icons/e80d" style-name="leos-lock-icon icon-only link hidden" _id="lockButton"></leos-property-bound-button>
+  </vaadin7-vertical-layout>
+
+  <vaadin7-vertical-layout size-full="true" :expand="0.80">
+   <vaadin7-label primary-style-name="leos-card-title" plain-text="" _id="title"></vaadin7-label>
+   <vaadin7-label style-name="leos-caption-on-left leos-card-language" plain-text="" _id="language" :bottom=""></vaadin7-label>
+  </vaadin7-vertical-layout>
+
+  <vaadin7-vertical-layout style-name="leos-card-actions"  spacing="true" width-auto="true" height-full="true" _id="actions" :right="" :expand="0.1">
+   <vaadin-button icon="fonticon://FontAwesome/f061" plain-text="" _id="openButton" :center=""></vaadin-button>
+   <vaadin-button icon="fonticon://FontAwesome/f061" style-name="link" plain-text="" _id="proposalButton" :bottom="" :center=""></vaadin-button>
+  </vaadin7-vertical-layout>
+ </vaadin7-horizontal-layout>
+
+ <vaadin7-horizontal-layout spacing="true" style-name="leos-card-footer" width-full="true" :bottom="">
+  <vaadin7-label style-name="footer-caption" size-auto="true" plain-text="" _id="createdCaption" :bottom=""></vaadin7-label>
+  <vaadin7-label size-auto="true" plain-text="" _id="createdBy" :bottom=""></vaadin7-label>
+  <vaadin7-label size-auto="true" plain-text="" _id="createdOn" :bottom=""></vaadin7-label>
+  <vaadin7-label size-auto="true" :middle="" :center="" :expand="">&nbsp;</vaadin7-label>
+  <vaadin7-label style-name="footer-caption" size-auto="true" plain-text="" _id="updatedCaption" :bottom="" :right=""></vaadin7-label>
+  <vaadin7-label size-auto="true" plain-text="" _id="updatedBy" :bottom="" :right=""></vaadin7-label>
+  <vaadin7-label size-auto="true" plain-text="" _id="updatedOn" :bottom="" :right=""></vaadin7-label>
+ </vaadin7-horizontal-layout>
+</vaadin7-vertical-layout>
+</body>
+</html>

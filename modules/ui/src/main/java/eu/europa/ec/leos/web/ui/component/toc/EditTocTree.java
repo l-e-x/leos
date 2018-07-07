@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,7 +13,7 @@
  */
 package eu.europa.ec.leos.web.ui.component.toc;
 
-import com.vaadin.ui.Tree;
+import com.vaadin.v7.ui.Tree;
 
 public class EditTocTree extends Tree {
 

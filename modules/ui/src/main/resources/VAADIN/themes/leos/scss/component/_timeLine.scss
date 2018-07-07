@@ -1,0 +1,66 @@
+$DIMENSION: 23px;
+
+@mixin timeLine {
+
+    .leos-version-info-layout {
+        border: 1px solid $GREY;
+    }
+
+    .leos-version-info-label {
+        padding-right: 26px;
+    }    
+
+    .leos-intermediate-version-compare {
+        margin-right: 20px;        
+    }
+
+    .leos-timeline-header {
+        .v-caption-on-top > .v-caption {
+            display: inline-block;
+            margin-right: 10px;
+            font-size: 13px;
+        }
+     
+        .onoffswitch {
+            width: 40px;
+        }
+     
+        .onoffswitch-slider {
+            background-color: $HEADER_BLUE;
+            border: 1px solid $HEADER_BLUE;
+            height: $DIMENSION;
+            border-radius: $DIMENSION;
+        }
+    
+        .onoffswitch-slider:before {
+            border-color: $HEADER_BLUE;
+            width: $DIMENSION;
+            right: 20px;
+            border-radius: $DIMENSION;
+        }
+    
+        .onoffswitch-slider.on:before {
+            transform: translateX($DIMENSION);
+        }
+    
+    }
+
+    .leos-compare-layout {
+        overflow-x:hidden; //hide horizontal scroll-bar
+        border: 1px solid $GREY;
+        margin-top: -1px;
+        akomantoso .page {
+            box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+    }
+
+    .leos-two-column-compare {
+        -ms-transform-origin-x: 0%;
+        -ms-transform-origin-y: top;
+        -ms-transform: scale(0.85);
+        transform: scale(0.85);
+        transform-origin: 0% top;
+        margin-left: 6px;
+        height: 85%;
+    }
+}

@@ -1,0 +1,35 @@
+//
+// Copyright 2017 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+//Standard A4 page size
+$A4-PAGE_WIDTH: 21cm;
+$A4-PAGE_HEIGHT: 29.7cm;
+
+// LegisWrite page margins for page
+$PAGE-MARGIN-VERTICAL: 2cm;
+$PAGE-MARGIN-HORIZONTAL: 2.5cm;
+
+%pageLayout {
+    .page {
+        position: relative;
+        display: block;
+        margin: 0.5cm auto;
+        width:      $A4-PAGE_WIDTH;
+        min-height: $A4-PAGE_HEIGHT;
+        padding:    $PAGE-MARGIN-VERTICAL $PAGE-MARGIN-HORIZONTAL;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        white-space: normal;
+        background-color: white;
+    }
+}

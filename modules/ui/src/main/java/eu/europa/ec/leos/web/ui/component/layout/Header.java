@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -16,22 +16,28 @@ package eu.europa.ec.leos.web.ui.component.layout;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.event.MouseEvents;
+import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.FontAwesome;
-import com.vaadin.shared.ui.label.ContentMode;
-import com.vaadin.ui.*;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomLayout;
+import com.vaadin.ui.Image;
 import com.vaadin.ui.themes.ValoTheme;
-import eu.europa.ec.leos.model.security.SecurityContext;
+import com.vaadin.v7.shared.ui.label.ContentMode;
+import com.vaadin.v7.ui.Label;
+import com.vaadin.v7.ui.ListSelect;
+import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NavigationUpdateEvent;
+import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.component.HeaderResizeEvent;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.ui.navigation.Target;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
-import eu.europa.ec.leos.web.ui.themes.Themes;
-import eu.europa.ec.leos.web.view.LogoutView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.vaadin.teemu.VaadinIcons;
 
 import javax.annotation.Nonnull;
 import java.util.Locale;
@@ -79,7 +85,7 @@ public class Header extends CustomLayout {
 
     private void setTemplate() {
         try { //TODO hack fix to read file from a jar
-			initTemplateContentsFromInputStream(getClass().getResourceAsStream("/VAADIN/themes/"+Themes.DECIDE+"/layouts/" + TEMPLATE_NAME));
+			initTemplateContentsFromInputStream(getClass().getResourceAsStream("/VAADIN/themes/"+LeosTheme.NAME+"/layouts/" + TEMPLATE_NAME));
         }
         catch (Exception e){
             throw new RuntimeException(e);
@@ -122,10 +128,9 @@ public class Header extends CustomLayout {
         user.setIcon(VaadinIcons.USER);
 
         if (securityContext.isUserAuthenticated()) {
-            user.setValue(messageHelper.getMessage("leos.ui.header.user.authenticated.info", securityContext.getUser().getName(),
-                    securityContext.getUser().getLogin()));
-        } else {
-            user.setValue(messageHelper.getMessage("leos.ui.header.user.unauthenticated.info", securityContext.getPrincipalName()));
+            user.setValue(messageHelper.getMessage("leos.ui.header.user.authenticated.info",
+                                                    securityContext.getUser().getName(),
+                                                    securityContext.getUser().getLogin()));
         }
         return user;
     }
@@ -144,7 +149,7 @@ public class Header extends CustomLayout {
             @Override
             public void buttonClick(Button.ClickEvent event) {
                 LOG.debug("Firing navigation request event... [viewId={}]", LogoutView.VIEW_ID);
-                eventBus.post(new NavigationRequestEvent(LogoutView.VIEW_ID));
+                eventBus.post(new NavigationRequestEvent(Target.LOGOUT));
             }
         });
         return logoutButton;
@@ -152,14 +157,13 @@ public class Header extends CustomLayout {
 
     private @Nonnull Component buildHomeButton() {
         final Image home = new Image(null, LeosTheme.LEOS_HEADER_HOME_ICON);
-        home.setData(""); // resolved to default view at runtime
         home.addClickListener(new MouseEvents.ClickListener() {
             private static final long serialVersionUID = 3388459558980465073L;
 
             public void click(MouseEvents.ClickEvent event) {
-                String viewId = (String) home.getData();
-                LOG.debug("Firing navigation request event... [viewId={}]", viewId);
-                eventBus.post(new NavigationRequestEvent(viewId));
+                Target target = Target.HOME;
+                LOG.debug("Navigating to home... [target={}]", target);
+                eventBus.post(new NavigationRequestEvent(target));
             }
         });
         return home;
@@ -178,9 +182,11 @@ public class Header extends CustomLayout {
 
             @Override
             public void buttonClick(Button.ClickEvent event) {
-                String viewId = (String) viewLink.getData();
-                LOG.debug("Firing navigation request event... [viewId={}]", viewId);
-                eventBus.post(new NavigationRequestEvent(viewId));
+                //FIXME: click on breadcrumbs is not working so doing nothing
+                //Target target = (Target) viewLink.getData();
+                //LOG.debug("Firing navigation request event... [target={}]", target);
+                //eventBus.post(new NavigationRequestEvent(target));
+                eventBus.post(new NotificationEvent(NotificationEvent.Type.WARNING, "leos.not.implemented", "Breadcrumb navigation"));
             }
         });
 

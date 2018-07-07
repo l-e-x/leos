@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016 European Commission
+    Copyright 2017 European Commission
 
-    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -14,15 +14,13 @@
     See the Licence for the specific language governing permissions and limitations under the Licence.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>eu.europa.ec.leos.prototype</groupId>
+        <groupId>eu.europa.ec.leos.pilot</groupId>
         <artifactId>leos</artifactId>
-        <version>3.1.0-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>leos-modules</artifactId>
@@ -31,19 +29,17 @@
     <name>Modules</name>
 
     <modules>
+        <module>usecases</module>
+        <module>repository</module>
+        <module>cmis</module>
+        <module>domain</module>
         <module>model</module>
-        <module>repositories</module>
-        <module>support</module>
-        <module>groovy-support</module>
+        <module>security</module>
+        <module>integration</module>
         <module>services</module>
-        <module>webservices</module>
-        <module>widgetset</module>
-        <module>themes</module>
         <module>ui</module>
         <module>testSupport</module>
+        <module>js</module>
         <module>web-os</module>
-        <module>js-core</module>
-        <module>js-web</module>
-        <module>js-editor</module>
     </modules>
 </project>

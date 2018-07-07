@@ -1,24 +1,28 @@
                         DOCUMENT VIEWER - HOWTO
 --------------------------------------------------------------------------------
 
-1. Document Viewer is the main screen of the system through which a user can 
-   draft a legislative document. It contains several tools to facilitate easy 
-   editing.
+1. Document Viewer is the screen through which a user can draft a legislative
+   document. It contains several tools to facilitate easy editing.
       
 2. Document viewer is divided into two sections. The top section consists of 
-   document title and menu. Menu bar contains following buttons -
-         Close - closes the document.
-         Metadata - refer to Edit metadata HOWTO
-         Download - download the LEG format file(disabled)
-         Settings - configuration of document viewer columns
-         Locks -  allows user to release his acquired locks
-         Development features - allows downloading of akomaNtoso xml file.
+   document type and menu. Menu bar contains following buttons -
+         Close - closes the document.         
+         Settings - configuration of document viewer columns         
 
 3. Lower section of the viewer is divided into columns. By default, first column 
    is the document pane and the other column consists of table of content.
-   The document pane is further divided into document toolbar and document 
-   content. 
+   (see 'Document Table of Content' section)
+   The document pane is further divided into document tool bar and document 
+   content. Each columns features expand/collapse button to expand or collapse
+   the tree.
 
 4. Document toolbar provides quick links to document level features.
-      
+   Compare two version - see 'Compare two versions' section.
+   Save as major version - see 'Major minor version' section
+   Show user guidance - display guidance linked to a template (if any)
+   Show comments - display all document comments has floating elements
+   Search and replace - this will let you search and replace text in the entire
+   document. (in all editable blocks)
+   Refresh - used to refresh the UI content.
+   
 5. Document content is main area in which a user can do content drafting.

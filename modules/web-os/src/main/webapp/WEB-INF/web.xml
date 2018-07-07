@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2016 European Commission
+    Copyright 2017 European Commission
 
-    Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -42,7 +42,7 @@
 
     <!-- SLF4J bridge listener -->
     <listener>
-        <listener-class>eu.europa.ec.leos.support.log.SLF4JBridgeListener</listener-class>
+        <listener-class>eu.europa.ec.leos.web.support.log.SLF4JBridgeListener</listener-class>
     </listener>
 
     <!-- Spring framework listeners -->
@@ -53,13 +53,26 @@
         <listener-class>org.springframework.web.context.request.RequestContextListener</listener-class>
     </listener>
 
+    <!-- Hook for Spring Security-->
+    <filter>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+    </filter>
+
+    <!-- Spring security should be applied only to Secure URLs -->
+    <filter-mapping>
+        <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/ui/*</url-pattern>
+        <url-pattern>/VAADIN/*</url-pattern>
+    </filter-mapping>
+
     <!-- LEOS Web Application Servlet -->
     <servlet>
         <servlet-name>LEOS Web Application Servlet</servlet-name>
         <servlet-class>eu.europa.ec.leos.web.support.vaadin.LeosSpringVaadinServlet</servlet-class>
         <init-param>
             <param-name>sessionInitListenerBeans</param-name>
-            <param-value>eventBusSessionListener, authenticationSessionListener, leosBootstrapSessionListener</param-value>
+            <param-value>leosBootstrapSessionListener</param-value>
         </init-param>
         <init-param>
             <param-name>beanName</param-name>
@@ -68,12 +81,12 @@
         <init-param>
             <description>LEOS main UI</description>
             <param-name>UI</param-name>
-            <param-value>eu.europa.ec.leos.web.ui.LeosUI</param-value>
+            <param-value>eu.europa.ec.leos.ui.LeosUI</param-value>
         </init-param>
         <init-param>
             <description>LEOS WidgetSet</description>
             <param-name>widgetset</param-name>
-            <param-value>eu.europa.ec.leos.web.LeosWidgetSet</param-value>
+            <param-value>eu.europa.ec.leos.ui.LeosWidgetSet</param-value>
         </init-param>
     </servlet>
 
@@ -83,30 +96,10 @@
         <servlet-class>ch.qos.logback.classic.ViewStatusMessagesServlet</servlet-class>
     </servlet>
 
-    <!-- Jersey REST Servlet -->
-      <servlet>
-        <servlet-name>Jersey REST Servlet</servlet-name>
-        <servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
-        <load-on-startup>1</load-on-startup>
-    </servlet>
-
-    <!-- Static Resources Servlet -->
-    <servlet>
-        <servlet-name>StaticResources</servlet-name>
-        <servlet-class>eu.europa.ec.leos.web.support.resources.StaticResourcesServlet</servlet-class>
-         <init-param>
-            <param-name>basePath</param-name>
-            <param-value>/VAADIN/themes</param-value>
-        </init-param>
-    </servlet>
-
     <!-- LEOS Web Application Servlet mappings -->
     <servlet-mapping>
         <servlet-name>LEOS Web Application Servlet</servlet-name>
         <url-pattern>/ui/*</url-pattern>
-    </servlet-mapping>
-    <servlet-mapping>
-        <servlet-name>LEOS Web Application Servlet</servlet-name>
         <url-pattern>/VAADIN/*</url-pattern>
     </servlet-mapping>
 
@@ -114,18 +107,6 @@
     <servlet-mapping>
         <servlet-name>Logback Status Servlet</servlet-name>
         <url-pattern>/logStatus</url-pattern>
-    </servlet-mapping>
-
-    <!-- Jersey REST Servlet mappings -->
-    <servlet-mapping>
-        <servlet-name>Jersey REST Servlet</servlet-name>
-        <url-pattern>/rest/*</url-pattern>
-    </servlet-mapping>
-
-    <!-- Static Resources Servlet mappings -->
-    <servlet-mapping>
-        <servlet-name>StaticResources</servlet-name>
-        <url-pattern>/static/*</url-pattern>
     </servlet-mapping>
 
     <!-- User authentication -->
@@ -142,7 +123,7 @@
     <!-- User access privileges -->
     <security-constraint>
         <web-resource-collection>
-            <web-resource-name>leos-private</web-resource-name>
+            <web-resource-name>Secure</web-resource-name>
             <description>Require users to authenticate</description>
             <url-pattern>/ui/*</url-pattern>
             <url-pattern>/VAADIN/*</url-pattern>

@@ -1,0 +1,11 @@
+[
+    {
+        "targets": [
+            {
+                "destinationId": "clause_1",
+                "position": "AFTER-WRAPPER"
+            }
+        ],
+        "content": "<guidance id=\"guidance-clause-1\" class=\"guidance-green-block\"><span id=\"clause-1-guidance\">[Choose between the two options above. The second option must be used where the Regulation is binding and directly applicable <b>only in certain</b> Member States in accordance with the Treaties.]</span></guidance>"
+    }
+]

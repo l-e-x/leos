@@ -1,0 +1,23 @@
+                           MAJOR AND MINOR VERSION
+-------------------------------------------------------------------------------
+
+1.	For each modification done by the user or by the system a minor version is
+	created.
+	
+2.	A user can decide to create a major version to reflect a particular
+    status/evolution of the document.
+	
+3.	Major and minor version are automatically numbered:
+	- minor version as tenth (ex: 0.1 / 1.5)
+	- major as unit (ex: 1 / 2 / 4)
+	
+4. 	To create a major version, from the document viewer, click on the 'Save
+    as major version' button on the top left of the document pane.
+	
+5. 	On click, a dialog titled 'Save as major version' will appear with 
+    an input field for a version comment.
+	
+6. 	Clicking on 'Save' will create a new major version with the version comment
+	as meta data and close the dialog
+
+7.	Clicking on 'Close' will cancel your action and close the dialog

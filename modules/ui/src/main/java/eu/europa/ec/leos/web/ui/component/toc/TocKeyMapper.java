@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -79,5 +79,12 @@ public class TocKeyMapper<V> extends KeyMapper<V> {
     public void removeAll() {
         objectKeyMap.clear();
         keyObjectMap.clear();
+    }
+
+    /**
+     * Checks if the given key is mapped to an object.
+     */
+    public boolean containsKey(String key) {
+        return keyObjectMap.containsKey(key);
     }
 }

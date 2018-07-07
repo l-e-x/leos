@@ -1,6 +1,6 @@
 Apache Chemistry OpenCMIS
-Release: 0.13.0
-Date: 2014-08-16
+Release: 1.0.0
+Date: 2016-10-11
 
 How to build OpenCMIS
 http://chemistry.apache.org/java/how-to/how-to-build.html

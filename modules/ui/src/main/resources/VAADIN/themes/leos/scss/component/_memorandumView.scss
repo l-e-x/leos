@@ -1,0 +1,29 @@
+@mixin memorandumView {
+
+    .leos-memorandum-view {
+        .close-button {
+            float: right;
+            font-weight: normal;
+            border: 1px solid $G_BORDER_COLOR;
+            
+           .v-icon {
+             color: #B92222;        
+           }
+        }
+    
+        .leos-memorandumview-title {
+            font-size: 16px;
+        }
+
+        .leos-memorandumview-icon {
+            color: $G_BROWN_COLOR;
+            font-size: 32px;
+            padding-left: 5px;
+            font-family: Vaadin-Icons;
+        }
+
+        .leos-padbar {
+            border-bottom: 1px solid $G_BORDER_COLOR;
+        }
+    }
+}

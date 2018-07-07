@@ -1,0 +1,14 @@
+@mixin searchAndReplace {
+
+    .search-and-replace-min {
+        color:$MAIN_BLUE;
+        vertical-align: baseline;
+        padding-top: 3px;
+    }
+    .search-and-replace-max {
+        background: white;
+        color:#1a1a1a;//menubar color
+        border: 1px solid $G_BORDER_COLOR;
+        box-shadow: 1px 1px 7px 1px $G_BORDER_COLOR;
+    }
+}

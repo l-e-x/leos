@@ -83,15 +83,14 @@ import org.apache.chemistry.opencmis.commons.impl.dataobjects.BulkUpdateObjectId
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertyIntegerDefinitionImpl;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertyStringDefinitionImpl;
 import org.apache.chemistry.opencmis.commons.spi.Holder;
+import org.apache.chemistry.opencmis.inmemory.content.ObjectGenerator;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ContentStreamDataImpl;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.RenditionUtil;
 import org.apache.chemistry.opencmis.inmemory.types.DocumentTypeCreationHelper;
 import org.apache.chemistry.opencmis.inmemory.types.PropertyCreationHelper;
 import org.apache.chemistry.opencmis.server.support.TypeDefinitionFactory;
-import org.apache.chemistry.opencmis.util.repository.ObjectGenerator;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,7 +139,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
     public static final String TEST_RESTRICTED_RELATION_TYPE_ID = "RestrictedRelationType";
     public static final String TEST_POLICY_TYPE_ID = "AuditPolicy";
     public static final String TEST_POLICY_PROPERTY_ID = "AuditSettings";
-	private static final String ENCODING_UTF8 = "UTF-8";
+    private static final String ENCODING_UTF8 = "UTF-8";
 
     ObjectCreator fCreator;
 
@@ -847,6 +846,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
         log.info("... testAllowableActions() finished.");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testDefaultPropertiesDocument() {
         log.info("starting testDefaultPropertiesDocument() ...");
@@ -878,6 +878,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
         log.info("... testDefaultPropertiesDocument() finished.");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testDefaultPropertiesFolder() {
         log.info("starting testDefaultPropertiesFolder() ...");
@@ -934,7 +935,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
         log.info("starting testGetObjectByPath() with specal chars...");
         log.info("  creating object");
 
-        String docID = createDocument("H������nschen", fRootFolderId, false);
+        createDocument("H������nschen", fRootFolderId, false);
         log.info("  getting object by path with special chars");
         try {
             ObjectData res = fObjSvc.getObjectByPath(fRepositoryId, "/H������nschen", "*", false,
@@ -1145,7 +1146,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
     @Test
     public void testGetPartialContent() throws IOException, UnsupportedEncodingException {
         log.info("starting testGetPartialContent() ...");
-        final String STREAM_NAME  = "data.txt";
+        final String STREAM_NAME = "data.txt";
         final String MIME_TYPE = "text/plain";
         // append content again in a second call
 
@@ -1154,17 +1155,17 @@ public class ObjectServiceTest extends AbstractServiceTest {
         content.setMimeType(MIME_TYPE);
 
         String prefix = "################ ~~~~This is a completeley irrelevant prefix header. ~~~~ ################";
-		String main = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit. Donec et mollis dolor. Praesent et diam eget libero egestas mattis sit amet vitae augue. Nam tincidunt congue enim, ut porta lorem lacinia consectetur. Donec ut libero sed arcu vehicula ultricies a non tortor. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ut gravida lorem. Ut turpis felis, pulvinar a semper sed, adipiscing id dolor. Pellentesque auctor nisi id magna consequat sagittis. Curabitur dapibus enim sit amet elit pharetra tincidunt feugiat nisl imperdiet. Ut convallis libero in urna ultrices accumsan. Donec sed odio eros. Donec viverra mi quis quam pulvinar at malesuada arcu rhoncus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum accumsan ultricies. Mauris vitae nisi at sem facilisis semper ac in est.";
+        String main = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a diam lectus. Sed sit amet ipsum mauris. Maecenas congue ligula ac quam viverra nec consectetur ante hendrerit. Donec et mollis dolor. Praesent et diam eget libero egestas mattis sit amet vitae augue. Nam tincidunt congue enim, ut porta lorem lacinia consectetur. Donec ut libero sed arcu vehicula ultricies a non tortor. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean ut gravida lorem. Ut turpis felis, pulvinar a semper sed, adipiscing id dolor. Pellentesque auctor nisi id magna consequat sagittis. Curabitur dapibus enim sit amet elit pharetra tincidunt feugiat nisl imperdiet. Ut convallis libero in urna ultrices accumsan. Donec sed odio eros. Donec viverra mi quis quam pulvinar at malesuada arcu rhoncus. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. In rutrum accumsan ultricies. Mauris vitae nisi at sem facilisis semper ac in est.";
         String postfix = "################ ~~~~POSTFIX Please ignore POSTFIX POSTFIX POSTFIX ~~~~ ################";
 
         ByteArrayOutputStream ba = new ByteArrayOutputStream();
-        PrintStream printStream = new PrintStream(ba, false, ENCODING_UTF8); 
+        PrintStream printStream = new PrintStream(ba, false, ENCODING_UTF8);
         printStream.println(prefix);
         printStream.println(main);
         printStream.println(postfix);
 
         content.setContent(new ByteArrayInputStream(ba.toByteArray()));
-        
+
         // Create document with content
         Properties props = createDocumentProperties("PartialContentTest", BaseTypeId.CMIS_DOCUMENT.value());
         String id = fObjSvc.createDocument(fRepositoryId, props, fRootFolderId, content, VersioningState.NONE, null,
@@ -1172,12 +1173,13 @@ public class ObjectServiceTest extends AbstractServiceTest {
         if (id != null) {
             log.info("createDocument succeeded with created id: " + id);
         }
-        
-        int offset = prefix.length() + System.getProperty("line.separator").length(); // for \n
+
+        int offset = prefix.length() + System.getProperty("line.separator").length(); // for
+                                                                                      // \n
         int length = main.length();
-		ContentStream readContent = fObjSvc.getContentStream(fRepositoryId, id, null,
-				BigInteger.valueOf(offset), BigInteger.valueOf(length), null);
-		
+        ContentStream readContent = fObjSvc.getContentStream(fRepositoryId, id, null, BigInteger.valueOf(offset),
+                BigInteger.valueOf(length), null);
+
         assertEquals(MIME_TYPE, readContent.getMimeType());
         assertEquals(STREAM_NAME, readContent.getFileName());
         assertEquals(length, readContent.getBigLength().longValue());
@@ -1188,7 +1190,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
         String result = new String(bytesRead, 0, lengthRead, ENCODING_UTF8);
         assertEquals(length, lengthRead);
         assertEquals(main, result);
-        
+
         // cleanup
         fObjSvc.deleteObject(fRepositoryId, id, true, null);
 
@@ -1865,6 +1867,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
             return cmisDocumentType;
         }
 
+        @SuppressWarnings("serial")
         private static TypeDefinition createDocumentTypeWithDefault() throws InstantiationException,
                 IllegalAccessException {
             MutableTypeDefinition cmisDocumentType;
@@ -1933,6 +1936,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
             return cmisDocumentType;
         }
 
+        @SuppressWarnings("serial")
         private static TypeDefinition createFolderTypeWithDefault() throws InstantiationException,
                 IllegalAccessException {
             MutableFolderTypeDefinition cmisFolderType;
@@ -2043,6 +2047,7 @@ public class ObjectServiceTest extends AbstractServiceTest {
             cmisSecondaryType.setDisplayName("MySecondaryType");
             cmisSecondaryType.setDescription("InMemory test type definition " + TEST_SECONDARY_TYPE_ID);
             DocumentTypeCreationHelper.setDefaultTypeCapabilities(cmisSecondaryType);
+            cmisSecondaryType.setIsCreatable(false);
             cmisSecondaryType.setIsFileable(false);
 
             // create a single String property definition

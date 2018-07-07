@@ -1,0 +1,87 @@
+<html>
+<head>
+    <title>LinkPad User Guide</title>
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css" type="text/css"/>
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap-theme.min.css" type="text/css"/>
+    <link rel="stylesheet" href="../css/font-awesome.min.css" type="text/css"/>
+</head>
+<body>
+<h1>LinkPad User Guide</h1>
+<div>
+
+    <div class="col-xs-12">
+        <a class="section-search" role="button" data-toggle="collapse" href="##collapseTextHelp" aria-expanded="false"
+           aria-controls="collapseTextHelp">
+            Help
+        </a>
+        <div class="collapse in" id="collapseTextHelp">
+            <p>This tool produces ready-to-use web links through detection of references in any text using Ref2Link.</p>
+            <p class="alert alert-default">See <a href="http://sjdapps2/apps/ref2link/sample.html">example</a> (TODO: set reference URL)</p>
+            <p>You can click on these links for direct access to Legal resources.</p>
+            <p>By using SHIFT+CLICK, you can set alternative links for some references or preview them by clicking on <i class="fa fa-arrow-circle"></i> arrow symbol, e.g. cases numbers.</p>
+            <p>Through standard copy/paste actions, you can also transfer these links to your editing tools provided they support web links
+                (Ms Word, Outlook ..).</p>
+            <p class="alert alert-warning">Because of known issues with browser support for user text selection, copy action might extend the selection to encompass the whole link.</p>
+            <p>The same reference detelction method is already seamlessly integrated in SOLON result lists, 'My SJ' and other SJ IT business
+                systems.</span><br/>
+            <p>For examples of supported references :
+                <a target="_blank"
+                   href="https://myintracomm.ec.europa.eu/dg/SJ/IT_and_logistics/is/Pages/ref2link.aspx">
+                    My SJ reference
+                </a>.
+            </p>
+            <p>Comments and suggestions : <a href="mailto:SJ-SI-SUPPORT@ec.europa.eu">SJ-SI-SUPPORT@ec.europa.eu</a></p>
+        </div>
+
+        <h3>Extensions</h3>
+        <p>It is possible to change the text of the link from the reference to any text using the format
+            <b>[reference|click here]</b> will result in an anchor that will link to the reference and have the text <i>click here</i></p>
+        <p>In case that a link generates to multiple resources, but only one is desired, the reference can be prefixed with the name of the desired rule (ex: eucase[C-14/15|click here]</p>
+        <p>Some text formatting is possible through the usage of the keyboard:
+            <ul>
+                <li>CTRL+b - bold text</li>
+                <li>CTRL+i - italic text</li>
+                <li>CTRL+u - underline text</li>
+            </ul>
+        </p>
+
+        <a class="section-search" role="button" data-toggle="collapse" href="##collapseTextNotice" aria-expanded="false"
+           aria-controls="collapseTextNotice">
+            Notice
+        </a>
+        <div class="collapse in" id="collapseTextNotice">
+            <p>The web links created by Ref2Link are generated through the detection of known formats of references to various resources
+                included in the submitted text.<br/>
+                These created links are compliant with the HTML standard set by the W3C. <br/>
+                If a submitted text already contains web links: these will be ignored by the detection process.</p>
+            <p>Ref2Link effective use depends on the proper encoding of references, although it offers some limited tolerance for
+                variants.</p>
+            <p>It should not be inferred from the successful detection and creation of web links by Ref2Link that:<br/>
+            <ul>
+                <li>the target system is currently online,</li>
+                <li>the resource with the detected reference actually exists or is available in the target system,</li>
+                <li>the requesting user has access to the resource or to the underlying system that hosts it. This is especially true for
+                    users outside of SJ which will not be able to use most of the links that point back to SJ systems.
+                </li>
+            </ul>
+            </p>
+            <p>Resources identified by a reference may have many possible variants and components (revisions, corrigendum, linguistic
+                versions, subparts, formats ...) available in the target system.<br/>
+                The link provided by Ref2Link is an entry point to a resource in the target system.<br/>
+                However this is not an exemption from using dedicated navigation features in the target system to reach the most relevant
+                component or variant of a resource, especially in the context of a specific task.</p>
+            <p>When used within SJ systems or the SJ Intranet, Ref2Link Web links are created on-the-fly in the Web browser through the
+                application of detection rules.<br/>
+                At no point does this on-the-fly process alter data in SJ systems database or Intranet: its effect is limited to the display
+                of a page.</p>
+            <p>The detection rules of Ref2Link are upgraded on a best effort basis so that they match the changes that may occur in target
+                systems regarding the formats of references or web links.<br/>
+                Thus, users' feedback is essential in order to ensure a continuous adaptation of the detection rules.</p>
+            <p>Once Web links have been copied to desktop editors (Ms Word, Outlook..), they are out of the scope of Ref2Link and will
+                therefore not be affected by changes in detection rules.</p>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

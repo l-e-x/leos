@@ -1,0 +1,12 @@
+                        DELETE PROPOSAL - HOWTO
+--------------------------------------------------------------------------------
+
+1.  Only user, who are owners of a proposal, have the rights to delete it.
+   
+2.  In the repository browser, open the proposal to delete. A 'Delete' button will
+    then be shown in the proposal viewer screen. 
+
+3.  On click of this 'Delete' button, a confirmation is asked from user.  
+    
+4.  On click of 'Delete' button on confirmation dialogue, the proposal will be 
+    permanently deleted from the repository.

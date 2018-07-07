@@ -51,8 +51,6 @@ public final class PropertyQueryUtil {
         }
         if (so instanceof DocumentVersion) {
             ver = (DocumentVersion) so;
-            //LEOS fix for queries which will work on version series ID or attributes of versionedDocument
-            verDoc=((DocumentVersion) so).getParentDocument();
         }
         if (so instanceof VersionedDocument) {
             verDoc = (VersionedDocument) so;

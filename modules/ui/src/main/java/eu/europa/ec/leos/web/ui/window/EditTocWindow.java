@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,24 +13,24 @@
  */
 package eu.europa.ec.leos.web.ui.window;
 
-import java.util.List;
-import java.util.Map;
-
-import com.vaadin.ui.*;
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.eventbus.EventBus;
-import com.vaadin.data.Container;
-import com.vaadin.data.Container.ItemSetChangeEvent;
-import com.vaadin.data.Container.ItemSetChangeListener;
-import com.vaadin.data.Item;
-import com.vaadin.data.Property;
-import com.vaadin.data.util.HierarchicalContainer;
 import com.vaadin.shared.ui.MarginInfo;
-
+import com.vaadin.ui.*;
+import com.vaadin.v7.ui.Tree;
+import com.vaadin.v7.data.Container;
+import com.vaadin.v7.data.Container.ItemSetChangeEvent;
+import com.vaadin.v7.data.Container.ItemSetChangeListener;
+import com.vaadin.v7.data.Item;
+import com.vaadin.v7.data.Property;
+import com.vaadin.v7.data.util.HierarchicalContainer;
+import com.vaadin.v7.ui.*;
+import com.vaadin.v7.ui.HorizontalLayout;
+import com.vaadin.v7.ui.Label;
+import com.vaadin.v7.ui.TextField;
+import com.vaadin.v7.ui.VerticalLayout;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.LegalTextTocItemType;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
 import eu.europa.ec.leos.web.event.window.CloseTocEditorEvent;
 import eu.europa.ec.leos.web.event.window.SaveTocRequestEvent;
@@ -39,6 +39,12 @@ import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.toc.EditTocDropHandler;
 import eu.europa.ec.leos.web.ui.component.toc.EditTocTree;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
 
 public class EditTocWindow extends AbstractEditChangeMonitorWindow {
 
@@ -47,11 +53,13 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
     private static final Logger LOG = LoggerFactory.getLogger(EditTocWindow.class);
 
     private Tree tocTree;
-    private Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules;
+    private Map<TocItemType, List<TocItemType>> tableOfContentRules;
+    private final TocItemType[] tocItemTypes;
 
-    public EditTocWindow(MessageHelper messageHelper, EventBus eventBus, ConfigurationHelper cfgHelper, Map<TableOfContentItemVO.Type, List<TableOfContentItemVO.Type>> tableOfContentRules) {
+    public EditTocWindow(MessageHelper messageHelper, EventBus eventBus, ConfigurationHelper cfgHelper, Map<TocItemType, List<TocItemType>> tableOfContentRules, TocItemType[] tocItemTypes) {
         super(messageHelper, eventBus);
         this.tableOfContentRules = tableOfContentRules;
+        this.tocItemTypes = tocItemTypes;
 
         setWidth(800, Unit.PIXELS);
         setHeight(700, Unit.PIXELS);
@@ -127,9 +135,9 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
                 boolean numberFieldEnabled = true;
 
                 if (item != null) {
-                    TableOfContentItemVO.Type type = (TableOfContentItemVO.Type) item.getItemProperty(TableOfContentItemConverter.TYPE_PROPERTY).getValue();
+                    TocItemType type = (TocItemType) item.getItemProperty(TableOfContentItemConverter.TYPE_PROPERTY).getValue();
                     editionEnabled = !type.isRoot();
-                    if (type.name().equalsIgnoreCase(TableOfContentItemVO.Type.ARTICLE.name())) {
+                    if (type.equals(LegalTextTocItemType.ARTICLE)) {
                         numberFieldEnabled = false;
                     }
                     itemTypeField.setValue(TableOfContentItemConverter.getDisplayableItemType(type, messageHelper));
@@ -216,7 +224,7 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
 
             item.getItemProperty(updatedProperty).setValue(updatedValue);
 
-            TableOfContentItemVO.Type type = (TableOfContentItemVO.Type) item.getItemProperty(TableOfContentItemConverter.TYPE_PROPERTY).getValue();
+            TocItemType type = (TocItemType) item.getItemProperty(TableOfContentItemConverter.TYPE_PROPERTY).getValue();
             String heading = (String) item.getItemProperty(TableOfContentItemConverter.HEADING_PROPERTY).getValue();
             String number = (String) item.getItemProperty(TableOfContentItemConverter.NUMBER_PROPERTY).getValue();
 
@@ -239,14 +247,14 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
         gridLayout.setDefaultComponentAlignment(Alignment.MIDDLE_CENTER);
         gridLayout.setSpacing(true);
         gridLayout.setMargin(true);
-        for (TableOfContentItemVO.Type type : TableOfContentItemVO.Type.values()) {
+        for (TocItemType type : tocItemTypes) {
             if (!type.isRoot() && type.isDraggable()) {
                 Label itemLabel = new Label(TableOfContentItemConverter.getDisplayableItemType(type, messageHelper));
                 itemLabel.setWidth(80, Unit.PIXELS);
                 itemLabel.setStyleName("leos-dragItem");
-                itemLabel.setId(type.name());
+                itemLabel.setId(type.getName());
                 DragAndDropWrapper dragAndDropWrapper = new DragAndDropWrapper(itemLabel);
-                dragAndDropWrapper.setData(type);
+                dragAndDropWrapper.setData(type.getName());
                 dragAndDropWrapper.setSizeUndefined();
                 dragAndDropWrapper.setDragStartMode(DragAndDropWrapper.DragStartMode.WRAPPER);
                 gridLayout.addComponent(dragAndDropWrapper);
@@ -263,8 +271,8 @@ public class EditTocWindow extends AbstractEditChangeMonitorWindow {
         tocTree = new EditTocTree();
 
         tocTree.setDragMode(Tree.TreeDragMode.NODE);
-        tocTree.setDropHandler(new EditTocDropHandler(tocTree, messageHelper, eventBus, tableOfContentRules));
 
+        tocTree.setDropHandler(new EditTocDropHandler(tocTree, messageHelper, eventBus, tableOfContentRules, LegalTextTocItemType::getTocItemTypeFromName));
         // configure toc tree
         tocTree.setImmediate(true);
         tocTree.setItemCaptionPropertyId(TableOfContentItemConverter.CAPTION_PROPERTY);

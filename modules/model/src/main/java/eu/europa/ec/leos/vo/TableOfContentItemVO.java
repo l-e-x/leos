@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -13,53 +13,15 @@
  */
 package eu.europa.ec.leos.vo;
 
+import eu.europa.ec.leos.vo.toctype.TocItemType;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 public class TableOfContentItemVO {
 
-    public static enum Type {
-        PREFACE(true, false),
-        PREAMBLE(true, false),
-        BODY(true, false),
-        PART(false, true),
-        TITLE(false, true),
-        CHAPTER(false, true),
-        SECTION(false, true),
-        SUBSECTION(false, true),
-        ARTICLE(false, true),
-        CITATIONS(false, false),
-        RECITALS(false, false),
-        CONCLUSIONS(true, true);
-
-        private boolean isRoot;
-        private boolean draggable;
-
-        Type(boolean isRoot, boolean draggable) {
-            this.isRoot = isRoot;
-            this.draggable = draggable;
-        }
-
-        public boolean isRoot() {
-            return isRoot;
-        }
-        
-        public boolean isDraggable() {
-            return draggable;
-        }
-
-        public static Type forName(String name) {
-            for (Type type : Type.values()) {
-                if (type.name().equalsIgnoreCase(name)) {
-                    return type;
-                }
-            }
-            return null;
-        }
-    }
-
-    private Type type;
+    private TocItemType type;
     private String id;
     private String number;
     private String heading;
@@ -70,9 +32,9 @@ public class TableOfContentItemVO {
     private TableOfContentItemVO parentItem;
 
     public TableOfContentItemVO(){
-
     }
-    public TableOfContentItemVO(Type type, String id, String number, String heading, Integer numTagIndex, Integer headingTagIndex, Integer vtdIndex) {
+
+    public TableOfContentItemVO(TocItemType type, String id, String number, String heading, Integer numTagIndex, Integer headingTagIndex, Integer vtdIndex) {
         this.type = type;
         this.id = id;
         this.number = number;
@@ -80,11 +42,6 @@ public class TableOfContentItemVO {
         this.numTagIndex = numTagIndex;
         this.headingTagIndex = headingTagIndex;
         this.vtdIndex = vtdIndex;
-    }
-
-
-    public void setType(Type type) {
-        this.type = type;
     }
 
     public void setId(String id) {
@@ -107,8 +64,12 @@ public class TableOfContentItemVO {
         this.headingTagIndex = headingTagIndex;
     }
 
-    public Type getType() {
+    public TocItemType getType() {
         return type;
+    }
+
+    public void setType(TocItemType type) {
+        this.type = type;
     }
 
     public String getId() {
@@ -139,6 +100,10 @@ public class TableOfContentItemVO {
         return parentItem;
     }
 
+    public List<TableOfContentItemVO> getChildItems() {
+        return childItems;
+    }
+
     public void addChildItem(TableOfContentItemVO tableOfContentItemVO) {
         if (tableOfContentItemVO.getType().isRoot()) {
             throw new IllegalArgumentException("Cannot add a root item as a child!");
@@ -166,12 +131,7 @@ public class TableOfContentItemVO {
     }
 
     public boolean areChildrenAllowed() {
-        if (type.equals(TableOfContentItemVO.Type.ARTICLE) || type.equals(TableOfContentItemVO.Type.CITATIONS) ||
-                type.equals(TableOfContentItemVO.Type.RECITALS) ||(type.isRoot()
-                && !(type.equals(TableOfContentItemVO.Type.BODY)  || type.equals(TableOfContentItemVO.Type.PREAMBLE)))) {
-            return false;
-        }
-        return true;
+        return type.areChildrenAllowed();
     }
 
     @Override
@@ -211,7 +171,7 @@ public class TableOfContentItemVO {
     public String toString() {
         final StringBuilder sb = new StringBuilder("TableOfContentItemVO{");
         sb.append("type=").append(type);
-        sb.append(", id='").append(id).append('\'');
+        sb.append(", GUID='").append(id).append('\'');
         sb.append(", number='").append(number).append('\'');
         sb.append(", heading='").append(heading).append('\'');
         sb.append(", numTagIndex=").append(numTagIndex);

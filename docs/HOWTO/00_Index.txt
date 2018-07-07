@@ -3,20 +3,20 @@
 
                             REPOSITORY BROWSER
 --------------------------------------------------------------------------------
-1.  Create a document
-        - refer to Create document HOWTO
-2.  Open a document
-        - refer to Open document HOWTO
-3.  Delete a document
-        - refer to Delete document HOWTO
-4.  Search documents
-        - refer to Search documents HOWTO
-5.  Manage contributors
-       - refer to Manage contributors HOWTO
-6.  Document stages
-        - refer to Document Stages HOWTO
-7.  Document filters
-        - refer to Document filters HOWTO
+1.  Create a legislative proposal
+        - refer to Create a legislative proposal HOWTO
+2.  Open a proposal
+        - refer to Open proposal HOWTO
+3.  Delete a proposal
+        - refer to Delete proposal HOWTO
+4.  Search proposal
+        - refer to Search proposal HOWTO
+5.  Proposal viewer
+        - refer to Proposal viewer HOWTO
+6.  Manage contributors
+        - refer to Manage contributors HOWTO
+7.  Proposal filters
+        - refer to Proposal filters HOWTO
 
                             DOCUMENT VIEWER
 --------------------------------------------------------------------------------
@@ -25,7 +25,7 @@
 09. Edit table of contents
         - refer to Table of Content HOWTO
 10. Document changes Pane
-            - refer to Document Changes Pane HOWTO
+        - refer to Document Changes Pane HOWTO
 11. Edit document
     11a.Edit Citations
         - refer to CITATION EDITION in Leos Editor HOWTO 
@@ -33,26 +33,42 @@
         - refer to RECITAL EDITION in Leos Editor HOWTO
     11c. Edit Articles
         - refer to ARTICLE EDITION in Leos Editor HOWTO
+	11d. Numbered paragraph
+		- refer to NUMBERED PARAGRAPH in Leos Editor HOWTO
+	11e. Sub Paragraph
+		- refer to SUB-PARAGRAPH in Leos Editor HOWTO
+	11f. Transform paragraph to point
+		- refer to TRANSFORM NUMBERED PARAGRAPH TO POINT AND VICE-VERSA in
+		Leos Editor HOWTO
+	11g. Insert References notes
+		- refer to REFERENCES NOTES in Leos Editor HOWTO
+	11h. Insert Cross-REFERENCES
+		- refer to CROSS-REFERENCE in Leos Editor HOWTO
+	11i. Insert Comments
+		- refer to COMMENTS in Leos Editor HOWTO
+	11j. Insert Tables
+		- refer to TABLES in Leos Editor HOWTO
+	11k. Insert Formulas
+		- refer to FORMULAS in Leos Editor HOWTO
+	11l. Insert Special Characters
+		- refer to INSERT SPECIAL CHARACTER in Leos Editor HOWTO
+	11m. Change text background color
+		- refer to BACKGROUND COLOR(HIGHLIGHT) in Leos Editor HOWTO
+	11n. Display semantics block
+		- refer to SHOW SEMANTICS BLOCKS in Leos Editor HOWTO
+	11o. display Akoma Ntoso code
+		- refer to SHOW AKN CODE in Leos Editor HOWTO
 12. Insert and delete Articles
         - refer to Articles HOWTO
-13. Preview document as HTML/PDF
-        - refer to Preview document HOWTO
-14. Edit metadata
-       - refer to Edit metadata HOWTO
-15. Compare two versions
+13. Edit meta data
+        - refer to Edit metadata HOWTO
+14. Compare two versions
         - refer to Compare two versions HOWTO
-16. Collaborative editing
-        - refer to Collaborative editing HOWTO
-
-                            COMMENTS VIEWER
---------------------------------------------------------------------------------
-17. Comment Viewer 
-    17a. Insert, edit and delete comments
-        - refer to COMMENTS section in Comments viewer HOWTO
-    17b. Insert and delete suggestions
-        - refer to SUGGESTIONS section in Comments viewer HOWTO
+15. Manage versions
+		- refer to Major minor version HOWTO
+                         
 
                             MISCELLANEOUS
 --------------------------------------------------------------------------------
-18. User Roles
+16. User Roles
         - refer to User Roles HOWTO

@@ -1,7 +1,7 @@
-/**
- * Copyright 2016 European Commission
+/*
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.1 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -30,12 +30,13 @@ import com.vaadin.server.SessionInitListener;
 @Scope("singleton")
 @Component("leosBootstrapSessionListener")
 public class LeosBootstrapSessionListener implements SessionInitListener {
-
+    private static final Logger LOG = LoggerFactory.getLogger(LeosBootstrapSessionListener.class);
     private static final long serialVersionUID = 3353508071786551417L;
 
 	@Override
 	public void sessionInit(SessionInitEvent event) throws ServiceException {
-		event.getSession().addBootstrapListener(new LeosBootstrapListener());
+        LOG.trace("Session id: {}", event.getSession().getSession().getId());
+        event.getSession().addBootstrapListener(new LeosBootstrapListener());
 	}
 
     private static class LeosBootstrapListener implements BootstrapListener {
@@ -45,8 +46,8 @@ public class LeosBootstrapSessionListener implements SessionInitListener {
 
         private static final String LEOS_BOOTSTRAP = "js/leosBootstrap.js";
         private static final String LEOS_BOOTSTRAP_ID = "leosBootstrap";
-        private static final String REQUIRE_JS = "lib/requirejs_2.1.22/require.js";
-        private static final String WEB_BOOTSTRAP = "js/web/leosWebBootstrap.js";
+        private static final String REQUIRE_JS = "lib/requirejs_2.3.3/require.js";
+        private static final String MODULES_BOOTSTRAP = "js/leosModulesBootstrap.js";
 
         @Override
         public void modifyBootstrapFragment(BootstrapFragmentResponse response) {
@@ -76,7 +77,7 @@ public class LeosBootstrapSessionListener implements SessionInitListener {
             htmlHead.appendElement("script")
                     .attr("type", "application/javascript")
                     .attr("src", REQUIRE_JS)
-                    .attr("data-main", WEB_BOOTSTRAP);
+                    .attr("data-main", MODULES_BOOTSTRAP);
         }
     }
 }

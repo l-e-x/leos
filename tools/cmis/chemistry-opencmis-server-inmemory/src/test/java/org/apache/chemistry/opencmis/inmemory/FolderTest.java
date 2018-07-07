@@ -18,7 +18,11 @@
  */
 package org.apache.chemistry.opencmis.inmemory;
 
+import java.util.HashMap;
+import java.util.List;
+
 import junit.framework.TestCase;
+
 import org.apache.chemistry.opencmis.inmemory.storedobj.api.Fileable;
 import org.apache.chemistry.opencmis.inmemory.storedobj.api.Filing;
 import org.apache.chemistry.opencmis.inmemory.storedobj.api.Folder;
@@ -27,8 +31,6 @@ import org.apache.chemistry.opencmis.inmemory.storedobj.impl.FolderImpl;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ObjectStoreImpl;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.util.List;
 
 /**
  * Some test directly against the in-memory folder object.
@@ -48,6 +50,7 @@ public class FolderTest extends TestCase {
     @Override
     @Before
     protected void setUp() throws Exception {
+        ConfigurationSettings.init(new HashMap<String, String>());
         fStore = new ObjectStoreImpl(TEST_REPOSITORY_ID);
         createFolders();
     }

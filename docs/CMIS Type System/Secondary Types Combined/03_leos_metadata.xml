@@ -1,0 +1,88 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<cmis:type xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns:cmis="http://docs.oasis-open.org/ns/cmis/core/200908/" xsi:type="cmis:cmisTypeSecondaryDefinitionType">
+    <cmis:id>leos:metadata</cmis:id>
+    <cmis:localName>leos:metadata</cmis:localName>
+    <cmis:localNamespace>leos</cmis:localNamespace>
+    <cmis:displayName>LEOS Metadata</cmis:displayName>
+    <cmis:queryName>leos:metadata</cmis:queryName>
+    <cmis:description>LEOS Metadata Secondary Type</cmis:description>
+    <cmis:baseId>cmis:secondary</cmis:baseId>
+    <cmis:parentId>cmis:secondary</cmis:parentId>
+    <cmis:creatable>false</cmis:creatable>
+    <cmis:fileable>false</cmis:fileable>
+    <cmis:queryable>true</cmis:queryable>
+    <cmis:fulltextIndexed>false</cmis:fulltextIndexed>
+    <cmis:includedInSupertypeQuery>true</cmis:includedInSupertypeQuery>
+    <cmis:controllablePolicy>false</cmis:controllablePolicy>
+    <cmis:controllableACL>false</cmis:controllableACL>
+    <cmis:typeMutability>
+        <cmis:create>true</cmis:create>
+        <cmis:update>false</cmis:update>
+        <cmis:delete>false</cmis:delete>
+    </cmis:typeMutability>
+    <cmis:propertyStringDefinition>
+        <cmis:id>metadata:docTemplate</cmis:id>
+        <cmis:localName>metadata:docTemplate</cmis:localName>
+        <cmis:displayName>Document Template</cmis:displayName>
+        <cmis:queryName>metadata:docTemplate</cmis:queryName>
+        <cmis:description>This is a Document Template property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>metadata:docStage</cmis:id>
+        <cmis:localName>metadata:docStage</cmis:localName>
+        <cmis:displayName>Document Stage</cmis:displayName>
+        <cmis:queryName>metadata:docStage</cmis:queryName>
+        <cmis:description>This is a Document Stage property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>metadata:docType</cmis:id>
+        <cmis:localName>metadata:docType</cmis:localName>
+        <cmis:displayName>Document Type</cmis:displayName>
+        <cmis:queryName>metadata:docType</cmis:queryName>
+        <cmis:description>This is a Document Type property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>metadata:docPurpose</cmis:id>
+        <cmis:localName>metadata:docPurpose</cmis:localName>
+        <cmis:displayName>Document Purpose</cmis:displayName>
+        <cmis:queryName>metadata:docPurpose</cmis:queryName>
+        <cmis:description>This is a Document Purpose property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+</cmis:type>

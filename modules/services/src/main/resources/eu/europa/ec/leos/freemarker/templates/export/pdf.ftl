@@ -1,0 +1,76 @@
+<#ftl encoding="UTF-8"
+      output_format="XML"
+      auto_esc=true
+      strict_syntax=true
+      strip_whitespace=true
+      strip_text=true
+      ns_prefixes={}>
+
+<#--
+    Copyright 2017 European Commission
+
+    Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+-->
+
+<#-- FTL imports -->
+<#-- XML variable to reference the input node model -->
+
+<#assign root =.data_model.resource_tree>
+
+<#assign proposal = root>
+<#assign proposalRef = proposal.getResourceId()>
+<#assign memorandum = proposal.getChildResource('memorandum')>
+<#assign memorandumRef = memorandum.getResourceId()>
+<#assign bill = proposal.getChildResource('bill')>
+<#assign billRef = bill.getResourceId()>
+<#assign annexes = bill.getChildResources('annex')>
+<#assign proposalCoverpageRef = proposal.getComponentId('coverPage')>
+<#assign memorandumCoverpageRef = memorandum.getComponentId('coverPage')>
+<#assign billCoverpageRef = bill.getComponentId('coverPage')>
+
+<@compress>
+    <importOptions>
+        <importJob filename="${proposal.getLeosCategory().name()?capitalize}">
+            <leos>
+                <resource ref="${proposalRef}">
+                    <includes>
+                        <include ref="${proposalCoverpageRef}"/>
+                    </includes>
+                    <resource ref="${memorandumRef}">
+                        <excludes>
+                            <exclude ref="${memorandumCoverpageRef}"/>
+                        </excludes>
+                    </resource>
+                    <resource ref="${billRef}">
+                        <excludes>
+                            <exclude ref="${billCoverpageRef}"/>
+                        </excludes>
+                        <#list annexes as annex>
+                            <#assign annexRef = annex.getResourceId()>
+                            <#assign annexCoverpageRef = annex.getComponentId('coverPage')>
+                            <resource ref="${annexRef}">
+                                <excludes>
+                                    <exclude ref="${annexCoverpageRef}"/>
+                                </excludes>
+                            </resource>
+                        </#list>
+                    </resource>
+                </resource>
+            </leos>
+            <formats>
+                <pdf>
+                    <format>pdf</format>
+                    <format>pdf/a</format>
+                </pdf>
+            </formats>
+        </importJob>
+    </importOptions>
+</@compress>

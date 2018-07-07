@@ -1,0 +1,9 @@
+                        SEARCH PROPOSAL - HOWTO
+--------------------------------------------------------------------------------
+
+1.  On top of the repository browser, a search field is provided to search 
+    proposal from list of available proposal.
+
+2.  To search, input full or part of the proposal title and if found, the list 
+    of proposal will be displayed matching the input text.
+   

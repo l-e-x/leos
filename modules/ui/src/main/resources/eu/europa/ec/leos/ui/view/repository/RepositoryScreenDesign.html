@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<meta charset="UTF-8" name="package-mapping" content="leos:eu.europa.ec.leos.web.ui.component.card">
+<head/>
+<body>
+<vaadin-horizonal-layout primary-style-name="repository-view" style-name="leos-repository" margin spacing size-full>
+    <vaadin7-vertical-layout primary-style-name="first-column" style-name="leos-card-filters" _id="filterArea" size-full :expand=".2">
+    </vaadin7-vertical-layout>
+    <vaadin7-vertical-layout primary-style-name="second-column" size-full :expand=".8" spacing>
+        <vaadin7-horizontal-layout spacing width-full>
+            <vaadin-button style-name="icon-only leos-refresh-button" icon="fonticon://FontAwesome/f021" _id="refreshButton" :top="" :left=""></vaadin-button>
+            <vaadin-button style-name="icon-only select-display-button" icon="fonticon://Vaadin-Icons/e7e6" _id="selectDisplayButton" :top="" :left=""></vaadin-button>
+            <vaadin-css-layout style-name="v-component-group" width-full :expand=".5" :top="" :center="">
+                <vaadin7-text-field _id="searchBox" style-name="inline-icon" icon="fonticon://Vaadin-Icons/e805" immediate width="90%"></vaadin7-text-field>
+                <vaadin-button style-name="group-button" _id="sortAscButton" id="ASC" icon="fonticon://Vaadin-Icons/e7ce"></vaadin-button>
+                <vaadin-button style-name="group-button" _id="sortDescButton" id="DESC" icon="fonticon://Vaadin-Icons/e7d1"></vaadin-button>
+            </vaadin-css-layout>
+            <vaadin-button style-name="primary" _id="createDocumentButton" :expand=".15" :top="" :right=""></vaadin-button>
+        </vaadin7-horizontal-layout>
+        <leos-card-holder _id="cardHolder" size-full :expand="1.0"></leos-card-holder>
+    </vaadin7-vertical-layout>
+</vaadin-horizonal-layout>
+</body>
+</html>
