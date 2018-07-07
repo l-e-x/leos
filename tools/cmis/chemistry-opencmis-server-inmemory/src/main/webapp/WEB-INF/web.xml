@@ -32,10 +32,6 @@
         <listener-class>org.apache.chemistry.opencmis.server.impl.CmisRepositoryContextListener</listener-class>
     </listener>
     
-    <listener>
-        <listener-class>com.sun.xml.ws.transport.http.servlet.WSServletContextListener</listener-class>
-    </listener>
-    
     <!-- 
          A servlet filter that logs all requests in files. Useful for monitoring and debugging.
          Use it with care! It can generate a huge amount of files and will slow down performance
@@ -113,6 +109,59 @@
     </filter-mapping>    
     -->
 
+    <!--
+        Uncomment the following filter to enable CORS support for the browser binding.
+        See http://software.dzhuvinov.com/cors-filter.html for details.
+        Put the CORS libraries into the WEB-INF/lib directory or uncomment the CORS dependency in the pom.xml.
+    -->
+    <!--
+    <filter>
+        <filter-name>CORS</filter-name>
+        <filter-class>com.thetransactioncompany.cors.CORSFilter</filter-class>
+        <init-param>
+            <param-name>cors.allowGenericHttpRequests</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.allowOrigin</param-name>
+            <param-value>*</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.allowSubdomains</param-name>
+            <param-value>false</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.supportedMethods</param-name>
+            <param-value>GET, POST</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.supportedHeaders</param-name>
+            <param-value>*</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.exposedHeaders</param-name>
+            <param-value></param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.supportsCredentials</param-name>
+            <param-value>true</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.maxAge</param-name>
+            <param-value>3600</param-value>
+        </init-param>
+        <init-param>
+            <param-name>cors.tagRequests</param-name>
+            <param-value>false</param-value>
+        </init-param>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>CORS</filter-name>
+        <servlet-name>cmisbrowser</servlet-name>
+    </filter-mapping>
+    -->
+
     <servlet>
         <servlet-name>cmisws10</servlet-name>
         <servlet-class>org.apache.chemistry.opencmis.server.impl.webservices.CmisWebServicesServlet</servlet-class>
@@ -170,6 +219,16 @@
         </init-param>
         <load-on-startup>2</load-on-startup>
     </servlet>
+    
+    <servlet>
+        <servlet-name>cmisendpoints</servlet-name>
+        <servlet-class>org.apache.chemistry.opencmis.server.impl.endpoints.SimpleCmisEndpointsDocumentServlet</servlet-class>
+        <init-param>
+            <param-name>template</param-name>
+            <param-value>/WEB-INF/cmis-endpoints.json</param-value>
+        </init-param>
+        <load-on-startup>3</load-on-startup>
+    </servlet>
 
     <servlet-mapping>
         <servlet-name>cmisws10</servlet-name>
@@ -195,9 +254,13 @@
         <servlet-name>cmisbrowser</servlet-name>
         <url-pattern>/browser/*</url-pattern>
     </servlet-mapping>
-	<!-- Hack to avoid double login by weblogic-->
+    <!-- Hack to avoid double login by weblogic-->
     <login-config>
         <auth-method>CLIENT-CERT</auth-method>
     </login-config>
 
+    <servlet-mapping>
+        <servlet-name>cmisendpoints</servlet-name>
+        <url-pattern>/cmis-endpoints.json</url-pattern>
+    </servlet-mapping>
 </web-app>

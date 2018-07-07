@@ -11,22 +11,3 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-.leoscomments {
-    display:inline;
-    margin-left:-3px;
-}
-
-.leoscomments:after{
-    content:url('../icons/left-brace.png');
-    position:absolute;
-    left:-2px;
-}
-
-.leoscomments:before{
-    content:url('../icons/right-brace.png');
-    position:absolute;
-}
-
-.leoscomments .comment-indicator{
-    display:none;
-}

@@ -23,9 +23,10 @@
             // path aliases for module names, relative to base URL
             paths: {
                 // JavaScript libraries
-                ckEditor: "lib/ckeditor_4.5.6/ckeditor",
-                "ckEditor.jquery": "lib/ckeditor_4.5.6/adapters/jquery",
+                ckEditor: "lib/ckeditor_4.5.10/ckeditor",
+                "ckEditor.jquery": "lib/ckeditor_4.5.10/adapters/jquery",
                 jsTree: "lib/jsTree_3.2.1/jstree",
+                cuid: "lib/cuid_1.3.8/build/client-cuid",
                 // LEOS modules
                 //"editor.profiles": "js/editor/profiles",
                 //"editor.plugins": "js/editor/plugins",
@@ -35,7 +36,7 @@
                  * In order to add new external ckEditor plugin put it in this section and prefix it with
                  * 'ck_' value.
                  */
-                ck_scayt: "lib/ck_scayt_4.5.6/plugin.js"
+                ck_scayt: "lib/ck_scayt_4.5.10/plugin.js"
                 /*<= end section with external ckEditor plugins */
             },
             // map given module ID into substitute module ID

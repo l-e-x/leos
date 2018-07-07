@@ -14,15 +14,9 @@
 package eu.europa.ec.leos.web.ui.extension;
 
 import eu.europa.ec.leos.vo.UserVO;
-import eu.europa.ec.leos.web.model.SectionVO;
 import eu.europa.ec.leos.web.shared.js.LeosJavaScriptExtensionState;
 
-import java.util.List;
-
 public class SideCommentsState extends LeosJavaScriptExtensionState {
-
     private static final long serialVersionUID = -2459202165954689298L;
-
     public UserVO user;
-    public List<SectionVO> comments;
 }

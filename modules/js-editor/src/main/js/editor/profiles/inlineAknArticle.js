@@ -43,12 +43,14 @@ define(function aknInlineArticleProfileModule(require) {
     plugins.push(require("plugins/indentlist/indentListPlugin"));
     plugins.push(require("plugins/leosHighlight/leosHighlightPlugin"));
     plugins.push(require("plugins/leosComments/leosCommentsPlugin"));
+    plugins.push(require("plugins/leosCommentAction/leosCommentActionPlugin"));
     plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
     plugins.push(require("plugins/leosHierarchicalElementShiftEnterHandler/leosHierarchicalElementShiftEnterHandler"));
     plugins.push(require("plugins/leosFloatingSpace/leosFloatingSpacePlugin"));
     plugins.push(require("plugins/leosMessageBus/leosMessageBusPlugin"));
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));
-    
+    plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));
+
     var pluginNames = plugins.map(function(p) {
         return p.name;
     });
@@ -70,15 +72,13 @@ define(function aknInlineArticleProfileModule(require) {
         // custom configuration to load (none if empty)
         customConfig: "",
         // comma-separated list of plugins to be loaded
-        plugins: "toolbar,wysiwygarea,elementspath,clipboard,undo,enterkey,entities,button,dialog,dialogui,"
+        plugins: "toolbar,wysiwygarea,elementspath,clipboard,undo,enterkey,button,dialog,dialogui,"
                 + "widget,lineutils,basicstyles," + "list,indentlist,indent,"
                 + "link,fakeobjects,find,specialchar,table,tableresize,tabletools,contextmenu,menubutton,mathjax,pastetext,colorbutton,sourcedialog",
         // comma-separated list of plugins that must not be loaded
         removePlugins: "",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
-        // convert all entities into Unicode numerical decimal format
-        entities_processNumerical: "force",
         // disable Advanced Content Filter (allow all content)
         allowedContent: true,
         // custom style sheet
@@ -138,8 +138,18 @@ define(function aknInlineArticleProfileModule(require) {
         colorButton_backStyle: {
             element: 'span',
             attributes: {
-                'class': 'leos-highlight-#(color)',
-            }
+                'class': 'leos-highlight-#(color)'
+            },
+            overrides: [{
+                element: 'span',
+                attributes: {
+                    'class': /^leos-highlight/,
+                    'refersto': '~leoshighlight',
+                    'data-hgl-userId' : /[\w]*/,
+                    'data-hgl-username' : /[\w]*/,
+                    'data-hgl-datetime' : /[\w]*/
+                }
+            }]
         }
     };
 

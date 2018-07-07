@@ -44,16 +44,12 @@ define(function testAknCitationPlugin(require) {
                         secondElement.setAttribute(DATA_AKN_NAME, "aknAuthorialNote");
 
                         var authNotes = [ firstElement, secondElement ];
-                        var authNotesObject = {
-                                get : function get(index) {
-                                    return authNotes[index];
-                                },
-                                length : authNotes.length
-                        };
-                        
                         var editor = {
                             editable: function editable() {
                                 return {$: {}}
+                            },
+                            LEOS: {
+                                lowestMarkerValue:6
                             }
                         };
 
@@ -65,12 +61,12 @@ define(function testAknCitationPlugin(require) {
                             }
                         };
                                                
-                        spyOn($.fn, "find").and.returnValue(authNotesObject);
+                        spyOn($.fn, "find").and.returnValue($(authNotes));
                         
-                        authorialNoteWidget._renumberAuthorialNotes.call(widget);
+                        authorialNoteWidget._renumberAuthorialNotes.call(widget, widget.editor);
                         expect(firstElement.getAttribute(MARKER)).toEqual("6");
                         expect(firstElement.innerHTML).toEqual(6);
-                        expect(secondElement.getAttribute(MARKER)).toEqual("6");
+                        expect(secondElement.getAttribute(MARKER)).toEqual("7");
                         expect(secondElement.innerHTML).toEqual(7);
                     });
         });

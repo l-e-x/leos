@@ -57,24 +57,23 @@ define(function leosCommentsPluginModule(require) {
                     id: "comment",
                     type: "text",
                     label: "Enter your comments here:",
-
                     setup: function setup(widget) {
                         // set the dialog value to the value from widget comment attribute
-                        this.setValue(CKEDITOR.tools.htmlDecode(widget.data.widgetdata));
+                        this.setValue(widget.data.commentText);
                     },
                     commit: function commit(widget) {
                         // update comment value by data introduce by user in dialog
-                        widget.setData("widgetdata", CKEDITOR.tools.htmlEncode(this.getValue().trim()));
+                        widget.setData("commentText", this.getValue());
                     }
                 }]
             }],
             //LEOS - 1963
             onOk: function(event) {
                 var selection = this._.editor.getSelection();
-                var ranges = selection.getRanges();
-                if(ranges && ranges.length > 0) {
-                 ranges[0].collapse(true);
-                }
+                selection.getRanges().forEach(
+                    function loopOverRange(currentRange) {
+                        currentRange.collapse(true);//take cursor to start of selected range
+                    });
             }
         };
         return dialogDefinition;
@@ -89,13 +88,10 @@ define(function leosCommentsPluginModule(require) {
             akn: "id",
             html: "id"
         }, {
-            html: "class=leoscomments"
-        }, {
-            html: "data-leosComments=popover"
+            akn: "refersto",
+            html: "refersto"
         }, {
             html: "data-akn-name=popup"
-        }, {
-            akn: "refersto=~leosComment"
         }, {
             akn: "leos:userid",
             html: "leos:userid"
@@ -105,6 +101,9 @@ define(function leosCommentsPluginModule(require) {
         }, {
             akn: "leos:datetime",
             html: "leos:datetime"
+        }, {
+            akn: "leos:dg",
+            html: "leos:dg"
         }],
         sub: {
             akn: "mp",

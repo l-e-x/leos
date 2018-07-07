@@ -20,7 +20,7 @@ define(function testTransformerModule(require) {
     var transformationConfigResolverStamp = require("transformer/transformationConfigResolver");
     var aknNumberedParagraph = require("plugins/aknNumberedParagraph/aknNumberedParagraphPlugin");
     var aknOrderedList = require("plugins/aknOrderedList/aknOrderedListPlugin");
-    var aknUnOrderedList = require("plugins/aknUnOrderedList/aknUnOrderedListPlugin");
+    var aknUnorderedList = require("plugins/aknUnorderedList/aknUnorderedListPlugin");
     var configNormalizerStampToTest = require("transformer/configNormalizer");
 
     var configs = transformationsConfigUtil.configs;
@@ -31,13 +31,13 @@ define(function testTransformerModule(require) {
         rawConfig : aknOrderedList.transformationConfig
     });
     
-    var aknUnOrderedListNormalizedConfig = configNormalizerStampToTest().getNormalizedConfig({
-        rawConfig : aknUnOrderedList.transformationConfig
+    var aknUnorderedListNormalizedConfig = configNormalizerStampToTest().getNormalizedConfig({
+        rawConfig : aknUnorderedList.transformationConfig
     });
 
     var allConfigs = [ configs.aknArticle.normalizedConfig, configs.aknAlinea.normalizedConfig, configs.aknAuthorialNote.normalizedConfig,
             configs.aknHtmlItalic.normalizedConfig, configs.aknHtmlUnderline.normalizedConfig, configs.aknHtmlBold.normalizedConfig,
-            configs.aknArticle.normalizedConfig, configs.aknHtmlAnchor.normalizedConfig, aknParagraphNormalizedConfig, aknOrderedListNormalizedConfig, aknUnOrderedListNormalizedConfig ];
+            configs.aknArticle.normalizedConfig, configs.aknHtmlAnchor.normalizedConfig, aknParagraphNormalizedConfig, aknOrderedListNormalizedConfig, aknUnorderedListNormalizedConfig ];
 
     function performTransformation(aknFragmentInHtml, htmlFragmentInHtml, configs, direction) {
         var inputFragmentInHtml;
@@ -149,15 +149,15 @@ define(function testTransformerModule(require) {
                                             });
                                         });
 
-                                        describe("Test akn unOrdered list.", function() {
-                                            describe("Expects to transform akn ordered list back and forth correctly.", function() {
+                                        describe("Test akn unordered list.", function() {
+                                            describe("Expects to transform akn unordered list back and forth correctly.", function() {
                                                 var aknFragmentInHtml = "<list><indent><num>1.</num><content><mp>content 1</mp></content></indent></list>";
-                                                var htmlFragmentInHtml = '<ul data-akn-name="aknUnOrderedList"><li data-akn-num="1.">content 1</li></ul>';
+                                                var htmlFragmentInHtml = '<ul data-akn-name="aknUnorderedList"><li data-akn-num="1.">content 1</li></ul>';
                                                 expectFragmentToBeTransformedCorrectly(aknFragmentInHtml, htmlFragmentInHtml, allConfigs);
                                             });
-                                            describe("Expects to transform akn ordered list with alinea back and forth correctly.", function() {
+                                            describe("Expects to transform akn unordered list with alinea back and forth correctly.", function() {
                                                 var aknFragmentInHtml = "<list><indent><num>1.</num><alinea><content><mp>content 1</mp></content></alinea><list><indent><num>11.</num><content><mp>nested content 1</mp></content></indent></list></indent></list>";
-                                                var htmlFragmentInHtml = '<ul data-akn-name="aknUnOrderedList"><li data-akn-num="1."><p>content 1</p><ul data-akn-name="aknUnOrderedList"><li data-akn-num="11.">nested content 1</li></ul></li></ul>';
+                                                var htmlFragmentInHtml = '<ul data-akn-name="aknUnorderedList"><li data-akn-num="1."><p>content 1</p><ul data-akn-name="aknUnorderedList"><li data-akn-num="11.">nested content 1</li></ul></li></ul>';
                                                 expectFragmentToBeTransformedCorrectly(aknFragmentInHtml, htmlFragmentInHtml, allConfigs);
                                             });
                                         });

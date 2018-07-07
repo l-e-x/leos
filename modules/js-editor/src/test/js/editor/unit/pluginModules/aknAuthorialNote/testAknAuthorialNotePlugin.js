@@ -17,15 +17,12 @@ define(function testAknAuthorialNotePlugin(require) {
     var aknAuthorialNotePluginToTest =  require("plugins/aknAuthorialNote/aknAuthorialNotePlugin");
 
     describe(
-            "Unit tests for plugins/aknAuthorialNote",
-            function() {
-                var transformationConfigForAknAuthorialNote = '{"akn":"authorialNote","html":"span[class=authorialnote]","attr":[{"html":"class=authorialnote"},{"akn":"marker","html":"marker"},{"akn":"id","html":"id"},{"html":"data-akn-name=aknAuthorialNote"}],"sub":{"akn":"mp","html":"span","attr":[{"akn":"id","html":"data-akn-mp-id"}],"sub":[{"akn":"text","html":"span[title]"}]}}';
+        "Unit tests for plugins/aknAuthorialNote",
+        function() {
+            var transformationConfigForAknAuthorialNote = '{"akn":"authorialNote","html":"span[class=authorialnote]","attr":[{"html":"class=authorialnote"},{"akn":"marker","html":"marker"},{"akn":"id","html":"id"},{"html":"data-akn-name=aknAuthorialNote"}],"sub":{"akn":"mp","html":"span","attr":[{"akn":"id","html":"data-akn-mp-id"}],"sub":[{"akn":"text","html":"span[title]"}]}}';
 
-                it("Tests if transformation config is valid.", function() {
-                    expect(JSON.stringify(aknAuthorialNotePluginToTest.transformationConfig)).toEqual(transformationConfigForAknAuthorialNote);
-
-                });
-
+            it("Tests if transformation config is valid.", function() {
+                expect(JSON.stringify(aknAuthorialNotePluginToTest.transformationConfig)).toEqual(transformationConfigForAknAuthorialNote);
             });
-
+        });
 });

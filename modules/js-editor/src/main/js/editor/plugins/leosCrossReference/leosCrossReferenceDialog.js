@@ -17,7 +17,6 @@ define(function leosCrossReferenceDialog(require) {
 
     // load module dependencies
     var CKEDITOR = require("promise!ckEditor");
-    var LOG = require("logger");
     var pluginTools = require("plugins/pluginTools");
     var pluginName = "leosCrossReference";
     var jsTreeCssPath = pluginTools.getResourceUrl(pluginName, "css/jstree/themes/default/style.css");
@@ -30,8 +29,8 @@ define(function leosCrossReferenceDialog(require) {
     dialogDefinition.initializeDialog = function initializeDialog(editor) {
         var htmlTocTemplate = '<div id="treeContainer"></div>';
         var htmlContentTemplate = '<div id="content"><div id="contentContainer"  class="selected-content"></div>'
-                + '<div id="referenceElement" class="selected-content"><label id="lblRefElement"><strong>Referenced element: </strong></lable><label id="pathLabel"> </label></div>'
-                + '<div id="refAs"><label id="lblRefAs"><strong>Show reference as: </strong></label><input placeholder="Label your reference..." id="refrenceTextLabel" type="text"  size="40" ></input><div id="errorLabel" > </div></div></div>';
+            + '<div id="referenceElement" class="selected-content"><label id="lblRefElement"><strong>Referenced element: </strong></lable><label id="pathLabel"> </label></div>'
+            + '<div id="refAs"><label id="lblRefAs"><strong>Show reference as: </strong></label><input placeholder="Label your reference..." id="refrenceTextLabel" type="text"  size="40" ><div id="errorLabel" > </div></div></div>';
 
         function handleOkDialogButton(dialog) {
             var okButton = dialog._.buttons['ok'];
@@ -76,15 +75,13 @@ define(function leosCrossReferenceDialog(require) {
                         type: 'html',
                         title: 'Table of Content',
                         html: htmlTocTemplate,
-                        className: 'crTableOfContent',
+                        className: 'crTableOfContent'
                     }, {
                         type: 'html',
                         title: 'Selected Content',
                         className: 'crContent',
-                        html: htmlContentTemplate,
-                    },
-
-                    ]
+                        html: htmlContentTemplate
+                    }]
                 }]
             }],
             onLoad: function(event) {
@@ -103,7 +100,7 @@ define(function leosCrossReferenceDialog(require) {
         };
         return dialogDefinition;
     };
-    
+
     function appendPluginCss(css) {
         $('<link>').appendTo('head').attr({
             type : 'text/css',
@@ -111,7 +108,7 @@ define(function leosCrossReferenceDialog(require) {
             href : css
         });
     }
-    
+
     /*
      * This handler is used to manage the content display for the selected node in the table of content and the selection of element in the content pane itself.
      * The final outcome is the path for the node selected in the table of content plus path of the selected element in the content pane.
@@ -138,7 +135,6 @@ define(function leosCrossReferenceDialog(require) {
                         that.selectElementInContent($existingSelected);
                     }
                 }
-
                 that.handleOnClick();
             });
         },
@@ -153,7 +149,6 @@ define(function leosCrossReferenceDialog(require) {
                 } else {
                     that.selectElementInContent($this);
                 }
-                
                 event.stopPropagation();
             });
 
@@ -202,11 +197,11 @@ define(function leosCrossReferenceDialog(require) {
         },
         // Retrieve the refrenced node label(this is set by the user)
         getRefrenceText: function getRefrenceText() {
-            this.refrenceText = this.$refrenceTextLabel.val()
+            this.refrenceText = CKEDITOR.tools.htmlEncode(this.$refrenceTextLabel.val());
             return this.refrenceText;
         },
         setRefrenceTextLabel: function setRefrenceTextLabel(label) {
-            this.$refrenceTextLabel.val(label);
+            this.$refrenceTextLabel.val(CKEDITOR.tools.htmlDecode(label));
         },
         getNodeId: function getNodeId() {
             return this.nodeId;
@@ -250,10 +245,7 @@ define(function leosCrossReferenceDialog(require) {
             this.existingNodeId = nodeId;
         },
         isExistingValuesChanged: function isExistingValuesChanged() {
-            if (this.existingUeserMessage !== this.refrenceText || this.existingNodeId !== this.nodeId) {
-                return true;
-            }
-            return false;
+            return (this.existingUeserMessage !== this.refrenceText || this.existingNodeId !== this.nodeId);
         },
 
         setUpExisting: function setUpExisting(refText, nodeId) {
@@ -261,7 +253,7 @@ define(function leosCrossReferenceDialog(require) {
             this.setRefrenceTextLabel(refText);
             tableOfContentHandler.loadTableOfContent(nodeId);
         }
-    }
+    };
 
     /* This handler is used to manage the tree for table of content. */
     var tableOfContentHandler = {
@@ -332,9 +324,7 @@ define(function leosCrossReferenceDialog(require) {
                 selectedIds.push(treeContext.nodeId);
             }
 
-            var theMostNestedTreeItem = this._matchSelectedTreeItem(treeContext.tocItems, selectedIds);
-            return theMostNestedTreeItem;
-
+            return this._matchSelectedTreeItem(treeContext.tocItems, selectedIds);
         },
         _matchSelectedTreeItem: function _matchSelectedTreeItem(tocItems, selectedIds) {
             var currentItem;
@@ -350,12 +340,9 @@ define(function leosCrossReferenceDialog(require) {
                         var childCurrentItem = that._matchSelectedTreeItem(item.children, selectedIds.slice(1));
                         if (childCurrentItem) {
                             currentItem = childCurrentItem;
-                            return;
                         }
                     }
-
                 }
-
             });
             return currentItem;
         },
@@ -378,9 +365,7 @@ define(function leosCrossReferenceDialog(require) {
             });
             this.handleNodeSelection();
         }
-
     };
 
     return dialogDefinition;
-
 });

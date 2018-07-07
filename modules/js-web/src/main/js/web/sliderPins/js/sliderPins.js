@@ -175,7 +175,7 @@
     }
     
     function _getPositionedElement(element){
-        while(window.getComputedStyle(element).getPropertyValue("display")==="none") {
+        while($(element).is(':hidden')) {
             element = element.parentElement;
         }
         return element;

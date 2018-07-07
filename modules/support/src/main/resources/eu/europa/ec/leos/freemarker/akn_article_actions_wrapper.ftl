@@ -1,9 +1,12 @@
 <#ftl encoding="UTF-8"
+      output_format="XML"
+      auto_esc=true
       strict_syntax=true
       strip_whitespace=true
       strip_text=true
       ns_prefixes={"D":"http://www.akomantoso.org/2.0",
                    "leos":"urn:eu:europa:ec:leos"}>
+
 <#--
     Copyright 2016 European Commission
 

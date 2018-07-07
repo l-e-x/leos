@@ -20,7 +20,7 @@ define(function aknUnorderedListPluginModule(require) {
     var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
 
     var pluginName = "aknUnorderedList";
-    var cssPath = "css/aknUnOrderedList.css";
+    var cssPath = "css/aknUnorderedList.css";
 
     var DATA_AKN_NUM = "data-akn-num";
     var LIST_ITEM = "li";
@@ -40,7 +40,7 @@ define(function aknUnorderedListPluginModule(require) {
         var unOrderedLists = jqEditor.find("ul");
         for (var ii = 0; ii < unOrderedLists.length; ii++) {
             var unOrderedList = unOrderedLists[ii];
-            unOrderedList.setAttribute("data-akn-name", "aknUnOrderedList");
+            unOrderedList.setAttribute("data-akn-name", "aknUnorderedList");
             var listItems = unOrderedList.children;
             for (var jj = 0; jj < listItems.length; jj++) {
                 listItems[jj].removeAttribute("data-akn-name");
@@ -58,7 +58,7 @@ define(function aknUnorderedListPluginModule(require) {
     function resetIndentsIndicators(event) {
         event.editor.fire( 'lockSnapshot' );
         var jqEditor = $(event.editor.editable().$);
-        var unOrderedLists = jqEditor.find("*[data-akn-name='aknUnOrderedList']");
+        var unOrderedLists = jqEditor.find("*[data-akn-name='aknUnorderedList']");
         for (var ii = 0; ii < unOrderedLists.length; ii++) {
             var listItems = unOrderedLists[ii].children;
             for (var jj = 0; jj < listItems.length; jj++) {
@@ -82,7 +82,7 @@ define(function aknUnorderedListPluginModule(require) {
                 akn : "id",
                 html : "id"
             }, {
-                html : "data-akn-name=aknUnOrderedList"
+                html : "data-akn-name=aknUnorderedList"
             } ]
         },
         rootElementsForFrom : [ "list", "indent" ],

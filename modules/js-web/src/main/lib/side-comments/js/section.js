@@ -131,11 +131,10 @@ define(function sectionModule(require, exports, module) {
 		var comment = {
 			sectionId: this.id,
 			comment: commentBody,
-			authorAvatarUrl: this.currentUser.avatarUrl,
 			authorName: this.currentUser.name,
 			dg: this.currentUser.dg,
 			authorId: this.currentUser.id,
-			authorUrl: this.currentUser.authorUrl || null
+            refersTo:"~leosComment" //default
 		};
 		$commentBox.val(''); // Clear the comment.
 		this.eventPipe.emit('commentPosted', comment);

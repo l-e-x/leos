@@ -2,6 +2,7 @@
   <a href="#" class="marker">
     <span><%= comments.length %></span>
   </a>
+  <a class="suggestion-btn" title="Make a suggestion">&#xe7fa;</a>
   
   <div class="comments-wrapper">
     <ul class="comments">
@@ -13,15 +14,11 @@
     <a href="#" class="add-comment">Leave a comment</a>
     
     <% if (currentUser){ %>
-      <div class="comment-form">
-        <div class="author-avatar">
-          <img src="<%= currentUser.avatarUrl %>">
-        </div>
+      <div class="~leosComment comment-form">
+        <span class="author-avatar"/>
         <p class="author-name">
-          <%= currentUser.name %>
-          <% if(currentUser.dg){ %>
-            (<%= currentUser.dg %>)
-          <% }%>
+            <%=currentUser.name%>
+            <% if(currentUser.dg){ %>(<%= currentUser.dg %>)<%}%>
         </p>
         <input type="text" class="comment-box right-of-avatar" placeholder="Leave a comment...">
         <div class="actions right-of-avatar">

@@ -68,4 +68,22 @@ public class ElementServiceImpl implements ElementService {
         }
         return document;
     }
+
+    @Override
+    public LeosDocument deleteElement(LeosDocument document, String userlogin, String elementId, String elementType) {
+
+        Validate.notNull(document, "Document is required.");
+        Validate.notNull(elementId, "Element id is required.");
+
+        byte[] updatedXmlContent;
+        try {
+            updatedXmlContent = xmlContentProcessor.deleteElementByTagNameAndId(IOUtils.toByteArray(document.getContentStream()), elementType, elementId);
+            updatedXmlContent = xmlContentProcessor.renumberArticles(updatedXmlContent, document.getLanguage());
+            document = documentService.updateDocumentContent(document.getLeosId(), userlogin, updatedXmlContent,"operation."+ elementType +".deleted");
+
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to delete the element.");
+        }
+        return document;
+    }
 }

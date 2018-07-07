@@ -58,7 +58,7 @@ bill {
     padding-right: 25px;
 }
 
-bill aknP {
+aknP {
     display: block;
     padding-top: 6pt;
     padding-bottom: 6pt;
@@ -235,9 +235,9 @@ bill subsection > num, subsection > heading {
 }
 
 bill article {
-    padding-left: 25px;
-    padding-right: 5px;
-}
+     padding-left: 25px;
+     padding-right: 5px;
+ }
 
 bill ref:before {
     display: inline;

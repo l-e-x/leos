@@ -15,6 +15,7 @@
 define(function authorialNoteWidgetModule(require) {
     "use strict";
 
+    var CKEDITOR = require("promise!ckEditor");
     var $ = require("jquery");
 
     var authorialNoteWidgetDefinition = {
@@ -24,48 +25,41 @@ define(function authorialNoteWidgetModule(require) {
         template: '<span class="authorialnote" title="" marker="default" data-akn-name="aknAuthorialNote"></span>',
         dialog: "authorialNoteDialog",
         init: function() {
-            var title = this.element.getAttribute("title") || "";
-            // move title value to fnote so the dialog can access it
-            this.setData("fnote", title);
-            this.on("ready", this._renumberAuthorialNotes.bind(this));
-            this.on("destroy", this._renumberAuthorialNotes.bind(this));
+            this.on("ready", this._renumberAuthorialNotes.bind(undefined, this.editor));
+            this.on("destroy", this._renumberAuthorialNotes.bind(undefined, this.editor));
         },
 
         data: function data() {
-            // move fnote value to title so element title can be updated after changes done by user in dialog
             this.element.setAttribute("title", this.data.fnote);
         },
 
-        _renumberAuthorialNotes: function _renumberAuthorialNotes() {
-            var $editable = $(this.editor.editable().$);
+        upcast: function upcast(element, data) {
+            if(element.hasClass("authorialnote")) {
+                var title = element.attributes["title"] || "";
+                var fnote = CKEDITOR.tools.htmlDecodeAttr(title);
+                data["fnote"] = fnote;
+                return element;
+            }
+        },
+
+        downcast: function downcast(element) {
+            if(element.hasClass("authorialnote")) {
+                var fnote = element.attributes["title"] || "";
+                var title = CKEDITOR.tools.htmlEncodeAttr(fnote);
+                element.attributes["title"] = title;
+                return element;
+            }
+        },
+
+        _renumberAuthorialNotes: function _renumberAuthorialNotes(editor) {
+        	var markerValue = editor.LEOS.lowestMarkerValue;
+        	var $editable = $(editor.editable().$);
             var authorialNotes = $editable.find('*[data-akn-name="aknAuthorialNote"]');
-            if (authorialNotes && authorialNotes.length > 0) {
-                var markerValue = this._getLowestMarkerValue(authorialNotes);
-                var currentMarkerVal = parseInt(this.element.getAttribute("marker"));
-                if (!isNaN(currentMarkerVal)) {
-                    markerValue = Math.min.apply(Math, [markerValue, currentMarkerVal]);
-                }
-                for (var index = 0; index < authorialNotes.length; index++) {
-                    authorialNotes.get(index).innerHTML = markerValue;
+            authorialNotes.each(function() {
+                    this.innerHTML = markerValue;
+                    this.setAttribute("marker", markerValue);
                     markerValue = markerValue + 1;
-                }
-            }
-        },
-
-        _getLowestMarkerValue: function _getLowestMarkerValue(authorialNotes) {
-            var markerArray = [];
-            for (var index = 0; index < authorialNotes.length; index++) {
-                var markerVal = parseInt(authorialNotes.get(index).getAttribute("marker"));
-                if (!isNaN(markerVal)) {
-                    markerArray.push(markerVal);
-                }
-            }
-            return markerArray.length > 0 ? Math.min.apply(Math, markerArray) : 1;
-        },
-
-        upcast: function upcast(element) {
-            // Defines which elements will become widgets.
-            return element.hasClass("authorialnote");
+            });
         }
     };
 

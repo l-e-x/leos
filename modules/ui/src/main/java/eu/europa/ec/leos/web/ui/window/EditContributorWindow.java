@@ -33,7 +33,6 @@ import java.util.*;
 public class EditContributorWindow extends AbstractEditWindow {
     final static String COL_NAME = "name";
     final static String COL_LOGIN = "id";
-    final static String COL_URL = "avatarUrl";
     final static String COL_DG = "dg";
 
     private BeanItemContainer container;
@@ -66,7 +65,6 @@ public class EditContributorWindow extends AbstractEditWindow {
     private void customizeColumns() {
 
         userGrid.removeColumn(COL_DG);
-        userGrid.removeColumn(COL_URL);
 
         String[] visibleColumns = {COL_NAME, COL_LOGIN};
         for (String col : visibleColumns) {

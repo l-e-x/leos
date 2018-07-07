@@ -11,71 +11,184 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-.side-comment .comments-wrapper {
-	text-align: left;
-	left: 30px;
-}
-
 .side-comment {
-	background-color: white;
-	right: -23px;
-	font-weight: normal;
-	font-style: normal;
-	font-family: "Open Sans";
+    background-color: white;
+    right: -23px;
+    font-weight: normal;
+    font-style: normal;
+    font-family: "Open Sans";
 }
 
-.side-comment .marker:before, .side-comment .marker span {
-	top: 0;
-	right: 0;
+.side-comment .comments-wrapper{
+    width:276px;
+    text-align: left;
+    left: 30px;
+}
+
+.side-comment .comments-wrapper docTitle>*{
+    padding:0;
+    display:inline;
+}
+
+.side-comment .marker:before,
+.side-comment .marker span {
+    top: 0;
+    right: 0;
 }
 
 .side-comment .add-comment {
-	background-color: white;
-	margin: 0;
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-}
-
-.comment .right-of-avatar {
-	padding-right: 2px;
-}
-
-.side-comment ul.comments li, .side-comment .comment-form {
-	background-color: white;
-	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-	padding: 10px 0;
-}
-
-.comment-form {
-	background-color: white;
-}
-
-.commentable-section {
-	border: 1px white solid;
-}
-
-.commentable-section:hover {
-	border: 1px #ADBDCE solid;
+    background-color: white;
+    margin: 0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .side-comment .right-of-avatar {
-	float:right;
-	padding-right: 2px;	
+    padding-right: 2px;
+    width: 233px;
+    float:right;
+}
+
+.side-comment .author-name{
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow:  ellipsis;
+    border-bottom: 1px solid grey;
+    padding-bottom: 2px;
+}
+
+.side-comment .comment,
+.side-comment .comment-box,
+.side-comment .author-name {
+    font-size: 13px;
+    line-height:16px;
+}
+
+.side-comment .add-comment{
+    font-size: 13px;
+}
+
+.side-comment ul.comments li,
+.side-comment .comment-form {
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    padding: 5px 0;
+}
+
+.side-comment ul.comments li.\~leosSuggestion{
+    background: antiquewhite;
+}
+
+.side-comment .\~leosSuggestion .author-name:before {
+    content:'Suggestion [';
+}
+
+.side-comment .\~leosComment .author-name:before {
+    content:'Comment [';
+}
+
+.side-comment .author-name:after {
+    content:']';
+}
+
+/* display quotes around suggestions*/
+.side-comment .\~leosSuggestion .comment>*:before,
+.side-comment .\~leosSuggestion .comment>*:after {
+    font-family: "Vaadin-Icons";
+    font-size: 8px;
+    position:relative;
+    color:grey;
+}
+
+.side-comment .\~leosSuggestion .comment>*:before {
+    content: '\e6c2';
+    top:-5px;
+    left:-5px;
+}
+
+.side-comment .\~leosSuggestion .comment>*:after {
+    content: '\e6c3';
+    top:-5px;
+    left:5px;
+}
+
+/* display the icons before author name*/
+.side-comment .author-avatar{
+    padding-top:6px;
+}
+
+.side-comment .author-avatar:before{
+    padding-left:14px;
+    font-size: 15px;
+    font-family:  "Vaadin-Icons";
+}
+
+.side-comment .\~leosSuggestion .author-avatar:before{
+    content: '\e7fa';
+}
+
+.side-comment .\~leosComment .author-avatar:before{
+    content: '\e767';
+}
+
+.comments aknP{
+    padding:0;
+}
+
+.comment-form {
+    background-color: white;
+}
+
+.commentable-section {
+    border: 1px white solid;
+}
+
+.commentable-section:hover {
+    border: 1px #ADBDCE solid;
 }
 
 .side-comments-open {
-	-webkit-transform: none;
-	-moz-transform: none;
-	-ms-transform: none;
-	-o-transform: none;
-	transform: none;
+    -webkit-transform: none;
+    -moz-transform: none;
+    -ms-transform: none;
+    -o-transform: none;
+    transform: none;
 }
 
 @media (max-width: 768px) {
-	.side-comments-open {
-		-webkit-transform: none;
-		-moz-transform: none;
-		-ms-transform: none;
-		-o-transform: none;
-		transform: none;
-	}
+    .side-comments-open {
+        -webkit-transform: none;
+        -moz-transform: none;
+        -ms-transform: none;
+        -o-transform: none;
+        transform: none;
+    }
+}
+
+.suggestion-btn {
+    display: none;
+    line-height: 16px;
+    text-align: center;
+    text-decoration: none;
+    color:lightgrey;
+    margin-top:25px;
+    font-family:  "Vaadin-Icons";
+}
+
+.commentable-section:hover .suggestion-btn {
+    display:block;
+}
+
+.suggestion-btn:hover {
+    color: #4FAF62;
+    text-decoration: none;
+}
+
+.commentable-section:hover .suggestion-btn.suggestion-btn-inactive {
+    display:none;
+}
+
+.commentable-section.editor-active {
+    display: block;
+    border: 1px solid #94c0d2;
+    background-color: #E5F0F6;
 }

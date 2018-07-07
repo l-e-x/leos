@@ -1,4 +1,4 @@
-
+    
                             LEOS EDITOR - HOWTO
 -------------------------------------------------------------------------------
 
@@ -199,8 +199,12 @@
 3.  To edit an existing comment double-click on it. A dialog will appear to edit
     the comment text. Edit the existing text and click 'Ok'.
    
-4.  To delete an existing comment, select it with the mouse and press the 
-    'DELETE' key on the keyboard. The comment will be deleted.
+4.  To delete an existing comment, there are two ways, 
+    a)  Select it with the mouse and press the 'DELETE' key on the keyboard. The 
+        comment will be deleted. 
+    b)  If 'Show Comments' is active and editor is open, a delete button will 
+        become visible for comments inside edited area. Clicking on 'Delete' will 
+        delete the comment.
    
 5.  To 'drag n drop' an existing comment, select it from the little 
     square icon that appears over it and drag it to the desired position then 
@@ -209,4 +213,22 @@
 6.  Document toolbar provides a 'Show comments' button. On click it displays all
     the comments in the document. Clicking again on the same button, hides all 
     comments.
- 
+
+                                 SUGGESTIONS
+--------------------------------------------------------------------------------
+1.  If there is any suggestion present on any element, a icon of 'pinned-box' 
+    will appear on the right side of element.
+
+2.  Hovering over the 'pinned-box' icon will display the suggested text.
+
+3.  if Article/Citation/Recital editor is active and 'Show Comments' button is 
+    also active, then two buttons 'Accept' and 'Delete' will appear on the right
+    -bottom corner of the suggestion box.
+
+4.  Clicking on 'Accept' button will replace the current element in the editor 
+    with text inside the suggestion. Suggestion will be removed after accept. 
+    All comments in text will be moved to end of the element.
+
+5.  Clicking on 'Delete' will remove the suggestion.
+
+6.  Editor Save button must be used to persist the accept/delete for suggestion.

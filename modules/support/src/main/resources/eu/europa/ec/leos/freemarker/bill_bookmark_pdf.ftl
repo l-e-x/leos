@@ -1,4 +1,6 @@
 <#ftl encoding="UTF-8"
+      output_format="XML"
+      auto_esc=true
       strict_syntax=true
       strip_whitespace=true
       strip_text=true
@@ -6,10 +8,9 @@
                    "leos":"urn:eu:europa:ec:leos"}>
 
 <#--
-
     Copyright 2016 European Commission
 
-    Licensed under the EUPL, Version 1.1 or � as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.1 or - as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -18,7 +19,6 @@
     Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the Licence for the specific language governing permissions and limitations under the Licence.
-
 -->
 
 <#-- FTL debug information -->
@@ -61,14 +61,14 @@
 <#-- default handler for toc items -->
 <#macro tocItem>
     <#if (.node.num??)>
-        <#local tocNum=.node.num.@@text?trim?xml>
+        <#local tocNum=.node.num.@@text?trim>
         <#if (tocNum?length gt 0)>
             <#local tocName=tocNum>
         </#if>
     </#if>
 
     <#if (.node.heading??)>
-        <#local tocDesc=.node.heading.@@text?trim?xml>
+        <#local tocDesc=.node.heading.@@text?trim>
         <#if (tocDesc?length gt 0)>
             <#if (tocName?? && tocName?length gt 0)>
                 <#local tocName=tocName + " - " + tocDesc>
@@ -92,5 +92,5 @@
 
 <#-- default handler for text nodes -->
 <#macro @text>
-<#compress>${.node?trim?xml}</#compress>
+<#compress>${.node?trim}</#compress>
 </#macro>

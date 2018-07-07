@@ -46,8 +46,11 @@
 
                             COMMENTS VIEWER
 --------------------------------------------------------------------------------
-17. Insert, edit and delete comments
-        - refer to Comments viewer HOWTO
+17. Comment Viewer 
+    17a. Insert, edit and delete comments
+        - refer to COMMENTS section in Comments viewer HOWTO
+    17b. Insert and delete suggestions
+        - refer to SUGGESTIONS section in Comments viewer HOWTO
 
                             MISCELLANEOUS
 --------------------------------------------------------------------------------

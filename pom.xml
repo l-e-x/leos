@@ -20,7 +20,7 @@
 
     <groupId>eu.europa.ec.leos.prototype</groupId>
     <artifactId>leos</artifactId>
-    <version>3.0.0-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>LEOS Prototype</name>
@@ -85,6 +85,9 @@
         <jetty-maven-plugin.version>9.3.7.v20160115</jetty-maven-plugin.version>
         <tomcat7-maven-plugin.version>2.2</tomcat7-maven-plugin.version>
         <jasmine-maven-plugin.version>2.1</jasmine-maven-plugin.version>
+        <selenium-webdriver.version>2.53.0</selenium-webdriver.version>
+        <phantomjs-webdriver.version>1.3.0</phantomjs-webdriver.version>
+        <phantomjs.version>2.1.1</phantomjs.version>
         <cobertura-maven-plugin.version>2.6</cobertura-maven-plugin.version>
         <build-helper-plugin.version>1.8</build-helper-plugin.version>
         <build-number-plugin.version>1.3</build-number-plugin.version>
@@ -112,7 +115,7 @@
         <hibernate-jpa2-api.version>1.0.1.Final</hibernate-jpa2-api.version>
         <hibernate-orm.version>4.2.10.Final</hibernate-orm.version>
         <jboss-logging.version>3.1.3.GA</jboss-logging.version>
-        <chemistry-opencmis.version>0.13.0</chemistry-opencmis.version>
+        <chemistry-opencmis.version>0.14.0</chemistry-opencmis.version>
         <httpclient.version>4.3.6</httpclient.version>
         <servlet.version>3.0.1</servlet.version>
         <commons-lang3.version>3.3</commons-lang3.version>
@@ -120,7 +123,7 @@
         <guava.version>19.0</guava.version>
         <jsr305.version>2.0.3</jsr305.version>
         <joda-time.version>2.3</joda-time.version>
-        <freemarker.version>2.3.20</freemarker.version>
+        <freemarker.version>2.3.25-incubating</freemarker.version>
         <vtd-xml.version>2.12</vtd-xml.version>
         <xstream.version>1.4.7</xstream.version>
         <jersey.version>1.18</jersey.version>
@@ -135,9 +138,6 @@
         <vaadin-itemlayout.version>2.0.2</vaadin-itemlayout.version>
         <vaadin-icons.version>1.0.1</vaadin-icons.version>
         <vaadin-reset-button.version>1.2.1</vaadin-reset-button.version>
-        <!-- jaxws -->
-        <javax.xml.ws.version>2.2.8</javax.xml.ws.version>
-        <com.sun.xml.ws.version>2.2.7</com.sun.xml.ws.version>
     </properties>
 
     <prerequisites>
@@ -282,6 +282,12 @@
                 <artifactId>chemistry-opencmis-client-impl</artifactId>
                 <version>${chemistry-opencmis.version}</version>
                 <scope>runtime</scope>
+                <exclusions>
+                    <exclusion>
+                        <groupId>asm</groupId>
+                        <artifactId>asm</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
@@ -562,16 +568,6 @@
                 <version>${h2db.version}</version>
                 <scope>test</scope>
             </dependency>
-            <dependency>
-                <groupId>javax.xml.ws</groupId>
-                <artifactId>jaxws-api</artifactId>
-                <version>${javax.xml.ws.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.sun.xml.ws</groupId>
-                <artifactId>jaxws-rt</artifactId>
-                <version>${com.sun.xml.ws.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -810,10 +806,26 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <!-- Browser specific drivers require an instance to be installed and accessible -->
-                        <webDriverClassName>org.openqa.selenium.firefox.FirefoxDriver</webDriverClassName>
+                        <webDriverClassName>org.openqa.selenium.phantomjs.PhantomJSDriver</webDriverClassName>
+                        <phantomjs>
+                            <version>${phantomjs.version}</version>
+                            <checkSystemPath>false</checkSystemPath>
+                            <enforceVersion>true</enforceVersion>
+                        </phantomjs>
                         <haltOnFailure>true</haltOnFailure>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.seleniumhq.selenium</groupId>
+                            <artifactId>selenium-java</artifactId>
+                            <version>${selenium-webdriver.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>com.codeborne</groupId>
+                            <artifactId>phantomjsdriver</artifactId>
+                            <version>${phantomjs-webdriver.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>com.cj.jshintmojo</groupId>
@@ -966,49 +978,10 @@
                 <project.java.debug>true</project.java.debug>
                 <project.java.optimize>false</project.java.optimize>
                 <project.vaadin.draftCompile>true</project.vaadin.draftCompile>
-                <js.skipTests>true</js.skipTests>
-                <skipTests>true</skipTests>
+                <js.skipTests>false</js.skipTests>
+                <skipTests>false</skipTests>
             </properties>
         </profile>
-        <!-- DEVELOPMENT -->
-        <profile>
-            <id>env-dev</id>
-            <activation>
-                <property>
-                    <name>env</name>
-                    <value>dev</value>
-                </property>
-            </activation>
-            <properties>
-                <leos.build.env>dev</leos.build.env>
-                <project.java.debug>true</project.java.debug>
-            </properties>
-        </profile>
-        <!-- TEST -->
-        <profile>
-            <id>env-test</id>
-            <activation>
-                <property>
-                    <name>env</name>
-                    <value>test</value>
-                </property>
-            </activation>
-            <properties>
-                <leos.build.env>test</leos.build.env>
-            </properties>
-        </profile>
-        <!-- ACCEPTANCE -->
-        <profile>
-            <id>env-acc</id>
-            <activation>
-                <property>
-                    <name>env</name>
-                    <value>acc</value>
-                </property>
-            </activation>
-            <properties>
-                <leos.build.env>acc</leos.build.env>
-            </properties>
-        </profile>
+    
     </profiles>
 </project>

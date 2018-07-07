@@ -26,10 +26,15 @@ define(function leosMessageBusPluginModule(require) {
     var pluginDefinition = {
 
         init: function init(editor) {
-            editor.on("contentChange", function(event) {
-                var channel = postal.channel(EDITOR_CHANNEL);
-                    channel.publish("contentChange", {});
-            });
+            var editorChannel = postal.channel(EDITOR_CHANNEL);
+
+            var contentChangeBuffer = CKEDITOR.tools.eventsBuffer(500, function _publishContentChange() {
+                editorChannel.publish("contentChange", {});
+            }, editor);
+
+            editor.on("contentChange", contentChangeBuffer.input);
+            editor.on("instanceReady", contentChangeBuffer.input);
+            editor.on("destroy", contentChangeBuffer.input);
         }
     };
 

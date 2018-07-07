@@ -126,7 +126,7 @@ public class CommentServiceImpl implements CommentService {
         
         sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         
-        return String.format("<popup id=\"%1$s\" refersto=\"~leosComment\"" +
+        return String.format("<popup id=\"%1$s\" refersTo=\"~leosComment\"" +
                 " leos:userid=\"%2$s\"" +
                 " leos:username=\"%3$s\"" +
                 " leos:dg=\"%8$s\"" +

@@ -22,6 +22,17 @@
  */
 package org.apache.chemistry.opencmis.inmemory.query;
 
+import java.io.UnsupportedEncodingException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.antlr.runtime.tree.Tree;
 import org.apache.chemistry.opencmis.commons.data.ObjectData;
 import org.apache.chemistry.opencmis.commons.data.ObjectList;
@@ -29,27 +40,35 @@ import org.apache.chemistry.opencmis.commons.data.PropertyData;
 import org.apache.chemistry.opencmis.commons.definitions.PropertyDefinition;
 import org.apache.chemistry.opencmis.commons.definitions.TypeDefinition;
 import org.apache.chemistry.opencmis.commons.enums.Cardinality;
+import org.apache.chemistry.opencmis.commons.enums.CmisVersion;
 import org.apache.chemistry.opencmis.commons.enums.IncludeRelationships;
 import org.apache.chemistry.opencmis.commons.enums.PropertyType;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisInvalidArgumentException;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisRuntimeException;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.ObjectListImpl;
-import org.apache.chemistry.opencmis.inmemory.storedobj.api.*;
+import org.apache.chemistry.opencmis.commons.server.CallContext;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.Content;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.DocumentVersion;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.Filing;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.Folder;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.ObjectStore;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.StoredObject;
+import org.apache.chemistry.opencmis.inmemory.storedobj.api.VersionedDocument;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ContentStreamDataImpl;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.ObjectStoreImpl;
 import org.apache.chemistry.opencmis.inmemory.types.PropertyCreationHelper;
 import org.apache.chemistry.opencmis.server.support.TypeManager;
-import org.apache.chemistry.opencmis.server.support.query.*;
+import org.apache.chemistry.opencmis.server.support.query.AbstractPredicateWalker;
+import org.apache.chemistry.opencmis.server.support.query.CmisQueryWalker;
+import org.apache.chemistry.opencmis.server.support.query.CmisSelector;
+import org.apache.chemistry.opencmis.server.support.query.ColumnReference;
+import org.apache.chemistry.opencmis.server.support.query.QueryObject;
 import org.apache.chemistry.opencmis.server.support.query.QueryObject.JoinSpec;
 import org.apache.chemistry.opencmis.server.support.query.QueryObject.SortSpec;
+import org.apache.chemistry.opencmis.server.support.query.QueryUtilStrict;
+import org.apache.chemistry.opencmis.server.support.query.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.UnsupportedEncodingException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * A processor for a CMIS query for the In-Memory server. During tree traversal
@@ -67,9 +86,11 @@ public class InMemoryQueryProcessor {
     private Tree whereTree;
     private ObjectStoreImpl objStore;
     private List<TypeDefinition> secondaryTypeIds;
+    private CallContext callContext;
 
-    public InMemoryQueryProcessor(ObjectStoreImpl objStore) {
+    public InMemoryQueryProcessor(ObjectStoreImpl objStore, CallContext ctx) {
         this.objStore = objStore;
+        this.callContext = ctx;
     }
 
     /**
@@ -101,8 +122,7 @@ public class InMemoryQueryProcessor {
      */
     public ObjectList query(TypeManager tm, ObjectStore objectStore, String user, String repositoryId,
             String statement, Boolean searchAllVersions, Boolean includeAllowableActions,
-            IncludeRelationships includeRelationships, String renditionFilter, BigInteger maxItems, 
-            BigInteger skipCount) {
+            IncludeRelationships includeRelationships, String renditionFilter, BigInteger maxItems, BigInteger skipCount) {
 
         processQueryAndCatchExc(statement, tm); // calls query processor
 
@@ -120,10 +140,11 @@ public class InMemoryQueryProcessor {
 
     /**
      * Process a query.
+     * 
      * @param statement
-     *      CMISQL statement to execute
+     *            CMISQL statement to execute
      * @param tm
-     *      type manager for the repository
+     *            type manager for the repository
      */
     public void processQueryAndCatchExc(String statement, TypeManager tm) {
         QueryUtilStrict queryUtil = new QueryUtilStrict(statement, tm, null);
@@ -136,27 +157,26 @@ public class InMemoryQueryProcessor {
     }
 
     /**
-     * Create the list of matching objects for this query. 
+     * Create the list of matching objects for this query.
+     * 
      * @param tm
-     *  type manager for the given repository
+     *            type manager for the given repository
      * @param user
-     *  user execuing the query
+     *            user execuing the query
      * @param includeAllowableActions
-     *   include allowable actions
+     *            include allowable actions
      * @param includeRelationships
-     *  include relationships
+     *            include relationships
      * @param renditionFilter
-     *  include renditions
+     *            include renditions
      * @param maxItems
-     *  max number of items to return
+     *            max number of items to return
      * @param skipCount
-     *  items to skip
-     * @return
-     *  list of objects matching the query
+     *            items to skip
+     * @return list of objects matching the query
      */
     public ObjectList buildResultList(TypeManager tm, String user, Boolean includeAllowableActions,
-            IncludeRelationships includeRelationships, String renditionFilter, BigInteger maxItems, 
-            BigInteger skipCount) {
+            IncludeRelationships includeRelationships, String renditionFilter, BigInteger maxItems, BigInteger skipCount) {
 
         sortMatches();
 
@@ -192,7 +212,7 @@ public class InMemoryQueryProcessor {
             String queryName = queryObj.getTypes().values().iterator().next();
             TypeDefinition td = queryObj.getTypeDefinitionFromQueryName(queryName);
 
-            ObjectData od = PropertyCreationHelper.getObjectDataQueryResult(tm, objStore, td, so, user, props, funcs,
+            ObjectData od = PropertyCreationHelper.getObjectDataQueryResult(callContext,tm, objStore, td, so, user, props, funcs,
                     secondaryTypeIds, includeAllowableActions, includeRelationships, renditionFilter);
             objDataList.add(od);
         }
@@ -241,8 +261,9 @@ public class InMemoryQueryProcessor {
                     String propId = ((ColumnReference) sel).getPropertyId();
                     PropertyDefinition<?> pd = ((ColumnReference) sel).getPropertyDefinition();
 
-                    Object propVal1 = PropertyQueryUtil.getProperty(so1, propId, pd);
-                    Object propVal2 = PropertyQueryUtil.getProperty(so2, propId, pd);
+                    boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+                    Object propVal1 = PropertyQueryUtil.getProperty(so1, propId, pd, cmis11);
+                    Object propVal2 = PropertyQueryUtil.getProperty(so2, propId, pd, cmis11);
 
                     if (propVal1 == null && propVal2 == null) {
                         result = 0;
@@ -386,7 +407,9 @@ public class InMemoryQueryProcessor {
             ColumnReference colRef = getColumnReference(colNode);
             PropertyDefinition<?> pd = colRef.getPropertyDefinition();
             List<Object> literals = onLiteralList(listNode);
-            Object prop = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+
+            Object prop = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
 
             if (pd.getCardinality() != Cardinality.SINGLE) {
                 throw new IllegalStateException("Operator IN only is allowed on single-value properties ");
@@ -404,7 +427,8 @@ public class InMemoryQueryProcessor {
             // then it evaluates to true for null values (not set properties).
             ColumnReference colRef = getColumnReference(colNode);
             PropertyDefinition<?> pd = colRef.getPropertyDefinition();
-            Object prop = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+            Object prop = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
             List<Object> literals = onLiteralList(listNode);
             if (pd.getCardinality() != Cardinality.SINGLE) {
                 throw new IllegalStateException("Operator IN only is allowed on single-value properties ");
@@ -482,7 +506,8 @@ public class InMemoryQueryProcessor {
         public Boolean walkIsNull(Tree opNode, Tree colNode) {
             ColumnReference colRef = getColumnReference(colNode);
             PropertyDefinition<?> pd = colRef.getPropertyDefinition();
-            Object propVal = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+            Object propVal = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
             return propVal == null;
         }
 
@@ -490,7 +515,8 @@ public class InMemoryQueryProcessor {
         public Boolean walkIsNotNull(Tree opNode, Tree colNode) {
             ColumnReference colRef = getColumnReference(colNode);
             PropertyDefinition<?> pd = colRef.getPropertyDefinition();
-            Object propVal = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+            Object propVal = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
             return propVal != null;
         }
 
@@ -512,7 +538,8 @@ public class InMemoryQueryProcessor {
                 throw new IllegalStateException("LIKE is not allowed for multi-value properties ");
             }
 
-            String propVal = (String) PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+            String propVal = (String) PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
 
             if (null == propVal) {
                 return false;
@@ -577,7 +604,8 @@ public class InMemoryQueryProcessor {
 
             ColumnReference colRef = getColumnReference(leftChild);
             PropertyDefinition<?> pd = colRef.getPropertyDefinition();
-            Object val = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd);
+            boolean cmis11 = callContext.getCmisVersion() != CmisVersion.CMIS_1_0;
+            Object val = PropertyQueryUtil.getProperty(so, colRef.getPropertyId(), pd, cmis11);
             if (val == null) {
                 return null;
             } else if (val instanceof List<?>) {
@@ -746,7 +774,7 @@ public class InMemoryQueryProcessor {
             break;
         case STRING:
             if (rVal instanceof String) {
-            	String unesc = StringUtil.unescape((String) rVal, null);
+                String unesc = StringUtil.unescape((String) rVal, null);
                 LOG.debug("compare strings: " + lValue + " with " + unesc);
                 return ((String) lValue).compareTo(unesc);
             } else {
@@ -799,9 +827,8 @@ public class InMemoryQueryProcessor {
      * Translate SQL wildcards %, _ to Java regex syntax.
      * 
      * @param wildcardString
-     *     string to process
-     * @return
-     *      string with replaced characters
+     *            string to process
+     * @return string with replaced characters
      */
     public static String translatePattern(String wildcardString) {
         int index = 0;

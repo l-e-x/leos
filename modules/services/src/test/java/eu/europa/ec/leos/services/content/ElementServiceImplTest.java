@@ -217,4 +217,34 @@ public class ElementServiceImplTest extends LeosTest {
         verifyNoMoreInteractions( xmlContentProcessor,documentService);
 
     }
+
+    @Test
+    public void deleteArticle() {
+
+        String docId = "555";
+        byte[] originalByteContent = new byte[]{1, 2, 3};
+        byte[] updatedByteContent = new byte[]{4, 5, 6};
+        byte[] renumberdContent = new byte[]{14, 15, 16};
+
+        LeosDocument originalDocument = mock(LeosDocument.class);
+        when(originalDocument.getLeosId()).thenReturn(docId);
+        when(originalDocument.getContentStream()).thenReturn(new ByteArrayInputStream(originalByteContent));
+        when(originalDocument.getLanguage()).thenReturn("fr");
+
+        LeosDocument updatedDocument = mock(LeosDocument.class);
+        when(updatedDocument.getContentStream()).thenReturn(new ByteArrayInputStream(updatedByteContent));
+
+        String articleTag = "article";
+        String articleId = "486";
+
+        when(xmlContentProcessor.deleteElementByTagNameAndId(argThat(is(originalByteContent)), argThat(is(articleTag)),
+                argThat(is(articleId)))).thenReturn(updatedByteContent);
+        when(xmlContentProcessor.renumberArticles(updatedByteContent, "fr")).thenReturn(renumberdContent);
+        when(documentService.updateDocumentContent(docId, "sessionID", renumberdContent, "operation.article.deleted")).thenReturn(updatedDocument);
+
+        // DO THE ACTUAL CALL
+        LeosDocument result = elementServiceImpl.deleteElement(originalDocument, "sessionID", articleId, articleTag);
+
+        assertThat(result, is(updatedDocument));
+    }
 }

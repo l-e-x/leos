@@ -1,6 +1,6 @@
 PROJECT: LEOS
-Joinup Release: 3.0.0-SNAPSHOT
-Date: 2016-06-17
+Joinup Release: 3.1.0-SNAPSHOT
+Date: 2016-09-07
 
 INTRODUCTION
 ============
@@ -117,10 +117,21 @@ BUGS
 ====
 
 There might be bugs or incomplete features present in this version as it is a prototype under active development.
-
+    * Suggestions on document title cannot be accepted/deleted.
+    * Suggestions/Comments on article heading are lost on save.
 
 CHANGE LOG
 ==========
+
+3.1.0 (Prototype)
+-----------------
+    * Comments Viewer
+       - Feature to suggest a change in the text
+    * Document Viewer
+       - Accept or delete suggested changes
+       - Comments deletion with button
+    * Updated dependencies (frameworks and libraries)
+    * Technical improvements and bug fixes
 
 3.0.0 (Prototype)
 -----------------

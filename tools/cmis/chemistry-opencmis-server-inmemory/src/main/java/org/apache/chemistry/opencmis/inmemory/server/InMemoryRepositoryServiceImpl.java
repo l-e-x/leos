@@ -21,6 +21,7 @@ package org.apache.chemistry.opencmis.inmemory.server;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -29,6 +30,7 @@ import org.apache.chemistry.opencmis.commons.data.RepositoryInfo;
 import org.apache.chemistry.opencmis.commons.definitions.TypeDefinition;
 import org.apache.chemistry.opencmis.commons.definitions.TypeDefinitionContainer;
 import org.apache.chemistry.opencmis.commons.definitions.TypeDefinitionList;
+import org.apache.chemistry.opencmis.commons.enums.CmisVersion;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisInvalidArgumentException;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.AbstractTypeDefinition;
@@ -49,7 +51,7 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
 
         validator.getRepositoryInfo(context, repositoryId, extension);
 
-        RepositoryInfo repoInfo = getRepositoryInfoFromStoreManager(repositoryId);
+        RepositoryInfo repoInfo = getRepositoryInfoFromStoreManager(context, repositoryId);
 
         return repoInfo;
     }
@@ -60,7 +62,7 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         List<RepositoryInfo> res = new ArrayList<RepositoryInfo>();
         List<String> repIds = fStoreManager.getAllRepositoryIds();
         for (String repId : repIds) {
-            res.add(fStoreManager.getRepositoryInfo(repId));
+            res.add(fStoreManager.getRepositoryInfo(context, repId));
         }
         return res;
     }
@@ -71,7 +73,7 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         validator.getTypeChildren(context, repositoryId, typeId, extension);
 
         boolean inclPropDefs = includePropertyDefinitions == null ? false : includePropertyDefinitions;
-        getRepositoryInfoFromStoreManager(repositoryId); // just to check if
+        getRepositoryInfoFromStoreManager(context, repositoryId); // just to check if
         // repository exists
 
         int skip = skipCount == null ? 0 : skipCount.intValue();
@@ -81,12 +83,22 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         List<TypeDefinitionContainer> children;
         if (typeId == null) {
             // spec says that base types must be returned in this case
-            children = fStoreManager.getRootTypes(repositoryId, inclPropDefs);
+            boolean cmis11 = context.getCmisVersion() != CmisVersion.CMIS_1_0;
+            children = fStoreManager.getRootTypes(repositoryId, inclPropDefs, cmis11);
         } else {
             children = getTypeDescendants(context, repositoryId, typeId, BigInteger.valueOf(1), inclPropDefs, null);
         }
+
+        if (skip >= children.size()) {
+            result.setHasMoreItems(false);
+            result.setNumItems(BigInteger.valueOf(children.size()));
+            result.setList(Collections.<TypeDefinition> emptyList());
+            return result;
+        }
+
         result.setNumItems(BigInteger.valueOf(children.size()));
         result.setHasMoreItems(children.size() > max - skip);
+
         List<TypeDefinition> childrenTypes = new ArrayList<TypeDefinition>();
         ListIterator<TypeDefinitionContainer> it = children.listIterator(skip);
         if (max < 0) {
@@ -106,7 +118,8 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
 
         validator.getTypeDefinition(context, repositoryId, typeId, extension);
 
-        TypeDefinitionContainer tc = fStoreManager.getTypeById(repositoryId, typeId);
+        boolean cmis11 = context.getCmisVersion() != CmisVersion.CMIS_1_0;
+        TypeDefinitionContainer tc = fStoreManager.getTypeById(repositoryId, typeId, cmis11);
         if (tc != null) {
             return tc.getTypeDefinition();
         } else {
@@ -126,13 +139,14 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         }
 
         List<TypeDefinitionContainer> result = null;
+        boolean cmis11 = context.getCmisVersion() != CmisVersion.CMIS_1_0;
         if (typeId == null) {
             // spec says that depth must be ignored in this case
-            Collection<TypeDefinitionContainer> tmp = fStoreManager.getTypeDefinitionList(repositoryId, inclPropDefs);
+            Collection<TypeDefinitionContainer> tmp = fStoreManager.getTypeDefinitionList(repositoryId, inclPropDefs, cmis11);
             result = new ArrayList<TypeDefinitionContainer>(tmp);
         } else {
             TypeDefinitionContainer tc = fStoreManager.getTypeById(repositoryId, typeId, inclPropDefs,
-                    depth == null ? -1 : depth.intValue());
+                    depth == null ? -1 : depth.intValue(), cmis11);
             if (tc == null) {
                 throw new CmisInvalidArgumentException("unknown type id: " + typeId);
             } else {
@@ -143,9 +157,10 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         return result;
     }
 
-    public TypeDefinition createType(CallContext context, String repositoryId, TypeDefinition type, ExtensionsData extension) {
+    public TypeDefinition createType(CallContext context, String repositoryId, TypeDefinition type,
+            ExtensionsData extension) {
 
-        validator.createType(context, repositoryId, type, extension);        
+        validator.createType(context, repositoryId, type, extension);
         TypeManager typeManager = fStoreManager.getTypeManager(repositoryId);
         AbstractTypeDefinition newType = TypeValidator.completeType(type);
         TypeValidator.adjustTypeNamesAndId(newType);
@@ -154,8 +169,9 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         return newType;
     }
 
-    public TypeDefinition updateType(CallContext context, String repositoryId, TypeDefinition type, ExtensionsData extension) {
-        validator.updateType(context, repositoryId, type, extension);        
+    public TypeDefinition updateType(CallContext context, String repositoryId, TypeDefinition type,
+            ExtensionsData extension) {
+        validator.updateType(context, repositoryId, type, extension);
         String typeId = type.getId();
         TypeManager typeManager = fStoreManager.getTypeManager(repositoryId);
         if (null == typeManager) {
@@ -173,7 +189,7 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
 
     public void deleteType(CallContext context, String repositoryId, String typeId, ExtensionsData extension) {
 
-        validator.deleteType(context, repositoryId, typeId, extension);        
+        validator.deleteType(context, repositoryId, typeId, extension);
         TypeManager typeManager = fStoreManager.getTypeManager(repositoryId);
 
         ObjectStore objectStore = fStoreManager.getObjectStore(repositoryId);
@@ -184,8 +200,8 @@ public class InMemoryRepositoryServiceImpl extends InMemoryAbstractServiceImpl {
         typeManager.deleteTypeDefinition(typeId);
     }
 
-    private RepositoryInfo getRepositoryInfoFromStoreManager(String repositoryId) {
-        RepositoryInfo repoInfo = fStoreManager.getRepositoryInfo(repositoryId);
+    private RepositoryInfo getRepositoryInfoFromStoreManager(CallContext context, String repositoryId) {
+        RepositoryInfo repoInfo = fStoreManager.getRepositoryInfo(context, repositoryId);
         if (null == repoInfo || !repoInfo.getId().equals(repositoryId)) {
             throw new CmisInvalidArgumentException("Unknown repository: " + repositoryId);
         }

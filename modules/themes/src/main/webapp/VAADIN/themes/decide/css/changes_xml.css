@@ -22,6 +22,7 @@
 }
 
 .leos-marked-content .leos-content-new,
+.leos-marked-content .leos-content-new *,
 .leos-marked-content .leos-marker-content-added{
     color:#26BC15;
 }

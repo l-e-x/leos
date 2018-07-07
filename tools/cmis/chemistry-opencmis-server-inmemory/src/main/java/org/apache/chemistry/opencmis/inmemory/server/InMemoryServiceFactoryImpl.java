@@ -51,7 +51,6 @@ import org.apache.chemistry.opencmis.commons.impl.XMLConverter;
 import org.apache.chemistry.opencmis.commons.impl.XMLUtils;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.AbstractTypeDefinition;
 import org.apache.chemistry.opencmis.commons.impl.dataobjects.BindingsObjectFactoryImpl;
-import org.apache.chemistry.opencmis.commons.impl.server.AbstractServiceFactory;
 import org.apache.chemistry.opencmis.commons.server.CallContext;
 import org.apache.chemistry.opencmis.commons.server.CmisService;
 import org.apache.chemistry.opencmis.commons.spi.BindingsObjectFactory;
@@ -61,13 +60,14 @@ import org.apache.chemistry.opencmis.inmemory.storedobj.api.ObjectStore;
 import org.apache.chemistry.opencmis.inmemory.storedobj.api.StoreManager;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.StoreManagerFactory;
 import org.apache.chemistry.opencmis.inmemory.storedobj.impl.StoreManagerImpl;
-import org.apache.chemistry.opencmis.server.support.CmisServiceWrapper;
+import org.apache.chemistry.opencmis.server.async.impl.AbstractAsyncServiceFactory;
 import org.apache.chemistry.opencmis.server.support.TypeManager;
+import org.apache.chemistry.opencmis.server.support.wrapper.ConformanceCmisServiceWrapper;
 import org.apache.chemistry.opencmis.util.repository.ObjectGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
+public class InMemoryServiceFactoryImpl extends AbstractAsyncServiceFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(InMemoryServiceFactoryImpl.class.getName());
     private static final BigInteger DEFAULT_MAX_ITEMS_OBJECTS = BigInteger.valueOf(1000);
@@ -89,6 +89,8 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
     public void init(Map<String, String> parameters) {
         LOG.info("Initializing in-memory repository...");
         LOG.debug("Init paramaters: " + parameters);
+
+        super.init(parameters);
 
         String overrideCtxParam = parameters.get(ConfigConstants.OVERRIDE_CALL_CONTEXT);
         if (null != overrideCtxParam) {
@@ -147,28 +149,19 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
     public CmisService getService(CallContext context) {
         LOG.debug("start getService()");
         CallContext contextToUse = context;
-        // Attach the CallContext to a thread local context that can be
-        // accessed from everywhere
         // Some unit tests set their own context. So if we find one then we use
         // this one and ignore the provided one. Otherwise we set a new context.
         if (fUseOverrideCtx && null != overrideCtx) {
             contextToUse = overrideCtx;
         }
 
-        InMemoryService inMemoryService = InMemoryServiceContext.getCmisService();
-        if (inMemoryService == null) {
-            LOG.debug("Creating new InMemoryService instance!");
-            CmisServiceWrapper<InMemoryService> wrapperService;
-            inMemoryService = new InMemoryService(storeManager);
-            wrapperService = new CmisServiceWrapper<InMemoryService>(inMemoryService, DEFAULT_MAX_ITEMS_TYPES,
-                    DEFAULT_DEPTH_TYPES, DEFAULT_MAX_ITEMS_OBJECTS, DEFAULT_DEPTH_OBJECTS);
-            InMemoryServiceContext.setWrapperService(wrapperService);
-        }
+        LOG.debug("Creating new InMemoryService instance!");
+        ConformanceCmisServiceWrapper wrapperService;
+        InMemoryService inMemoryService = new InMemoryService(storeManager, contextToUse);
+        wrapperService = new ConformanceCmisServiceWrapper(inMemoryService, DEFAULT_MAX_ITEMS_TYPES,
+                DEFAULT_DEPTH_TYPES, DEFAULT_MAX_ITEMS_OBJECTS, DEFAULT_DEPTH_OBJECTS);
 
-        inMemoryService.setCallContext(contextToUse);
-
-        LOG.debug("stop getService()");
-        return inMemoryService;
+        return inMemoryService; // wrapperService;
     }
 
     @Override
@@ -197,7 +190,8 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
         if (null != cleanManager) {
             cleanManager.stopCleanRepositoryJob();
         }
-        InMemoryServiceContext.setWrapperService(null);
+
+        super.destroy();
     }
 
     public StoreManager getStoreManger() {
@@ -402,13 +396,17 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
         String doFillRepositoryStr = parameters.get(ConfigConstants.USE_REPOSITORY_FILER);
         String contentKindStr = parameters.get(ConfigConstants.CONTENT_KIND);
         boolean doFillRepository = doFillRepositoryStr == null ? false : Boolean.parseBoolean(doFillRepositoryStr);
+        // Simulate a runtime context with configuration parameters
+        // Attach the CallContext to a thread local context that can be
+        // accessed from everywhere
+        DummyCallContext ctx = new DummyCallContext();
 
         if (doFillRepository) {
 
             // create an initial temporary service instance to fill the
             // repository
 
-            InMemoryService svc = new InMemoryService(storeManager);
+            InMemoryService svc = new InMemoryService(storeManager, ctx);
 
             BindingsObjectFactory objectFactory = new BindingsObjectFactoryImpl();
 
@@ -493,10 +491,6 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
                 gen.setFolderPropertiesToGenerate(propsToSet);
             }
 
-            // Simulate a runtime context with configuration parameters
-            // Attach the CallContext to a thread local context that can be
-            // accessed from everywhere
-            DummyCallContext ctx = new DummyCallContext();
             // create thread local storage and attach call context
             getService(ctx);
 
@@ -511,7 +505,7 @@ public class InMemoryServiceFactoryImpl extends AbstractServiceFactory {
             } catch (Exception e) {
                 LOG.error("Could not create folder hierarchy with documents. ", e);
             }
-            destroy();
+            svc.close();
         } // if
 
     } // fillRepositoryIfConfigured

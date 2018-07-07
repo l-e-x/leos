@@ -74,7 +74,7 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
 
     @Autowired
     private ElementService elementService;
-    
+
     @Autowired
     private DocumentView documentView;
 
@@ -218,10 +218,10 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
         if ("article".equals(tagName)) {
             if (lockHelper.lockDocument()) {
                 LeosDocument document = getDocument();
-                document = articleService.deleteArticle(document, getUserLogin(), event.getElementId());
+                document = elementService.deleteElement(document, getUserLogin(), event.getElementId(), tagName);
 
                 if (document != null) {
-                    eventBus.post(new NotificationEvent(Type.INFO, "document.article.deleted"));
+                    eventBus.post(new NotificationEvent(Type.INFO, "document."+ tagName + ".deleted"));
                     eventBus.post(new RefreshDocumentEvent());
                     eventBus.post(new DocumentUpdatedEvent());
                 }
@@ -363,7 +363,6 @@ public class DocumentPresenter extends AbstractPresenter<DocumentView> implement
         else{
             eventBus.post(new NotificationEvent(Type.WARNING, "document.lock.lost"));
         }
-
     }
 
     @Override

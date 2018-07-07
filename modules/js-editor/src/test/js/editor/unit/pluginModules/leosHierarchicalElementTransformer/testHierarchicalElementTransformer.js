@@ -79,7 +79,7 @@ define(function testHierarchicalElementTransformer(require) {
                             akn : "id",
                             html : "id"
                         }, {
-                            html : "data-akn-name=aknUnOrderedList"
+                            html : "data-akn-name=aknUnorderedList"
                         } ]
                     },
                     rootElementsForFrom : [ "list", "indent" ],

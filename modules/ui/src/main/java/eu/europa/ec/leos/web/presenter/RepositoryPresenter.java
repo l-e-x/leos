@@ -211,7 +211,7 @@ public class RepositoryPresenter extends AbstractPresenter<RepositoryView> imple
         ArrayList<UserVO> allContributors= new ArrayList<>();
         List<User> allUsers = userService.findAll();
         for(User user:allUsers){
-            allContributors.add(new UserVO(user.getLogin(),null, user.getName(),null));
+            allContributors.add(new UserVO(user.getLogin(), user.getName(),null));
         }
         repositoryView.openContributorsWindow(allContributors, docDetails);
     }

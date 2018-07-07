@@ -17,6 +17,7 @@ define(function fragmentTransformerModule(require) {
     var STAMPIT = require("stampit");
     var LODASH = require("lodash");
     var LOG = require("logger");
+    var CKEDITOR = require("promise!ckEditor");
     var attributeTransformerFactory = require("transformer/attributeTransformer");
 
     /*
@@ -461,7 +462,6 @@ define(function fragmentTransformerModule(require) {
                                         product.attributes[elementConfig.toAttribute] = elementValue;
                                     }
                                 }
-
                             }
                         },
                         /*

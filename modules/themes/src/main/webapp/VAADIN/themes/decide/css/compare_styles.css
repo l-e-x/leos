@@ -13,16 +13,15 @@
  */
 /** styles for comparision windows **/
 .leos-content-removed ,
+.leos-content-removed *,
 .leos-content-removed marker,
 .leos-content-removed authorialNote {
     text-decoration: line-through;
     color: red;
 }
-.leos-content-removed * {
-    text-decoration: line-through;
-}
 
 .leos-content-new,
+.leos-content-new *,
 .leos-content-new marker,
 .leos-content-new authorialNote{
     color: green;

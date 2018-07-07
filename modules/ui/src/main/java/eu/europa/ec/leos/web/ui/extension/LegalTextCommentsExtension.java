@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @StyleSheet({"vaadin://../lib/bootstrap_3.3.6/css/bootstrap.css" + LeosCacheToken.TOKEN})
-@JavaScript({"vaadin://../js/web/legalTextCommentsConnector.js"+ LeosCacheToken.TOKEN })
+@JavaScript({"vaadin://../js/web/comments/legalTextCommentsConnector.js"+ LeosCacheToken.TOKEN })
 public class LegalTextCommentsExtension extends LeosJavaScriptExtension {
 
     private static final long serialVersionUID = 1L;

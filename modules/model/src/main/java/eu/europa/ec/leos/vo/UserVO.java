@@ -18,7 +18,6 @@ import eu.europa.ec.leos.model.user.User;
 /* to send data to Client side*/
 public class UserVO {
     private String id;
-    private String avatarUrl;
     private String name;
     private String dg;
 
@@ -28,11 +27,11 @@ public class UserVO {
     public UserVO(User user) {
         this.id=user.getLogin();
         this.name=user.getName();
+        this.dg=user.getDepartment().getDepartmentId();
     }
 
-    public UserVO(String id, String avatarUrl, String name, String dg) {
+    public UserVO(String id, String name, String dg) {
         this.id = id;
-        this.avatarUrl = avatarUrl;
         this.name = name;
         this.dg = dg;
     }
@@ -43,14 +42,6 @@ public class UserVO {
 
     public void setId(String id) {
         this.id = id;
-    }
-
-    public String getAvatarUrl() {
-        return avatarUrl;
-    }
-
-    public void setAvatarUrl(String avatarUrl) {
-        this.avatarUrl = avatarUrl;
     }
 
     public String getName() {

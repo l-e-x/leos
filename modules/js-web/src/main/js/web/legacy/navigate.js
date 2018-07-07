@@ -22,9 +22,10 @@ function nav_navigateToContent(elementId, additionalAction) {
 }
 
 function nav_navigateToElement(element, additionalAction) {
+    var $scrollPane = $('.leos-viewdoc-content');
     if (element) {
-        $('.leos-viewdoc-content').animate(
-            { scrollTop: _calculateScrollTopPosition(element)},
+        $scrollPane.animate(
+            { scrollTop: _calculateScrollTopPosition(element, $scrollPane)},
             500, "swing",
             _onScrollCompletion
         );
@@ -41,9 +42,23 @@ function nav_navigateToElement(element, additionalAction) {
         }
     }
 
-    function _calculateScrollTopPosition(element) {
-        return  $('.leos-viewdoc-content')[0].scrollTop
-            + $(element).position().top
-            - ($('.cke_inner').length> 0 ? $('.cke_inner').outerHeight():76);//76 is to center the selected content
+    function _calculateScrollTopPosition(element, $scrollPane) {
+        element = _getPositionedElement(element);// this fix is required for the elements which are not displayed
+
+        //get bounding rect returns position corresponding to browser top. So subtracting container top to convert it to reference to container
+        var currentElementPositionRelativeToWindow = element.getBoundingClientRect().top - $scrollPane[0].getBoundingClientRect().top;
+
+        var newScrollTopForPane = currentElementPositionRelativeToWindow
+                            + $scrollPane[0].scrollTop  //adding already scrolled factor to position to make it relative to target pane
+                            - ($('.cke_inner').length> 0 ? $('.cke_inner').outerHeight():76) ;//76 is to shift the selected content little away from top bar
+
+        return newScrollTopForPane;
+    }
+
+    function _getPositionedElement(element){
+        while($(element).is(':hidden')) {
+            element = element.parentElement;
+        }
+        return element;
     }
 }

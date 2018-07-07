@@ -39,24 +39,6 @@ public class ArticleServiceImpl implements ArticleService {
     }
 
     @Override
-    public LeosDocument deleteArticle(LeosDocument document, String userlogin, String articleId) {
-
-        Validate.notNull(document, "Document is required.");
-        Validate.notNull(articleId, "Article id is required.");
-
-        byte[] updatedXmlContent;
-        try {
-            updatedXmlContent = xmlContentProcessor.deleteElementByTagNameAndId(IOUtils.toByteArray(document.getContentStream()), "article", articleId);
-            updatedXmlContent = xmlContentProcessor.renumberArticles(updatedXmlContent, document.getLanguage());
-            document = documentService.updateDocumentContent(document.getLeosId(), userlogin, updatedXmlContent,"operation.article.deleted");
-
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to delete the article.");
-        }
-        return document;
-    }
-
-    @Override
     public LeosDocument insertNewArticle(LeosDocument document, String sessionId, String articleId, boolean before) {
         Validate.notNull(document, "Document is required.");
         Validate.notNull(articleId, "Article id is required.");

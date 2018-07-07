@@ -17,66 +17,82 @@ define(function leosCommentsWidgetModule(require) {
 
     // load module dependencies
     var leosCore = require("js/leosCore");
-
+    var cuid = require("cuid");
+    var CKEDITOR = require("promise!ckEditor");
     // utilities
     var UTILS = leosCore.utils;
 
     var leosCommentsWidgetDefinition = {
         inline: true,
         requires: "leosWidgetPlugin",
-        allowedContent: "span[data-content,data-akn-name, data-leosComments](!leoscomments),span(!comment-indicator)",
-        template: '<span class="leoscomments" data-akn-name="popup" data-leosComments="popover"><span class="comment-indicator"/></span>',
+        allowedContent: "span[data-akn-name,refersTo,id],span(!comment-indicator)",
+        template: '<span data-akn-name="popup" refersTo="~leosComment"><span class="comment-indicator"/></span>',
         dialog: "leosCommentsDialog",
 
         init: function init() {
-            var commentText = "";
-            var innerElement = this.element.findOne("span");
-            if (innerElement) {
-                commentText = innerElement.getText() || "";
-            }
-            // move comment data value to data so that the dialog can access it
-            this.setData("widgetdata", commentText);
             this.on("destroy", this._onCommentUpdate);
             this.on("ready", this._onCommentUpdate);
         },
 
         //to set the data on the dialog
         data: function data() {
-            if (this.data.widgetdata != "") {
-                var userId = this.element.getAttribute("leos:userid");
-                var userName = this.element.getAttribute("leos:username");
-                var timeStamp = this.element.getAttribute("leos:datetime");
-                if (!userId && !timeStamp) {
+            if (this.data.commentText) {
+                // if id is not present...
+                // assume that this is a new comment and all data needs to be populated
+                if (!this.element.getAttribute("id")) {
+                    this.element.setAttribute("id", 'akn_' + cuid.slug());
+                    this.element.setAttribute("leos:datetime", UTILS.getCurrentUTCDateAsString());
                     var user = this.editor.LEOS && this.editor.LEOS.user;
                     if (user) {
                         this.element.setAttribute("leos:userid", user.id);
                         this.element.setAttribute("leos:username", user.name);
+                        this.element.setAttribute("leos:dg", user.dg||"");
                     }
-                    timeStamp = UTILS.getCurrentUTCDateAsString();
-                    this.element.setAttribute("leos:datetime", timeStamp);
                 }
+
                 this.element.setAttribute("data-akn-name", "popup");
+
                 var innerElement = this.element.findOne("span");
                 if (innerElement) {
-                    innerElement.setText(this.data.widgetdata);
-                    // for popover box
-                    this.element.setAttribute("data-content", this.data.widgetdata);
+                    innerElement.setText(this.data.commentText);
                 }
             } else {
                 this.element.removeAttribute("data-akn-name");
             }
             this._onCommentUpdate();
-       },
-        
+        },
+
         _onCommentUpdate: function _onCommentUpdate(event) {
-            if(this.ready) {// to block calls before widget data is in DOM
+            if (this.ready) {// to block calls before widget data is in DOM
                 this.editor.fire("contentChange");
             }
         },
-        
-        upcast: function upcast(element) {
-            // Defines which elements will become widgets.
-            return element.hasClass("leoscomments");
+
+        upcast: function upcast(element, data) {
+            if (element.attributes.refersto === "~leosComment") {
+                var commentElement = element;
+                var commentText = undefined;
+
+                if (!commentElement.isEmpty) {
+                    var indicatorElement = commentElement.getFirst(
+                        function (child) {
+                            return child.hasClass("comment-indicator");
+                        });
+                    if (indicatorElement && !indicatorElement.isEmpty) {
+                        var textElement = indicatorElement.getFirst(
+                            function (child) {
+                                return child.type == CKEDITOR.NODE_TEXT;
+                            }
+                        );
+                        if (textElement) {
+                            commentText = textElement.value;
+                        }
+                    }
+                }
+
+                data["commentText"] = CKEDITOR.tools.htmlDecode(commentText);
+                return element;
+            }
         }
     };
 

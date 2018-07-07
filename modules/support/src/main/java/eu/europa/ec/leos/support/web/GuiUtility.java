@@ -21,9 +21,4 @@ public class GuiUtility {
 												:departmentNumber.length())
 			    :null;
 	}
-
-	public static String getAvatarUrl() {
-		return "assets/img/user.png";
-	}
-	
 }

@@ -36,7 +36,7 @@ define(function attributeTransformerModule(require) {
                 // handle the class name attribute at run-time. for eg: class=leos-highlight* (where * is calculated at run-time)
                 if (this.attrConfig.toValue) {
                     var toValueArray = this.attrConfig.toValue.split(" ");
-                    var currentClassValueArray = []
+                    var currentClassValueArray = [];
                     if (this.fromElement.attributes && this.fromElement.attributes[this.attrConfig.to]) {
                         currentClassValueArray = this.fromElement.attributes[this.attrConfig.to].split(" ")
                     }
@@ -65,11 +65,8 @@ define(function attributeTransformerModule(require) {
          */
         "passAttributeTransformer": {
             isSupported: function(normAttr) {
-                if (normAttr.to && normAttr.from && !attributeTransformers['handleNonEditable'].isSupported(normAttr)
-                        && !attributeTransformers['addClassAttributeTransformer'].isSupported(normAttr)) {
-                    return true;
-                }
-                return false;
+                return (normAttr.to && normAttr.from && !attributeTransformers['handleNonEditable'].isSupported(normAttr)
+                        && !attributeTransformers['addClassAttributeTransformer'].isSupported(normAttr));
             },
             perform: function() {
                 if (this.fromElement.attributes[this.attrConfig.from]) {
@@ -85,10 +82,7 @@ define(function attributeTransformerModule(require) {
         /* Handle the Non-Editable attribute to remove if contenteditable=true */
         "handleNonEditable": {
             isSupported: function(normAttr) {
-                if (normAttr.to && (normAttr.from === "contenteditable" || normAttr.from === "editable")) {
-                    return true;
-                }
-                return false;
+                return (normAttr.to && (normAttr.from === "contenteditable" || normAttr.from === "editable"));
             },
             perform: function() {
                 attributeTransformers['passAttributeTransformer'].perform.call(this);

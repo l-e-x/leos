@@ -13,12 +13,28 @@
  */
 package eu.europa.ec.leos.web.presenter;
 
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
+
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.stereotype.Component;
+
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.server.VaadinServletService;
+
 import eu.europa.ec.leos.model.content.LeosDocument;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.content.CommentService;
 import eu.europa.ec.leos.services.content.DocumentService;
+import eu.europa.ec.leos.services.content.SuggestionService;
 import eu.europa.ec.leos.services.locking.LockUpdateBroadcastListener;
 import eu.europa.ec.leos.services.locking.LockingService;
 import eu.europa.ec.leos.support.web.UrlBuilder;
@@ -31,24 +47,17 @@ import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent.Type;
 import eu.europa.ec.leos.web.event.view.document.CloseDocumentEvent;
+import eu.europa.ec.leos.web.event.view.document.CreateSuggestionRequestEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
-import eu.europa.ec.leos.web.event.view.feedback.*;
+import eu.europa.ec.leos.web.event.view.document.SaveSuggestionRequestEvent;
+import eu.europa.ec.leos.web.event.view.feedback.DeleteCommentEvent;
+import eu.europa.ec.leos.web.event.view.feedback.EnterFeedbackViewEvent;
+import eu.europa.ec.leos.web.event.view.feedback.InsertCommentEvent;
+import eu.europa.ec.leos.web.event.view.feedback.UpdateCommentEvent;
+import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
 import eu.europa.ec.leos.web.support.SessionAttribute;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.view.FeedbackView;
 import eu.europa.ec.leos.web.view.RepositoryView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
 
 @Scope(value = "session", proxyMode = ScopedProxyMode.TARGET_CLASS)
 @Component
@@ -63,15 +72,15 @@ public class FeedbackPresenter extends AbstractPresenter<FeedbackView> implement
 
     @Autowired
     private LockingService lockingService;
+    
+    @Autowired
+    private SuggestionService suggestionService;
 
     @Autowired
     private FeedbackView feedbackView;
 
     @Autowired
     private TransformationManager transformationManager;
-
-    @Autowired
-    private MessageHelper messageHelper;
 
     @Autowired
     private UrlBuilder urlBuilder;
@@ -135,11 +144,6 @@ public class FeedbackPresenter extends AbstractPresenter<FeedbackView> implement
     }
 
     @Subscribe
-    public void loadComments(LoadCommentsEvent event) {
-        feedbackView.setComments(commentService.getAllComments(getDocument()));
-    }
-
-    @Subscribe
     public void insertComment(InsertCommentEvent event) {
         try {
             commentService.insertNewComment(getDocument(), event.getElementId(), event.getCommentId(), event.getCommentContent(), false);
@@ -149,7 +153,7 @@ public class FeedbackPresenter extends AbstractPresenter<FeedbackView> implement
             LOG.error("Insert comment failed!", ex);
             eventBus.post(new NotificationEvent(Type.WARNING, "operation.comment.insert.error"));
             // Reload comments to revert optimistic changes at client-side
-            loadComments(null);
+            eventBus.post(new RefreshDocumentEvent());
         }
     }
     
@@ -170,10 +174,39 @@ public class FeedbackPresenter extends AbstractPresenter<FeedbackView> implement
             LOG.error("Delete comment failed!", ex);
             eventBus.post(new NotificationEvent(Type.WARNING, "operation.comment.delete.error"));
             // Reload comments to revert optimistic changes at client-side
-            loadComments(null);
+            eventBus.post(new RefreshDocumentEvent());
         }
     }
 
+    @Subscribe
+    public void createSuggestion(CreateSuggestionRequestEvent event) throws IOException {
+        String elementId = event.getElementId();
+        String suggestionId = event.getSuggestionId();
+        
+        LeosDocument document = getDocument();
+        //TODO: API for service needs to be re-visited since the requirement to save multiple times is removed.
+        String suggestionFragment = suggestionService.getSuggestion(document, elementId, suggestionId);
+
+       feedbackView.showSuggestionEditor(elementId, suggestionFragment);
+    }
+
+    @Subscribe
+    public void saveSuggestion(SaveSuggestionRequestEvent event) throws IOException {
+        String elementId = event.getElementId();
+        String suggestionId= event.getSuggestionId();
+        String suggestionContent = event.getSuggestionContent();
+        
+        LeosDocument document = getDocument();
+        //TODO: API for service needs to be re-visited since the requirement to save multiple times is removed.
+        suggestionService.saveSuggestion(document, elementId, suggestionId, suggestionContent);
+        eventBus.post(new RefreshDocumentEvent());
+    }
+    
+    @Subscribe
+    public void closeElementEditor(CloseElementEditorEvent event) throws IOException {
+        eventBus.post(new RefreshDocumentEvent());
+    }
+    
     @Override
     public FeedbackView getView() {
         return feedbackView;
@@ -212,8 +245,8 @@ public class FeedbackPresenter extends AbstractPresenter<FeedbackView> implement
         if (document != null) {
             feedbackView.setDocumentTitle(document.getTitle());
             feedbackView.setDocumentStage(document.getStage());
+            feedbackView.setUser();
             feedbackView.refreshContent(getDocumentContent(document));
-            feedbackView.setComments(commentService.getAllComments(document));
             feedbackView.setToc(getTableOfContent(document));
         }
     }

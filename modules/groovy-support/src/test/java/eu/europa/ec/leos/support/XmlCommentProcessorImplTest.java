@@ -15,6 +15,7 @@ package eu.europa.ec.leos.support;
 
 import eu.europa.ec.leos.support.xml.XmlCommentProcessorImpl;
 import eu.europa.ec.leos.vo.CommentVO;
+import eu.europa.ec.leos.vo.CommentVO.RefersTo;
 import org.junit.Test;
 
 import java.text.ParseException;
@@ -32,12 +33,12 @@ public class XmlCommentProcessorImplTest {
     public void testCreateXmlFor_SingleComment() throws ParseException {
 
         // setup
-        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","AGRI.B1",
-                sdf.parse("2015-05-29T16:30:00-0200"));
+        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "<p>This is a comment...</p>", "User One", "user1","AGRI.B1",
+                sdf.parse("2015-05-29T16:30:00-0200"), RefersTo.LEOS_COMMENT);
 
         String xml = "<meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user1\"" +" leos:dg=\"AGRI.B1\"" +
                 " leos:username=\"User One\"" +
                 " leos:datetime=\"2015-05-29T16:30:00-0200\">" +
@@ -66,7 +67,7 @@ public class XmlCommentProcessorImplTest {
         // setup
         String xml = "<meta id=\"ElementId\">" +
                 "<temp id=\"xyz\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user1\"" +
                 " leos:username=\"User One\"" +" leos:dg=\"AGRI.B1\"" +
                 " leos:datetime=\"2015-05-29T11:30:00Z\">" +
@@ -84,12 +85,12 @@ public class XmlCommentProcessorImplTest {
     @Test
     public void testCreateXmlForComment_comment_present_deep() throws ParseException {
         // setup
-        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","AGRI.B1",
-                sdf.parse("2015-05-29T11:30:00Z"));
+        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "<p>This is a comment...</p>", "User One", "user1","AGRI.B1",
+                sdf.parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         String xml = "<meta id=\"ElementId\"><x id=\"xx\">" +
                 "<popup id=\"xyz\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user1\"" +
                 " leos:username=\"User One\"" +" leos:dg=\"AGRI.B1\"" +
                 " >" + // dont check date as it is auto generated
@@ -115,33 +116,33 @@ public class XmlCommentProcessorImplTest {
     public void testCreateXmlForMultipleComment() throws ParseException {
 
         // setup
-        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","AGRI.B1",
-                sdf.parse("2015-05-29T11:30:00Z"));
+        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "<p>This is a comment...</p>", "User One", "user1","AGRI.B1",
+                sdf.parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
-        CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","AGRI.B2",
-                sdf.parse("2015-05-30T11:30:00Z"));
+        CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "<p>This is a comment...2</p>", "User One2", "user2","AGRI.B2",
+                sdf.parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
-        CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "This is a comment...3", "User One3", "user3",null,
-                sdf.parse("2015-06-29T11:30:00Z"));
+        CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "<p>This is a comment...3</p>", "User One3", "user3",null,
+                sdf.parse("2015-06-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         
         String xml = "<meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user1\"" +
                 " leos:username=\"User One\"" +" leos:dg=\"AGRI.B1\"" +
                 " leos:datetime=\"2015-05-29T11:30:00Z\">" +
                 "<p>This is a comment...</p>" +
                 "</popup>" +
                 "<popup id=\"xyz2\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user2\"" +
                 " leos:username=\"User One2\"" +" leos:dg=\"AGRI.B2\"" +
                 " leos:datetime=\"2015-05-30T11:30:00Z\">" +
                 "<p>This is a comment...2</p>" +
                 "</popup>" +
                 "<popup id=\"xyz3\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user3\"" +
                 " leos:username=\"User One3\"" +
                 " leos:datetime=\"2015-06-29T11:30:00Z\">" +
@@ -187,33 +188,33 @@ public class XmlCommentProcessorImplTest {
     public void testCreateXmlFor_MultipleComment_diffLevel() throws ParseException {
 
         // setup
-        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","AGRI.B1",
-                sdf.parse("2015-05-29T11:30:00Z"));
+        CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "<p>This is a comment...</p>", "User One", "user1","AGRI.B1",
+                sdf.parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
-        CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","AGRI.B1",
-                sdf.parse("2015-05-30T11:30:00Z"));
+        CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "<p>This is a comment...2</p>", "User One2", "user2","AGRI.B1",
+                sdf.parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
-        CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "This is a comment...3", "User One3", "user3","AGRI.B3",
-                sdf.parse("2015-06-29T11:30:00Z"));
+        CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "<p>This is a comment...3</p>", "User One3", "user3","AGRI.B3",
+                sdf.parse("2015-06-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         
         String xml = "<meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user1\"" +
                 " leos:username=\"User One\"" +" leos:dg=\"AGRI.B1\"" +
                 " leos:datetime=\"2015-05-29T11:30:00Z\">" +
                 "<p>This is a comment...</p>" +
                 "</popup>" +
-                "<level2>><popup id=\"xyz2\"" +
-                " referto=\"~leosComment\"" +
+                "<level2><popup id=\"xyz2\"" +
+                " refersTo	=\"~leosComment\"" +
                 " leos:userid=\"user2\"" +
                 " leos:username=\"User One2\"" +" leos:dg=\"AGRI.B1\"" +
                 " leos:datetime=\"2015-05-30T11:30:00Z\">" +
                 "<p>This is a comment...2</p>" +
                 "</popup></level2>" +
                 "<level3><level4><popup id=\"xyz3\"" +
-                " referto=\"~leosComment\"" +
+                " refersTo=\"~leosComment\"" +
                 " leos:userid=\"user3\"" +
                 " leos:username=\"User One3\"" +" leos:dg=\"AGRI.B13\"" +
                 " leos:datetime=\"2015-06-29T11:30:00Z\">" +

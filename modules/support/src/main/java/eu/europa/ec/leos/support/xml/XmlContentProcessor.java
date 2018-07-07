@@ -13,11 +13,11 @@
  */
 package eu.europa.ec.leos.support.xml;
 
-import java.util.List;
-import java.util.Map;
-
 import eu.europa.ec.leos.vo.CommentVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
+
+import java.util.List;
+import java.util.Map;
 
 public interface XmlContentProcessor {
 
@@ -30,6 +30,8 @@ public interface XmlContentProcessor {
      * @return the element with the tagname and the id, or the first element with the tagname if id is null
      */
     public String getElementByNameAndId(byte[] xmlContent, String tagName, String idAttributeValue);
+
+    public String getElementById(byte[] xmlContent, String idAttributeValue);
 
     public byte[] replaceElementByTagNameAndId(byte[] xmlContent, String newContent, String tagName, String idAttributeValue);
 
@@ -55,7 +57,7 @@ public interface XmlContentProcessor {
 
     /** Finds the element with the id and updates its content with comment String
     * @param xmlContent
-    * @param id elementId 
+    * @param elementId elementId
     * @param comment comment in xml format
     * @param start true with comment to go in start, false if comment is added in end
     * @return updated document
@@ -69,4 +71,9 @@ public interface XmlContentProcessor {
     */            
     public List<CommentVO> getAllComments(byte[] xmlContent);
 
+    /** removes all elements selected by xpath supplied
+     * @param xmlContent
+     * @return xpath to select elements
+     */
+    byte[] removeElements(byte[] xmlContent, String xpath);
 }

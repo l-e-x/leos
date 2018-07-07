@@ -24,11 +24,9 @@ define(function leosHighlightPluginModule(require) {
     var UTILS = leosCore.utils;
 
     var pluginName = "leosHighlight";
-    var cssPath = "css/leosHighlight.css";
 
     var pluginDefinition = {
         init: function init(editor) {
-            editor.addContentsCss(pluginTools.getResourceUrl(pluginName, cssPath));
             editor.on("change", setHighlight);
             editor.on("toHtml", setHighlight);
         }
@@ -37,18 +35,18 @@ define(function leosHighlightPluginModule(require) {
     function setHighlight(event) {
         var editor = event.editor;
         var $editable = $(editor.editable().$);
-        $editable.find("*[class*='leos-highlight-']").each(function() {
-            var userId = this.getAttribute("leos:userid");
-            var userName = this.getAttribute("leos:username");
-            var timeStamp = this.getAttribute("leos:datetime");
+        $editable.find("[class*='leos-highlight-']").each(function() {
+            var userId = this.getAttribute("data-hgl-userid");
+            var userName = this.getAttribute("data-hgl-username");
+            var timeStamp = this.getAttribute("data-hgl-datetime");
             if (!userId && !timeStamp) {
                 var user = editor.LEOS && editor.LEOS.user;
                 if (user) {
-                    this.setAttribute("leos:userid", user.id);
-                    this.setAttribute("leos:username", user.name);
+                    this.setAttribute("data-hgl-userid", user.id);
+                    this.setAttribute("data-hgl-username", user.name);
                 }
                 timeStamp =  UTILS.getCurrentUTCDateAsString();
-                this.setAttribute("leos:datetime", timeStamp);
+                this.setAttribute("data-hgl-datetime", timeStamp);
                 this.setAttribute("refersto", "~leoshighlight");
             }
         });
@@ -70,13 +68,14 @@ define(function leosHighlightPluginModule(require) {
             html: "refersto=~leoshighlight"
         }, {
             akn: "leos:userid",
-            html: "leos:userid"
+            html: "data-hgl-userid" /*renaming attributes to data-* because overrides property of style removes
+                                    all matching attributes from inner elements such as comments.*/
         }, {
             akn: "leos:username",
-            html: "leos:username"
+            html: "data-hgl-username"
         }, {
             akn: "leos:datetime",
-            html: "leos:datetime"
+            html: "data-hgl-datetime"
         }],
         sub: {
             akn: "text",

@@ -566,7 +566,7 @@ define(function transformationsConfigUtilModule(require) {
                 }
             },
 
-            aknUnOrderedList: {
+            aknUnorderedList: {
                 normalizedConfig: {
                     "to": [{
                         "attrs": [],

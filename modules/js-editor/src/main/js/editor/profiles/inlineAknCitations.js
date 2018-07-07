@@ -37,11 +37,13 @@ define(function aknCitationsProfileModule(require) {
     plugins.push(require("plugins/leosAttrHandler/leosAttrHandlerPlugin"));
     plugins.push(require("plugins/leosHighlight/leosHighlightPlugin"));
     plugins.push(require("plugins/leosComments/leosCommentsPlugin"));
+    plugins.push(require("plugins/leosCommentAction/leosCommentActionPlugin"));
     plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
     plugins.push(require("plugins/leosFloatingSpace/leosFloatingSpacePlugin"));
     plugins.push(require("plugins/leosWidget/leosWidgetPlugin"));
     plugins.push(require("plugins/leosMessageBus/leosMessageBusPlugin"));
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));
+    plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));
     
     var pluginNames = plugins.map(function(p){return p.name;});
     // holds ckEditor external plugins names
@@ -65,15 +67,12 @@ define(function aknCitationsProfileModule(require) {
         customConfig: "",
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath," +
-                 "clipboard,undo,basicstyles,enterkey,entities," +
+                 "clipboard,undo,basicstyles,enterkey," +
                  "button,dialog,dialogui,sourcedialog,colorbutton",
-        
         // comma-separated list of toolbar button names that must not be rendered
         removeButtons: "Underline,Strike,TextColor",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
-        // convert all entities into Unicode numerical decimal format
-        entities_processNumerical: "force",
         // disable Advanced Content Filter (allow all content)
         allowedContent: true,
         //custom style sheet
@@ -124,8 +123,18 @@ define(function aknCitationsProfileModule(require) {
         colorButton_backStyle: {
             element: 'span',
             attributes: {
-                'class': 'leos-highlight-#(color)',
-            }
+                'class': 'leos-highlight-#(color)'
+            },
+            overrides: [{
+                element: 'span',
+                attributes: {
+                    'class': /^leos-highlight/,
+                    'refersto': '~leoshighlight',
+                    'data-hgl-userId' : /[\w]*/,
+                    'data-hgl-username' : /[\w]*/,
+                    'data-hgl-datetime' : /[\w]*/
+                }
+            }]
         }
     };
 

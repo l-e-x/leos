@@ -52,13 +52,10 @@ define(function transformerModule(require) {
         },
         _isCKEditorWidget : function _isCKEditorWidget(fragment) {
             if(!fragment||!fragment.children) {
-                return false;;
+                return false;
             }
             var rootElement = fragment.children[0];
-            if (rootElement.hasClass && rootElement.hasClass("cke_widget_wrapper")) {
-                return true;
-            }
-            return false;
+            return (rootElement.hasClass && rootElement.hasClass("cke_widget_wrapper"));
         },
         _getFragmentTransformer: function _getFragmentTransformer() {
             var fragmentTransformer = fragmentTransformerStamp();

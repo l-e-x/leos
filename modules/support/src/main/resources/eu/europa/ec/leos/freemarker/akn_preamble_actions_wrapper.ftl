@@ -1,4 +1,6 @@
 <#ftl encoding="UTF-8"
+      output_format="XML"
+      auto_esc=true
       strict_syntax=true
       strip_whitespace=true
       strip_text=true
@@ -23,7 +25,6 @@
     Akoma Ntoso wrappers for preamble nodes
 ------------------------------------------------------------------------------>
 <#-- AKN preamble handler for edition, wrapped to activate/deactivate actions -->
-
 <#macro citations>
     <@wrapper/>
 </#macro>

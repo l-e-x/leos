@@ -1,14 +1,16 @@
 <#ftl encoding="UTF-8"
+      output_format="XML"
+      auto_esc=true
       strict_syntax=true
       strip_whitespace=true
       strip_text=true
       ns_prefixes={"D":"http://www.akomantoso.org/2.0",
                    "leos":"urn:eu:europa:ec:leos"}>
-<#--
 
+<#--
     Copyright 2016 European Commission
 
-    Licensed under the EUPL, Version 1.1 or � as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.1 or - as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -17,7 +19,6 @@
     Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
     See the Licence for the specific language governing permissions and limitations under the Licence.
-
 -->
 
 <#-- Hash of mapped Akoma Ntoso XML elements where:
@@ -72,61 +73,74 @@
  AKN authorial note handler -->
 ------------------------------------------------------------------------------>
 <#macro authorialNote>
-    <#local marker=.node.@marker[0]!'*'><#t>
-    <#local noteText=.node.@@text?trim?xml><#t>
-    <#local noteId=.node.@id[0]!''><#t>
-    <#if (noteId?length gt 0)><#t>
+	<#assign authorialNoteList = authorialNoteList + [.node]>
+    <#local marker=.node.@marker[0]!'*'>
+    <#local noteText=.node.@@text?trim>
+    <#local noteId=.node.@id[0]!''>
+    <#if (noteId?length gt 0)>
         <authorialNote id="${noteId}" data-tooltip="${noteText}" onClick="nav_navigateToContent('endNote_${noteId}')">${marker}</authorialNote><#t>
-    <#else><#t>
+    <#else>
     	<authorialNote data-tooltip="${noteText}">${marker}</authorialNote><#t>
-    </#if><#t>
-	<#assign authorialNoteList = authorialNoteList + [getAuthorialNoteSpan(noteId, marker, noteText)]><#t>
+    </#if>
 </#macro>
 
-<#-----------------------------------------------------------------------------
-popup tag handler -->
------------------------------------------------------------------------------->
-<#macro popup>
-<#t><popup data-leosComments="popover" data-content='${.node.@@text?trim?xml}' ${.node.@@attributes_markup}></popup>
-</#macro>
 <#-----------------------------------------------------------------------------
 Cross Reference handler -->
 ------------------------------------------------------------------------------>
 <#macro ref>
-<#local refId=.node.@href[0]!''>
-<ref ${.node.@@attributes_markup} onClick="nav_navigateToContent('${refId}')"><#recurse></ref></#macro>
+    <#local refId=.node.@href[0]!''>
+    <ref ${.node.@@attributes_markup?no_esc} onClick="nav_navigateToContent('${refId}')"><#recurse></ref><#t>
+</#macro>
 
 <#-- AKN end-of-line handler -->
 <#macro eol>
 <br/>
 </#macro>
 
-<#-- create the representation of authorialNote -->
-<#function getAuthorialNoteSpan noteId marker noteText>
-       <#if (noteId?length gt 0)>
-           <#return '<span id="endNote_${noteId}" class="leos-authnote" onClick="nav_navigateToContent(\'${noteId}\')"><marker id="marker_${noteId}">${marker}</marker><text id="text_${noteId}">${noteText}</text></span>'>
-        <#else>
-           <#return '<span class="leos-authnote"><marker>${marker}</marker><text>${noteText}</text></span>'>
-        </#if>
-</#function>
-
 <#-- print the footnotes in document -->
 <#macro printAuthorialNotes>
-	<#if authorialNoteList?has_content>
-    	<span id="leos-authnote-table-id" class="leos-authnote-table">
-        	<hr size="2"/>
-	        <#list authorialNoteList as authNote>
-    	        ${authNote}
-        	 </#list>
-	    </span>
-	 </#if>
+    <#list authorialNoteList>
+        <span id="leos-authnote-table-id" class="leos-authnote-table">
+            <hr size="2"/>
+        <#items as authNote>
+            <#local noteMarker=authNote.@marker[0]!'*'>
+            <#local noteText=authNote.@@text?trim>
+            <#local noteId=authNote.@id[0]!''>
+            <#if (noteId?length gt 0)>
+                <span id="endNote_${noteId}" class="leos-authnote" onClick="nav_navigateToContent('${noteId}')">
+                    <marker id="marker_${noteId}">${noteMarker}</marker>
+                    <text id="text_${noteId}">${noteText}</text>
+                </span>
+            <#else>
+                <span class="leos-authnote">
+                    <marker>${noteMarker}</marker>
+                    <text>${noteText}</text>
+                </span>
+            </#if>
+        </#items>
+        </span>
+    </#list>
 </#macro>
 
 <#-----------------------------------------------------------------------------
     Default handlers for XML nodes
 ------------------------------------------------------------------------------>
 <#-- default handler for element nodes -->
-<#macro @element><#local nodeName=.node?node_name><#if (!aknIgnored?seq_contains(nodeName))><#local nodeTag=aknMapped[nodeName]!nodeName><#if (.node.@@attributes_markup?length gt 0)><${nodeTag} ${.node.@@attributes_markup}><#recurse></${nodeTag}><#else><${nodeTag}><#recurse></${nodeTag}></#if></#if></#macro>
+<#macro @element>
+    <#local nodeName=.node?node_name>
+    <#if (!aknIgnored?seq_contains(nodeName))>
+        <#local nodeTag=aknMapped[nodeName]!nodeName>
+        <#if (.node.@@?size gt 0)>
+            <${nodeTag} ${.node.@@attributes_markup?no_esc}><#recurse></${nodeTag}><#t>
+        <#else>
+            <${nodeTag}><#recurse></${nodeTag}><#t>
+        </#if>
+    </#if>
+</#macro>
 
-<#-- default handler for text nodes -->	
-<#macro @text>${.node?xml}</#macro>
+<#-- default handler for text nodes -->
+<#macro @text>
+    <#if .node?trim?length gt 0>
+        ${.node}<#t>
+    </#if>
+</#macro>

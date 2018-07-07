@@ -1,19 +1,9 @@
-<li data-comment-id="<%= comment.id %>">
-  <div class="author-avatar">
-    <img src="<%= comment.authorAvatarUrl %>">
-  </div>
-  <% if (comment.authorUrl) { %>
-    <a class="author-name right-of-avatar" href="<%= comment.authorUrl %>">
-      <%= comment.authorName %>
-    </a>
-  <% } else { %>
-    <p class="author-name right-of-avatar">
-      <%= comment.authorName %>
-      <%if(comment.dg) {%>
-        (<%= comment.dg %>)
-      <%}%>
-    </p>
-  <% } %>
+<li class="<%= comment.refersTo %>" data-comment-id="<%= comment.id %>">
+  <span class="author-avatar"/>
+  <p class="author-name right-of-avatar">
+      <%=comment.authorName%>
+      <%if(comment.dg) {%>(<%= comment.dg %>)<%}%>
+  </p>
   <p class="comment right-of-avatar">
     <%= comment.comment %>
   </p>

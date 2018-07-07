@@ -74,8 +74,9 @@ define(function leosCoreModule(require) {
         return new Date().format("UTC:yyyy-mm-dd'T'HH:MM:ss'Z'");
     };
 
-    utils.getLocalDateFromUTCAsString = function(utcDate) {
-        return new Date(utcDate).format("yyyy-mm-dd HH:MM:ss");
+    utils.getLocalDateFromUTCAsString = function(utcDate, mask) {
+        mask = mask || "yyyy-mm-dd HH:MM:ss";
+        return new Date(utcDate).format(mask);
     };
 
     return {

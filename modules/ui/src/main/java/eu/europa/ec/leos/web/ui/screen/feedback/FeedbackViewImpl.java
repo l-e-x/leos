@@ -13,6 +13,16 @@
  */
 package eu.europa.ec.leos.web.ui.screen.feedback;
 
+import java.util.List;
+
+import javax.annotation.Nonnull;
+import javax.annotation.PostConstruct;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+
 import com.vaadin.annotations.JavaScript;
 import com.vaadin.data.Container;
 import com.vaadin.navigator.ViewChangeListener;
@@ -21,12 +31,13 @@ import com.vaadin.shared.ui.label.ContentMode;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.Label;
+
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.vo.CommentVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
-import eu.europa.ec.leos.web.event.view.feedback.CommentsAvailableEvent;
+import eu.europa.ec.leos.web.event.view.document.CreateSuggestionResponseEvent;
 import eu.europa.ec.leos.web.event.view.feedback.EnterFeedbackViewEvent;
+import eu.europa.ec.leos.web.event.view.feedback.SetUserEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.LockNotificationManager;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
@@ -36,15 +47,7 @@ import eu.europa.ec.leos.web.ui.converter.StageIconConverter;
 import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
 import eu.europa.ec.leos.web.ui.screen.LeosScreen;
 import eu.europa.ec.leos.web.view.FeedbackView;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
 import ru.xpoft.vaadin.VaadinView;
-
-import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import java.util.List;
 
 @Scope("session")
 @org.springframework.stereotype.Component(FeedbackView.VIEW_ID)
@@ -167,8 +170,8 @@ public class FeedbackViewImpl extends LeosScreen implements FeedbackView {
     }
 
     @Override
-    public void setComments(List<CommentVO> comments) {
-        eventBus.post(new CommentsAvailableEvent(comments, securityContext.getUser()));
+    public void setUser(){
+        eventBus.post(new SetUserEvent(securityContext.getUser()));
     }
 
     @Override
@@ -184,6 +187,10 @@ public class FeedbackViewImpl extends LeosScreen implements FeedbackView {
         });
     }
 
+    @Override
+    public void showSuggestionEditor(final String elementId, final String suggestionFragment) {
+        eventBus.post(new CreateSuggestionResponseEvent(elementId, suggestionFragment, securityContext.getUser()));
+    }
     private void showTrayNotificationForLockUpdate(LockActionInfo lockActionInfo){
 
         if(! VaadinSession.getCurrent().getSession().getId().equals(lockActionInfo.getLock().getSessionId())){

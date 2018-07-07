@@ -27,11 +27,11 @@ public class CommentVO implements Serializable{
     private String authorId;
     private String dg;
     private Date timestamp; //UTC time... any conversion should be done at client side
-    private String authorAvatarUrl ;
+    private String refersTo; //Not storing as Enum. For enum, Vaadin sends the Name of enum to client side
 
     CommentVO(){
     }
-    public CommentVO(String id, String enclosingElementId, String comment, String authorName, String authorId,String dg, Date timestamp) {
+    public CommentVO(String id, String enclosingElementId, String comment, String authorName, String authorId,String dg, Date timestamp, RefersTo refTo) {
         this.id = id;
         this.enclosingElementId =enclosingElementId;
         this.comment = comment;
@@ -39,6 +39,7 @@ public class CommentVO implements Serializable{
         this.authorId = authorId;
         this.timestamp = timestamp;
         this.dg=dg;
+        this.refersTo = refTo.getValue();
     }
 
     public String getEnclosingElementId() {
@@ -77,14 +78,6 @@ public class CommentVO implements Serializable{
 		this.dg = dg;
 	}
 
-    public String getAuthorAvatarUrl() {
-        return authorAvatarUrl;
-    }
-
-    public void setAuthorAvatarUrl(String authorAvatarUrl) {
-        this.authorAvatarUrl = authorAvatarUrl;
-    }
-
     public void setId(String id) {
         this.id = id;
     }
@@ -103,5 +96,39 @@ public class CommentVO implements Serializable{
 
     public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public String getRefersTo() {
+        return refersTo;
+    }
+
+    public void setRefersTo(String refersTo) {
+        this.refersTo = refersTo;
+    }
+
+    public enum RefersTo {
+        LEOS_SUGGESTION("~leosSuggestion"),
+        LEOS_COMMENT("~leosComment");
+
+        private String value;
+
+        RefersTo(String value){
+            this.value = value;
+        }
+
+        String getValue(){
+            return value;
+        }
+
+        public static RefersTo fromString(String text) {
+            if (text != null) {
+                for (RefersTo refersTo : RefersTo.values()) {
+                    if (text.equalsIgnoreCase(refersTo.value)) {
+                        return refersTo;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("Invalid Enum Value" + text);
+        }
     }
 }

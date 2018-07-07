@@ -60,7 +60,7 @@
         packages: [
             {
                 name: "lodash",
-                location: "lib/lodash_4.6.1-amd",
+                location: "lib/lodash_4.15.0-amd",
                 main: "main"
             },
             {

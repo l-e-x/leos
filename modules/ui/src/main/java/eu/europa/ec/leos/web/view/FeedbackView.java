@@ -14,7 +14,6 @@
 package eu.europa.ec.leos.web.view;
 
 import eu.europa.ec.leos.model.content.LeosDocumentProperties;
-import eu.europa.ec.leos.vo.CommentVO;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 
@@ -34,5 +33,7 @@ public interface FeedbackView extends LeosView {
 
     void updateLocks(LockActionInfo lockActionInfo);
     
-    void setComments(List<CommentVO> comments);
+    void showSuggestionEditor(String elementId, String suggestionFragment);
+
+    void setUser();
 }

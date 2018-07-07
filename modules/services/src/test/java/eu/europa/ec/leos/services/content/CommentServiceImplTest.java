@@ -20,6 +20,7 @@ import eu.europa.ec.leos.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.test.support.LeosTest;
 import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.vo.CommentVO;
+import eu.europa.ec.leos.vo.CommentVO.RefersTo;
 import org.hamcrest.MatcherAssert;
 import org.junit.Test;
 import org.mockito.InjectMocks;
@@ -60,9 +61,9 @@ public class CommentServiceImplTest extends LeosTest {
         byte[] byteContent = new byte[]{1, 2, 3};
         LeosDocument document = mock(LeosDocument.class);
         CommentVO commentVOExpected1 = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         when(xmlContentProcessor.getAllComments(byteContent)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected1, commentVOExpected2)));
         when(document.getContentStream()).thenReturn(new ByteArrayInputStream(byteContent));
@@ -222,9 +223,9 @@ public class CommentServiceImplTest extends LeosTest {
         String comment2="<bla>This is a comment...2</bla>";
 
         CommentVO commentVOExpected1 = new CommentVO("xyz1", "ElementId", "This is a comment...", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
 
         when(xmlContentProcessor.getAllComments(baseXmlBytes)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected1)));
@@ -254,13 +255,13 @@ public class CommentServiceImplTest extends LeosTest {
         String comment2="<bla>This is a comment...2</bla>";
 
         CommentVO commentVOExpected1 = new CommentVO("xyz1", "ElementId", "This is a comment...", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId3", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected4 = new CommentVO("xyz4", "ElementId4", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         when(xmlContentProcessor.getAllComments(baseXmlBytes)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected1)));
         when(xmlContentProcessor.getAllComments(addendedXmlBytes)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected1, commentVOExpected2,commentVOExpected3,commentVOExpected4)));
@@ -298,9 +299,9 @@ public class CommentServiceImplTest extends LeosTest {
         byte[] addendedXmlBytes= new byte[] {5, 6, 8};
 
         CommentVO commentVOExpected1 = new CommentVO("xyz1", "ElementId", "This is a comment...", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
 
         when(xmlContentProcessor.getAllComments(baseXmlBytes)).thenReturn(new ArrayList<>(Arrays.asList(commentVOExpected1,commentVOExpected2)));
@@ -328,11 +329,11 @@ public class CommentServiceImplTest extends LeosTest {
         String commentUpdated="<bla>This is a comment...2</bla>";
 
         CommentVO commentVOExpected1 = new CommentVO("xyz1", "ElementId", "This is a comment...", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected1_updated = new CommentVO("xyz1", "ElementId", "This is a comment...updated", "User One", "user1", "TESTDG",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId2", "This is a comment...2", "User One2", "user2","TESTDG1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
 
         when(xmlContentProcessor.getAllComments(baseXmlBytes)).thenReturn(new ArrayList<>(Arrays.asList(commentVOExpected1,commentVOExpected2)));

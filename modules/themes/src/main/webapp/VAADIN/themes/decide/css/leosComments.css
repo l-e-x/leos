@@ -13,12 +13,12 @@
  */
 /**********************Styles for leos-popover*****************************/
 
-bill .leos-comment {
+bill .leos-balloon {
     min-width: 276px;
     padding:0;
 }
 
-bill .leos-comment .popover-title {
+bill .leos-balloon .popover-title {
     padding: 0 5px;
     margin-top: 0;
     display: table-cell;
@@ -26,8 +26,24 @@ bill .leos-comment .popover-title {
     border-radius: 6px 0 0 0;
 }
 
-.leos-comment .popover-content {
+.leos-balloon .popover-title:before{
+    font-family:  "Vaadin-Icons";
+}
+
+.leos-balloon.\~leosSuggestion .popover-title:before {
+    content:'\e6be  ';
+}
+
+.leos-balloon.\~leosComment .popover-title:before {
+    content:'\e767  ';
+}
+
+.leos-balloon .popover-content {
     padding: 5px 5px;
+}
+
+.leos-balloon aknp {
+    padding: 0;
 }
 
 .leos-popover-nav {
@@ -45,47 +61,164 @@ bill .leos-comment .popover-title {
     border-radius: 6px 6px 0 0;
 }
 
-.leos-comment.selected {
+.leos-balloon.selected {
     z-index: 9999;
     background-color:#ffd5d6;
     border: 1px solid #ffa7aa;
 }
 
-.leos-comment.selected.right > .arrow:after {
+.leos-balloon.selected.right > .arrow:after {
     border-right-color: #ffd5d6;
 }
 
-.leos-comment.selected.right > .arrow {
+.leos-balloon.selected.right > .arrow {
     border-right-color: #ffa7aa;
 }
 
-.leos-comment.right > .arrow {
+.leos-balloon.right > .arrow {
     top: 15px !important;
 }
 
-.leos-comment.selected .leos-popover-header * {
+.leos-balloon.selected .leos-popover-header * {
     background-color: #ffa7aa;
 }
 
-.leos-comment.selected .popover-title {
+.leos-balloon.selected .popover-title {
     border: 1px solid transparent;
 }
 
-.leos-comment.selected .leos-popover-nav {
+.leos-balloon.selected .leos-popover-nav {
     border-bottom: 1px solid transparent;
 }
 
-popup {
+.leos-balloon.\~leosSuggestion{
+    background-color: antiquewhite;
+}
+
+.leos-balloon.\~leosSuggestion .leos-popover-header * {
+    background-color: bisque;
+}
+
+.leos-balloon.\~leosSuggestion.right > .arrow:after {
+    border-right-color: bisque;
+}
+
+.leos-balloon.\~leosSuggestion.selected {
+    border: 1px solid burlywood;
+    background-color: bisque;
+}
+
+.leos-balloon.\~leosSuggestion.selected .leos-popover-header * {
+    background-color: burlywood;
+}
+
+.leos-balloon.selected.right > .arrow {
+    border-right-color:inherit;
+}
+
+/* styling of the comments markers */
+[refersTo="~leosComment"]{
     display:inline;
-    position:absolute;
+    position:relative;
     margin-left:-3px;
 }
 
-popup:after {
+[refersTo="~leosComment"]:after {
+    position:absolute;
     content:url('../icons/16/left-brace.png');
+    left:3px;
 }
 
-popup:before {
+[refersTo="~leosComment"]:before {
+    position:absolute;
     content:url('../icons/16/right-brace.png');
 }
 
+[refersTo="~leosSuggestion"]{
+    margin-left:-1px;
+}
+
+[refersTo="~leosSuggestion"]:before{
+    float:right;
+    font-family: 'Vaadin-Icons';
+    content: "\e6be";
+    margin-right:-23px;
+    color:lightgrey;
+}
+
+[refersTo="~leosSuggestion"] > *,
+[refersTo="~leosComment"] > *{
+    display:none;
+}
+
+.balloon-actions {
+    display:none;
+    float:right;
+    font-size: 13px;
+    font-family: "Open Sans";
+}
+
+.balloon-actions > * {
+    color: #B3B3B1;
+    text-decoration: none;
+    padding-right:10px;
+}
+
+/*********************leos-suggestion styles***************************************/
+
+.sugg-actions {
+    float:right;
+    font-size: 13px;
+    padding: 0 10px;
+    font-family: "Open Sans";
+}
+
+.sugg-actions > * {
+    color: #B3B3B1;
+    text-decoration: none;
+    padding: 0 10px;
+}
+
+.sugg-post, .sugg-cancel {
+    background:#0065A2;
+    color: white;
+}
+
+.sugg-post:hover, .sugg-cancel:hover {
+    color: #7bd2f6;
+}
+
+.leos-suggestion-wrapper {
+    padding: 43px 0 20px 0;
+    border: 1px solid #94c0d2;
+    background-color: #E5F0F6;
+}
+
+.leos-suggestion-wrapper .leos-wrap-content {
+    background-color:antiquewhite;
+}
+
+.leos-suggestion-wrapper [refersTo="~leosSuggestion"] > * {
+    display:inherit;
+}
+
+.leos-suggestion-wrapper [refersTo="~leosSuggestion"]:before {
+    display:none;
+}
+
+.leos-wrap-content.leos-suggestion-content {
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+    padding-right:30px;
+}
+
+.suggestion-header {
+    font-size: 13px;
+    font-family: "Open Sans";
+    background-color: #0065A2;
+    color: white;
+    text-align: left;
+    padding-left:20px;
+    position: relative;
+    top: -43px;
+}

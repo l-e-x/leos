@@ -25,6 +25,7 @@ import eu.europa.ec.leos.support.xml.TransformationManager;
 import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.vo.CommentVO;
+import eu.europa.ec.leos.vo.CommentVO.RefersTo;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockActionInfo.Operation;
@@ -143,7 +144,7 @@ public class FeedbackPresenterTest extends LeosPresenterTest {
         verify(feedbackView).setToc(argThat(sameInstance(tableOfContentItemVoList)));
         verify(lockingService).lockDocument(docId, user, SESSION_ID,LockLevel.READ_LOCK);
         verify(feedbackView).updateLocks(any(LockActionInfo.class));
-        verify(feedbackView).setComments(commentService.getAllComments(document));
+        verify(feedbackView).setUser();
 
         verifyNoMoreInteractions(documentService, transformationManager, feedbackView);
     }
@@ -231,9 +232,9 @@ public class FeedbackPresenterTest extends LeosPresenterTest {
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
        
         CommentVO commentVOExpected1 = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","testDG.G",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"),RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","testDG.G1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"),RefersTo.LEOS_COMMENT);
         
         List<CommentVO> comments= new ArrayList<CommentVO>(Arrays.asList(commentVOExpected1, commentVOExpected2));
         when(commentService.getAllComments(document)).thenReturn(comments);
@@ -250,7 +251,7 @@ public class FeedbackPresenterTest extends LeosPresenterTest {
         verify(transformationManager).toNonEditableXml(argThat(sameInstance(document.getContentStream())), any(String.class));
         verify(feedbackView).refreshContent(displayableContent);
         verify(feedbackView).setDocumentTitle(docName);
-        verify(feedbackView).setComments(comments);
+        verify(feedbackView).setUser();
         verify(feedbackView).setDocumentStage(document.getStage());
         verify(feedbackView).setToc(argThat(sameInstance(tableOfContentItemVoList)));
 

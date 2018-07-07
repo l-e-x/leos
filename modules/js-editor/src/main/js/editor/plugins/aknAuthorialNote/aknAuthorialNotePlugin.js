@@ -16,8 +16,8 @@ define(function aknAuthorialNotePluginModule(require) {
     "use strict";
 
     // load module dependencies
+    var CKEDITOR = require("promise!ckEditor");
     var pluginTools = require("plugins/pluginTools");
-    var CKEDITOR = require("ckEditor");
 
     var authorialNoteWidgetDefinition = require("./authorialNoteWidget");
 
@@ -32,6 +32,7 @@ define(function aknAuthorialNotePluginModule(require) {
         init : function init(editor) {
             editor.addContentsCss(pluginTools.getResourceUrl(pluginName, cssPath));
             pluginTools.addDialog(dialogName, initializeDialog);
+            editor.on("receiveData", _handleAuthNotes); //LEOS-2114
             editor.widgets.add(widgetName, authorialNoteWidgetDefinition);
             editor.ui.addButton(widgetName, {
                 label : "Create an authorial note",
@@ -40,6 +41,20 @@ define(function aknAuthorialNotePluginModule(require) {
             });
         }
     };
+
+    function _handleAuthNotes(evt) {
+    	var editor = evt.editor;
+    	var elementFragment = evt.data;  //need to pass updated data after save from server
+    	editor.LEOS.lowestMarkerValue = _getLowestMarkerValue($(elementFragment).find('authorialNote'));
+    	authorialNoteWidgetDefinition._renumberAuthorialNotes(editor);
+    }
+
+    function _getLowestMarkerValue(authorialNotes) {
+        var markerArray =  authorialNotes.map(function() {
+        	 return this.getAttribute("marker");
+        }).get();
+        return markerArray.length > 0 ? Math.min.apply(Math, markerArray) : 1;
+    }
 
     function initializeDialog(editor) {
         var dialogDefinition = {
@@ -52,7 +67,6 @@ define(function aknAuthorialNotePluginModule(require) {
                     id : "fnote",
                     type : "text",
                     label : "Enter your text here:",
-
                     setup : function setup(widget) {
                         // set the dialog value to the value from widget fnote attribute
                         this.setValue(widget.data.fnote);
@@ -62,11 +76,19 @@ define(function aknAuthorialNotePluginModule(require) {
                         widget.setData("fnote", this.getValue());
                     }
                 } ]
-            } ]
+            } ],
+            //LEOS - 1963, 2160
+            onOk: function (event) {
+                var selection = this._.editor.getSelection();
+                selection.getRanges().forEach(
+                    function loopOverRange(currentRange) {
+                        currentRange.collapse(false);//take cursor to end of selected range
+                    });
+            }
+
         };
         return dialogDefinition;
     }
-    ;
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
@@ -97,7 +119,6 @@ define(function aknAuthorialNotePluginModule(require) {
             } ]
         }
     };
-    ;
 
     pluginTools.addTransformationConfigForPlugin(transformationConfig, pluginName);
 

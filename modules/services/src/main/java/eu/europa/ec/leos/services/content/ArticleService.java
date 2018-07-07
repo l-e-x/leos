@@ -35,14 +35,4 @@ public interface ArticleService {
      * @return The updated document or throws a LeosDocumentNotLockedByCurrentUserException if the given user doesn't have a lock on the document
      */
     LeosDocument insertNewArticle(LeosDocument document, String userLoginName, String articleId, boolean before);
-
-    /**
-     * Deletes an article with the given article id and saves the document.
-     * @param document The document to update
-     * @param userLoginName The login name of the user trying to delete the article
-     * @param articleId The id of the article which is to be deleted.
-     * @return The updated document or throws a LeosDocumentNotLockedByCurrentUserException if the given user doesn't have a lock on the document
-     */
-    LeosDocument deleteArticle(LeosDocument document, String userLoginName, String articleId);
-
 }

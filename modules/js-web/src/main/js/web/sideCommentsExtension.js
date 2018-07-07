@@ -20,6 +20,7 @@ define(function sideCommentsExtensionModule(require) {
     var _ = require("lodash");
     var $ = require("jquery");
     var SideComments = require("sideComments");
+    var sideCommentHelper = require("./sideCommentHelper");
 
     // configuration
     var SC_ROOT_SELECTOR = "akomantoso";
@@ -28,6 +29,8 @@ define(function sideCommentsExtensionModule(require) {
     // handle extension initialization
     function _initExtension(connector) {
         log.debug("Initializing Side Comments extension...");
+
+        sideCommentHelper.setup(connector);
 
         log.debug("Registering Side Comments extension state change listener...");
         connector.onStateChange = _connectorStateChangeListener;
@@ -41,7 +44,6 @@ define(function sideCommentsExtensionModule(require) {
         log.debug("Side Comments extension state changed...");
         var connector = this;
         _destroySideComments(connector);
-        _markCommentableSections();
         _createSideComments(connector);
     }
 
@@ -49,25 +51,33 @@ define(function sideCommentsExtensionModule(require) {
     function _connectorUnregistrationListener() {
         log.debug("Side Comments extension unregistered...");
         var connector = this;
+        sideCommentHelper.teardown(connector);
         _destroySideComments(connector);
     }
 
     function _markCommentableSections() {
         log.debug("Marking commentable sections...");
-        $(SC_SECTION_SELECTOR).each(function markSection() {
+
+        $(SC_SECTION_SELECTOR).filter(_filterComments).each(function markSection() {
             var $section = $(this);
             $section.addClass("commentable-section");
             $section.data("section-id", $section.attr("id"));
         });
+
+        function _filterComments(index, element){
+            return $(element).parent("[refersTo='~leosComment'], [refersTo='~leosSuggestion']").length == 0;
+        }
     }
 
     function _createSideComments(connector) {
         if (!connector.sideComments) {
             var state = connector.getState();
             var user = state.user;
-            var comments = state.comments;
-
             log.debug("Creating Side Comments...");
+
+            var comments = sideCommentHelper.getComments(connector, SC_SECTION_SELECTOR);
+            _markCommentableSections();// must be done after comments are fetched from document
+
             var sideComments = new SideComments(SC_ROOT_SELECTOR, user, comments);
             // attach side comments instance reference to connector
             connector.sideComments = sideComments;
@@ -93,10 +103,10 @@ define(function sideCommentsExtensionModule(require) {
     function _onCommentPosted(connector, comment) {
         var sideComments = this;
         log.debug("Comment posted...");
+        comment.id = _.uniqueId("akn_cmt");
         // insert comment at client-side (optimistic)
         sideComments.insertComment(comment);
         // insert comment at server-side (deferred)
-        comment.id = _.uniqueId("akn_");
         connector.insertComment(comment.sectionId, comment.id, comment.comment);
     }
 

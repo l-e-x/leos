@@ -26,6 +26,7 @@ import com.vaadin.ui.Button.ClickListener;
 import eu.europa.ec.leos.vo.lock.LockActionInfo;
 import eu.europa.ec.leos.vo.lock.LockLevel;
 import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
+import eu.europa.ec.leos.web.event.view.document.DocumentUpdatedEvent;
 import eu.europa.ec.leos.web.event.view.document.LegalTextCommentToggleEvent;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
 import eu.europa.ec.leos.web.event.window.ShowVersionsEvent;
@@ -233,6 +234,7 @@ public class LegalTextComponent extends CustomComponent {
             @Override
             public void buttonClick(ClickEvent event) {
                 eventBus.post(new RefreshDocumentEvent());
+                eventBus.post(new DocumentUpdatedEvent()); //Document might be updated.
             }
         });
 
@@ -283,6 +285,7 @@ public class LegalTextComponent extends CustomComponent {
             @Override
             public void buttonClick(ClickEvent event) {
                 eventBus.post(new RefreshDocumentEvent());
+                eventBus.post(new DocumentUpdatedEvent()); //Document might be updated.
             }
         });
         return textRefreshNote;
@@ -322,10 +325,16 @@ public class LegalTextComponent extends CustomComponent {
 
         SliderPinsExtension spe = new SliderPinsExtension(eventBus, getSelectorStyleMap());
         spe.extend(docContent);
+        
+        LeosEditorExtension leosEditor = new LeosEditorExtension(eventBus);
+        leosEditor.extend(docContent);
 
         if (viewSettings.isSideCommentsEnabled()) {
             SideCommentsExtension sideComments = new SideCommentsExtension(eventBus);
             sideComments.extend(docContent);
+            
+            SuggestionExtension suggestions = new SuggestionExtension(eventBus);
+            suggestions.extend(docContent);
         }
         else{
             LegalTextCommentsExtension ltce= new LegalTextCommentsExtension(eventBus);
@@ -333,14 +342,10 @@ public class LegalTextComponent extends CustomComponent {
 
             ActionManagerExtension actionManager = new ActionManagerExtension();
             actionManager.extend(docContent);
-
-            LeosEditorExtension leosEditor = new LeosEditorExtension(eventBus);
-            leosEditor.extend(docContent);
         }
-
+        
         return docContent;
     }
-
     private Map<String, String> getSelectorStyleMap(){
         Map<String, String> selectorStyleMap = new HashMap<>();
         selectorStyleMap.put("popup","pin-popup-side-bar");

@@ -516,14 +516,14 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(lockingService.lockDocument(docId, user, SESSION_ID, LockLevel.DOCUMENT_LOCK)).thenReturn(lockActionInfo);
         when(lockingService.unlockDocument(docId, user.getLogin(), SESSION_ID, LockLevel.DOCUMENT_LOCK)).thenReturn(lockActionInfo);
         when(documentService.getDocument(docId)).thenReturn(originalDocument);
-        when(articleService.deleteArticle(originalDocument, userLogin, articleId)).thenReturn(updatedDocument);
+        when(elementService.deleteElement(originalDocument, userLogin, articleId, articleTag)).thenReturn(updatedDocument);
         when(lockHelper.lockDocument()).thenReturn(true);
         when(lockHelper.unlockDocument()).thenReturn(true);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
-        verify(articleService).deleteArticle(originalDocument, userLogin, articleId);
+        verify(elementService).deleteElement(originalDocument, userLogin, articleId, articleTag);
         verify(documentService).getDocument(docId);
 
         verifyNoMoreInteractions(documentService);
@@ -548,17 +548,15 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(lockingService.lockDocument(docId, user, SESSION_ID, LockLevel.DOCUMENT_LOCK)).thenReturn(lockActionInfo);
         when(lockingService.unlockDocument(docId, user.getLogin(), SESSION_ID, LockLevel.DOCUMENT_LOCK)).thenReturn(lockActionInfo);
         when(documentService.getDocument(docId)).thenReturn(originalDocument);
-        when(articleService.deleteArticle(originalDocument, userLogin, articleId)).thenReturn(updatedDocument);
-        when(lockHelper.lockDocument()).thenReturn(true);
+        when(elementService.deleteElement(originalDocument, userLogin, articleId, articleTag)).thenReturn(updatedDocument);
+        when(lockHelper.lockDocument()).thenReturn(false);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
-        verify(articleService).deleteArticle(originalDocument, userLogin, articleId);
-        verify(documentService).getDocument(docId);
-
-        verifyNoMoreInteractions(documentService);
+        verifyNoMoreInteractions(documentService,elementService);
     }
+
     @Test
     public void test_insertArticle_Before() throws Exception {
 

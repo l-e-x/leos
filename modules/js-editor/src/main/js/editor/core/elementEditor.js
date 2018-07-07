@@ -88,7 +88,11 @@ define(function elementEditorModule(require) {
 
             // load XML fragment in editor
             var options = {
-                internal: true
+                internal: true,
+                callback: function() {
+                    var editor = this;
+                    editor.fire("receiveData", elementFragment);
+                }
             };
             editor.setData(elementFragment, options);
         } else {
@@ -135,6 +139,7 @@ define(function elementEditorModule(require) {
         var options = {
             callback: function() {
                 var editor = this;
+                editor.fire("receiveData", elementFragment);
                 // reset dirty state as for unchanged content
                 editor.resetDirty();
             }

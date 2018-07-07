@@ -15,6 +15,7 @@ package eu.europa.ec.leos.support.xml;
 
 import eu.europa.ec.leos.test.support.LeosTest;
 import eu.europa.ec.leos.vo.CommentVO;
+import eu.europa.ec.leos.vo.CommentVO.RefersTo;
 import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import org.junit.Before;
 import org.junit.Test;
@@ -102,7 +103,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         docContent = doc.getBytes(UTF_8);
     }
 
-    
+
     @Test
     public void test_getAncestorsIdsForElementId_should_returnEmptyArray_when_rootElementIdPassed() {
         List<String> ids = xmlContentProcessor.getAncestorsIdsForElementId(
@@ -124,8 +125,8 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         xmlContentProcessor.getAncestorsIdsForElementId(docContent,
                 "notExisted");
     }
-    
-    
+
+
     @Test
     public void test_getTagContentByNameAndId_should_returnTagContent_when_tagAndIdFound() throws Exception {
         String tagContent = xmlContentProcessor.getElementByNameAndId(docContent, "alinea", "art486-aln1");
@@ -1510,38 +1511,38 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
         return content;
     }
-    
+
     @Test
     public void test_injectIdShouldNotInjectIdForSkippedNodes() {
         String xml = "<akomaNtoso>xxx</akomaNtoso>";
         byte[] result = xmlContentProcessor.injectTagIdsinXML(xml.getBytes());
-        
+
         Pattern pattern = Pattern.compile("id=");
         Matcher matcher = pattern.matcher(new String(result));
 
         assertThat("id= " + " should not be found in " + new String(result), matcher.find(), is(false));
     }
-   
+
     @Test
     public void test_injectIdShouldInjectId() {
         String xml = "<p>xxx</p>";
         byte[] result = xmlContentProcessor.injectTagIdsinXML(xml.getBytes());
-        
+
         Pattern pattern = Pattern.compile("id=");
         Matcher matcher = pattern.matcher(new String(result));
 
         assertThat("id= " + " should be found in " + new String(result), matcher.find(), is(true));
     }
-    
+
     @Test
     public void test_injectIdMethodShould_notInjectNewID() {
         String xml = "<p id=\"PQR\">xxx</p>";
         String expected = "<p id=\"PQR\">xxx</p>";
         byte[] result = xmlContentProcessor.injectTagIdsinXML(xml.getBytes());
-        
+
         assertThat(new String(result), is(expected));
     }
-    
+
     @Test
     public void test_updateReferedAttributes(){
         String xml      = "<xyz>" +
@@ -1563,26 +1564,26 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         byte[] result = xmlContentProcessor.updateReferedAttributes(xml.getBytes(),hm);
         assertThat(new String(result), is(expected));
     }
-    
+
     @Test
     public void test_insertCommentInElement_element_found_addInStart() throws Exception{
         boolean start=true;
-        String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p>This is a comment...</p></popup>";
-        String xml = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
-        String expected = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">"+commentText+"xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq\">This is a comment...</p></popup>";
+        String xml = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y11\"><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String expected = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y11\"><p id=\"PQR1\">"+commentText+"xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
         byte[] result = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8),"PQR1",commentText, start);
-        
+
         assertThat(new String(result), is(expected));
     }
 
     @Test
     public void test_insertCommentInElement_element_found_addInEnd() throws Exception{
         boolean start=false;
-        String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p>This is a comment...</p></popup>";
-        String xml = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
-        String expected = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2"+commentText+"</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq\">This is a comment...</p></popup>";
+        String xml = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String expected = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">xxx2"+commentText+"</p></x><p id=\"PQR2\">xxx3</p></abc>";
         byte[] result = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8),"PQR1",commentText, start);
-        
+
         assertThat(new String(result), is(expected));
     }
 
@@ -1590,30 +1591,59 @@ public class VtdXmlContentProcessorTest extends LeosTest {
     public void test_insertCommentInElement_element_not_found_same_xml_returned() throws Exception{
         boolean start=false;
         String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p>This is a comment...</p></popup>";
-        String xml = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String xml = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y1\"><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
         byte[] result = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8),"XXX",commentText, start);
     }
-    
+
     @Test(expected = IllegalArgumentException.class)
     public void test_insertCommentInElement_id_null() throws Exception {
         boolean start=false;
         String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p>This is a comment...</p></popup>";
-        String xml = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
-        String expected = "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2"+commentText+"</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String xml =        "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String expected =   "<abc><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x><p id=\"PQR1\">xxx2"+commentText+"</p></x><p id=\"PQR2\">xxx3</p></abc>";
         byte[] result = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8),null,commentText, start);
-        
+
         assertThat(new String(result), is(expected));
     }
-    
+
+    @Test
+    public void test_insertCommentInElement_element_found_addSecondSuggestion_InStart() throws Exception {
+        boolean start = true;
+        String commentText = "<popup id=\"xyz\" refersTo=\"~leosSuggestion\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq\">This is a comment...</p></popup>";
+        String comment2Text = "<popup id=\"xyz2\" refersTo=\"~leosSuggestion\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq2\">This is a comment2...</p></popup>";
+        String xml = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String expected = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">" + commentText + comment2Text +
+                "xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        byte[] result1 = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8), "PQR1", commentText, start);
+        byte[] result2 = xmlContentProcessor.insertCommentInElement(result1, "PQR1", comment2Text, start);
+
+        assertThat(new String(result2), is(expected));
+    }
+
+    @Test
+    public void test_insertCommentInElement_element_found_addSecondCommentInEnd() throws Exception {
+        boolean start = false;
+
+        String commentText = "<popup id=\"xyz\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq\">This is a comment...</p></popup>";
+        String comment2Text = "<popup id=\"xyz2\" refersTo=\"~leosComment\" leos:userId=\"user1\" leos:userName=\"User One\" leos:dateTime=\"2015-05-29T11:30:00Z\"><p id=\"pq2\">This is a comment2...</p></popup>";
+        String xml = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">xxx2</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        String expected = "<abc id=\"y\"><p id=\"PQR0\">xxx0</p><p id=\"XYZ\">xxx1</p><x id=\"y2\"><p id=\"PQR1\">xxx2" + commentText + comment2Text +
+                "</p></x><p id=\"PQR2\">xxx3</p></abc>";
+        byte[] result1 = xmlContentProcessor.insertCommentInElement(xml.getBytes(UTF_8), "PQR1", commentText, start);
+        byte[] result2 = xmlContentProcessor.insertCommentInElement(result1, "PQR1", comment2Text, start);
+
+        assertThat(new String(result2), is(expected));
+    }
+
     @Mock
     XmlCommentProcessor xmlCommentProcessor;
-    
+
     @Test
     public void test_getAllComments_singleComment() throws ParseException {
         //setup
         CommentVO commentVOExpected = new CommentVO("xyz", "kk", "This is a comment...","User One", "user1", "DIGIT.B2.001",
-                 new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"));
-        
+                 new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
+
         String xml = "<meta id=\"ElementId\"><xx id = \"kk\">" +
                 "<popup id=\"xyz\"" +
                 " refersTo=\"~leosComment\"" +
@@ -1631,7 +1661,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 " leos:dateTime=\"2015-05-29T11:30:00Z\">" +
                 "<p>This is a comment...</p>" +
                 "</popup></xx>";
-                
+
         when(xmlCommentProcessor.fromXML(parentTag)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected)));
 
         //make the actual call
@@ -1647,7 +1677,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         assertThat(result.getAuthorName(), equalTo(commentVOExpected.getAuthorName()));
 
     }
-  
+
     @Test
     public void test_getAllComments_NoComment() throws ParseException {
 
@@ -1661,11 +1691,11 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<p>This is a comment...</p>" +
                 "</temp>" +
                 "</meta>";
-        
+
 
         //make the actual call
         List<CommentVO> results = xmlContentProcessor.getAllComments(xml.getBytes(UTF_8));
-        
+
         // verify
         assertThat(results.size(), equalTo(0));
     }
@@ -1674,7 +1704,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
     public void test_getAllComments_comment_present_deep() throws ParseException {
         // setup
         CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","DIGIT.B2.001",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
         String xml = "<meta id=\"ElementId\"><x id=\"xx\">" +
                 "<popup id=\"xyz\"" +
@@ -1694,7 +1724,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 "<p>This is a comment...</p>" +
                 "</popup></x>";
         when(xmlCommentProcessor.fromXML(parentTag)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected)));
-        
+
         // actual test
         List<CommentVO> results = xmlContentProcessor.getAllComments(xml.getBytes(UTF_8));
 
@@ -1714,15 +1744,15 @@ public class VtdXmlContentProcessorTest extends LeosTest {
 
         // setup
         CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1","DIGIT.B2.001",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TRADE.A1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         // setup
         CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "This is a comment...3", "User One3", "user3","DIGIT.B2.002",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-06-29T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-06-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
-        
+
         String xml = "<meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
                 " refersTo=\"~leosComment\"" +
@@ -1752,7 +1782,7 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         List<CommentVO> results = xmlContentProcessor.getAllComments(xml.getBytes(UTF_8));
 
         // verify
-        
+
         assertThat(results.size(), equalTo(3));
         CommentVO result = results.get(0);
         assertThat(result.getId(), equalTo(commentVOExpected.getId()));
@@ -1776,26 +1806,26 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         assertThat(result.getTimestamp(), equalTo(commentVOExpected3.getTimestamp()));
         assertThat(result.getAuthorName(), equalTo(commentVOExpected3.getAuthorName()));
     }
-    
+
     @Test
     public void test_getAllComments_MultipleComment_diffLevel() throws ParseException {
 
         // setup
         CommentVO commentVOExpected = new CommentVO("xyz", "ElementId", "This is a comment...", "User One", "user1",null,
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-29T16:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected2 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TRADE.A1",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected21 = new CommentVO("xyz2", "ElementId", "This is a comment...2", "User One2", "user2","TRADE.A2",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-05-30T11:30:00Z"), RefersTo.LEOS_COMMENT);
         CommentVO commentVOExpected3 = new CommentVO("xyz3", "ElementId", "This is a comment...3", "User One3", "user3","TRADE.A3",
-                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-06-29T11:30:00Z"));
+                new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss").parse("2015-06-29T11:30:00Z"), RefersTo.LEOS_COMMENT);
 
-        
+
         String xml = "<ak><meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
                 " refersTo=\"~leosComment\"" +
                 " leos:userId=\"user1\"" +
-                " leos:userName=\"User One\"" + 
+                " leos:userName=\"User One\"" +
                 " leos:dateTime=\"2015-05-29T16:30:00Z\">" +
                 "<p>This is a comment...</p>" +
                 "</popup></meta>" +
@@ -1819,12 +1849,12 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 " leos:dateTime=\"2015-06-29T11:30:00Z\">" +
                 "<p>This is a comment...3</p>" +
                 "</popup></level4></level3></ak>";
-        
+
         String parent1="<meta id=\"ElementId\">" +
                 "<popup id=\"xyz\"" +
                 " refersTo=\"~leosComment\"" +
                 " leos:userId=\"user1\"" +
-                " leos:userName=\"User One\"" + 
+                " leos:userName=\"User One\"" +
                 " leos:dateTime=\"2015-05-29T16:30:00Z\">" +
                 "<p>This is a comment...</p>" +
                 "</popup></meta>";
@@ -1849,17 +1879,17 @@ public class VtdXmlContentProcessorTest extends LeosTest {
                 " leos:dateTime=\"2015-06-29T11:30:00Z\">" +
                 "<p>This is a comment...3</p>" +
                 "</popup></level4>";
-        
+
         when(xmlCommentProcessor.fromXML(parent1)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected)));
         when(xmlCommentProcessor.fromXML(parent2)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected2, commentVOExpected21)));
         when(xmlCommentProcessor.fromXML(parent3)).thenReturn(new ArrayList<CommentVO>(Arrays.asList(commentVOExpected3)));
 
-        
+
         // actual test
         List<CommentVO> results = xmlContentProcessor.getAllComments(xml.getBytes(UTF_8));
 
         // verify
-        
+
         assertThat(results.size(), equalTo(4));
         CommentVO result = results.get(0);
         assertThat(result.getId(), equalTo(commentVOExpected.getId()));
@@ -1894,5 +1924,55 @@ public class VtdXmlContentProcessorTest extends LeosTest {
         assertThat(result.getTimestamp(), equalTo(commentVOExpected3.getTimestamp()));
         assertThat(result.getAuthorName(), equalTo(commentVOExpected3.getAuthorName()));
         assertThat(result.getDg(), equalTo(commentVOExpected3.getDg()));
+    }
+
+    @Test
+    public void test_removeElements_one() throws ParseException {
+
+        // setup
+        String xml = "<meta id=\"ElementId\">" +
+                "<temp id=\"xyz\"" +
+                " refersTo=\"~leosComment\"" +
+                " leos:userId=\"user1\"" +
+                " leos:userName=\"User One\"" +  " leos:dg=\"DIGIT.B2.001\"" +
+                " leos:dateTime=\"2015-05-29T11:30:00Z\">" +
+                "<p>This is a comment...</p>" +
+                "</temp>" +
+                "</meta>";
+
+
+        //make the actual call
+        byte[] result = xmlContentProcessor.removeElements(xml.getBytes(UTF_8), "//*[@refersTo=\"~leosComment\"]");
+
+        // verify
+        assertThat(new String(result,UTF_8) , equalTo("<meta id=\"ElementId\"></meta>"));
+    }
+
+    public void test_removeElements_multiple() throws ParseException {
+
+        // setup
+        String xml = "<meta id=\"ElementId\">" +
+                "<temp id=\"xyz\"" +
+                " refersTo=\"~leosComment\"" +
+                " leos:userId=\"user1\"" +
+                " leos:userName=\"User One\"" +  " leos:dg=\"DIGIT.B2.001\"" +
+                " leos:dateTime=\"2015-05-29T11:30:00Z\">" +
+                "<p>This is a comment...</p>" +
+                "</temp>" +
+                "<temp id=\"xyz1\"" +
+                " refersTo=\"~leosComment\"" +
+                " leos:userId=\"user1\"" +
+                " leos:userName=\"User One\"" +  " leos:dg=\"DIGIT.B2.001\"" +
+                " leos:dateTime=\"2015-05-29T11:30:00Z\">" +
+                "<p>This is a comment...</p>" +
+                "</temp>"+
+                "</meta>";
+
+
+        //make the actual call
+        byte[] result = xmlContentProcessor.removeElements(xml.getBytes(UTF_8), "//*[@refersTo=\"~leosComment\"]");
+
+        // verify
+        assertThat(new String(result,UTF_8) , equalTo("<meta id=\"ElementId\"></meta>"));
     }
 }

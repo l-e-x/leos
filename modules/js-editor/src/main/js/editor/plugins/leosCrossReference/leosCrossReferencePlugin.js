@@ -11,13 +11,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-﻿; // jshint ignore:line
+; // jshint ignore:line
 define(function leosCrossReferencePluginModule(require) {
     "use strict";
 
     // load module dependencies
     var CKEDITOR = require("promise!ckEditor");
-    var LOG = require("logger");
     var pluginTools = require("plugins/pluginTools");
     var jsTree = require("jsTree");
     var dialogDefinition = require("./leosCrossReferenceDialog");
@@ -68,10 +67,10 @@ define(function leosCrossReferencePluginModule(require) {
         }, {
             akn : "href",
             html : "href"
-        }, ],
+        } ],
         sub : {
             akn : "text",
-            html : "a/text",
+            html : "a/text"
         }
     };
 

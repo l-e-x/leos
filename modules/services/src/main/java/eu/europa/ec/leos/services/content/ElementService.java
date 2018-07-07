@@ -35,4 +35,12 @@ public interface ElementService {
      * @return The updated document or throws a LeosDocumentNotLockedByCurrentUserException if the given user doesn't have a lock on the document
      */
     LeosDocument saveElement(LeosDocument document, String userLogin, String elementContent, String elementName, String elementId);
+    /**
+     * Deletes an element with the given id and saves the document.
+     * @param document The document to update
+     * @param userlogin The login name of the user trying to delete the element
+     * @param elementId The id of the element which is to be deleted.
+     * @return The updated document or throws a LeosDocumentNotLockedByCurrentUserException if the given user doesn't have a lock on the document
+     */
+    LeosDocument deleteElement(LeosDocument document, String userlogin, String elementId, String elementType);
 }

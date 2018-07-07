@@ -1,0 +1,13 @@
+Updated HOWTO documentation
+
+Comments Viewer
+     - Feature to suggest a change in the text
+
+Document Viewer
+     - Accept or delete suggested changes
+     - Comments deletion with button
+      
+Updated dependencies (frameworks and libraries)
+Technical improvements
+
+Please see the README file included in the release to learn how to compile and run the project on your local machine without external dependencies.
