@@ -1,0 +1,938 @@
+/**
+ * Copyright 2018 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+.bill bill [leos\:editable=true],
+.bill bill .leos-placeholder {
+    border: solid 1px transparent;
+    margin: 0 -5px;
+    padding: 0 5px;
+}
+.bill bill .leos-placeholder {
+    border-color: #ADBDCE;
+}
+.bill bill .leos-editable-content {
+    background-color: #FFFAFF;
+    border-color: #ADBDCE;
+}
+.bill bill .leos-actions {
+    position: absolute;
+    right: 69px;
+    width: 20px;
+    user-select: none;
+    color: #0065A2;
+}
+.bill bill .leos-actions * {
+    margin-top: 3px;
+    cursor: pointer;
+    display: none;
+}
+
+.bill bill authorialNote {
+    display: inline;
+    font-size: 0.8em;
+    line-height: 0.8em;
+    vertical-align: baseline;
+    position: relative;
+    bottom: 0.5em;
+    cursor: pointer;
+    font-weight: bold;
+    color: blue;
+}
+.bill bill authorialNote:hover:before, .bill bill authorialNote:hover:after {
+    display: block;
+}
+.bill bill authorialNote:before {
+    bottom: 0;
+    display: none;
+    position: absolute;
+    content: "";
+    border-top: 0.6em solid blue;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    left: -0.25em;
+    margin-bottom: 1.25em;
+}
+.bill bill authorialNote:after {
+    bottom: 0;
+    display: none;
+    position: absolute;
+    content: attr(data-tooltip);
+    color: white;
+    background-color: blue;
+    border-radius: 7px;
+    padding: 5px 15px;
+    left: -1.5em;
+    margin-bottom: 1.75em;
+    white-space: nowrap;
+}
+
+.bill bill .cke_editable span .authorialnote {
+    font-size: 0.8em;
+    line-height: 0.8em;
+    font-weight: bold;
+    color: blue;
+    vertical-align: super;
+}
+
+.bill akomantoso .leos-authnote-table {
+    display: table;
+    padding-right: 2em;
+    word-break: break-all;
+    word-wrap: break-word;
+    table-layout: fixed;
+}
+.bill akomantoso .leos-authnote {
+    display: table-row;
+}
+.bill akomantoso .leos-authnote marker {
+    display: block;
+    font-size: 0.7em;
+    vertical-align: baseline;
+    position: relative;
+    bottom: 0.5em;
+    font-weight: bold;
+    color: blue;
+    float: left;
+    padding-bottom: 1em;
+}
+.bill akomantoso .leos-authnote text {
+    display: block;
+    margin-left: 1.2em;
+}
+.bill akomantoso .leos-authnote[id] {
+    cursor: pointer;
+}
+
+.bill akomantoso {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    font-style: normal;
+    font-weight: normal;
+    text-align: justify;
+    word-wrap: break-word;
+    color: black;
+    line-height: 1.25em;
+}
+
+.bill akomantoso .page, .bill .leos-toc .page {
+    position: relative;
+    display: block;
+    margin: 0.5cm auto;
+    width: 21cm;
+    min-height: 29.7cm;
+    padding: 2cm 2.5cm;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    white-space: normal;
+    background-color: white;
+}
+
+.bill bill longTitle > aknp > *, .bill bill coverPage container[name=docLabel] > *, .bill bill formula, .bill bill block, .bill bill alinea > content > aknP, .bill bill paragraph > content > aknP, .bill bill .cke_editable article > ol > li, .bill bill subparagraph > content > aknP, .bill bill .cke_editable ol > li > p, .bill bill clause aknP, .bill bill .cke_editable [data-akn-name=clause] p, .bill bill citation > aknP, .bill bill .cke_editable p[data-akn-name="citation"], .bill bill list point > num,
+.bill bill list indent > num, .bill bill list point > content > aknP,
+.bill bill list indent > content > aknP, .bill bill .cke_editable li > ol > li,
+.bill bill .cke_editable li > ul > li, .bill bill recital > num, .bill bill recital > aknP, .bill bill .cke_editable p[data-akn-name="recital"], .bill bill .cke_editable table p[data-akn-name="aknParagraph"], .bill bill paragraph > num {
+    margin: 0;
+}
+
+.bill bill longTitle > aknp > *, .bill bill coverPage container[name=docLabel] > *, .bill bill formula, .bill bill block, .bill bill alinea > content > aknP, .bill bill paragraph > content > aknP, .bill bill .cke_editable article > ol > li, .bill bill subparagraph > content > aknP, .bill bill .cke_editable ol > li > p, .bill bill clause aknP, .bill bill .cke_editable [data-akn-name=clause] p, .bill bill citation > aknP, .bill bill .cke_editable p[data-akn-name="citation"], .bill bill list point > num,
+.bill bill list indent > num, .bill bill list point > content > aknP,
+.bill bill list indent > content > aknP, .bill bill .cke_editable li > ol > li,
+.bill bill .cke_editable li > ul > li, .bill bill recital > num, .bill bill recital > aknP, .bill bill .cke_editable p[data-akn-name="recital"] {
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+}
+
+.bill bill .cke_editable *[contenteditable="false"] {
+    color: #808080;
+}
+.bill bill .cke_editable *[contenteditable="true"] {
+    color: black;
+}
+
+.bill bill .leos-editor-blur.cke_editable {
+    background-color: #FFFAFD;
+    border-color: #ADBDCE;
+}
+
+.bill bill .leos-editor-focus.cke_editable {
+    background-color: #FFFAFD;
+    border-color: #ADBDCE;
+}
+
+.bill *,
+.bill *:before,
+.bill *:after {
+    box-sizing: border-box;
+}
+
+.bill bill longTitle {
+    font-weight: bold;
+    text-align: center;
+}
+.bill bill coverPage longTitle > aknp, .bill bill longTitle > aknp {
+    text-decoration: none;
+    display: block;
+}
+.bill bill longTitle > aknp > * {
+    display: block;
+}
+.bill bill longTitle > aknp > docstage {
+    font-weight: normal;
+}
+.bill bill longTitle > aknp > doctype {
+    text-transform: uppercase;
+}
+
+.bill bill table {
+    border-collapse: collapse;
+    border-color: grey;
+    empty-cells: show;
+    margin-left: auto;
+    margin-right: auto;
+}
+.bill bill table aknp {
+    display: block;
+}
+.bill bill table:not([border]) * > td, .bill bill table:not([border]) th {
+    border: 1px solid grey;
+}
+.bill bill table:not([border]) * > tr:first-child th, .bill bill table:not([border]) tr:first-child td {
+    border-top: 1px solid black;
+}
+.bill bill table:not([border]) * > tr:last-child th, .bill bill table:not([border]) tr:last-child td {
+    border-bottom: 1px solid black;
+}
+.bill bill table:not([border]) * > tr td:first-child, .bill bill table:not([border]) tr th:first-child {
+    border-left: 1px solid black;
+}
+.bill bill table:not([border]) * > tr td:last-child, .bill bill table:not([border]) tr th:last-child {
+    border-right: 1px solid black;
+}
+.bill bill td, .bill bill th {
+    padding: 5px;
+}
+
+.bill bill paragraph > content > table, .bill bill list point > content > table,
+.bill bill list indent > content > table {
+    margin-top: 12pt;
+    margin-bottom: 12pt;
+}
+
+.bill bill .cke_editable table p[data-akn-name="aknParagraph"] {
+    padding: 0;
+}
+
+.bill bill coverPage {
+    height: 100%;
+    width: 100%;
+    top: 2.5cm;
+    bottom: 2.5cm;
+    display: block;
+}
+.bill bill coverPage img {
+    width: 326px;
+    height: 86px;
+}
+.bill bill coverPage container[name=language] {
+    font-weight: bold;
+    position: absolute;
+    font-family: "Arial", "Helvetica Neue", Helvetica, sans-serif;
+    font-size: 24pt;
+    top: 95%;
+}
+.bill bill coverPage container[name=language]:before {
+    content: attr(data-lang);
+    float: left;
+    margin-left: -1.2cm;
+}
+.bill bill coverPage container[name=language]:after {
+    content: attr(data-lang);
+    float: right;
+    margin-left: 15.8cm;
+}
+.bill bill coverPage container[name=institutionOwnerLogo] {
+    padding-bottom: 4.65cm;
+    display: inline-block;
+}
+.bill bill coverPage container[name=docLabel] > * {
+    display: block;
+    font-weight: bold;
+    text-align: center;
+}
+
+.bill bill .guidance-green-block {
+    display: block;
+    color: green;
+}
+.bill bill .guidance-green-inline {
+    display: inline;
+    color: green;
+}
+
+.bill bill .leos-content-removed, .bill bill .leos-content-removed * {
+    text-decoration: line-through;
+    color: red;
+}
+
+.bill bill .leos-content-new, .bill bill .leos-content-new * {
+    color: #26BC15;
+}
+
+.bill bill .leos-content-modified {
+    display: block;
+}
+.bill bill .leos-marker-content-removed, .bill bill .leos-marker-content-added {
+    visibility: hidden;
+}
+.bill bill .leos-content-new img {
+    border: 3px solid #26BC15 !important;
+}
+.bill bill .leos-content-removed img {
+    border: 3px solid red !important;
+}
+.bill bill table.leos-content-new, .bill bill tr.leos-content-new, .bill bill td.leos-content-new, .bill bill th.leos-content-new {
+    border: 1px solid #26BC15;
+    background-color: #DEFDDB;
+}
+.bill bill table.leos-content-removed, .bill bill tr.leos-content-removed, .bill bill td.leos-content-removed, .bill bill th.leos-content-removed {
+    border: 1px solid red;
+    background-color: #FFD5D6;
+}
+.bill bill .leos-content-removed table {
+    border: 1px solid red;
+    background-color: #FFD5D6;
+}
+.bill bill .leos-content-new table {
+    border: 1px solid #26BC15;
+    background-color: #DEFDDB;
+}
+
+.bill bill part {
+    display: block;
+}
+.bill bill part > num, .bill bill part > heading {
+    display: block;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 18pt;
+    font-size: 18pt;
+    font-weight: bold;
+}
+.bill bill aknTitle {
+    display: block;
+}
+.bill bill aknTitle > num, .bill bill aknTitle > heading {
+    display: block;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 18pt;
+    font-size: 18pt;
+    font-weight: bold;
+}
+.bill bill chapter {
+    display: block;
+}
+.bill bill chapter > num, .bill bill chapter > heading {
+    display: block;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 18pt;
+    font-size: 16pt;
+    font-weight: bold;
+}
+.bill bill section {
+    display: block;
+}
+.bill bill section > num, .bill bill section > heading {
+    display: block;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 18pt;
+    font-size: 14pt;
+    font-weight: bold;
+    font-variant: small-caps;
+    letter-spacing: 1px;
+}
+.bill bill conclusions {
+    display: block;
+    padding-top: 20pt;
+}
+.bill bill signature {
+    display: block;
+    padding: 16pt 0;
+}
+.bill bill signature > * {
+    display: block;
+    text-align: center;
+    padding: 3pt 0;
+    font-style: italic;
+}
+.bill bill placeholder {
+    display: inline;
+    font-weight: bold;
+    color: blue;
+}
+.bill bill omissis {
+    display: inline;
+    font-weight: bold;
+}
+.bill bill date {
+    display: inline;
+    font-weight: bold;
+}
+.bill bill formula {
+    display: block;
+}
+.bill bill block {
+    display: block;
+}
+.bill bill application {
+    display: block;
+    padding-top: 24pt;
+    padding-bottom: 6pt;
+}
+
+.bill bill article > num, .bill bill .cke_editable article .akn-article-num {
+    display: block;
+    text-align: center;
+    font-style: italic;
+    padding-top: 18pt;
+    padding-bottom: 6pt;
+}
+
+.bill bill article > heading, .bill bill .cke_editable article .akn-article-heading {
+    display: block;
+    text-align: center;
+    font-weight: bold;
+    padding-top: 6pt;
+    padding-bottom: 6pt;
+}
+
+.bill bill article {
+    display: block;
+}
+
+.bill bill .cke_editable article .akn-article-num {
+    margin: 0 !important;
+}
+.bill bill .cke_editable article .akn-article-heading {
+    margin: 0 !important;
+}
+
+.bill bill .cke_editable article .akn-article-num, .bill bill .cke_editable article .akn-article-heading {
+    font-size: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+}
+
+.bill bill .cke_editable.cke_show_blocks article {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks article:after {
+    content: "ARTICLE";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill alinea {
+    display: block;
+}
+.bill bill alinea > content > aknP {
+    display: block;
+}
+
+.bill bill .cke_editable li > ol > li > p:first-child {
+    padding-top: 0;
+}
+.bill bill .cke_editable li > ol > li > p:last-child {
+    padding-bottom: 0;
+}
+
+.bill bill .cke_editable.cke_show_blocks li > ol > li > p {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks li > ol > li > p:after {
+    content: "SUB-POINT";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill paragraph {
+    display: block;
+    position: relative;
+}
+.bill bill paragraph > num {
+    display: block;
+    min-width: 40px;
+    float: left;
+    padding-top: 6pt;
+}
+.bill bill paragraph > content {
+    clear: both;
+}
+.bill bill paragraph > content > aknP {
+    display: block;
+}
+
+.bill bill .cke_editable article > ol {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+.bill bill .cke_editable article > ol > li:before {
+    color: #808080;
+    content: attr(data-akn-num);
+    min-width: 40px;
+    float: left;
+}
+
+.bill bill .cke_editable.cke_show_blocks article > ol > li {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks article > ol > li:after {
+    content: "PARAGRAPH";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+.bill bill .cke_editable.cke_show_blocks article > ol > li > p, .bill bill .cke_editable.cke_show_blocks article > ol > li > ol, .bill bill .cke_editable.cke_show_blocks article > ol > li > table {
+    margin-left: 40px;
+}
+
+.bill bill subparagraph > content > aknP {
+    display: block;
+}
+
+.bill bill .cke_editable ol > li > p:first-child {
+    padding-top: 0;
+}
+.bill bill .cke_editable ol > li > p:last-child {
+    padding-bottom: 0;
+}
+
+.bill bill .cke_editable.cke_show_blocks ol > li > p {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks ol > li > p:after {
+    content: "SUBPARAGRAPH";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill clause {
+    display: block;
+}
+.bill bill clause aknP {
+    display: block;
+}
+
+.bill bill .cke_editable [data-akn-name=clause] p {
+    display: block;
+}
+
+.bill bill citation {
+    display: block;
+}
+.bill bill citation > aknP {
+    display: block;
+}
+
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=citations] p[data-akn-name="citation"] {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=citations] p[data-akn-name="citation"]:after {
+    content: "CITATION";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+citations {
+    display: block;
+}
+
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=citations] {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=citations]:after {
+    content: "CITATIONS";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill {
+    /* styling of the comments markers */
+}
+.bill bill .leos-balloon {
+    min-width: 276px;
+    padding: 0;
+}
+.bill bill .leos-balloon aknp {
+    padding: 0;
+}
+.bill bill .leos-balloon .popover-title {
+    display: table-cell;
+    border: solid 1px transparent;
+    padding: 0 5px;
+    margin-top: 0;
+    border-radius: 6px 0 0 0;
+}
+.bill bill .leos-balloon .popover-title:before {
+    font-family: "Vaadin-Icons";
+}
+.bill bill .leos-balloon .\~leosComment .popover-title:before {
+    content: '\e767  ';
+}
+.bill bill .leos-balloon .popover-content {
+    padding: 5px 5px;
+}
+.bill bill .leos-balloon.selected {
+    z-index: 9999;
+    background-color: #ffd5d6;
+    border: 1px solid #ffa7aa;
+}
+.bill bill .leos-balloon.selected.right > .arrow {
+    border-right-color: #ffa7aa;
+}
+.bill bill .leos-balloon.selected.right > .arrow:after {
+    border-right-color: #ffd5d6;
+}
+.bill bill .leos-balloon.selected .leos-popover-header * {
+    background-color: #ffa7aa;
+}
+.bill bill .leos-balloon.selected .popover-title {
+    border: 1px solid transparent;
+}
+.bill bill .leos-balloon.selected .leos-popover-nav {
+    border-bottom: 1px solid transparent;
+}
+.bill bill .leos-balloon.right > .arrow {
+    top: 15px !important;
+}
+.bill bill .leos-popover-nav {
+    display: table-cell;
+    border: solid 1px transparent;
+    border-radius: 0 6px 0 0;
+}
+.bill bill .leos-popover-header {
+    display: table;
+    background-color: #f7f7f7;
+    width: 100%;
+    font-weight: bold;
+    border: none;
+    border-radius: 6px 6px 0 0;
+}
+.bill bill [refersTo="~leosComment"] {
+    display: inline;
+    position: relative;
+    margin-left: -3px;
+}
+.bill bill [refersTo="~leosComment"]:after {
+    position: absolute;
+    content: url("https://intragate.development.ec.europa.eu/decide-drafting/assets/img/left-brace.png");
+    left: 3px;
+}
+.bill bill [refersTo="~leosComment"]:before {
+    position: absolute;
+    content: url("https://intragate.development.ec.europa.eu/decide-drafting/assets/img/right-brace.png");
+}
+.bill bill [refersTo="~leosComment"] > * {
+    display: none;
+}
+.bill bill .balloon-actions {
+    display: none;
+    float: right;
+    font-size: 13px;
+    font-family: "Open Sans";
+}
+.bill bill .balloon-actions > * {
+    color: #B3B3B1;
+    text-decoration: none;
+    padding-right: 10px;
+}
+
+.bill bill mref {
+    display: inline;
+    font-weight: normal;
+    color: #507C90;
+    outline: 1px dotted #507C90;
+}
+.bill bill mref[leos\:broken] {
+    color: red;
+    font-style: italic;
+    outline: 1px dotted red;
+}
+.bill bill mref[leos\:broken]:after {
+    display: inline;
+    font-style: normal;
+    font-family: "Vaadin-Icons";
+    content: "warning";
+    vertical-align: bottom;
+}
+.bill bill mref[leos\:broken] > ref {
+    color: red;
+}
+.bill bill ref {
+    color: blue;
+}
+.bill bill ref:hover {
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.bill bill .leos-highlight-yellow {
+    background-color: #FFFF00;
+}
+.bill bill .leos-highlight-green {
+    background-color: #00FF00;
+}
+.bill bill .leos-highlight-cyan {
+    background-color: #00FFFF;
+}
+.bill bill .leos-highlight-pink {
+    background-color: #FF00FF;
+}
+.bill bill .leos-highlight-blue {
+    background-color: #0000FF;
+}
+.bill bill .leos-highlight-red {
+    background-color: #FF0000;
+}
+.bill bill .leos-highlight-grey {
+    background-color: #C0C0C0;
+}
+
+.bill bill list point,
+.bill bill list indent {
+    display: block;
+    padding-left: 40px;
+    position: relative;
+}
+.bill bill list point > num,
+.bill bill list indent > num {
+    display: block;
+    min-width: 40px;
+    margin-left: -40px;
+    float: left;
+}
+.bill bill list point > content > aknP,
+.bill bill list indent > content > aknP {
+    display: block;
+}
+
+.bill bill .cke_editable li > ol,
+.bill bill .cke_editable li > ul {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+.bill bill .cke_editable li > ol > li,
+.bill bill .cke_editable li > ul > li {
+    padding-left: 40px;
+    position: relative;
+}
+.bill bill .cke_editable li > ol > li:before,
+.bill bill .cke_editable li > ul > li:before {
+    color: #808080;
+    content: attr(data-akn-num);
+    min-width: 40px;
+    margin-left: -40px;
+    float: left;
+}
+
+.bill bill .cke_editable.cke_show_blocks li > ol li {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 44px;
+}
+.bill bill .cke_editable.cke_show_blocks li > ol li:after {
+    content: "POINT";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+.bill bill .cke_editable.cke_show_blocks li > ul li {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 44px;
+}
+.bill bill .cke_editable.cke_show_blocks li > ul li:after {
+    content: "INDENT";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill preamble {
+    display: block;
+    padding-top: 24pt;
+    padding-bottom: 14pt;
+}
+.bill bill preamble > * {
+    display: block;
+}
+
+.bill bill recital {
+    display: block;
+}
+.bill bill recital > num {
+    min-width: 32px;
+    float: left;
+}
+.bill bill recital > aknP {
+    display: block;
+    margin-left: 32px;
+}
+
+.bill bill .cke_editable p[data-akn-name="recital"] {
+    padding-left: 32px;
+}
+.bill bill .cke_editable p[data-akn-name="recital"]:before {
+    color: #808080;
+    content: attr(data-akn-num);
+    min-width: 32px;
+    margin-left: -32px;
+    float: left;
+}
+
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=recitals] p[data-akn-name="recital"] {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 36px;
+}
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=recitals] p[data-akn-name="recital"]:after {
+    content: "RECITAL";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+recitals {
+    display: block;
+}
+
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=recitals] {
+    position: relative;
+    outline: 1px dotted #808080;
+    margin-top: 1px;
+    margin-bottom: 1px;
+    padding: 24px 0 8px 4px;
+}
+.bill bill .cke_editable.cke_show_blocks div[data-akn-name=recitals]:after {
+    content: "RECITALS";
+    color: #808080;
+    font-size: 9px;
+    display: block;
+    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 4px;
+}
+
+.bill bill {
+    display: block;
+}
+.bill .leos-toc {
+    overflow: hidden;
+    display: block;
+}
+.bill .leos-toc-header {
+    display: block;
+    text-align: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    font-variant: small-caps;
+    letter-spacing: 1px;
+    padding-bottom: 1em;
+}
+.bill .leos-toc-item {
+    display: block;
+    padding-left: 1em;
+    padding-top: 0.25em;
+    padding-bottom: 0.25em;
+}
+.bill .leos-toc-link {
+    text-decoration: none;
+}
+.bill .leos-toc-link:hover {
+    text-decoration: underline;
+}

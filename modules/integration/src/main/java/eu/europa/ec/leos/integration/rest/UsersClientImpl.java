@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -42,8 +42,8 @@ class UsersClientImpl implements UsersProvider {
     @Value("#{integrationProperties['leos.user.repository.searchbykey.uri']}")
     private String searchByKeyUri;
 
-    @Value("#{integrationProperties['leos.user.repository.searchbydgkey.uri']}")
-    private String findByDgKeyUri;
+    @Value("#{integrationProperties['leos.user.repository.searchbyentitykey.uri']}")
+    private String findByEntityKeyUri;
 
     @Autowired
     private RestOperations restTemplate;
@@ -73,9 +73,7 @@ class UsersClientImpl implements UsersProvider {
     public User getUserByLogin(String userId)
     {
         final String uri = repositoryUrl + findByLoginUri;
-
         Validate.notNull(userId, "User ID must not be null!");
-
         Map<String, String> params = new HashMap<String, String>();
         params.put("userId", userId);
         UserJSON result = null;
@@ -91,23 +89,23 @@ class UsersClientImpl implements UsersProvider {
     }
 
     @Override
-    public List<String> searchUsersByDgIdAndKey(String dg, String searchKey)
+    public List<String> searchUsersByEntityIdAndKey(String entity, String searchKey)
     {
-        final String uri = repositoryUrl + findByDgKeyUri;
+        final String uri = repositoryUrl + findByEntityKeyUri;
 
-        Validate.notNull(dg, "DG must not be null!");
+        Validate.notNull(entity, "Entity must not be null!");
         Validate.notNull(searchKey, "Search Key must not be null!");
 
         Map<String, String> params = new HashMap<String, String>();
-        params.put("dg", dg);
+        params.put("entity", entity);
         params.put("searchKey", searchKey);
 
         List<String> results = null;
         try {
             results = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<String>>() {}).getBody();
         } catch (RestClientException e) {
-            LOG.warn("Exception while searching for users in a dg : {}", e.getMessage());
-            throw new RuntimeException("Unable to search for users in a dg ", e);
+            LOG.warn("Exception while searching for users in an entity : {}", e.getMessage());
+            throw new RuntimeException("Unable to search for users in an entity ", e);
         }
 
         return results;

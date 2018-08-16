@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,7 +20,8 @@ import com.vaadin.server.VaadinRequest;
 import com.vaadin.spring.annotation.EnableVaadinNavigation;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.UI;
-import com.vaadin.v7.ui.VerticalLayout;
+import com.vaadin.ui.VerticalLayout;
+import eu.europa.ec.leos.domain.common.InstanceContext;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
@@ -33,7 +34,6 @@ import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 
 /**
@@ -42,7 +42,7 @@ import org.springframework.context.annotation.DependsOn;
 @SpringUI
 @EnableVaadinNavigation
 @PreserveOnRefresh
-@DependsOn({"navigationManager", "notificationManager", "deadEventHandler"})
+@DependsOn({"navigationManager", "stateManager", "notificationManager", "deadEventHandler"})
 @Theme(LeosTheme.NAME)
 public class LeosUI extends UI {
 
@@ -55,6 +55,9 @@ public class LeosUI extends UI {
 
     @Autowired
     private EventBus eventBus;
+
+    @Autowired
+    private InstanceContext instanceContext;
 
     @Autowired
     private SecurityContext securityContext;
@@ -71,9 +74,6 @@ public class LeosUI extends UI {
     @Autowired
     private LeosVaadinErrorHandler leosErrorHandler;
 
-    @Value("${leos.pollingInterval}")
-    protected int pollInterval;
-
     @Override
     protected void init(VaadinRequest request) {
         LOG.trace("Leos UI initializing...");
@@ -83,8 +83,6 @@ public class LeosUI extends UI {
 
         // initialize error handler
         initErrorHandler();
-
-        setPollInterval();
 
         LOG.trace("Leos UI is initialized!");
     }
@@ -98,6 +96,8 @@ public class LeosUI extends UI {
 
         // ui layout will use all available space
         final VerticalLayout leosLayout = new VerticalLayout();
+        leosLayout.setMargin(false);
+        leosLayout.setSpacing(false);
         leosLayout.addStyleName("leos-ui-layout");
         leosLayout.setSizeFull();
         setContent(leosLayout);
@@ -106,7 +106,7 @@ public class LeosUI extends UI {
         leosLayout.addComponent(banner);
 
         // classic header/body(viewDisplay)/footer layout
-        final Header header =  new Header(langHelper, messageHelper, eventBus, securityContext);
+        final Header header =  new Header(langHelper, messageHelper, eventBus, securityContext, instanceContext);
         leosLayout.addComponent(header);
 
         leosLayout.addComponent(viewDisplay);
@@ -122,10 +122,5 @@ public class LeosUI extends UI {
     private void initErrorHandler() {
         // Override the DefaultErrorHandler
         setErrorHandler(leosErrorHandler);
-    }
-
-    private void setPollInterval() {
-        LOG.trace("Setting Leos UI poll interval: {} millis", pollInterval);
-        setPollInterval(pollInterval);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -40,6 +40,7 @@ define(function aknUnNumberedBlockListPluginModule(require) {
                         for (var jj = 0; jj < listItems.length; jj++) {
                             listItems[jj].setAttribute("data-akn-num","•");
                             listItems[jj].removeAttribute("data-akn-name");
+                            listItems[jj].removeAttribute("style");
                         }
                     }
                     event.editor.fire( 'unlockSnapshot' );
@@ -59,6 +60,9 @@ define(function aknUnNumberedBlockListPluginModule(require) {
               akn : "GUID",
               html : "id"
           },{
+              akn : "leos:origin",
+              html : "data-origin"
+          },{
               html : "data-akn-name=UnNumberedBlockList"
           },{
           	akn : "leos:listtype=UnNumbered",
@@ -69,6 +73,9 @@ define(function aknUnNumberedBlockListPluginModule(require) {
               attr : [ {
                   akn : "GUID",
                   html : "id"
+              }, {
+                  akn : "leos:origin",
+                  html : "data-origin"
               }],
               sub : [{
                   akn : "num",
@@ -76,6 +83,9 @@ define(function aknUnNumberedBlockListPluginModule(require) {
                   attr : [ {
                       akn : "GUID",
                       html : "data-akn-num-id"
+                  }, {
+                      akn : "leos:origin",
+                      html : "data-num-origin"
                   }],
                   sub: {
                       akn: "text",
@@ -84,10 +94,13 @@ define(function aknUnNumberedBlockListPluginModule(require) {
               },{
                   akn : "mp",
                   html : "ul/li",
-                  attr : {
+                  attr : [ {
                       akn : "GUID",
                       html : "data-akn-mp-id"
-                  },
+                  }, {
+                      akn : "leos:origin",
+                      html : "data-mp-origin"
+                  } ],
                   sub : {
                       akn: "text",
                       html: "ul/li/text"

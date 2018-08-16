@@ -57,5 +57,3 @@ Cross Reference handler
 <#macro ref>
     <ref><#recurse using processors></ref><#t>
 </#macro>
-
-<#macro popup></#macro>

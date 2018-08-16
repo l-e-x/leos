@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -23,8 +23,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
 public class ZipPackageUtil {
@@ -88,5 +90,52 @@ public class ZipPackageUtil {
                 zipOutputStream.close();
             }
         }
+    }
+
+    public static Map<String, Object> unzipFiles(File file) {
+        Map<String, Object> unzippedFiles = new HashMap<>();
+        byte[] buffer = new byte[1024];
+
+        try {
+            String tempDir = System.getProperty("java.io.tmpdir");
+            String outputFolder = tempDir + "/unzip/" + file.getName() +"_"+ System.currentTimeMillis();
+            // create output directory is not exists
+            File folder = new File(outputFolder);
+            if (!folder.exists()) {
+                folder.mkdir();
+            }
+            // get the zip file content
+            ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
+            // get the zipped file list entry
+            ZipEntry ze = zis.getNextEntry();
+
+            while (ze != null) {
+
+                String fileName = ze.getName();
+                File newFile = new File(outputFolder + File.separator + fileName);
+                // create all non exists folders
+                // else you will hit FileNotFoundException for compressed folder
+                new File(newFile.getParent()).mkdirs();
+
+                FileOutputStream fos = new FileOutputStream(newFile);
+
+                int len;
+                while ((len = zis.read(buffer)) > 0) {
+                    fos.write(buffer, 0, len);
+                }
+
+                fos.close();
+                unzippedFiles.put(newFile.getName(), newFile);
+                ze = zis.getNextEntry();
+            }
+
+            zis.closeEntry();
+            zis.close();
+
+        } catch (IOException ex) {
+            LOG.error("Error unzipping the file {} : {}", file.getName(), ex.getMessage());
+        }
+
+        return unzippedFiles;
     }
 }

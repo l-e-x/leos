@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,13 +16,14 @@ package eu.europa.ec.leos.web.ui.component;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.ui.MenuBar;
+
+import eu.europa.ec.leos.ui.component.toc.TableOfContentComponent;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.component.LayoutChangeRequestEvent;
 import eu.europa.ec.leos.web.event.view.PaneAddEvent;
 import eu.europa.ec.leos.web.event.view.PaneEnableEvent;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.component.toc.TableOfContentComponent;
 import eu.europa.ec.leos.web.ui.screen.document.ColumnPosition;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
@@ -90,17 +91,18 @@ public class MenuBarComponent extends MenuBar {
     @Subscribe
     void addItemToMenu(PaneAddEvent event) {
         LOG.debug("Add meuItem to Menu Bar for ({})...", event.getPaneClass().getTypeName());
+        //New component TableOfContentV8Component is used for Annex.
         if (event.getPaneClass() == TableOfContentComponent.class) {
             tocOffItem = settingsItem.addItem(messageHelper.getMessage("menu.settings.toc.on.caption"),
                     LeosTheme.LEOS_TOC_ON_ICON_16,
-                    new TocLayoutMenuCommand(ColumnPosition.OFF));
+                    new MenuItemCommand(ColumnPosition.OFF,event));
             tocOffItem.setVisible(true);
             tocOffItem.setCheckable(true);
         }
         else if (event.getPaneClass() == MarkedTextComponent.class) {
             changesOffItem = settingsItem.addItem(messageHelper.getMessage("menu.settings.changes.on.caption"),
                     LeosTheme.LEOS_CHANGES_ON_ICON_16,
-                    new MarkedPaneLayoutMenuCommand(ColumnPosition.OFF));
+                    new MenuItemCommand(ColumnPosition.OFF,event));
             changesOffItem.setCheckable(true);
             changesOffItem.setVisible(true);
         }
@@ -109,7 +111,9 @@ public class MenuBarComponent extends MenuBar {
     @Subscribe
     void changePaneStatus(PaneEnableEvent event) {
         LOG.debug("Changing pane status in Menu Bar ({})...", event.getPaneClass().getTypeName());
-        if (tocOffItem != null && event.getPaneClass() == TableOfContentComponent.class) {
+        // New Component TableOfContentV8Component is used for Annex,
+        // TableOfContentComponent should be replaced in future
+        if (event.getPaneClass() == TableOfContentComponent.class) {
             tocOffItem.setChecked(event.isEnabled());
         }
         if (changesOffItem != null && event.getPaneClass() == MarkedTextComponent.class) {
@@ -117,46 +121,28 @@ public class MenuBarComponent extends MenuBar {
         }
     }
 
-    // Create Layout for select menu commands for TOC
-    private class TocLayoutMenuCommand implements MenuBar.Command {
-        private static final long serialVersionUID = -4455740778411909392L;
+	// Create Layout for selected menu command on panel add event
+	private class MenuItemCommand implements MenuBar.Command {
+		private static final long serialVersionUID = -4455740778411909392L;
 
-        private ColumnPosition position;
+		private ColumnPosition position;
+		private PaneAddEvent paneAddEvent;
 
-        public TocLayoutMenuCommand(ColumnPosition position) {
-            this.position = position;
-        }
+		public MenuItemCommand(ColumnPosition position, PaneAddEvent paneAddEvent) {
+			this.position = position;
+			this.paneAddEvent = paneAddEvent;
+		}
 
-        @Override
-        public void menuSelected(MenuBar.MenuItem menuItem) {
-            LOG.debug("Toc Layout menu item clicked ({}:{})...", position, menuItem.isChecked());
-            if (menuItem.isEnabled() && menuItem.isCheckable()) {
-                position = menuItem.isChecked() ? ColumnPosition.LAST : ColumnPosition.OFF;
-                LOG.debug("Changing layout settings (TOC={})...", position);
-                eventBus.post(new LayoutChangeRequestEvent(position, TableOfContentComponent.class));
-            }
-        }
-    }
-
-    // Create Layout for select menu commands for TOC
-    private class MarkedPaneLayoutMenuCommand implements MenuBar.Command {
-
-        private ColumnPosition position;
-
-        public MarkedPaneLayoutMenuCommand(ColumnPosition position) {
-            this.position = position;
-        }
-
-        @Override
-        public void menuSelected(MenuBar.MenuItem menuItem) {
-            LOG.debug("Chanegs Layout menu item clicked ({}:{})...", position, menuItem.isChecked());
-            if (menuItem.isEnabled() && menuItem.isCheckable()) {
-                position = menuItem.isChecked() ? ColumnPosition.FIRST: ColumnPosition.OFF;//New Position
-                LOG.debug("Changing layout settings (ChangedPane={})...", position);
-                eventBus.post(new LayoutChangeRequestEvent(position,MarkedTextComponent.class ));
-            }
-        }
-    }
+		@Override
+		public void menuSelected(MenuBar.MenuItem menuItem) {
+			LOG.debug("Layout menu item clicked ({}:{})...", position, menuItem.isChecked());
+			if (menuItem.isEnabled() && menuItem.isCheckable()) {
+				position = menuItem.isChecked() ? ColumnPosition.DEFAULT : ColumnPosition.OFF;
+				LOG.debug("Changing layout settings (MenuItem={})...", position);
+				eventBus.post(new LayoutChangeRequestEvent(position, paneAddEvent.getPaneClass()));
+			}
+		}
+	}
 
     private class CloseDocumentCommand implements Command {
 

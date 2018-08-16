@@ -1,0 +1,63 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+.selection-tabs {
+
+  display: flex;
+  flex-direction: row;
+  color: $grey-5;
+  @include font-normal;
+
+  &:hover {
+    color: $grey-6;
+  }
+
+  padding-bottom: 10px;
+}
+
+.selection-tabs--theme-clean {
+  margin-left: 15px;
+}
+
+.selection-tabs__type {
+  color: $grey-6;
+  margin-right: 20px;
+  cursor: pointer;
+  min-width: 85px;
+  min-height: 18px;
+
+  // Disable focus ring for selected tab
+  outline: none;
+
+  user-select: none;
+}
+
+.selection-tabs__type.is-selected {
+  font-weight: bold;
+}
+
+.selection-tabs__count {
+  position: relative;
+  bottom: 3px;
+  font-size: 10px;
+}
+
+.selection-tabs__empty-message {
+  position: relative;
+  top: 10px;
+}
+
+.selection-tabs__type--orphan {
+  margin-left: -5px;
+}

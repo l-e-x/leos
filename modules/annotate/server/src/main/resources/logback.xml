@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<configuration debug="false" scan="true" scanPeriod="5 minutes">
+    <!-- Ignore or print logback internal status messages on the console -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
+
+    <!-- Propagate changes to logging level onto the java.util.logging framework. -->
+    <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+        <resetJUL>true</resetJUL>
+    </contextListener>
+
+    <contextName>Annotate</contextName>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd:HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>./logs/annotate-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd:HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+    
+    <appender name="ADMINLOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- daily rollover -->
+            <fileNamePattern>./logs/annotate-admin-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- keep 15 days' worth of history -->
+            <maxHistory>15</maxHistory>
+        </rollingPolicy>
+        <append>true</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd:HH:mm:ss.SSS} %contextName [%thread] [%X{xaActive}%X{xaReadOnly}] %-5level %logger{36} - %msg%n%rEx</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="eu.europa.ec.leos.annotate" level="@log.level@"/>
+
+    <!-- <logger name="org.hibernate" level="DEBUG" /> -->
+    
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,14 +22,14 @@ define(function actionHandlerModule(require) {
     function _setupActionHandler(connector) {
         log.debug("Setting up action handler...");
         if (connector.editorChannel) {
-            var channel = connector.editorChannel;
-            var subscriptions = connector.actionSubscriptions || [];
+            let channel = connector.editorChannel;
+            let subscriptions = connector.actionSubscriptions || [];
             // subscribe to editor channel action topics
-            var insertAction = channel.subscribe("actions.insert.*.element", _insertElementAction.bind(undefined, connector));
+            let insertAction = channel.subscribe("actions.insert.*.element", _insertElementAction.bind(undefined, connector));
             subscriptions.push(insertAction);
-            var editAction = channel.subscribe("actions.edit.element", _editElementAction.bind(undefined, connector));
+            let editAction = channel.subscribe("actions.edit.element", _editElementAction.bind(undefined, connector));
             subscriptions.push(editAction);
-            var deleteAction = channel.subscribe("actions.delete.element", _deleteElementAction.bind(undefined, connector));
+            let deleteAction = channel.subscribe("actions.delete.element", _deleteElementAction.bind(undefined, connector));
             subscriptions.push(deleteAction);
             connector.actionSubscriptions = subscriptions;
         }
@@ -37,8 +37,8 @@ define(function actionHandlerModule(require) {
 
     function _insertElementAction(connector, data) {
         log.debug("Insert element action...");
-        var regExp = /(?:^insert)\.(\w+).*$/i;
-        var matches = regExp.exec(data.action);
+        let regExp = /(?:^insert)\.(\w+).*$/i;
+        let matches = regExp.exec(data.action);
         if (matches) {
             data.position = matches[1];
             connector.insertElementAction(data);
@@ -46,35 +46,19 @@ define(function actionHandlerModule(require) {
     }
 
     function _editElementAction(connector, data) {
-        var currentInstance = _getCurrentEditorInstance();
+        let currentInstance = _getCurrentEditorInstance();
         if (!currentInstance) {
             log.debug("Edit element action...");
             connector.editElementAction(data);
-            var $wrap = $(".leos-wrap");
-            _disableActions($wrap);
         }
     }
 
     function _getCurrentEditorInstance() {
-        for ( var currentInstance in CKEDITOR.instances) {
+        for ( let currentInstance in CKEDITOR.instances) {
             return CKEDITOR.instances[currentInstance];
         }
     }
 
-    function _disableActions($wrap){
-        $wrap.find("[data-widget-type]").each(function(index, el) {
-            _inactivate($(el));
-        });
-    }
-
-    function _activate($widget) {
-        $widget.addClass("leos-active").removeClass("leos-inactive");
-    }
-
-    function _inactivate($widget) {
-        $widget.removeClass("leos-active").addClass("leos-inactive");
-    }
-    
     function _deleteElementAction(connector, data) {
         log.debug("Delete element action...");
         connector.deleteElementAction(data);

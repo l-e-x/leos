@@ -2,17 +2,17 @@
 <html>
 <head>
     <meta name="package-mapping" content="content:eu.europa.ec.leos.ui.component"/>
-    <meta name="package-mapping" content="toc:eu.europa.ec.leos.web.ui.component.toc"/>
+    <meta name="package-mapping" content="toc:eu.europa.ec.leos.ui.component.toc"/>
     <meta name="package-mapping" content="comp:eu.europa.ec.leos.web.ui.component"/>
 </head>
 <body>
 <vaadin-vertical-layout size-full spacing="false" margin="false">
-    <vaadin-horizontal-layout width="100%" spacing>
+    <vaadin-horizontal-layout width-full spacing>
         <vaadin-label style-name="leos-memorandumview-icon" contentMode="HTML" width="32px" :middle :left>
             <span>&#xe7e1</span>
         </vaadin-label>
-        <vaadin-label _id="memorandumTitle" style-name="leos-memorandumview-title" :expand="1.0" :middle :left></vaadin-label>
-        <comp-menu-bar-component :top :right/>
+        <vaadin-label _id="memorandumTitle" style-name="leos-memorandumview-title" :expand="1.0" width-full :middle :left></vaadin-label>
+        <comp-menu-bar-component width="125px" :top :right/>
     </vaadin-horizontal-layout>
     <vaadin-vertical-layout size-full :top :center :expand="1.0" spacing="false" margin="false">
         <vaadin-horizontal-split-panel _id="memorandumSplit" :expand="1.0">
@@ -20,15 +20,13 @@
                 <comp-marked-text-component _id="markedTextComponent"/>
                 <comp-memorandum-component _id="memorandumDoc" :top :left size-full :expand="1.0" spacing="false" margin="false">
                     <vaadin-horizontal-layout style-name="leos-viewdoc-docbar leos-viewdoc-padbar-both" width="100%" spacing>
-                        <vaadin-button _id="rightSliderButton" icon="fonticon://Vaadin-Icons/e7c1" style-name="link leos-toolbar-button" :middle :left></vaadin-button>
                         <vaadin-button _id="timeLineButton" icon="fonticon://Vaadin-Icons/e7d4"  style-name="link leos-toolbar-button" :middle :left></vaadin-button>
                         <vaadin-button _id="majorVersionButton" icon="fonticon://Vaadin-Icons/e7b6"  style-name="link leos-toolbar-button" :middle :left></vaadin-button>
                         <vaadin-label _id="versionInfoLabel" :expand="1.0" :middle :center></vaadin-label>
                         <vaadin-button _id="userGuidanceButton" icon="fonticon://Vaadin-Icons/e72f" style-name="link leos-toolbar-button" :middle :right></vaadin-button>
-                        <vaadin-button _id="refreshButton" icon="fonticon://Vaadin-Icons/e790" style-name="link" :middle :right></vaadin-button>
-                        <vaadin-button _id="leftSliderButton" icon="fonticon://Vaadin-Icons/e7c0" style-name="link leos-toolbar-button" :middle :right></vaadin-button>
+                        <vaadin-button _id="refreshButton" icon="fonticon://Vaadin-Icons/e790" style-name="link leos-toolbar-button" :middle :right></vaadin-button>
                     </vaadin-horizontal-layout>
-                    <content-leos-display-field _id="memorandumContent" style-name="leos-doc-content" size-full :expand="1.0"/>
+                    <content-leos-display-field _id="memorandumContent" id="docContainer" style-name="leos-doc-content" size-full :expand="1.0"/>
                 </comp-memorandum-component>
             </vaadin-horizontal-split-panel>
             <toc-table-of-content-component _id="memorandumToc"/>

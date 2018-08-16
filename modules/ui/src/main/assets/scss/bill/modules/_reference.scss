@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -13,25 +13,38 @@
 //
 
 //--------------------------------XML reference-------------------------------/
+$BLUE_MARINE: #507C90;
 %xmlReference {
-    ref {
+    mref {
         display: inline;
         font-weight: normal;
+        color: $BLUE_MARINE;
+        outline: 1px dotted $BLUE_MARINE;
+    }
+
+    mref[#{"leos\\:broken"}] {
+        color: red;
         font-style: italic;
-        background-color: silver;
-        &:before {
-           display: inline;
-           content: "[";
-        }  
+        outline: 1px dotted red;
         &:after {
             display: inline;
-            content: "]";
+            font-style: normal;
+            font-family: "Vaadin-Icons";
+            content: "warning";
+            vertical-align: bottom;
         }
+        & > ref {
+            color: red; 
+        }
+    }
+
+    ref {
+        color: blue;
         &:hover {
-            cursor:pointer;
-            color:blue;
-        }  
-    } 
+            cursor: pointer;
+            text-decoration: underline;
+        }
+    }
 }
 
 //--------------------------------Editor reference-----------------------------/

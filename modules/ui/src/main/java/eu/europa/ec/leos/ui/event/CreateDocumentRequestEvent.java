@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,29 +13,17 @@
  */
 package eu.europa.ec.leos.ui.event;
 
-import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 
 public class CreateDocumentRequestEvent {
 
-    private LeosCategory category;
-    private String[] templates;
-    private String purpose;
+    private final DocumentVO document;
 
-    public CreateDocumentRequestEvent(LeosCategory category, String[] templates, String purpose) {
-        this.category = category;
-        this.templates = templates;
-        this.purpose = purpose;
+    public CreateDocumentRequestEvent(final DocumentVO document) {
+        this.document = document;
     }
 
-    public LeosCategory getCategory() {
-        return category;
-    }
-
-    public String[] getTemplates() {
-        return templates;
-    }
-
-    public String getPurpose() {
-        return purpose;
+    public DocumentVO getDocument() {
+        return document;
     }
 }

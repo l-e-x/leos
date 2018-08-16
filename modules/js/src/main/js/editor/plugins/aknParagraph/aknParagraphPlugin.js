@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,7 +28,7 @@ define(function aknParagraphPluginModule(require) {
                    event.editor.fire( 'lockSnapshot' );
                    var jqEditor = $(event.editor.editable().$);
     
-                   var ps = jqEditor.find("div[data-akn-name=blockContainer] > p:not([data-akn-name])");
+                   var ps = jqEditor.find("div[data-akn-name] > p:not([data-akn-name])");
                    for (var i=0; i<ps.length; i++) {
                        ps[i].setAttribute("data-akn-name","aknParagraph");
                    }
@@ -46,7 +46,13 @@ define(function aknParagraphPluginModule(require) {
                 akn: "GUID",
                 html: "id"
             }, {
+                akn : "leos:origin",
+                html : "data-origin"
+            }, {
                 html: "data-akn-name=aknParagraph"
+            }, {
+                akn: "style",
+                html: "style"
             }],
             sub: {
                 akn: "text",

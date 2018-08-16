@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,7 +14,7 @@
 package eu.europa.ec.leos.web.ui.converter;
 
 import com.vaadin.v7.data.util.converter.Converter;
-import eu.europa.ec.leos.ui.model.ActType;
+import eu.europa.ec.leos.domain.common.ActType;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 import java.util.Locale;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,29 +19,31 @@ import eu.europa.ec.leos.domain.document.Content.Source;
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
 import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
-import eu.europa.ec.leos.services.content.RulesService;
 import eu.europa.ec.leos.services.content.processor.ArticleProcessor;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
 import eu.europa.ec.leos.services.content.processor.TransformationService;
+import eu.europa.ec.leos.services.content.toc.TocRulesService;
 import eu.europa.ec.leos.services.document.BillService;
 import eu.europa.ec.leos.services.importoj.ImportService;
-import eu.europa.ec.leos.services.user.UserService;
+import eu.europa.ec.leos.web.model.*;
+import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.ui.event.toc.EditTocRequestEvent;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
-import eu.europa.ec.leos.web.event.component.EditTocRequestEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
-import eu.europa.ec.leos.web.model.DocType;
-import eu.europa.ec.leos.web.model.SearchCriteriaVO;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.support.UrlBuilder;
+import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import io.atlassian.fugue.Option;
 import okio.ByteString;
@@ -84,7 +86,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     private ImportService importService;
     
     @Mock
-    private UserService userService;
+    private UserHelper userHelper;
 
     @Mock
     private ArticleProcessor articleProcessor;
@@ -96,13 +98,16 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     private TransformationService transformationManager;
 
     @Mock
-    private RulesService rulesService;
+    private TocRulesService tocRulesService;
 
     @InjectMocks
     private DocumentPresenter documentPresenter ;
     
     @Mock
     private UrlBuilder urlBuilder;
+    
+    @Mock
+    private MessageHelper messageHelper;
 
     @Before
     public void init() throws Exception {
@@ -124,40 +129,46 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(byteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Instant now = Instant.now();
+        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                "PR-000.xml", "EN", docName, collaborators,
+                docName, collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String displayableContent = "document displayable content";
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
         User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
 
+        DocumentVO billVO = new DocumentVO(docId,"EN", LeosCategory.BILL, "login",  Date.from(now));;
+        billVO.addCollaborators(collaborators);
+        List<LeosPermission> permissions = Collections.emptyList();
+
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(securityContext.getUser()).thenReturn(user);
 
         when(billService.findBill(docId)).thenReturn(document);
-        when(userService.getUser("login")).thenReturn(user);
-        when(transformationManager.toEditableXml(isA(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL))).thenReturn(displayableContent);
+        when(userHelper.getUser("login")).thenReturn(user);
+        when(securityContext.getPermissions(document)).thenReturn(permissions);
+        when(transformationManager.toEditableXml(isA(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions))).thenReturn(displayableContent);
         when(billService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
 
         // DO THE ACTUAL CALL
         documentPresenter.enter();
 
         verify(billService).findBill(docId);
-        verify(userService).getUser("login");
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL));
+        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions));
         verify(billService).getTableOfContent(document);
         
         verify(documentScreen).refreshContent(displayableContent);
         verify(documentScreen).setDocumentTitle(docName);
         verify(documentScreen).setDocumentVersionInfo(any());
         verify(documentScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
+        verify(documentScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id")));
 
-        verifyNoMoreInteractions(userService, billService, transformationManager, documentScreen);
+        verifyNoMoreInteractions(billService, transformationManager, documentScreen);
     }
 
     @Test
@@ -168,17 +179,18 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         String docId = "555";
         String windowName = "";
-        String selectedNodeId = "xyz";
+        List<String> selectedNodeId = new ArrayList();
+        selectedNodeId.add("xyz");
 
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
@@ -194,7 +206,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         verify(billService).findBill(docId);
         verify(billService).getTableOfContent(document);
         verify(billService).getAncestorsIdsForElementId(document, selectedNodeId);
-        verify(documentScreen).setTocAndAncestors(argThat(sameInstance(tableOfContentItemVoList)), eq(selectedNodeId), argThat(sameInstance(ancestorsIds)));
+        verify(documentScreen).setTocAndAncestors(argThat(sameInstance(tableOfContentItemVoList)), argThat(sameInstance(ancestorsIds)));
         verifyNoMoreInteractions(billService, documentScreen);
     }
 
@@ -251,22 +263,27 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(byteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Instant now = Instant.now();
+        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                "PR-000.xml", "EN", docName, collaborators,
+                docName, collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String displayableContent = "document displayable content";
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
         User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
+        DocumentVO billVO = new DocumentVO(docId,"EN", LeosCategory.BILL, "login",  Date.from(now));
+        billVO.addCollaborators(collaborators);
+        List<LeosPermission> permissions = Collections.emptyList();
 
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
-        when(userService.getUser("login")).thenReturn(user);
-        when(transformationManager.toEditableXml(any(ByteArrayInputStream.class),any(),eq(LeosCategory.BILL))).thenReturn(displayableContent);
+        when(userHelper.getUser("login")).thenReturn(user);
+        when(securityContext.getPermissions(document)).thenReturn(permissions);
+        when(transformationManager.toEditableXml(any(ByteArrayInputStream.class),any(),eq(LeosCategory.BILL),eq(permissions))).thenReturn(displayableContent);
         when(billService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
 
         // DO THE ACTUAL CALL
@@ -274,15 +291,15 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         verify(billService).findBill(docId);
         verify(billService).getTableOfContent(document);
-        verify(userService).getUser("login");
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL));
+        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions));
         
         verify(documentScreen).refreshContent(displayableContent);
         verify(documentScreen).setDocumentTitle(docName);
         verify(documentScreen).setDocumentVersionInfo(any());
         verify(documentScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
+        verify(documentScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id")));
 
-        verifyNoMoreInteractions(userService, billService, transformationManager, documentScreen);
+        verifyNoMoreInteractions(billService, transformationManager, documentScreen);
     }
 
     @Test
@@ -296,12 +313,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String articleId = "7474";
@@ -333,19 +350,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String articleId = "486";
@@ -358,13 +375,13 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(elementProcessor.updateElement(originalDocument, newArticleText, ARTICLE_TAG, articleId)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "operation." + ARTICLE_TAG + ".updated")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + ARTICLE_TAG + ".updated"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.saveElement(new SaveElementRequestEvent(articleId, ARTICLE_TAG, newArticleText));
 
         verify(elementProcessor).updateElement(originalDocument, newArticleText, ARTICLE_TAG, articleId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "operation." + ARTICLE_TAG + ".updated");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + ARTICLE_TAG + ".updated"));
         verify(billService).findBill(docId);
         verifyNoMoreInteractions(billService);
     }
@@ -380,19 +397,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
@@ -403,14 +420,14 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(articleProcessor.deleteArticle(originalDocument, articleId)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "document." + ARTICLE_TAG + ".deleted")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
         verify(articleProcessor).deleteArticle(originalDocument, articleId);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "document." + ARTICLE_TAG + ".deleted");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"));
         verifyNoMoreInteractions(billService, elementProcessor);
     }
 
@@ -425,19 +442,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
@@ -448,14 +465,14 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(articleProcessor.deleteArticle(originalDocument, articleId)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "document." + ARTICLE_TAG + ".deleted")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
         verify(articleProcessor).deleteArticle(originalDocument, articleId);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "document." + ARTICLE_TAG + ".deleted");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"));
         verifyNoMoreInteractions(billService, elementProcessor);
     }
 
@@ -470,19 +487,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         boolean before = true;
@@ -497,14 +514,14 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(articleProcessor.insertNewArticle(originalDocument, articleId, before)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "operation.article.inserted")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.article.inserted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.insertElement(new InsertElementRequestEvent(articleId, articleTag, InsertElementRequestEvent.POSITION.BEFORE));
 
         verify(articleProcessor).insertNewArticle(originalDocument, articleId, before);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "operation.article.inserted");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.article.inserted"));
 
         verifyNoMoreInteractions(billService);
     }
@@ -519,12 +536,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill("test", "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
@@ -539,7 +556,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(billService.getTableOfContent(originalDocument)).thenReturn(tocList);
 
         Map<TocItemType, List<TocItemType>> tocRules = Collections.emptyMap();
-        when(rulesService.getDefaultTableOfContentRules()).thenReturn(tocRules);
+        when(tocRulesService.getDefaultTableOfContentRules()).thenReturn(tocRules);
 
         // DO THE ACTUAL CALL
         documentPresenter.editToc(new EditTocRequestEvent());
@@ -547,7 +564,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         verify(billService).findBill("test");
         verify(billService).getTableOfContent(originalDocument);
         verify(documentScreen).showTocEditWindow(tocList, tocRules);
-        verify(rulesService).getDefaultTableOfContentRules();
+        verify(tocRulesService).getDefaultTableOfContentRules();
     }
 
     @Test
@@ -562,12 +579,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String citationsId = "7474";
@@ -616,19 +633,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String userLogin="login";
@@ -642,7 +659,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(elementProcessor.updateElement(originalDocument, newCitationsContent, CITATIONS_TAG, citationsId)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "operation." + CITATIONS_TAG + ".updated")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + CITATIONS_TAG + ".updated"))).thenReturn(savedDocument);
         when(elementProcessor.getElement(savedDocument, CITATIONS_TAG, citationsId)).thenReturn(newCitationsContent);
 
         // DO THE ACTUAL CALL
@@ -650,7 +667,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         verify(elementProcessor).updateElement(originalDocument, newCitationsContent, CITATIONS_TAG, citationsId);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "operation." + CITATIONS_TAG + ".updated");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + CITATIONS_TAG + ".updated"));
         verify(eventBus).post(argThat(Matchers.<NotificationEvent>hasProperty("messageKey", equalTo("document.content.updated"))));
         verify(documentScreen).refreshElementEditor(citationsId, citationsTag, newCitationsContent);
 
@@ -670,12 +687,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
         byte[] updatedDocumentContent = new byte[]{1, 2};
 
@@ -709,12 +726,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String recitalsId = "7474";
@@ -763,19 +780,19 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String userLogin="login";
@@ -789,7 +806,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(elementProcessor.updateElement(document, newRecitalsContent, RECITALS_TAG, recitalsId)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(document, updatedDocumentContent, "operation." + RECITALS_TAG + ".updated")).thenReturn(savedDocument);
+        when(billService.updateBill(document, updatedDocumentContent, messageHelper.getMessage("operation." + RECITALS_TAG + ".updated"))).thenReturn(savedDocument);
         when(elementProcessor.getElement(savedDocument, RECITALS_TAG, recitalsId)).thenReturn(newRecitalsContent);
 
         // DO THE ACTUAL CALL
@@ -797,7 +814,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         verify(elementProcessor).updateElement(document, newRecitalsContent, RECITALS_TAG, recitalsId);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(document, updatedDocumentContent, "operation." + RECITALS_TAG + ".updated");
+        verify(billService).updateBill(document, updatedDocumentContent, messageHelper.getMessage("operation." + RECITALS_TAG + ".updated"));
         verify(eventBus).post(argThat(Matchers.<NotificationEvent>hasProperty("messageKey", equalTo("document.content.updated"))));
         verify(documentScreen).refreshElementEditor(recitalsId, recitalsTag, newRecitalsContent);
 
@@ -816,12 +833,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
@@ -878,12 +895,12 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         byte[] originalDocumentContent = new byte[]{1, 2, 3};
@@ -891,7 +908,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
         XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "title", collaborators,
+                "title", collaborators,
                 Option.some(content), Option.some(billMetadata));
 
         String userLogin="login";
@@ -902,7 +919,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(importService.getAknDocument("reg", 2015, 25)).thenReturn(aknDocument);
         when(importService.insertSelectedElements(originalDocumentContent, aknDocument.getBytes(), elementIdList, "EN")).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, "operation.import.element.inserted")).thenReturn(savedDocument);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.import.element.inserted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.importElements(new ImportElementRequestEvent(searchCriteria, elementIdList));
@@ -910,7 +927,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         verify(importService).getAknDocument("reg", 2015, 25);
         verify(importService).insertSelectedElements(originalDocumentContent, aknDocument.getBytes(), elementIdList, "EN");
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, "operation.import.element.inserted");
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.import.element.inserted"));
 
         verifyNoMoreInteractions(importService);
         verifyNoMoreInteractions(billService);

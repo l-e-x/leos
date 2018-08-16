@@ -1,0 +1,11 @@
+{
+  "account.settings": "@annotate.server.url@/account/settings",
+  "forgot-password": "@annotate.server.url@/forgot-password",
+  "groups.new": "@annotate.server.url@/groups/new",
+  "help": "@annotate.server.url@/docs/help",
+  "oauth.authorize": "@annotate.server.url@/oauth/authorize",
+  "oauth.revoke": "@annotate.server.url@/oauth/revoke",
+  "search.tag": "@annotate.server.url@/search?q=tag:\":tag\"",
+  "signup": "@annotate.server.url@/signup",
+  "user": "@annotate.server.url@/u/:user"
+}

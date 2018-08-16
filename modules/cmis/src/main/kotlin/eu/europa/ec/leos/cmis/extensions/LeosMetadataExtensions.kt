@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -33,7 +33,10 @@ fun ProposalMetadata.toCmisProperties(): Map<String, Any> {
             METADATA_STAGE.id to this.stage,
             METADATA_TYPE.id to this.type,
             METADATA_PURPOSE.id to this.purpose,
+            DOCUMENT_TEMPLATE.id to this.template,
+            DOCUMENT_LANGUAGE.id to this.language,
             METADATA_DOCTEMPLATE.id to this.docTemplate,
+            METADATA_REF.id to (this.ref ?: ""),
             DOCUMENT_TITLE.id to title
     )
 }
@@ -43,7 +46,10 @@ fun MemorandumMetadata.toCmisProperties(): Map<String, Any> {
             METADATA_STAGE.id to this.stage,
             METADATA_TYPE.id to this.type,
             METADATA_PURPOSE.id to this.purpose,
-            METADATA_DOCTEMPLATE.id to this.docTemplate
+            DOCUMENT_TEMPLATE.id to this.template,
+            DOCUMENT_LANGUAGE.id to this.language,            
+            METADATA_DOCTEMPLATE.id to this.docTemplate,
+            METADATA_REF.id to (this.ref ?: "")
     )
 }
 
@@ -53,8 +59,11 @@ fun BillMetadata.toCmisProperties(): Map<String, Any> {
             METADATA_STAGE.id to this.stage,
             METADATA_TYPE.id to this.type,
             METADATA_PURPOSE.id to this.purpose,
+            DOCUMENT_TEMPLATE.id to this.template,
+            DOCUMENT_LANGUAGE.id to this.language,            
             METADATA_DOCTEMPLATE.id to this.docTemplate,
-            DOCUMENT_TITLE.id to title
+            DOCUMENT_TITLE.id to title, 
+            METADATA_REF.id to (this.ref ?: "")
     )
 }
 
@@ -63,7 +72,10 @@ fun AnnexMetadata.toCmisProperties(): Map<String, Any> {
             METADATA_STAGE.id to this.stage,
             METADATA_TYPE.id to this.type,
             METADATA_PURPOSE.id to this.purpose,
+            DOCUMENT_TEMPLATE.id to this.template,
+            DOCUMENT_LANGUAGE.id to this.language,            
             METADATA_DOCTEMPLATE.id to this.docTemplate,
+            METADATA_REF.id to (this.ref ?: ""),
             ANNEX_INDEX.id to this.index,
             ANNEX_NUMBER.id to this.number,
             ANNEX_TITLE.id to this.title

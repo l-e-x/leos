@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,8 +17,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.eventbus.EventBus;
 import com.vaadin.annotations.DesignRoot;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.spring.annotation.SpringComponent;
-import com.vaadin.spring.annotation.ViewScope;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.declarative.Design;
@@ -26,14 +24,16 @@ import com.vaadin.v7.data.util.converter.Converter;
 import com.vaadin.v7.ui.HorizontalLayout;
 import com.vaadin.v7.ui.TextField;
 import com.vaadin.v7.ui.VerticalLayout;
+import eu.europa.ec.leos.domain.common.LeosAuthority;
+import eu.europa.ec.leos.domain.common.Result;
+import eu.europa.ec.leos.domain.vo.ValidationVO;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.model.RepositoryType;
 import eu.europa.ec.leos.ui.wizard.document.CreateDocumentWizard;
+import eu.europa.ec.leos.ui.wizard.document.UploadDocumentWizard;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
-import eu.europa.ec.leos.web.event.view.repository.ChangeDisplayTypeEvent;
-import eu.europa.ec.leos.web.event.view.repository.DocumentCreateWizardRequestEvent;
-import eu.europa.ec.leos.web.event.view.repository.RefreshDisplayedListEvent;
-import eu.europa.ec.leos.web.model.DocumentVO;
+import eu.europa.ec.leos.web.event.view.repository.*;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.card.CardHolder;
@@ -46,17 +46,14 @@ import eu.europa.ec.leos.web.ui.converter.ProcedureTypeToDescriptionConverter;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-@SpringComponent
-@ViewScope
 @DesignRoot("RepositoryScreenDesign.html")
-class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen {
+abstract class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen {
 
     private static final long serialVersionUID = 1L;
     private static final Logger LOG = LoggerFactory.getLogger(RepositoryScreenImpl.class);
@@ -65,19 +62,19 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
     protected Button refreshButton;
     protected Button selectDisplayButton;
     protected Button createDocumentButton;
+    protected Button uploadDocumentButton;
     protected Button sortAscButton;
     protected Button sortDescButton;
     protected TextField searchBox;
     protected CardHolder cardHolder;
 
-    private final SecurityContext securityContext;
-    private final EventBus eventBus;
-    private final MessageHelper messageHelper;
-    private final LanguageHelper langHelper;
+    protected final SecurityContext securityContext;
+    protected final EventBus eventBus;
+    protected final MessageHelper messageHelper;
+    protected final LanguageHelper langHelper;
 
-    private DataController dataController;
+    protected DataController dataController;
 
-    @Autowired
     RepositoryScreenImpl(SecurityContext securityContext, EventBus eventBus,
                          MessageHelper messageHelper, LanguageHelper langHelper) {
         LOG.trace("Initializing repository screen...");
@@ -118,11 +115,11 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
     }
 
     @Override
-    public void showCreateDocumentWizard(List<CatalogItem> templates) {
-        LOG.debug("Showing the create document wizard...");
-        CreateDocumentWizard createDocumentWizard = new CreateDocumentWizard(templates, messageHelper, langHelper, eventBus);
-        UI.getCurrent().addWindow(createDocumentWizard);
-        createDocumentWizard.focus();
+    public void showUploadDocumentWizard() {
+        LOG.debug("Showing the upload document wizard...");
+        UploadDocumentWizard uploadDocumentWizard = new UploadDocumentWizard(messageHelper, langHelper, eventBus);
+        UI.getCurrent().addWindow(uploadDocumentWizard);
+        uploadDocumentWizard.focus();
     }
 
     private void initStaticData() {
@@ -132,12 +129,12 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
         sortAscButton.setDescription(messageHelper.getMessage("repository.filter.tooltip.sortGroup"));
         sortDescButton.setDescription(messageHelper.getMessage("repository.filter.tooltip.sortGroup"));
 
-        createDocumentButton.setCaption(messageHelper.getMessage("repository.create.document"));
-        createDocumentButton.setDescription(messageHelper.getMessage("repository.create.document.tooltip"));
-
+        uploadDocumentButton.setCaption(messageHelper.getMessage("repository.upload.document"));
+        uploadDocumentButton.setDescription(messageHelper.getMessage("repository.upload.document.tooltip"));
+        
         selectDisplayButton.setDisableOnClick(true);
     }
-
+    
     private void initListeners() {
         refreshButton.addClickListener(clickEvent -> {
             eventBus.post(new RefreshDisplayedListEvent());
@@ -173,7 +170,7 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
         sortAscButton.addClickListener(bc);
         sortDescButton.addClickListener(bc);
 
-        createDocumentButton.addClickListener(clickEvent -> eventBus.post(new DocumentCreateWizardRequestEvent()));
+        uploadDocumentButton.addClickListener(clickEvent -> this.showUploadDocumentWizard());
 
         selectDisplayButton.addClickListener(event -> {
             Button sourceButton = event.getButton();
@@ -207,6 +204,16 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
         changeDisplaySelectorButton(repositoryType);
     }
 
+    @Override
+    public void showValidationResult(ValidationVO result) {
+        eventBus.post(new ShowProposalValidationEvent(result));
+    }
+
+    @Override
+    public void showPostProcessingResult(Result result) {
+        eventBus.post(new ShowPostProcessingMandateEvent(result));
+    }
+
     private void changeDisplaySelectorButton(RepositoryType targetRepositoryType) {
         switch (targetRepositoryType) {
             case DOCUMENTS:
@@ -236,7 +243,7 @@ class RepositoryScreenImpl extends HorizontalLayout implements RepositoryScreen 
         return filterPropertyToConverterMap;
     }
 
-    private void defaultSort() {
+    protected void defaultSort() {
         dataController.sortCards(new Object[]{"updatedOn"}, new boolean[]{false});
     }
 }

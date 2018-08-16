@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,16 +17,27 @@ define(function leosMathematicalFormulaPluginModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
+    var leosCommandStateHandler = require("plugins/leosCommandStateHandler/leosCommandStateHandler");
 
     var pluginName = "leosMathematicalFormula";
-
+    
+    var changeStateElements = {
+        articleHeading : {
+            elementName: 'h2',
+            selector: '[data-akn-name=aknHeading]'
+        }
+    };
 
     var pluginDefinition = {
         requires: "mathjax",
-        init : function init(editor) {
-
+        init: function init(editor) {
+            editor.on('selectionChange', _onSelectionChange);
         }
     };
+    
+    function _onSelectionChange(event) {   
+        leosCommandStateHandler.changeCommandState(event, 'mathjax', changeStateElements);            
+    }
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
     var transformationConfig = {
@@ -35,6 +46,9 @@ define(function leosMathematicalFormulaPluginModule(require) {
         attr : [{
             akn : "GUID",
             html : "id"
+        }, {
+            akn : "leos:origin",
+            html : "data-origin"
         }, {
             akn: "name=math-tex",
             html : "class=math-tex"

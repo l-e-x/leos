@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -26,6 +26,8 @@
 @import 'shared/coverPage';
 @import 'shared/guidance';
 @import 'shared/compare';
+@import 'shared/higherElements';
+@import 'shared/image';
 
 // import modules
 @import 'bill/modules/article';
@@ -37,7 +39,6 @@
 @import 'bill/modules/citations';
 @import 'bill/modules/comments';
 @import 'bill/modules/reference';
-@import 'bill/modules/higherElements';
 @import 'bill/modules/highlight';
 @import 'bill/modules/list';
 
@@ -50,7 +51,5 @@
 @import 'bill/xml';
 @import 'bill/toc';
 
-.bill {  //scoping the styles based on document type
-    @include xml;
-    @include tableOfContent;
-}
+@include xml;
+@include tableOfContent;

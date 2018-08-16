@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,8 @@ package eu.europa.ec.leos.services.content.processor;
 
 import eu.europa.ec.leos.domain.document.Content;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Bill;
+import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+import eu.europa.ec.leos.services.support.xml.NumberProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlHelper;
 import org.apache.commons.lang3.Validate;
@@ -26,10 +28,13 @@ public class ArticleProcessorImpl implements ArticleProcessor {
 
     @Autowired
     private XmlContentProcessor xmlContentProcessor;
+    
+    @Autowired
+    private NumberProcessor articleNumberProcessor;
 
     @Override
     public String getArticleTemplate() {
-        return XmlHelper.getArticleTemplate("Article #", "Article heading...");
+        return XmlHelper.getArticleTemplate("#", "Article heading...");
     }
 
     @Override
@@ -40,12 +45,14 @@ public class ArticleProcessorImpl implements ArticleProcessor {
         String articleTemplate = getArticleTemplate();
 
         final Content content = document.getContent().getOrError(() -> "Document content is required!");
+        final BillMetadata metadata = document.getMetadata().getOrError(() -> "Document metadata is required!");
         final byte[] contentBytes = content.getSource().getByteString().toByteArray();
         byte[] updatedXmlContent = xmlContentProcessor.insertElementByTagNameAndId(contentBytes, articleTemplate,
                 "article",
                 articleId, before);
 
-        updatedXmlContent = xmlContentProcessor.renumberArticles(updatedXmlContent, (String) document.getLanguage());
+        updatedXmlContent = articleNumberProcessor.renumberArticles(updatedXmlContent, metadata.getLanguage());
+        updatedXmlContent = xmlContentProcessor.doXMLPostProcessing(updatedXmlContent);
 
         return updatedXmlContent;
     }
@@ -57,9 +64,11 @@ public class ArticleProcessorImpl implements ArticleProcessor {
         Validate.notNull(elementId, "Article id is required.");
 
         final Content content = document.getContent().getOrError(() -> "Document content is required!");
+        final BillMetadata metadata = document.getMetadata().getOrError(() -> "Document metadata is required!");
         final byte[] contentBytes = content.getSource().getByteString().toByteArray();
         byte[] updatedXmlContent = xmlContentProcessor.deleteElementByTagNameAndId(contentBytes, "article", elementId);
-        updatedXmlContent = xmlContentProcessor.renumberArticles(updatedXmlContent, document.getLanguage());
+        updatedXmlContent = articleNumberProcessor.renumberArticles(updatedXmlContent, metadata.getLanguage());
+        updatedXmlContent = xmlContentProcessor.doXMLPostProcessing(updatedXmlContent);
         return updatedXmlContent;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -27,6 +27,10 @@ import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
 import eu.europa.ec.leos.web.model.UserVO;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.Validate;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @JavaScript({"vaadin://../js/editor/leosEditorConnector.js" + LeosCacheToken.TOKEN })
 public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaScriptExtension {
@@ -62,7 +66,8 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
         LOG.trace("Editing element...");
         getState(false).user = new UserVO(event.getUser());
         getState(false).roles = event.getRoles();
-        callFunction("editElement", event.getElementId(), event.getElementTagName(), event.getElementFragment(), event.getDocType());
+            
+        callFunction("editElement", event.getElementId(), event.getElementTagName(), event.getElementFragment(), event.getDocType(), event.getInstanceType());
     }
 
     @Subscribe
@@ -83,6 +88,12 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
         callFunction("receiveToc", convertToJson(event.getTocAndAncestorsVO()));
     }
 
+    @Subscribe
+    public void receiveReferenceLabel(ReferenceLabelResponseEvent event) {
+        LOG.trace("Receiving references...");
+        callFunction("receiveRefLabel", event.getLabel().replaceAll("GUID=", "id="));
+    }
+    
     @Override
     protected LeosEditorState getState() {
         return (LeosEditorState) super.getState();
@@ -148,6 +159,7 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
                 String elementId = data.getString("elementId");
                 String elementType = data.getString("elementType");
                 String elementFragment = data.getString("elementFragment");
+                Validate.isTrue(elementFragment.contains(elementType),String.format("Element must contain %s", elementType));
                 eventBus.post(new SaveElementRequestEvent(elementId, elementType, elementFragment));
             }
         });
@@ -166,10 +178,29 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
             public void call(JsonArray arguments) {
                 LOG.trace("Toc request...");
                 JsonObject data = arguments.get(0);
-                String elementId = data.hasKey("elementId")? data.getString("elementId") : null;
-                eventBus.post(new FetchCrossRefTocRequestEvent(elementId)); // along with TOC, the ancester tree for elementId passed will be fetched
+                JsonArray nodeIds = data.hasKey("elementIds")? data.getArray("elementIds") : null;
+                List<String> elementIds =  new ArrayList<>();
+                for (int index = 0; nodeIds != null && index < nodeIds.length(); index++) {
+                    elementIds.add(nodeIds.getString(index));
+                }
+                eventBus.post(new FetchCrossRefTocRequestEvent(elementIds)); // along with TOC, the ancester tree for elementId passed will be fetched
             }
         });
+        addFunction("requestRefLabel", new JavaScriptFunction() {
+            @Override
+            public void call(JsonArray arguments) {
+                LOG.trace("Reference Label request...");
+                JsonObject data = arguments.get(0);
+                String currentElementId = data.hasKey("currentEditPosition")? data.getString("currentEditPosition") : null;
+                JsonArray refs = data.hasKey("references")? data.getArray("references") : null;
+                List<String> references =  new ArrayList<>();
+                for (int index = 0; refs != null && index < refs.length(); index++) {
+                    references.add(refs.getString(index));
+                }
+                eventBus.post(new ReferenceLabelRequestEvent(references, currentElementId)); 
+            }
+        });
+        
     }
 
     private JsonValue convertToJson(Object bean) {

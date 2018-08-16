@@ -1,0 +1,19 @@
+@mixin leos-treegrid-ext() {
+    @include valo-treegrid();
+    .leos-toc-tree {
+        color: $DARK_SLATE_GREY;
+        &:hover {
+          cursor: pointer;
+        }
+
+        .v-treegrid-scroller {
+           cursor: default; 
+           background-color: $WHITE;
+        }
+    
+        .v-treegrid-scroller-horizontal, 
+        .v-treegrid-horizontal-scrollbar-deco {
+           display:none; //FIXME: find a better way to remove the horizontal scroll-bar
+        }
+    }
+}

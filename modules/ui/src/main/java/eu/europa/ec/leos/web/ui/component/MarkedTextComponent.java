@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@ package eu.europa.ec.leos.web.ui.component;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.icons.VaadinIcons;
+import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button.ClickEvent;
@@ -22,10 +23,11 @@ import com.vaadin.ui.Button.ClickListener;
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.document.LeosDocument;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
+import eu.europa.ec.leos.ui.event.EnableSyncScrollRequestEvent;
 import eu.europa.ec.leos.ui.extension.MathJaxExtension;
+import eu.europa.ec.leos.ui.extension.ScrollPaneExtension;
 import eu.europa.ec.leos.ui.extension.SliderPinsExtension;
 import eu.europa.ec.leos.web.event.component.MarkedTextNavigationRequestEvent;
-import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
@@ -82,12 +84,18 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
         // set toolbar style
         toolsLayout.setWidth(LEOS_RELATIVE_FULL_WDT);
 
+        //create sync scroll
+        final Button syncScrollSwitch = syncScrollSwitch();
+        syncScrollSwitch.setDescription(messageHelper.getMessage("leos.button.tooltip.enable.sync"), ContentMode.HTML);
+        toolsLayout.addComponent(syncScrollSwitch);
+        toolsLayout.setComponentAlignment(syncScrollSwitch, Alignment.MIDDLE_LEFT);
+        
         //create version selector
         Component versionSelector= versionSelector();
         toolsLayout.addComponent(versionSelector);
         toolsLayout.setComponentAlignment(versionSelector, Alignment.MIDDLE_CENTER);
         toolsLayout.setExpandRatio(versionSelector,1.0f);
-
+        
         final Button markedTextPrevButton = markedTextPrevNavigationButton();
         markedTextPrevButton.setDescription(messageHelper.getMessage("version.changes.navigation.prev"));
         toolsLayout.addComponent(markedTextPrevButton);
@@ -97,11 +105,6 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
         markedTextNextButton.setDescription(messageHelper.getMessage("version.changes.navigation.next"));
         toolsLayout.addComponent(markedTextNextButton);
         toolsLayout.setComponentAlignment(markedTextNextButton, Alignment.MIDDLE_RIGHT);
-        
-        // create legal text slider button
-        final Button markedTextSlideButton = markedTextSliderButton();
-        toolsLayout.addComponent(markedTextSlideButton);
-        toolsLayout.setComponentAlignment(markedTextSlideButton, Alignment.MIDDLE_RIGHT);
 
         return toolsLayout;
     }
@@ -155,23 +158,38 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
         return markedTextNextButton;
     }
     
-    // create legal text slider button
-    private Button markedTextSliderButton() {
-        VaadinIcons markedTextSliderIcon = VaadinIcons.CARET_SQUARE_LEFT_O;
-
-        final Button markedTextSliderButton = new Button();
-        markedTextSliderButton.setIcon(markedTextSliderIcon);
-        markedTextSliderButton.setData(SplitPositionEvent.MoveDirection.LEFT);
-        markedTextSliderButton.setStyleName("link");
-        markedTextSliderButton.addStyleName("leos-toolbar-button");
-        markedTextSliderButton.addClickListener(new ClickListener() {
-            @Override
-            public void buttonClick(ClickEvent event) {
-                eventBus.post(new SplitPositionEvent((SplitPositionEvent.MoveDirection) event.getButton().getData(), MarkedTextComponent.this));
-            }
+    private Button syncScrollSwitch() {
+        VaadinIcons syncIcon = VaadinIcons.EXCHANGE;
+        final Button syncScrollSwitch = new Button();
+        syncScrollSwitch.setIcon(syncIcon);
+        syncScrollSwitch.setStyleName("link");
+        syncScrollSwitch.addStyleName("leos-toolbar-button enable-sync");
+        syncScrollSwitch.setData(true);
+        syncScrollSwitch.setDescription(messageHelper.getMessage("leos.button.tooltip.disable.sync"));
+        
+        syncScrollSwitch.addClickListener(event -> {
+            Button button = event.getButton();
+            boolean syncState = !(boolean) button.getData();
+            button = updateStyle(button, syncState);
+            eventBus.post(new EnableSyncScrollRequestEvent(syncState));
+            button.setDescription(syncState
+                    ? messageHelper.getMessage("leos.button.tooltip.disable.sync")
+                    : messageHelper.getMessage("leos.button.tooltip.enable.sync"));
+            
+            button.setData(syncState);
         });
-
-        return markedTextSliderButton;
+        return syncScrollSwitch;
+    }
+    
+    private Button updateStyle(Button button, boolean syncState) {
+        if(syncState) {
+            button.removeStyleName("disable-sync");
+            button.addStyleName("enable-sync");
+        } else {
+            button.removeStyleName("enable-sync");
+            button.addStyleName("disable-sync");
+        }
+        return button;
     }
 
     private Component buildMarkedTextContent() {
@@ -185,6 +203,7 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
 
         // create marked content extensions
         new MathJaxExtension<>(markedContent);
+        new ScrollPaneExtension(markedContent, eventBus);
         SliderPinsExtension sliderPins = new SliderPinsExtension<>(markedContent, getSelectorStyleMap());
         MarkedTextNavigationHelper navHelper = new MarkedTextNavigationHelper(sliderPins);
         this.eventBus.register(navHelper);//Registering helper object to eventBus. Presently this method is called only once if multiple invocation occurs in future will need to unregister the object on close of document.
@@ -205,6 +224,11 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
         markedContent.setValue(markedContentText);
     }
 
+    public void scrollToMarkedChange(String elementId) {
+        LOG.trace("Navigating to (elementId={})...", elementId);
+        com.vaadin.ui.JavaScript.getCurrent().execute("LEOS.scrollToMarkedElement('" + elementId + "');");
+    }
+    
     @Override
     public float getDefaultPaneWidth(int numberOfFeatures) {
         float featureWidth=0f;
@@ -213,7 +237,7 @@ public class MarkedTextComponent<T extends LeosDocument.XmlDocument> extends Cus
                 featureWidth=100f;
                 break;
             default:
-                featureWidth = 50f;
+                featureWidth = 42.5f;
                 break;
         }//end switch
         return featureWidth;

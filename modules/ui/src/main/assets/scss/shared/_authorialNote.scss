@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -14,7 +14,8 @@
 
 //-------------------------XML AuthorialNote-----------------------------------/
 %xmlAuthorialNote {
-    authorialNote {
+
+    authorialNote[marker] {
         display: inline;
         font-size: 0.8em;
         line-height: 0.8em;
@@ -25,29 +26,25 @@
         font-weight: bold;
         color: blue;
 
-        &:hover {
-            &:before, &:after {
-               display: block; 
-            }    
-        }
-
         &:before {
-            bottom: 0;
-            display: none;
-            position: absolute;
-            content: "";
-            border-top: 0.6em solid blue;
-            border-left: 7px solid transparent;
-            border-right: 7px solid transparent;
-            left: -0.25em;
-            margin-bottom: 1.25em;
+            content: attr(marker);
+            display: inline;
         }
 
-        &:after {
-            bottom: 0;
+        &:hover {
+            & > aknp,
+            & > aknp:before,
+            & > p,
+            & > p:before {
+                display: block;
+            }
+        }
+
+        & > aknp,
+        & > p {
             display: none;
+            bottom: 0;
             position: absolute;
-            content: attr(data-tooltip);
             color: white;
             background-color: blue;
             border-radius: 7px;
@@ -55,6 +52,17 @@
             left: -1.5em;
             margin-bottom: 1.75em;
             white-space: nowrap;
+
+            &:before {
+                bottom: 0;
+                position: absolute;
+                content: "";
+                border-top: 0.6em solid blue;
+                border-left: 7px solid transparent;
+                border-right: 7px solid transparent;
+                left: 1.25em;
+                margin-bottom: -0.6em;
+            }
         }
     }
 }

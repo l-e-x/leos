@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,40 +14,42 @@
 package eu.europa.ec.leos.ui.view.memorandum;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.DesignRoot;
 import com.vaadin.annotations.StyleSheet;
+import com.vaadin.data.TreeData;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.spring.annotation.SpringComponent;
-import com.vaadin.spring.annotation.ViewScope;
 import com.vaadin.ui.*;
 import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import com.vaadin.ui.declarative.Design;
-import com.vaadin.v7.data.Container;
+import eu.europa.ec.leos.domain.common.InstanceContext;
 import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.document.LeosDocument;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
-import eu.europa.ec.leos.ui.extension.ActionManagerExtension;
-import eu.europa.ec.leos.ui.extension.LeosEditorExtension;
-import eu.europa.ec.leos.ui.extension.RefToLinkExtension;
-import eu.europa.ec.leos.ui.extension.UserGuidanceExtension;
+import eu.europa.ec.leos.ui.component.toc.TableOfContentComponent;
+import eu.europa.ec.leos.ui.component.toc.TableOfContentItemConverter;
+import eu.europa.ec.leos.ui.event.StateChangeEvent;
+import eu.europa.ec.leos.ui.event.security.SecurityTokenRequest;
+import eu.europa.ec.leos.ui.event.security.SecurityTokenResponse;
+import eu.europa.ec.leos.ui.extension.*;
 import eu.europa.ec.leos.ui.model.VersionType;
 import eu.europa.ec.leos.ui.view.ScreenLayoutHelper;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.component.ComparisonResponseEvent;
-import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.ShowTimeLineWindowEvent;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
+import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.component.MarkedTextComponent;
 import eu.europa.ec.leos.web.ui.component.MemorandumComponent;
-import eu.europa.ec.leos.web.ui.component.toc.TableOfContentComponent;
-import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
 import eu.europa.ec.leos.web.ui.window.MajorVersionWindow;
 import eu.europa.ec.leos.web.ui.window.TimeLineWindow;
 import org.apache.commons.lang3.Validate;
@@ -57,20 +59,21 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
-@SpringComponent
-@ViewScope
 @DesignRoot("MemorandumScreenDesign.html")
 @StyleSheet({"vaadin://../assets/css/memorandum.css" + LeosCacheToken.TOKEN})
-class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
+abstract class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
 
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOG = LoggerFactory.getLogger(MemorandumScreenImpl.class);
 
-    private final EventBus eventBus;
-    private final UserHelper userHelper;
-    private final SecurityContext securityContext;
-    private final MessageHelper messageHelper;
+    protected EventBus eventBus;
+    protected UserHelper userHelper;
+    protected SecurityContext securityContext;
+    protected MessageHelper messageHelper;
+    protected ConfigurationHelper cfgHelper;
+    protected InstanceContext instanceContext;
+    
     //dummy init to avoid design exception
     private ScreenLayoutHelper screenLayoutHelper = new ScreenLayoutHelper(null, null) ;
 
@@ -83,16 +86,14 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
     protected MemorandumComponent memorandumDoc;
     protected LeosDisplayField memorandumContent;
 
-    protected Button rightSliderButton;
-    protected Button leftSliderButton;
     protected Button refreshButton;
     protected Button userGuidanceButton;
     protected Button timeLineButton;
     protected Button majorVersionButton;
     protected Label versionInfoLabel;
 
-    @Autowired
-    MemorandumScreenImpl(SecurityContext securityContext, EventBus eventBus, MessageHelper messageHelper, UserHelper userHelper) {
+    MemorandumScreenImpl(SecurityContext securityContext, EventBus eventBus, MessageHelper messageHelper, ConfigurationHelper cfgHelper,
+            UserHelper userHelper, InstanceContext instanceContext) {
         LOG.trace("Initializing memorandum screen...");
         Validate.notNull(securityContext, "SecurityContext must not be null!");
         this.securityContext = securityContext;
@@ -102,7 +103,10 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
         this.messageHelper = messageHelper;
         Validate.notNull(userHelper, "UserHelper must not be null!");
         this.userHelper = userHelper;
-
+        Validate.notNull(cfgHelper, "Configuration helper must not be null!");
+        this.cfgHelper = cfgHelper;
+        Validate.notNull(instanceContext, "InstanceContext must not be null!");
+        this.instanceContext = instanceContext;
         Design.read(this);
         init();
     }
@@ -118,22 +122,18 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
     }
 
     private void init() {
-        memorandumContent.addStyleName(LeosCategory.MEMORANDUM.name().toLowerCase()); //Adding the document type as style to scope memorandum styles
 
         screenLayoutHelper = new ScreenLayoutHelper(eventBus, new ArrayList<>(Arrays.asList(contentSplit, memorandumSplit)));
         screenLayoutHelper.addPane(memorandumDoc, 1, true);
-        screenLayoutHelper.addPane(memorandumToc, 2, true);
-        screenLayoutHelper.addPane(markedTextComponent, 0, false);
+        screenLayoutHelper.addPane(memorandumToc, 0, true);
+        screenLayoutHelper.addPane(markedTextComponent, 2, false);
         screenLayoutHelper.layoutComponents();
 
-        new LeosEditorExtension<>(memorandumContent, eventBus);
-        new ActionManagerExtension<>(memorandumContent);
         new UserGuidanceExtension<>(memorandumContent, eventBus);
         new RefToLinkExtension<>(memorandumContent);
+        new AnnotateExtension<>(memorandumContent, eventBus, cfgHelper);
 
         userGuidanceButton();
-        rightSliderButton();
-        leftSliderButton();
         refreshButton();
         buildTimeLineButton();
         buildMajorVersionButton();
@@ -141,14 +141,16 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
 
     @Override
     public void attach() {
-        super.attach();
+        eventBus.register(this);
         eventBus.register(screenLayoutHelper);
+        super.attach();
     }
 
     @Override
     public void detach() {
-        eventBus.unregister(screenLayoutHelper);
         super.detach();
+        eventBus.unregister(screenLayoutHelper);
+        eventBus.unregister(this);
     }
 
     @Override
@@ -195,28 +197,6 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
             }
         });
     }
-    
-    // right slider button
-    private void rightSliderButton() {
-        rightSliderButton.setData(SplitPositionEvent.MoveDirection.RIGHT);
-        rightSliderButton.addClickListener(new ClickListener() {
-            @Override
-            public void buttonClick(ClickEvent event) {
-                eventBus.post(new SplitPositionEvent((SplitPositionEvent.MoveDirection) event.getButton().getData(), memorandumDoc));
-            }
-        });
-    }
-
-    // left slider button
-    private void leftSliderButton() {
-        leftSliderButton.setData(SplitPositionEvent.MoveDirection.LEFT);
-        leftSliderButton.addClickListener(new ClickListener() {
-            @Override
-            public void buttonClick(ClickEvent event) {
-                eventBus.post(new SplitPositionEvent((SplitPositionEvent.MoveDirection) event.getButton().getData(), memorandumDoc));
-            }
-        });
-    }
 
     // create text refresh button
     private void refreshButton() {
@@ -233,20 +213,19 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
 
     @Override
     public void setToc(final List<TableOfContentItemVO> tableOfContentItemVoList) {
-        Container tocContainer = TableOfContentItemConverter.buildTocContainer(tableOfContentItemVoList, messageHelper);
-        memorandumToc.setTableOfContent(tocContainer);
+    	TreeData<TableOfContentItemVO> treeTocData= TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
+        memorandumToc.setTableOfContent(treeTocData);
     }
 
     @Override
     public void populateMarkedContent(String markedContentText) {
-        markedTextComponent.addStyleName(LeosCategory.MEMORANDUM.name().toLowerCase());
         markedTextComponent.populateMarkedContent(markedContentText, LeosCategory.MEMORANDUM);
     }
 
     @Override
     public void showElementEditor(final String elementId, final String  elementTagName, final String elementFragment) {
         eventBus.post(new EditElementResponseEvent(elementId, elementTagName, elementFragment, LeosCategory.MEMORANDUM.name(), securityContext.getUser(),
-                securityContext.hasRole(LeosAuthority.SUPPORT) ? new LeosAuthority[]{LeosAuthority.SUPPORT} : null));
+                securityContext.hasRole(LeosAuthority.SUPPORT) ? new LeosAuthority[]{LeosAuthority.SUPPORT} : null, instanceContext.getType().getValue()));
     }
 
     @Override
@@ -274,15 +253,22 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
         majorVersionWindow.center();
         majorVersionWindow.focus();
     }
-
     
     @Override
     public void setDocumentVersionInfo(VersionInfoVO versionInfoVO) {
         String versionType = versionInfoVO.isMajor() ? VersionType.MAJOR.getVersionType() : 
                                                        VersionType.MINOR.getVersionType();
-        this.versionInfoLabel.setValue(messageHelper.getMessage("document.version.caption", versionInfoVO.getDocumentVersion(), versionType, versionInfoVO.getLastModifiedBy(), versionInfoVO.getDg(), versionInfoVO.getLastModificationInstant()));
+        this.versionInfoLabel.setValue(messageHelper.getMessage("document.version.caption", versionInfoVO.getDocumentVersion(), versionType, versionInfoVO.getLastModifiedBy(), versionInfoVO.getEntity(), versionInfoVO.getLastModificationInstant()));
     }
     
+    @Subscribe
+    public void handleElementState(StateChangeEvent event) {
+        if(event.getState() != null) {
+            majorVersionButton.setEnabled(event.getState().isState());
+            refreshButton.setEnabled(event.getState().isState());
+        }
+    }
+
     private String addTimestamp(String docContentText) {
         /* KLUGE: In order to force the update of the docContent on the client side
          * the unique seed is added on every docContent update, please note markDirty
@@ -291,5 +277,15 @@ class MemorandumScreenImpl extends VerticalLayout implements MemorandumScreen {
                 new Date().getTime() +
                 "</div>";
         return docContentText + seed;
+    }
+
+    @Subscribe
+    public void fetchToken(SecurityTokenRequest event){
+        eventBus.post(new SecurityTokenResponse(securityContext.getToken(event.getUrl())));
+    }
+
+    @Override
+    public void scrollToMarkedChange(String elementId) {
+        markedTextComponent.scrollToMarkedChange(elementId);
     }
 }

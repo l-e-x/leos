@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,19 +20,20 @@ define(function aknNumberedParagraphPluginModule(require) {
     var CKEDITOR = require("promise!ckEditor");
     var $ = require('jquery');
     var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
+    var renumberModule = require("plugins/leosNumber/listItemNumberModule");
 
     var LOG = require("logger");
     var ENTER_KEY = 13;
-    var REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX = /\u200B/g;
 
     var pluginName = "aknNumberedParagraph";
+    var DATA_AKN_NAME = "data-akn-name";
     var DATA_AKN_NUM = "data-akn-num";
     var DATA_AKN_NUM_ID = "data-akn-num-id";
     var LIST_FROM_MATCH = /^(ul|ol)$/;
     var HTML_SUB_PARAGRAPH = "p";
     var HTML_PARAGRAPH = "li";
-    var cachedSequenceForParagraph;
-    
+
     var CMD_NAME = "aknNumberedParagraph";
     var NUMBERED = CKEDITOR.TRISTATE_ON, UNNUMBERED = CKEDITOR.TRISTATE_OFF;
     var PARA_MODE = NUMBERED;
@@ -54,12 +55,11 @@ define(function aknNumberedParagraphPluginModule(require) {
                 }
             });
             
-            on({
+            leosKeyHandler.on({
                 editor : editor,
                 eventType : 'key',
                 key : ENTER_KEY,
-                predicate : isParagraphSelected,
-                action : stop
+                action : _onEnterKey
             });
 
             editor.on("change", function(event) {
@@ -68,6 +68,7 @@ define(function aknNumberedParagraphPluginModule(require) {
                 if (article.length !== 0) {
                     var olElementFromArticle = article.find(">ol");
                     if (olElementFromArticle.length === 0) {
+                        //TODO
                         article.append("<ol><li data-akn-num='1.'><br></li></ol>");
                         event.editor.getSelection().selectElement(new CKEDITOR.dom.node(article.find(">ol>li>br")[0]));
                     }
@@ -78,9 +79,70 @@ define(function aknNumberedParagraphPluginModule(require) {
             editor.on("change", resetNumbering, null, null, 1);
             editor.on("focus", _setCurrentParaMode, null, paraCommand);
             editor.on("dataReady", _setCurrentParaMode, null, paraCommand);
+            //Removing the unwanted bogus element inserted from ckeditor's enterkey plugin to restore the list structure
+            editor.on('afterCommandExec', function(e) {
+                if (e.data.name === 'enter') {
+                    var element = e.editor.getSelection().getStartElement();
+                    if (element && element.hasAttribute(DATA_AKN_NAME) && element.getAttribute(DATA_AKN_NAME) === CMD_NAME) {
+                        if (element.getPrevious() && element.getPrevious().getBogus())
+                            element.getPrevious().getBogus().remove();
+                    }
+                }
+            });
         }
     };
     
+    function _onEnterKey(context) {
+        LOG.debug("ENTER event intercepted: ", context.event);
+        var selection = context.event.editor.getSelection();
+        var startElement = leosKeyHandler.getSelectedElement(selection);
+
+        // If we are in the first level paragraph and content is empty, it should be stopped
+        // If content is not empty but the cursor is at the first character, it should be stopped as well to avoid empty paragraphs
+        if ((leosKeyHandler.isContentEmptyTextNode(startElement) && isFirstLevelLiSelected(context))
+                || (!leosKeyHandler.isContentEmptyTextNode(startElement) && context.firstRange.startOffset == 0)) {
+            context.event.cancel();
+        }
+        // Specific case when enter is pressed in an empty 'p' embedded in a paragraph, cursor is moved at the end of the 'p' element
+        // , then CKEDITOR 'enterkey' plugin will not remove the entire paragraph.
+        // Or if the cursor position is at the end of paragraph, then list structure will be restored
+        else if (_isEnterAllowedInThisContext(startElement) || _isPostionAtEndofParagraph(startElement, selection) ) {
+            var rangeToSelect = context.event.editor.createRange();
+            rangeToSelect.setStartAfter(startElement);
+            rangeToSelect.setEndAfter(startElement);
+            rangeToSelect.select();
+        }
+        // Else handled by 'enterkey' CKEDITOR plugin
+    }
+
+    //Enter is allowed when cursor is in an empty subparagraph
+    function _isEnterAllowedInThisContext(startElement) {
+        var currentElement = startElement.$;
+
+        if (leosKeyHandler.isContentEmptyTextNode(startElement)) {
+            do {
+                if (currentElement.parentNode) {
+                    var elementName = currentElement.nodeName.toLowerCase();
+                    var parentElement = currentElement.parentNode;
+                    var parentName = parentElement.nodeName.toLowerCase();
+                    if ((elementName === HTML_SUB_PARAGRAPH) && (parentName === HTML_PARAGRAPH) && PARA_MODE == NUMBERED) {
+                        return true;
+                    }
+                }
+            } while (currentElement = currentElement.parentNode);
+        }
+        return false;
+    };
+
+    // Checks if cursor position is at the end of paragraph
+    function _isPostionAtEndofParagraph(startElement, selection) {
+        var parentElement = startElement.getParent();
+        if (parentElement && parentElement.hasAttribute(DATA_AKN_NAME) && parentElement.getAttribute(DATA_AKN_NAME) === CMD_NAME
+                && selection.getRanges()[0].checkEndOfBlock()) {
+            return true;
+        }
+    }
+
     //This method sets the current paragraph mode (Numbered/Un-numbered) to the command state.
     function _setCurrentParaMode(event) {
         var cmd = event.listenerData;
@@ -111,10 +173,7 @@ define(function aknNumberedParagraphPluginModule(require) {
         var paragraphs = jqEditor.find(PARA_SELECTOR);
         if (paragraphs.length > 0) {
             if(PARA_MODE === NUMBERED) {
-              var sequence = generateSequenceForParagraph(paragraphs.length);
-              for (var ii = 0; ii < paragraphs.length; ii++) {
-                  paragraphs[ii].setAttribute(DATA_AKN_NUM, sequence[ii]);
-              }
+                renumberModule.updateNumbers([paragraphs[0].parentElement], renumberModule.getSequences('Paragraph'));
             } else {
                 for (var ii = 0; ii < paragraphs.length; ii++) {
                     paragraphs[ii].removeAttribute(DATA_AKN_NUM);
@@ -125,40 +184,7 @@ define(function aknNumberedParagraphPluginModule(require) {
         event.editor.fire('unlockSnapshot');
     }
 
-    /*
-     * Returns the array containing literals for paragraph
-     */
-    function generateSequenceForParagraph(sequenceLength) {
-        if (!cachedSequenceForParagraph || (cachedSequenceForParagraph && cachedSequenceForParagraph.length < sequenceLength)) {
-            cachedSequenceForParagraph = generateSequenceForParagraphHelper(sequenceLength * 2);
-        }
-        return cachedSequenceForParagraph;
-    }
-
-    function generateSequenceForParagraphHelper(sequenceLength) {
-        var wholeSequence = [];
-        var arabicNum;
-        for (var ii = 0; ii < sequenceLength; ii++) {
-            arabicNum = ii + 1 + ".";
-            wholeSequence.push(arabicNum);
-        }
-        return wholeSequence;
-    }
-
-    /*
-     * Returns the nesting level for given ol element
-     */
-    function getNestingLevelForOl(olElement) {
-        var nestingLevel = -1;
-        var currentOl = olElement;
-        while (currentOl) {
-            currentOl = currentOl.getAscendant('ol');
-            nestingLevel++;
-        }
-        return nestingLevel;
-    }
-
-    var getClosestLiElement = function getClosestLiElement(element) {
+     var getClosestLiElement = function getClosestLiElement(element) {
         var liElement = element.getAscendant('li', true);
         return liElement;
     };
@@ -174,48 +200,9 @@ define(function aknNumberedParagraphPluginModule(require) {
     var isFirstLevelLiSelected = function isFirstLevelLiSelected(context) {
         var liElement = getClosestLiElement(context.firstRange.startContainer);
         if (liElement && isFirstLevelLi(liElement)) {
-            var textRepresentationOfLiElement = liElement.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '');
-            if (textRepresentationOfLiElement === "" || !context.firstRange.collapsed) {
-                return true;
-            }
+            return true;
         }
         return false;
-    };
-
-    var isParagraphSelected = function isParagraphSelected(context) {
-        if (context.firstRange) {
-            return isFirstLevelLiSelected(context);
-        }
-        return false;
-
-    };
-
-    var stop = function(context) {
-        context.event.cancel();
-    };
-
-    var on = function onKey(onKeyContext) {
-        onKeyContext.editor.on(onKeyContext.eventType, function(event) {
-            var selection = onKeyContext.editor.getSelection(), ranges = selection && selection.getRanges();
-            if (selection && event.data.keyCode === onKeyContext.key) {
-                var firstRange;
-                if (ranges && ranges.length > 0) {
-                    firstRange = ranges[0];
-                }
-                var context = {
-                    firstRange : firstRange,
-                    event : event,
-                    selection : selection,
-                    editor : onKeyContext.editor
-                };
-                var predicateResult = onKeyContext.predicate(context);
-
-                if (predicateResult) {
-                    LOG.debug("Intercepted on event key with context: ", context);
-                    onKeyContext.action(context);
-                }
-            }
-        });
     };
 
     function getClosestOlAncestor(selection) {
@@ -233,6 +220,7 @@ define(function aknNumberedParagraphPluginModule(require) {
             var paragraphNodes = firstLevelOlElt.getChildren();
             for (var paragraphNodeIndex=0; paragraphNodeIndex < paragraphNodes.count(); paragraphNodeIndex++) {
                 var paragraphNode = paragraphNodes.getItem(paragraphNodeIndex);
+                var currentParagraphNodeToBeDeleted = false;
                 if (_getElementName(paragraphNode) == HTML_PARAGRAPH) {
                     var childNodes = paragraphNode.getChildren();
                     var currentParagraphNodeIndex = paragraphNodeIndex;
@@ -240,26 +228,42 @@ define(function aknNumberedParagraphPluginModule(require) {
                     for (var childNodeIndex=0; childNodeIndex < childNodes.count(); childNodeIndex++) {
                         var currentNode = childNodes.getItem(childNodeIndex);
                         var nextNode = currentNode.hasNext() ? currentNode.getNext() : null;
+                        // Empty text nodes should be removed from children
+                        if ((currentNode.$.nodeType == Node.TEXT_NODE) && (currentNode.$.textContent == '')) {
+                            currentNode.remove();childNodeIndex--;
+                        }
                         // Default behavior: when this is a subparagraph converts it to a paragraph
-                        if ((_getElementName(currentNode) === HTML_SUB_PARAGRAPH) && (!LIST_FROM_MATCH.test(_getElementName(nextNode)))) {
+                        else if ((_getElementName(currentNode) === HTML_SUB_PARAGRAPH) && (!LIST_FROM_MATCH.test(_getElementName(nextNode)))) {
                             currentNode.renameNode(HTML_PARAGRAPH);
-                            currentNode.setAttribute("id", currentNode.getAttribute("data-akn-subparagraph-id"));
                             currentNode.setAttribute("data-akn-name", "aknNumberedParagraph");
-                            currentNode.insertBefore(paragraphNode);childNodeIndex--;paragraphNodeIndex++;
+                            if (childNodeIndex>0) {
+                                currentNode.insertAfter(paragraphNode);childNodeIndex--;paragraphNodeIndex++;
+                            }
+                            //If this is the first child it should be inserted before
+                            else {
+                                //if current paragraph contains only sub paragraphs, the paragraph should be removed afterwards
+                                if (childNodes.count() == 1) {
+                                    currentParagraphNodeToBeDeleted = true;
+                                }
+                                currentNode.insertBefore(paragraphNode);childNodeIndex--;paragraphNodeIndex++;
+                            }
                         }
                         // All other cases (except empty texts)
-                        else if (!_isWhitespaceElement(currentNode)) {
-                            var newParagraphNode = new CKEDITOR.dom.element(HTML_PARAGRAPH);
-                            newParagraphNode.setAttribute("data-akn-name", "aknNumberedParagraph");
-                            newParagraphNode.append(currentNode);childNodeIndex--;
+                        else if (!leosKeyHandler.isContentEmptyTextNode(currentNode)) {
                             if (LIST_FROM_MATCH.test(_getElementName(nextNode))) {
-                                newParagraphNode.append(nextNode); // If there is a list after, this list is included in the same paragraph
+                                paragraphNode.append(nextNode); // If there is a list after, this list is included in the same paragraph
                             }
-                            newParagraphNode.insertBefore(paragraphNode);paragraphNodeIndex++;
                         }
                     }
-                    if (currentParagraphNodeIndex < paragraphNodeIndex) { //Checks if a new paragraph has been inserted and old one should be removed
+                    if (currentParagraphNodeToBeDeleted) {
                         paragraphNode.remove();paragraphNodeIndex--;
+                        // To avoid bug of ticket LEOS-2734: when removing a selectable node, move the cursor to avoid bad positioning of it. Move cursor to the beginning of the paragrpah
+                        var nodeToBeSelected = firstLevelOlElt.getFirst();
+                        if (nodeToBeSelected) {
+                            var rangeToSelect = editor.createRange();
+                            rangeToSelect.moveToElementEditablePosition(nodeToBeSelected, false);
+                            rangeToSelect.select();
+                        }
                     }
                 }
             }
@@ -281,10 +285,6 @@ define(function aknNumberedParagraphPluginModule(require) {
             var elementName = _getElementName(element);
             return ((elementName === 'text') || CKEDITOR.dtd.$inline.hasOwnProperty(elementName));
         }
-    
-        function _isWhitespaceElement(element) {
-            return _getElementName(element) === "text" && element.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') === "";
-        }
 
         function _getElementName(element) {
             var elementName = null;
@@ -292,7 +292,8 @@ define(function aknNumberedParagraphPluginModule(require) {
                 elementName = element.getName();
             } else if (element instanceof CKEDITOR.dom.text) {
                 elementName = "text";
-    
+            } else {
+                elementName = "unknown";
             }
             return elementName;
         }
@@ -334,6 +335,9 @@ define(function aknNumberedParagraphPluginModule(require) {
                 akn: "GUID",
                 html: "id"
             }, {
+                akn : "leos:origin",
+                html : "data-origin"
+            }, {
                 html: "data-akn-name=aknNumberedParagraph"
             }]
         },
@@ -347,6 +351,7 @@ define(function aknNumberedParagraphPluginModule(require) {
     // return plugin module
     var pluginModule = {
         name : pluginName,
+        transformSubparagraphs: transformSubparagraphs,
         transformationConfig : transformationConfig
     };
 

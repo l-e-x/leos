@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,10 +18,10 @@ import com.vaadin.client.communication.HasJavaScriptConnectorHelper;
 import com.vaadin.client.ui.AbstractComponentConnector;
 import com.vaadin.client.ui.JavaScriptWidget;
 import com.vaadin.shared.ui.Connect;
-import eu.europa.ec.leos.ui.shared.js.LeosJavaScriptComponentState;
 import eu.europa.ec.leos.ui.component.LeosJavaScriptComponent;
+import eu.europa.ec.leos.ui.shared.js.LeosJavaScriptComponentState;
 
-import java.util.ArrayList;
+import java.util.List;
 
 @Connect(LeosJavaScriptComponent.class)
 public final class LeosJavaScriptComponentConnector extends AbstractComponentConnector implements HasJavaScriptConnectorHelper {
@@ -30,7 +30,7 @@ public final class LeosJavaScriptComponentConnector extends AbstractComponentCon
 
     private final JavaScriptConnectorHelper helper = new LeosJavaScriptConnectorHelper(this) {
         @Override
-        protected void showInitProblem(ArrayList<String> attemptedNames) {
+        protected void showInitProblem(List<String> attemptedNames) {
             getWidget().showNoInitFound(attemptedNames);
         }
     };

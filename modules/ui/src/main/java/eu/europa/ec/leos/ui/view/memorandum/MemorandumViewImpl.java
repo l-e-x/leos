@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,7 +18,6 @@ import com.vaadin.spring.annotation.SpringView;
 import eu.europa.ec.leos.ui.view.AbstractLeosView;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.SessionAttribute;
-import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @SpringView(name = MemorandumView.VIEW_ID)
@@ -28,9 +27,8 @@ class MemorandumViewImpl extends AbstractLeosView<MemorandumScreenImpl> implemen
     private static final long serialVersionUID = 1L;
 
     @Autowired
-    MemorandumViewImpl(MemorandumScreenImpl screen, MemorandumPresenter presenter) {
-        super(screen, presenter);
-        Validate.notNull(presenter, "Presenter must not be null!");
+    MemorandumViewImpl(MemorandumScreen memorandumScreen, MemorandumPresenter presenter) {
+        super((MemorandumScreenImpl) memorandumScreen, presenter);
     }
 
     @Override

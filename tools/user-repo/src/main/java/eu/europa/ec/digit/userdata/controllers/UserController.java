@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import eu.europa.ec.digit.userdata.entities.User;
 import eu.europa.ec.digit.userdata.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -29,6 +30,7 @@ public class UserController {
     @Autowired UserRepository repository;
 
     @RequestMapping(method = RequestMethod.GET, path="/users")
+    @Transactional(readOnly = true)
     public Collection<User> searchUsers(
             @RequestParam(value = "searchKey", required = true) String searchKey) {
         return repository.findUsersByKey(searchKey.trim().replace(" ", "%").concat("%"))
@@ -37,22 +39,25 @@ public class UserController {
     }
 
     @RequestMapping(method = RequestMethod.GET, path="/users/{userId}")
+    @Transactional(readOnly = true)
     public User getUser(
             @PathVariable(value = "userId", required = true) String userId) {
         return repository.findByLogin(userId);
     }
 
-    @RequestMapping(method = RequestMethod.GET, path="dgs")
-    public Collection<String> getAllDg() {
-        return repository.findAllDg()
+    @RequestMapping(method = RequestMethod.GET, path="entities")
+    @Transactional(readOnly = true)
+    public Collection<String> getAllEntities() {
+        return repository.findAllEntities()
                 .collect(Collectors.toList());
     }
 
-    @RequestMapping(method = RequestMethod.GET, path="dgs/{dg}/users")
-    public Collection<User> searchUsersByDgIdAndKey(
-            @PathVariable(value = "dg", required = false) String dg,
+    @RequestMapping(method = RequestMethod.GET, path="entities/{entity}/users")
+    @Transactional(readOnly = true)
+    public Collection<User> searchUsersByEntityIdAndKey(
+            @PathVariable(value = "entity", required = false) String entity,
             @RequestParam(value = "searchKey", required = true) String searchKey) {
-        return repository.findUsersByKeyAndDg(searchKey.trim().replace(" ", "%").concat("%"), dg)
+        return repository.findUsersByKeyAndEntity(searchKey.trim().replace(" ", "%").concat("%"), entity)
                 .limit(MAX_RECORDS)
                 .collect(Collectors.toList());
     }

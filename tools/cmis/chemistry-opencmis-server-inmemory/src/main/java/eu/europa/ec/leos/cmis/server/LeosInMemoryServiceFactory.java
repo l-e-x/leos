@@ -42,6 +42,7 @@ public class LeosInMemoryServiceFactory extends InMemoryServiceFactoryImpl {
         PROPS_KEY_MAPPING.put("metadata.docStage", "metadata:docStage");
         PROPS_KEY_MAPPING.put("metadata.docType", "metadata:docType");
         PROPS_KEY_MAPPING.put("metadata.docPurpose", "metadata:docPurpose");
+        PROPS_KEY_MAPPING.put("metadata.ref", "metadata:ref");
         // TODO leos MEMORANDUM specific metadata properties
         // use sub-key metadata.memorandum.<>
         // TODO leos BILL specific metadata properties

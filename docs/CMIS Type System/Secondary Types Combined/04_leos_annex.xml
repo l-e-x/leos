@@ -18,8 +18,8 @@
     <cmis:controllableACL>false</cmis:controllableACL>
     <cmis:typeMutability>
         <cmis:create>true</cmis:create>
-        <cmis:update>false</cmis:update>
-        <cmis:delete>false</cmis:delete>
+        <cmis:update>true</cmis:update>
+        <cmis:delete>true</cmis:delete>
     </cmis:typeMutability>
     <cmis:propertyStringDefinition>
         <cmis:id>metadata:docTemplate</cmis:id>
@@ -85,6 +85,22 @@
         <cmis:openChoice>false</cmis:openChoice>
         <cmis:defaultValue/>
     </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>metadata:ref</cmis:id>
+        <cmis:localName>metadata:ref</cmis:localName>
+        <cmis:displayName>LEOS REF</cmis:displayName>
+        <cmis:queryName>metadata:ref</cmis:queryName>
+        <cmis:description>This is a LEOS Reference property. This stays static throughout document lifecycle</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>true</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>    
     <cmis:propertyIntegerDefinition>
         <cmis:id>annex:docIndex</cmis:id>
         <cmis:localName>annex:docIndex</cmis:localName>

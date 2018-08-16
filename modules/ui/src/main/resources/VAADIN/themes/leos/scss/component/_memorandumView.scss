@@ -1,3 +1,5 @@
+@import "changePane";
+
 @mixin memorandumView {
 
     .leos-memorandum-view {
@@ -25,5 +27,7 @@
         .leos-padbar {
             border-bottom: 1px solid $G_BORDER_COLOR;
         }
+
+        @include changePane("doc");
     }
 }

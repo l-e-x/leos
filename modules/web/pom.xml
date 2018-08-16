@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<!-- Copyright 2017 European Commission Licensed under the EUPL, Version 
+    1.2 or – as soon they will be approved by the European Commission - subsequent 
+    versions of the EUPL (the "Licence"); You may not use this work except in 
+    compliance with the Licence. You may obtain a copy of the Licence at: https://joinup.ec.europa.eu/software/page/eupl 
+    Unless required by applicable law or agreed to in writing, software distributed 
+    under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES 
+    OR CONDITIONS OF ANY KIND, either express or implied. See the Licence for 
+    the specific language governing permissions and limitations under the Licence. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+        <artifactId>leos-modules</artifactId>
+        <version>2.0.0</version>
+    </parent>
+
+    <!-- This would generate a warning but it is needed to generate different artifact for cn/os/ec till we find a better way-->
+    <artifactId>leos-web-${leos.build.instance}</artifactId>
+    <packaging>war</packaging>
+
+    <name>Web</name>
+
+    <description>LEOS Pilot Joinup Release</description>
+
+    <properties>
+        <!-- Project -->
+        <project.final.name>leos-pilot-web</project.final.name>
+    </properties>
+
+    <dependencies>
+        <!-- Leos modules -->
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-js</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-integration</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-services</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-cmis</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-ui</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jcl-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>jul-to-slf4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <!-- CMIS related libraries -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+        </dependency>
+    </dependencies>
+    
+    <profiles>
+        <!-- EC Instance -->
+        <profile>
+            <id>instance-ec</id>
+            <activation>
+                <property>
+                    <name>instance</name>
+                    <value>ec</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+                    <artifactId>leos-commission</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!-- CN Instance -->
+        <profile>
+            <id>instance-cn</id>
+            <activation>
+                <property>
+                    <name>instance</name>
+                    <value>cn</value>
+                </property>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+                    <artifactId>leos-council</artifactId>
+                    <version>${project.version}</version>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
+    
+    <build>
+        <finalName>${project.final.name}-${leos.build.instance}-${leos.build.env}</finalName>
+        <filters>
+            <filter>src/main/filters/leos-build.properties</filter>
+        </filters>
+        <resources>
+            <resource>
+                <!-- Filtered resource files. -->
+                <filtering>true</filtering>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>**/*.properties</include>
+                    <include>**/*.xml</include>
+                </includes>
+            </resource>
+            <resource>
+                <!-- Non-filtered resource files. -->
+                <filtering>false</filtering>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>**/*.properties</exclude>
+                    <exclude>**/*.xml</exclude>
+                </excludes>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- CLEAN -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <!-- Ensure overlays are cleaned properly. -->
+                            <directory>overlays</directory>
+                        </fileset>
+                        <fileset>
+                            <!-- Ensure logs are cleaned properly. -->
+                            <directory>logs</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+
+            <!-- WAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-war-plugin</artifactId>
+                <configuration>
+                    <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webapp/WEB-INF</directory>
+                            <includes>
+                                <include>web.xml</include>
+                                <include>weblogic.xml</include>
+                            </includes>
+                            <targetPath>WEB-INF</targetPath>
+                        </resource>
+                    </webResources>
+                    <overlays>
+                        <overlay>
+                            <!-- empty overlay represents the current build -->
+                        </overlay>
+                    </overlays>
+                </configuration>
+            </plugin>
+
+            <!-- JETTY -->
+            <plugin>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-maven-plugin</artifactId>
+                <configuration>
+                    <jettyXml>src/etc/jetty/jetty.xml</jettyXml>
+                    <loginServices>
+                        <loginService implementation="org.eclipse.jetty.security.HashLoginService">
+                            <name>default</name>
+                            <config>src/etc/jetty/realm.properties</config>
+                        </loginService>
+                    </loginServices>
+                    <webApp>
+                        <contextPath>/${project.web.context.path}</contextPath>
+                        <extraClasspath>../config/target/generated-config</extraClasspath>
+                        <descriptor>target/${project.build.finalName}/WEB-INF/web.xml</descriptor>
+                    </webApp>
+                    <war>target/${project.build.finalName}</war>
+                </configuration>
+            </plugin>
+
+            <!-- TOMCAT -->
+            <plugin>
+                <groupId>org.apache.tomcat.maven</groupId>
+                <artifactId>tomcat7-maven-plugin</artifactId>
+                <configuration>
+                    <path>/${project.web.context.path}</path>
+                    <server>leosServer</server>
+                    <contextFile>src/etc/tomcat/context.xml</contextFile>
+                    <tomcatUsers>src/etc/tomcat/tomcat-users.xml</tomcatUsers>
+                    <additionalClasspathDirs>../config/target/generated-config</additionalClasspathDirs>
+                </configuration>
+            </plugin>
+        </plugins>
+        <extensions>
+            <!-- Enabling the use of FTP for deployment -->
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>${wagon-ftp-extension.version}</version>
+            </extension>
+        </extensions>
+    </build>
+</project>

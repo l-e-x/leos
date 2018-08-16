@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@ package eu.europa.ec.leos.ui.view;
 
 import com.vaadin.server.VaadinServletService;
 import eu.europa.ec.leos.domain.document.LeosDocument;
+import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.compare.ContentComparatorService;
 import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.web.support.UrlBuilder;
@@ -35,19 +36,21 @@ public class ComparisonDelegate<T extends LeosDocument.XmlDocument> {
     private final TransformationService transformerService;
     private final ContentComparatorService compareService;
     private final UrlBuilder urlBuilder;
+    private final SecurityContext securityContext;
 
     @Autowired
-    public ComparisonDelegate(TransformationService transformerService, ContentComparatorService compareService, UrlBuilder urlBuilder) {
+    public ComparisonDelegate(TransformationService transformerService, ContentComparatorService compareService, UrlBuilder urlBuilder, SecurityContext securityContext) {
         this.transformerService = transformerService;
         this.compareService = compareService;
         this.urlBuilder = urlBuilder;
+        this.securityContext = securityContext;
     }
 
     public String getMarkedContent(T oldVersion, T newVersion) {
         //FIXME collect list of processing to be done on comparison output and do it at single place.
         String cxtPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
-        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath).replaceAll("(?i)(href|onClick)=\".*?\"", "");// removing the links
-        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath).replaceAll("(?i)(href|onClick)=\".*?\"", "");
+        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath, securityContext.getPermissions(oldVersion)).replaceAll("(?i)(href|onClick)=\".*?\"", "");// removing the links
+        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath, securityContext.getPermissions(newVersion)).replaceAll("(?i)(href|onClick)=\".*?\"", "");
 
         //FIXME Shortcut to replace all the original Ids in document. Need a discussion.
         return compareService.compareHtmlContents(firstItemHtml, secondItemHtml).replaceAll("(?i) id=\"", " id=\"marked-");
@@ -61,8 +64,8 @@ public class ComparisonDelegate<T extends LeosDocument.XmlDocument> {
         HashMap<Integer, Object> htmlCompareResult = new HashMap<>();
 
         String cxtPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
-        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath).replaceAll("(?i)(href|onClick)=\".*?\"", "");//removing the links
-        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath).replaceAll("(?i)(href|onClick)=\".*?\"", "");
+        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath, securityContext.getPermissions(oldVersion)).replaceAll("(?i)(href|onClick)=\".*?\"", "");//removing the links
+        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath, securityContext.getPermissions(newVersion)).replaceAll("(?i)(href|onClick)=\".*?\"", "");
 
         if(displayMode==SINGLE_COLUMN_MODE){
             htmlCompareResult.put(SINGLE_COLUMN_MODE, compareService.compareHtmlContents(firstItemHtml, secondItemHtml));

@@ -1,0 +1,81 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+//MARKDOWN EDITOR //////////////////////////
+.markdown-preview {
+  overflow: auto;
+  border: .1em solid $gray-lighter;
+  background-color: $gray-lightest;
+  min-height: 120px;
+  padding-left: 0.9em;
+  resize: vertical;
+}
+
+.markdown-tools {
+  background-color: $white;
+  border-top: .1em solid #D3D3D3;
+  border-left: .1em solid #D3D3D3;
+  border-right: .1em solid #D3D3D3;
+  border-radius: .15em .15em 0 0;
+  width: 100%;
+  margin-bottom: -.1em;
+  padding: .7em .7em .7em .5em;
+  user-select: none;
+
+  &.disable {
+    .markdown-tools-button {
+      color: $gray-lighter;
+      pointer-events: none;
+    }
+  }
+
+  .markdown-tools-button {padding: .4em;}
+
+  .markdown-tools-button, .markdown-tools-toggle, .markdown-tools-badge {
+    color: $gray;
+
+    &:hover, &:focus {
+      color: black;
+    }
+  }
+
+  .markdown-preview-toggle {
+    float: right;
+  }
+}
+
+.markdown-body {
+  @include styled-text;
+
+  cursor: text;
+
+  // Prevent long URLs etc. in body causing overflow
+  overflow-wrap: break-word;
+
+  // Margin between bottom of ascent of username and top of
+  // x-height of annotation-body should be ~15px.
+  // Remove additional margin-top added by the first p within
+  // the annotation-body
+  p:first-child {
+    margin-top: 0;
+  }
+  // Margin between bottom of ascent of annotation-body and top of
+  // ascent of annotation-footer should be ~15px in threaded-replies
+  // and 20px in the top level annotation.
+  // Remove additional margin-bottom added by the last p within
+  // the annotation-body
+  p:last-child {
+    margin-bottom: 1px;
+  }
+}

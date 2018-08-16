@@ -41,13 +41,14 @@ $HEADING_BLUE: #2a78e4;
         .delete-button {
             color: $RED_COLOUR;
         }
+        
+        .delete-button.v-disabled {
+            color: $DARK_GREY;
+         }
 
         .top-block {
             .doc-title {
                 font-size: 20px;
-            }
-            .doc-type {
-                padding-left: 0.4em;
             }
             .doc-purpose {
                 font-weight: bold;
@@ -77,6 +78,9 @@ $HEADING_BLUE: #2a78e4;
                 }
             }
         }
+        .bottom-pane{
+            overflow-y: auto;
+        }
 
         .details-block {
             [class*="firstrow"] > td {
@@ -94,7 +98,7 @@ $HEADING_BLUE: #2a78e4;
                 border: none;
             }
             .eea-relevance { //to align with captions of other fields
-                margin-left: -90px;
+                margin-left: -115px;
                 margin-top: 9px;
             }
         }
@@ -102,6 +106,9 @@ $HEADING_BLUE: #2a78e4;
         .annexes-block {
             .create-annex-button {
                 color: green;
+            }
+            .create-annex-button.v-disabled {
+               color: $DARK_GREY;
             }
             .annex-block {
                 .title {

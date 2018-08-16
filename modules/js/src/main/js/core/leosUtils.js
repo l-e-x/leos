@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,6 +17,8 @@ define(function leosCoreModule(require) {
 
     // load module dependencies
     require("dateFormat");
+    var CKEDITOR = require("promise!ckEditor");
+    var REGEX_ORIGIN = new RegExp("data-(\\w-?)*origin");
 
     function _getParentElement(connector) {
         var element = null;
@@ -25,17 +27,6 @@ define(function leosCoreModule(require) {
             element = connector.getElement(id);
         }
         return element;
-    }
-
-    function _getContentWrap(rootElement, elementId) {
-        var wrap = null;
-        var selector = ".leos-wrap[data-wrapped-id='" + elementId + "'] > .leos-wrap-content";
-        if (rootElement) {
-            wrap = rootElement.querySelector(selector);
-        } else {
-            wrap = document.querySelector(selector);
-        }
-        return wrap;
     }
 
     function _getCurrentUTCDateAsString() {
@@ -47,10 +38,20 @@ define(function leosCoreModule(require) {
         return new Date(utcDate).format(mask);
     }
 
+    function _getElementOrigin(element) {
+        var attrs = element instanceof CKEDITOR.dom.element ? element.$.attributes : element.attributes;
+        for (var idx = 0; idx < attrs.length; idx++) {
+            if (attrs[idx].name.match(REGEX_ORIGIN)) {
+                return attrs[idx].value;
+            }
+        }
+        return null;
+    }
+
     return {
         getParentElement: _getParentElement,
-        getContentWrap: _getContentWrap,
         getCurrentUTCDateAsString: _getCurrentUTCDateAsString,
-        getLocalDateFromUTCAsString: _getLocalDateFromUTCAsString
+        getLocalDateFromUTCAsString: _getLocalDateFromUTCAsString,
+        getElementOrigin : _getElementOrigin
     };
 });

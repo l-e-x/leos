@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -39,35 +39,35 @@ inline fun <reified T : LeosDocument> Document.toLeosDocument(): T {
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T : LeosDocument> Document.toLeosDocument(type: KClass<out T>): T {
+fun <T : LeosDocument> Document.toLeosDocument(type: KClass<out T>, fetchContent: Boolean = true): T {
     return when (this.category) {
         PROPOSAL -> if (Proposal::class.isSubclassOf(type)) {
-            this.toLeosProposal() as T
+            this.toLeosProposal(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${Proposal::class.simpleName}, wantedType=${type.simpleName}]")
         }
         MEMORANDUM -> if (Memorandum::class.isSubclassOf(type)) {
-            this.toLeosMemorandum() as T
+            this.toLeosMemorandum(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${Memorandum::class.simpleName}, wantedType=${type.simpleName}]")
         }
         BILL -> if (Bill::class.isSubclassOf(type)) {
-            this.toLeosBill() as T
+            this.toLeosBill(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${Bill::class.simpleName}, wantedType=${type.simpleName}]")
         }
         ANNEX -> if (Annex::class.isSubclassOf(type)) {
-            this.toLeosAnnex() as T
+            this.toLeosAnnex(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${Annex::class.simpleName}, wantedType=${type.simpleName}]")
         }
         MEDIA -> if (MediaDocument::class.isSubclassOf(type)) {
-            this.toLeosMediaDocument() as T
+            this.toLeosMediaDocument(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${MediaDocument::class.simpleName}, wantedType=${type.simpleName}]")
         }
         CONFIG -> if (ConfigDocument::class.isSubclassOf(type)) {
-            this.toLeosConfigDocument() as T
+            this.toLeosConfigDocument(fetchContent) as T
         } else {
             error("Incompatible types! [category=${this.category}, mappedType=${ConfigDocument::class.simpleName}, wantedType=${type.simpleName}]")
         }
@@ -75,64 +75,64 @@ fun <T : LeosDocument> Document.toLeosDocument(type: KClass<out T>): T {
     }
 }
 
-private fun Document.toLeosProposal(): Proposal {
+private fun Document.toLeosProposal(fetchContent: Boolean): Proposal {
     return Proposal(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.template, this.language, this.title,
+            this.title,
             this.collaborators,
-            this.contentOption,
+            this.contentOption(fetchContent),
             this.proposalMetadataOption)
 }
 
-private fun Document.toLeosMemorandum(): Memorandum {
+private fun Document.toLeosMemorandum(fetchContent: Boolean): Memorandum {
     return Memorandum(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.template, this.language, this.title,
+            this.title,
             this.collaborators,
-            this.contentOption,
+            this.contentOption(fetchContent),
             this.memorandumMetadataOption)
 }
 
-private fun Document.toLeosBill(): Bill {
+private fun Document.toLeosBill(fetchContent: Boolean): Bill {
     return Bill(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.template, this.language, this.title,
+            this.title,
             this.collaborators,
-            this.contentOption,
+            this.contentOption(fetchContent),
             this.billMetadataOption)
 }
 
-private fun Document.toLeosAnnex(): Annex {
+private fun Document.toLeosAnnex(fetchContent: Boolean): Annex {
     return Annex(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.template, this.language, this.title,
+            this.title,
             this.collaborators,
-            this.contentOption,
+            this.contentOption(fetchContent),
             this.annexMetadataOption)
 }
 
-private fun Document.toLeosMediaDocument(): MediaDocument {
+private fun Document.toLeosMediaDocument(fetchContent: Boolean): MediaDocument {
     return MediaDocument(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.contentOption)
+            this.contentOption(fetchContent))
 }
 
-private fun Document.toLeosConfigDocument(): ConfigDocument {
+private fun Document.toLeosConfigDocument(fetchContent: Boolean): ConfigDocument {
     return ConfigDocument(
             this.id, this.name,
             this.createdBy, this.creationInstant, this.lastModifiedBy, this.lastModificationInstant,
             this.versionSeriesId, this.versionLabel, this.checkinComment, this.isMajorVersion, this.isLatestVersion,
-            this.contentOption)
+            this.contentOption(fetchContent))
 }
 
 private val Document.category: LeosCategory
@@ -147,9 +147,9 @@ private val Document.creationInstant: Instant
 private val Document.lastModificationInstant: Instant
     get() = this.lastModificationDate?.toInstant() ?: Instant.MIN
 
-private val Document.contentOption: Option<Content>
-    get() {
-        var content: Content? = null
+private fun Document.contentOption(fetchContent: Boolean): Option<Content> {
+    var content: Content? = null
+    if (fetchContent) {
         this.contentStream?.let {
             content = ContentImpl(
                     it.fileName,
@@ -158,9 +158,9 @@ private val Document.contentOption: Option<Content>
                     SourceImpl(it.stream)
             )
         }
-        return Option.option(content)
     }
-
+    return Option.option(content);
+}
 
 val Document.collaborators: Map<String, LeosAuthority>
     get() {
@@ -177,14 +177,6 @@ val Document.collaborators: Map<String, LeosAuthority>
         }
         return users
     }
-
-// FIXME maybe move template property to metadata
-private val Document.template: String                                   // FIXME add check for leos:xml primary type
-    get() = this.getPropertyValue<String>("leos:template")              // TODO replace hardcoded property id string
-
-// FIXME maybe move language property to metadata
-private val Document.language: String                                   // FIXME add check for leos:xml primary type
-    get() = this.getPropertyValue<String>("leos:language")              // TODO replace hardcoded property id string
 
 // FIXME maybe move title property to metadata or remove it entirely
 private val Document.title: String                                      // FIXME add check for leos:xml primary type

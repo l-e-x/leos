@@ -16,7 +16,7 @@
                     <FRBRuri value=""/>
                     <FRBRdate date="9999-01-01" name=""/>
                     <FRBRauthor href=""/>
-                    <FRBRlanguage language="eng"/>
+                    <FRBRlanguage language="EN"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis value=""/>
@@ -30,7 +30,16 @@
                 <TLCConcept GUID="bill" href="/software/leos/bill" showAs="Bill"/>
                 <TLCConcept GUID="memorandum" href="/software/leos/memorandum" showAs="Memorandum"/>
             </references>
-            <proprietary source="~leos"><leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose><leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage><leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType></proprietary></meta>
+            <proprietary source="~leos">
+                <leos:version>1.0.3</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>PR-023</leos:docTemplate>
+                <leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage>
+                <leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType>
+                <leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose>
+                <leos:ref>proposal</leos:ref>
+            </proprietary>
+        </meta>
         <coverPage GUID="coverpage">
             <container name="institutionOwnerLogo" GUID="coverpage__container_1">
                 <p GUID="coverpage__container_1__p">
@@ -52,11 +61,11 @@
         <collectionBody GUID="body">
             <component GUID="body_cmp_1" refersTo="#memorandum">
                 <!-- reference to the memorandum, relative to this proposal -->
-                <documentRef GUID="body_cmp_1__dref_1" href="memorandum" showAs="Explanatory Memorandum"/>
+                <documentRef GUID="body_cmp_1__dref_1" href="memorandum_1" showAs="Explanatory Memorandum"/>
             </component>
             <component GUID="body_cmp_2" refersTo="#bill">
                 <!-- reference to the bill, relative to this proposal -->
-                <documentRef GUID="body_cmp_1__dref_2" href="bill" showAs="Bill"/>
+                <documentRef GUID="body_cmp_1__dref_2" href="bill_1" showAs="Bill"/>
             </component>
         </collectionBody>
     </documentCollection>

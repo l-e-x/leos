@@ -1,0 +1,73 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+// Tooltips
+// --------
+// Custom tooltips that appear instantly, replacing the browser's default
+// tooltip
+
+@mixin tooltip-arrow($rotation) {
+  transform: rotate($rotation);
+  background: $grey-7;
+  border-bottom: 1px solid rgba(0,0,0,0.20);
+  border-right: 1px solid rgba(0,0,0,0.20);
+  content: "";
+  display: block;
+  height: 6px;
+  left: 0;
+  margin-left: auto;
+  margin-right: 5px;
+  position: absolute;
+  right: 0;
+  width: 6px;
+}
+
+// The tooltip background
+.tooltip {
+  @include font-small;
+
+  border-radius: 2px;
+  position: fixed;
+  background-color: $grey-7;
+  color: white;
+  font-weight: bold;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  z-index: $zindex-tooltip;
+}
+
+// Arrow at the bottom of the tooltip pointing at the target element
+
+// Variant for tooltips above the target that point down at it
+.tooltip--down:before {
+  @include tooltip-arrow(45deg);
+  content: "";
+  top: calc(100% - 5px);
+}
+
+// Variant for tooltips below the target that point up at it
+.tooltip--up:before {
+  @include tooltip-arrow(225deg);
+  content: "";
+  top: -3px;
+}
+
+// The text content inside the tooltip
+.tooltip-label {
+  // Make the label a positioned element so that it appears _above_ the
+  // tooltip's arrow, which partially overlaps the content of the tooltip.
+  position: relative;
+}

@@ -1,0 +1,176 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<header class="annotation-header" ng-if="!vm.user()">
+  <strong>You must be logged in to create annotations.</strong>
+</header>
+
+<div ng-keydown="vm.onKeydown($event)" ng-if="vm.user()">
+
+  <annotation-header annotation="vm.annotation"
+                     is-editing="vm.editing()"
+                     is-highlight="vm.isHighlight()"
+                     is-private="vm.state().isPrivate"
+                     on-reply-count-click="vm.onReplyCountClick()"
+                     reply-count="vm.replyCount"
+                     show-document-info="vm.showDocumentInfo">
+  </annotation-header>
+
+  <!-- Excerpts -->
+  <section class="annotation-quote-list"
+    ng-class="{'is-orphan' : vm.isOrphan()}"
+    ng-if="vm.quote()">
+    <excerpt collapsed-height="35"
+      inline-controls="true"
+      overflow-hysteresis="20"
+      content-data="selector.exact">
+      <blockquote class="annotation-quote"
+        h-branding="selectionFontFamily"
+        ng-bind="vm.quote()"></blockquote>
+    </excerpt>
+  </section>
+
+  <!-- / Excerpts -->
+
+  <!-- Body -->
+  <section name="text" class="annotation-body">
+    <excerpt enabled="!vm.editing()"
+      inline-controls="false"
+      on-collapsible-changed="vm.setBodyCollapsible(collapsible)"
+      collapse="vm.collapseBody"
+      collapsed-height="400"
+      overflow-hysteresis="20"
+      content-data="vm.state().text">
+      <markdown text="vm.state().text"
+                custom-text-class="{'annotation-body is-hidden':vm.isHiddenByModerator(),
+                                    'has-content':vm.hasContent()}"
+                on-edit-text="vm.setText(text)"
+                read-only="!vm.editing()">
+      </markdown>
+    </excerpt>
+  </section>
+  <!-- / Body -->
+
+  <!-- Tags -->
+  <div class="annotation-body form-field" ng-if="vm.editing()">
+    <tag-editor tags="vm.state().tags"
+                on-edit-tags="vm.setTags(tags)"></tag-editor>
+  </div>
+
+  <div class="annotation-body u-layout-row tags tags-read-only"
+       ng-if="(vm.canCollapseBody || vm.state().tags.length) && !vm.editing()">
+    <ul class="tag-list">
+      <li class="tag-item" ng-repeat="tag in vm.state().tags">
+        <a ng-href="{{vm.tagSearchURL(tag)}}" target="_blank">{{tag}}</a>
+      </li>
+    </ul>
+    <div class="u-stretch"></div>
+    <a class="annotation-link u-strong" ng-show="vm.canCollapseBody"
+      ng-click="vm.toggleCollapseBody($event)"
+      ng-title="vm.collapseBody ? 'Show the full annotation text' : 'Show the first few lines only'"
+      ng-bind="vm.collapseBody ? 'More' : 'Less'"
+      h-branding="accentColor"></a>
+  </div>
+  <!-- / Tags -->
+
+  <footer class="annotation-footer">
+    <div class="annotation-form-actions" ng-if="vm.editing()">
+      <publish-annotation-btn
+        class="publish-annotation-btn"
+        group="vm.group()"
+        can-post="vm.hasContent()"
+        is-shared="vm.isShared()"
+        on-cancel="vm.revert()"
+        on-save="vm.save()"
+        on-set-privacy="vm.setPrivacy(level)"></publish-annotation-btn>
+    </div>
+
+    <div class="annotation-section annotation-license"
+         ng-show="vm.shouldShowLicense()">
+      <a class="annotation-license__link" href="http://creativecommons.org/publicdomain/zero/1.0/"
+        title="View more information about the Creative Commons Public Domain dedication"
+        target="_blank">
+        <i class="h-icon-cc-logo"></i><i class="h-icon-cc-zero"></i>
+        Annotations can be freely reused by anyone for any purpose.
+      </a>
+    </div>
+
+    <div class="annotation-replies" ng-if="!vm.isReply() && vm.replyCount > 0">
+      <a href=""
+        ng-click="vm.onReplyCountClick()">
+        <span class="annotation-replies__link">{{ vm.isCollapsed ? 'Show replies' : 'Hide replies' }}</span>
+        <span class="annotation-replies__count">({{ vm.replyCount }})</span>
+      </a>
+    </div>
+
+    <div class="annotation-actions" ng-if="vm.isSaving">
+      Saving...
+    </div>
+
+    <div class="annotation-actions" ng-if="!vm.isSaving && !vm.editing() && vm.id()">
+      <div ng-show="vm.isSaving">Saving…</div>
+      <annotation-action-button
+        icon="'h-icon-annotation-edit'"
+        is-disabled="vm.isDeleted()"
+        label="'Edit'"
+        ng-show="vm.authorize('update') && !vm.isSaving"
+        on-click="vm.edit()"
+      ></annotation-action-button>
+      <annotation-action-button
+        icon="'h-icon-annotation-delete'"
+        is-disabled="vm.isDeleted()"
+        label="'Delete'"
+        ng-show="vm.authorize('delete')"
+        on-click="vm.delete()"
+      ></annotation-action-button>
+      <annotation-action-button
+        icon="'h-icon-annotation-reply'"
+        is-disabled="vm.isDeleted()"
+        label="'Reply'"
+        on-click="vm.reply()"
+      ></annotation-action-button>
+      <span class="annotation-share-dialog-wrapper" ng-if="vm.incontextLink()">
+        <annotation-action-button
+         icon="'h-icon-annotation-share'"
+         is-disabled="vm.isDeleted()"
+         label="'Share'"
+         on-click="vm.showShareDialog = true"
+        ></annotation-action-button>
+        <annotation-share-dialog
+          group="vm.group()"
+          uri="vm.incontextLink()"
+          is-private="vm.state().isPrivate"
+          is-open="vm.showShareDialog"
+          on-close="vm.showShareDialog = false">
+        </annotation-share-dialog>
+      </span>
+      <span ng-if="vm.canFlag()">
+        <annotation-action-button
+         icon="'h-icon-annotation-flag'"
+         is-disabled="vm.isDeleted()"
+         label="'Report this annotation to the moderators'"
+         ng-if="!vm.isFlagged()"
+         on-click="vm.flag()"
+        ></annotation-action-button>
+        <annotation-action-button
+         icon="'h-icon-annotation-flag annotation--flagged'"
+         is-disabled="vm.isDeleted()"
+         label="'Annotation has been reported to the moderators'"
+         ng-if="vm.isFlagged()"
+        ></annotation-action-button>
+      </span>
+    </div>
+  </footer>
+</div>

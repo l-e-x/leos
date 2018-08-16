@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,18 +16,17 @@ define(function leosCrossReferenceWidgetModule(require) {
     "use strict";
 
     var leosCrossReferenceWidgetDefinition = {
-        name : "leosCrossReferenceWidget",
-        config : {
-            inline : true,
-            requires : "leosWidgetPlugin",
-            allowedContent : "a[id,data-akn-name,href]",
-            template : '<a id="" data-akn-name="ref" href="">',
-            dialog : "leosCrossReferenceDialog",
+        name: "leosCrossReferenceWidget",
+        config: {
+            inline: true,
+            requires: "leosWidgetPlugin",
+            allowedContent: "mref[id,data-akn-name],ref[id,data-akn-name,href]",
+            template: '<mref id="" data-akn-name="mref"></mref>',
+            dialog: "leosCrossReferenceDialog",
 
-            /* Return true or false depending on whether given element should be converted to this widget. */
-            upcast : function upcast(element) {
-                return (element.attributes["data-akn-name"] === "ref");
-            }
+            upcast: function upcast(element, data) {
+                return (element.attributes["data-akn-name"] === "mref");
+            },
         }
     };
 

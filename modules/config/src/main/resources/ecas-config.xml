@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<client-config xmlns="https://ecas.ec.europa.eu/cas/schemas/client-config/ecas/">
+    <serverContextPath>/${leos.context}</serverContextPath>
+    <groups>
+        <group>${ec.all.security.group.name}</group>
+        <group>${leos.security.group.name}</group>
+    </groups>
+    <!--<requestingUserDetails>true</requestingUserDetails>-->
+    <serviceResolver>eu.europa.ec.digit.refapp.support.security.ecas.HashAndReverseProxyAwareEcasServiceResolver</serviceResolver>
+    <assuranceLevel>${ecas.assurance.level}</assuranceLevel>
+    <!-- proxy ticket-->
+    <proxyCallbackUrl>${ecas.proxy.ticket.leos.receptor.url}</proxyCallbackUrl>
+</client-config>

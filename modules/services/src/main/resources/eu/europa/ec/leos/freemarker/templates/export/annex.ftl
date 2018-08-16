@@ -29,7 +29,8 @@
     <#local billRef = bill.getResourceId()>
     <#local annexes = bill.getChildResources('annex')>
     <#local annexRef = annex.getResourceId()>
-    <importJob filename="${annex.getLeosCategory().name()?capitalize}_${annex.getDocNumber()}">
+    <importJob filename="${annex.getLeosCategory().name()?capitalize}_${annex.getDocNumber()}"
+               convertAnnotations="true">
         <leos>
             <resource ref="${proposalRef}">
                 <resource ref="${billRef}">

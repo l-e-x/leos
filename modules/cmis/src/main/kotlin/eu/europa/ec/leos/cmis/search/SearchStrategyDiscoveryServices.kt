@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.cmis.search
 
+import eu.europa.ec.leos.cmis.support.OperationContextProvider
 import eu.europa.ec.leos.domain.document.LeosCategory
 import mu.KLogging
 import org.apache.chemistry.opencmis.client.api.Document
@@ -27,13 +28,13 @@ internal class SearchStrategyDiscoveryServices(
 
     override fun findDocuments(folder: Folder, primaryType: String, categories: Set<LeosCategory>, descendants: Boolean): List<Document> {
         logger.trace { "Finding documents..." }
-        val context = cmisSession.defaultContext                        // FIXME use optimized context
+        val context = OperationContextProvider.getMinimalContext(cmisSession)
         val categoryStr = categories.joinToString { "'${it.name}'" }
 
         val whereClause = if (descendants) {
-            "IN_TREE('${folder.id}') AND leos:category IN ($categoryStr)"
+            "leos:category IN ($categoryStr) AND IN_TREE('${folder.id}')"
         } else {
-            "IN_FOLDER('${folder.id}') AND leos:category IN ($categoryStr)"
+            "leos:category IN ($categoryStr) AND IN_FOLDER('${folder.id}')"
         }
         logger.trace { "Querying CMIS objects... [primaryType=$primaryType, where=$whereClause]" }
 

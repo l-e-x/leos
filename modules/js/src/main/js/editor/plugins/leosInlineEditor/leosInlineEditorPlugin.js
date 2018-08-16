@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -41,11 +41,13 @@ define(function leosInlineEditorPluginModule(require) {
             }
             
             editor.on('blur', function(evt) {
+                evt.editor.element.removeClass('leos-editor-focus');
                 evt.editor.element.addClass('leos-editor-blur');
             });
 
             editor.on('focus', function(evt) {
                 evt.editor.element.removeClass('leos-editor-blur');
+                evt.editor.element.addClass('leos-editor-focus');
             });
         }
     };

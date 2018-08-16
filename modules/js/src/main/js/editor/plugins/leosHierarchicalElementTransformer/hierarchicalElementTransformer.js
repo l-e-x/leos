@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,7 +17,7 @@ define(function hierarchicalElementTransformer(require) {
     var STAMPIT = require("stampit");
     var LOG = require("logger");
 
-    var INLINE_FROM_MATCH = /^(text|span|strong|em|u|sup|sub|br|a|img)$/;
+    var INLINE_FROM_MATCH = /^(text|span|strong|em|u|sup|sub|br|a|img|mref)$/;
     var TABLE_ELEMENT_MATCH = /^(table)$/; 
     
     var DATA_AKN_NUM = "data-akn-num";
@@ -25,6 +25,11 @@ define(function hierarchicalElementTransformer(require) {
     var DATA_AKN_CONTENT_ID = "data-akn-content-id";
     var DATA_AKN_WRAPPED_CONTENT_ID = "data-akn-wrapped-content-id";
     var DATA_AKN_MP_ID = "data-akn-mp-id";
+    var DATA_NUM_ORIGIN = "data-num-origin";
+    var DATA_CONTENT_ORIGIN = "data-content-origin";
+    var DATA_WRAPPED_CONTENT_ORIGIN = "data-wrapped-content-origin";
+    var DATA_MP_ORIGIN = "data-mp-origin";
+    var DATA_ORIGIN = "data-origin";
     
     /*
      * Create content elements with wrapping element(e.g.: alinea, subparagraph)  
@@ -35,18 +40,23 @@ define(function hierarchicalElementTransformer(require) {
         element.children.forEach(function(childElement) {
             var elementName = that._getElementName(childElement);
             var wrapperId = "data-akn-" + wrapper + "-id";
+            var wrapperOrigin = "data-" + wrapper + "-origin";
             // KLUG: temporarily fix for in-line elements in text node
             if (elementName === "p") {
                 that.mapToChildProducts(childElement, {
                     toPath: rootPath,
                     toChild: wrapper,
                     attrs: [{
-                        from: wrapperId,
+                        from: "id",
                         to: "GUID",
+                        action: "passAttributeTransformer"
+                    },{
+                        from: DATA_ORIGIN,
+                        to: "leos:origin",
                         action: "passAttributeTransformer"
                     }]
                 });
-                createContent.call(that, childElement, [rootPath, wrapper].join("/"), childElement.children, DATA_AKN_WRAPPED_CONTENT_ID);
+                createContent.call(that, childElement, [rootPath, wrapper].join("/"), childElement.children, DATA_AKN_WRAPPED_CONTENT_ID, DATA_WRAPPED_CONTENT_ORIGIN);
             } else if (INLINE_FROM_MATCH.test(elementName)) {
                 inlineGroup.push(childElement);
                 var nextElementName = childElement.next ? that._getElementName(childElement.next) : null;
@@ -58,13 +68,30 @@ define(function hierarchicalElementTransformer(require) {
                             from: wrapperId,
                             to: "GUID",
                             action: "passAttributeTransformer"
+                        },{
+                            from: wrapperOrigin,
+                            to: "leos:origin",
+                            action: "passAttributeTransformer"
                         }]
                     });
-                    createContent.call(that, childElement.parent, [rootPath, wrapper].join("/"), inlineGroup, DATA_AKN_WRAPPED_CONTENT_ID);
+                    createContent.call(that, childElement.parent, [rootPath, wrapper].join("/"), inlineGroup, DATA_AKN_CONTENT_ID, DATA_CONTENT_ORIGIN);
                     inlineGroup = [];
                 }
             } else if (TABLE_ELEMENT_MATCH.test(elementName)) {
-                wrapElementWithContent.call(that, childElement, rootPath);
+                that.mapToChildProducts(childElement, {
+                    toPath: rootPath,
+                    toChild: wrapper,
+                    attrs: [{
+                        from: wrapperId,
+                        to: "GUID",
+                        action: "passAttributeTransformer"
+                    },{
+                        from: wrapperOrigin,
+                        to: "leos:origin",
+                        action: "passAttributeTransformer"
+                    }]
+                });
+                wrapElementWithContent.call(that, childElement, [rootPath, wrapper].join("/"), DATA_AKN_WRAPPED_CONTENT_ID, DATA_WRAPPED_CONTENT_ORIGIN);
             } else {
                 // for other elements eg.: list, etc
                 that.mapToNestedChildProduct(childElement, {
@@ -86,13 +113,13 @@ define(function hierarchicalElementTransformer(require) {
                 inlineGroup.push(childElement);
                 var nextElementName = childElement.next ? that._getElementName(childElement.next) : null;
                 if (!nextElementName || !INLINE_FROM_MATCH.test(nextElementName)) {
-                    createContent.call(that, childElement.parent, rootPath, inlineGroup, DATA_AKN_CONTENT_ID);
+                    createContent.call(that, childElement.parent, rootPath, inlineGroup, DATA_AKN_CONTENT_ID, DATA_CONTENT_ORIGIN);
                     inlineGroup = [];
                 }
             } else if (childElementName === "p") {
-                createContent.call(that, childElement, rootPath, childElement.children, DATA_AKN_CONTENT_ID);
+                createContent.call(that, childElement, rootPath, childElement.children, DATA_AKN_CONTENT_ID, DATA_CONTENT_ORIGIN);
             } else if (TABLE_ELEMENT_MATCH.test(childElementName)) {
-                wrapElementWithContent.call(that, childElement, rootPath);
+                wrapElementWithContent.call(that, childElement, rootPath, DATA_AKN_CONTENT_ID, DATA_CONTENT_ORIGIN);
             } else {
                 that.mapToNestedChildProduct(childElement, {
                     toPath: rootPath
@@ -101,13 +128,17 @@ define(function hierarchicalElementTransformer(require) {
         });
     }
     
-    function createContent(element, rootPath, contentChildren, contentId) {
+    function createContent(element, rootPath, contentChildren, contentId, contentOrigin) {
         this.mapToChildProducts(element, {
             toPath: rootPath,
             toChild: "content",
             attrs: [{
                 from: contentId,
                 to: "GUID",
+                action: "passAttributeTransformer"
+            },{
+                from: contentOrigin,
+                to: "leos:origin",
                 action: "passAttributeTransformer"
             }]
         });
@@ -119,18 +150,26 @@ define(function hierarchicalElementTransformer(require) {
                 from: DATA_AKN_MP_ID,
                 to: "GUID",
                 action: "passAttributeTransformer"
+            },{
+                from: DATA_MP_ORIGIN,
+                to: "leos:origin",
+                action: "passAttributeTransformer"
             }]
         });
         createContentChildren.call(this, element, contentPath + "/mp", contentChildren);
     }
     
-    function wrapElementWithContent(element, rootPath) {
-        this.mapToChildProducts(element.parent, {
+    function wrapElementWithContent(element, rootPath, contentId, contentOrigin) {
+        this.mapToChildProducts(element, {
             toPath: rootPath,
             toChild: "content",
             attrs: [{
-                from: DATA_AKN_CONTENT_ID,
+                from: contentId,
                 to: "GUID",
+                action: "passAttributeTransformer"
+            },{
+                from: contentOrigin,
+                to: "leos:origin",
                 action: "passAttributeTransformer"
             }]
         });
@@ -169,8 +208,10 @@ define(function hierarchicalElementTransformer(require) {
             elementName = element.name;
         } else if (element instanceof CKEDITOR.htmlParser.text) {
             elementName = "text";
-
+        } else {
+            elementName = "unknown";
         }
+
         return elementName;
     };
 
@@ -224,7 +265,19 @@ define(function hierarchicalElementTransformer(require) {
         });
         return matched;
     }
-
+    
+    /* Get the value of attribute for the element whose elementName is passed as parameter 
+     * if found returns the value else returns empty string
+     */
+    function getElementAttrVal(elementName, attrName, currentElement) {
+        if(!elementName || !attrName || !currentElement) {
+            return "";
+        }
+        var element = currentElement.getAscendant(elementName);
+        var attrVal = element.attributes[attrName.toLowerCase()];
+        return attrVal ? attrVal : "";
+    }
+    
     var anchor = function(content) {
         return "^" + content + "$";
     };
@@ -248,6 +301,9 @@ define(function hierarchicalElementTransformer(require) {
                 //path = paragraph/subparagraph/content
                 var rootElementsWithContentWrapperAndContentForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/(", contentWrapperForFrom,
                         "\/)?content"].join("")));
+                //path = paragraph/subparagraph/content/? (any nested element e.g. table except mp|text|num|subparagraph)
+                var rootElementsWithContentWrapperAndContentAndNestedElementForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/(", contentWrapperForFrom,
+                        "\/)?content", "\/((?!text|num|mp|", contentWrapperForFrom, ").)+"].join("")));
                 //path = paragraph/subparagraph/content/mp
                 var rootElementsWithContentWrapperAndContentAndMpForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/(", contentWrapperForFrom,
                         "\/)?content\/mp"].join("")));
@@ -279,6 +335,7 @@ define(function hierarchicalElementTransformer(require) {
 
                 //content wrapper id (for e.g. data-akn-subparagraph-id)
                 var contentWrapperId = "data-akn-" + contentWrapperForFrom + "-id";
+                var contentWrapperOrigin = "data-" + contentWrapperForFrom + "-origin";
                 
                 var transformationConfig = {
                     akn: this.firstLevelConfig.akn,
@@ -300,6 +357,10 @@ define(function hierarchicalElementTransformer(require) {
                                                 from: "GUID",
                                                 to: "id",
                                                 action: "passAttributeTransformer"
+                                            },{
+                                                from: "leos:origin",
+                                                to: DATA_ORIGIN,
+                                                action: "passAttributeTransformer"
                                             }]
                                         });
                                         this._.isContentWrapperPresent = false;
@@ -312,6 +373,10 @@ define(function hierarchicalElementTransformer(require) {
                                         attrs: [{
                                             from: "GUID",
                                             to: DATA_AKN_NUM_ID,
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_NUM_ORIGIN,
                                             action: "passAttributeTransformer"
                                         }]
                                     });
@@ -327,6 +392,10 @@ define(function hierarchicalElementTransformer(require) {
                                             from: "GUID",
                                             to: DATA_AKN_CONTENT_ID,
                                             action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_CONTENT_ORIGIN,
+                                            action: "passAttributeTransformer"
                                         }]
                                     });
                                 } else if(rootElementsWithContentAndMpForFromRegExp.test(path)) {
@@ -336,6 +405,10 @@ define(function hierarchicalElementTransformer(require) {
                                             from: "GUID",
                                             to: DATA_AKN_MP_ID,
                                             action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_MP_ORIGIN,
+                                            action: "passAttributeTransformer"
                                         }]
                                     });
                                 } else if(rootElementsWithContentAndNestedElementForFromRegExp.test(path)) {
@@ -344,41 +417,73 @@ define(function hierarchicalElementTransformer(require) {
                                     });
                                 }
                                 else if (rootElementsWithContentWrapperForFromRegExp.test(path)) {
-                                    this.mapToChildProducts(element, {
+                                    this.mapToProducts(element, {
                                         toPath: rootsElementsPathForTo,
-                                        toChild: "p",
-                                        attrs: [{
-                                            from: "GUID",
-                                            to: contentWrapperId,
-                                            action: "passAttributeTransformer"
-                                        }]
                                     });
                                     this._.isContentWrapperPresent = true;
                                 } else if(rootElementsWithContentWrapperAndContentForFromRegExp.test(path)) {
                                     this.mapToProducts(element, {
-                                        toPath: rootsElementsWithPPathForTo,
-                                        attrs: [{
-                                            from: "GUID",
-                                            to: DATA_AKN_WRAPPED_CONTENT_ID,
-                                            action: "passAttributeTransformer"
-                                        }]
+                                        toPath: rootsElementsPathForTo,
                                     });
                                 } else if(rootElementsWithContentWrapperAndContentAndMpForFromRegExp.test(path)) {
-                                    this.mapToProducts(element, {
-                                        toPath: rootsElementsWithPPathForTo,
+                                    var that = this;
+                                    this.mapToChildProducts(element, {
+                                        toPath: rootsElementsPathForTo,
+                                        toChild: "p",
                                         attrs: [{
+                                            to: "id",
+                                            toValue: getElementAttrVal.call(that, contentWrapperForFrom, "GUID", element), //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: DATA_ORIGIN,
+                                            toValue: getElementAttrVal.call(that, contentWrapperForFrom, "leos:origin", element), //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: DATA_AKN_WRAPPED_CONTENT_ID,
+                                            toValue: getElementAttrVal.call(that, "content", "GUID", element),  //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: DATA_WRAPPED_CONTENT_ORIGIN,
+                                            toValue: getElementAttrVal.call(that, "content", "leos:origin", element),  //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
                                             from: "GUID",
                                             to: DATA_AKN_MP_ID,
                                             action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_MP_ORIGIN,
+                                            action: "passAttributeTransformer"
                                         }]
                                     });
-                                    
                                 } else if (rootElementsWithContentWrapperAndTextForFromRegExp.test(path)) {
                                     var toPath = this._.isContentWrapperPresent ? rootsElementsWithPPathForTo : rootsElementsPathForTo;
                                     this.mapToChildProducts(element, {
                                         toPath: toPath,
                                         toChild: "text",
                                         toChildTextValue: element.value
+                                    });
+                                } else if(rootElementsWithContentWrapperAndContentAndNestedElementForFromRegExp.test(path)) {
+                                    var that = this;
+                                    this.mapToNestedChildProduct(element, {
+                                        toPath: rootsElementsPathForTo,
+                                        attrs: [{
+                                            to: contentWrapperId,
+                                            toValue: getElementAttrVal.call(that, contentWrapperForFrom, "GUID", element), //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: contentWrapperOrigin,
+                                            toValue: getElementAttrVal.call(that, contentWrapperForFrom, "leos:origin", element), //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: DATA_WRAPPED_CONTENT_ORIGIN,
+                                            toValue: getElementAttrVal.call(that, "content", "leos:origin", element),  //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            to: DATA_AKN_WRAPPED_CONTENT_ID,
+                                            toValue: getElementAttrVal.call(that, "content", "GUID", element),  //LEOS-2899
+                                            action: "passAttributeTransformer"
+                                        }]
                                     });
                                 } else if (rootElementsWithContentWrapperAndNestedForFromRegExp.test(path)) {
                                     var toPath = this._.isContentWrapperPresent ? rootsElementsWithPPathForTo : rootsElementsPathForTo;
@@ -407,12 +512,20 @@ define(function hierarchicalElementTransformer(require) {
                                                from: "id",
                                                to: "GUID",
                                                action: "passAttributeTransformer"
+                                           },{
+                                               from: DATA_ORIGIN,
+                                               to: "leos:origin",
+                                               action: "passAttributeTransformer"
                                            }]
                                        }, {
                                            toPath: rootsElementsWithNumPathForFrom,
                                            attrs: [{
                                                from: DATA_AKN_NUM_ID,
                                                to: "GUID",
+                                               action: "passAttributeTransformer"
+                                           },{
+                                               from: DATA_NUM_ORIGIN,
+                                               to: "leos:origin",
                                                action: "passAttributeTransformer"
                                            }]
                                        }, {
@@ -425,6 +538,10 @@ define(function hierarchicalElementTransformer(require) {
                                             attrs: [{
                                                 from: "id",
                                                 to: "GUID",
+                                                action: "passAttributeTransformer"
+                                            },{
+                                                from: DATA_ORIGIN,
+                                                to: "leos:origin",
                                                 action: "passAttributeTransformer"
                                             }]
                                         }]);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,16 +44,15 @@ define(function aknInlineArticleProfileModule(require) {
     plugins.push(require("plugins/leosAttrHandler/leosAttrHandlerPlugin"));
     plugins.push(require("plugins/leosArticleList/leosArticleListPlugin"));
     plugins.push(require("plugins/leosArticleIndentlist/leosArticleIndentlistPlugin"));
-    plugins.push(require("plugins/leosHighlight/leosHighlightPlugin"));
     plugins.push(require("plugins/leosPaste/leosPastePlugin"));
-    plugins.push(require("plugins/leosComments/leosCommentsPlugin"));
-    plugins.push(require("plugins/leosCommentAction/leosCommentActionPlugin"));
     plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
     plugins.push(require("plugins/leosHierarchicalElementShiftEnterHandler/leosHierarchicalElementShiftEnterHandler"));
     plugins.push(require("plugins/leosFloatingSpace/leosFloatingSpacePlugin"));
     plugins.push(require("plugins/leosMessageBus/leosMessageBusPlugin"));
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));
     plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));
+    plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
+    plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -81,7 +80,7 @@ define(function aknInlineArticleProfileModule(require) {
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath,clipboard,undo,pastefromword,enterkey,button,dialog,dialogui,"
                 + "widget,lineutils,basicstyles," + "indent,"
-                + "fakeobjects,find,specialchar,table,tableresize,tabletools,tableselection,contextmenu,menubutton,mathjax,pastetext,colorbutton",
+                + "fakeobjects,specialchar,table,tableresize,tabletools,tableselection,contextmenu,menubutton,mathjax,pastetext",
         // comma-separated list of plugins that must not be loaded
         removePlugins: "",
         // comma-separated list of additional plugins to be loaded
@@ -108,7 +107,7 @@ define(function aknInlineArticleProfileModule(require) {
             groups : [ "clipboard", "undo" ]
         }, {
             name : "editing",
-            groups : [ "find", "selection", "spellchecker" ]
+            groups : ["selection", "spellchecker" ]
         }, {
             name : "forms"
         }, {
@@ -119,12 +118,12 @@ define(function aknInlineArticleProfileModule(require) {
         }, {
             name : "paragraph",
             groups : [ "indent", "blocks", "align", "bidi" ]
+        }, {
+            name : "ref"
         }, '/', {
             name : "insert"
         }, {
             name : "styles"
-        }, {
-            name : "colors"
         }, {
             name : "tools"
         }, {
@@ -135,16 +134,18 @@ define(function aknInlineArticleProfileModule(require) {
             name : "about"
         } ],
         //show toolbar on startup
-        startupFocus: true,
+        startupFocus: 'end',
         // comma-separated list of toolbar button names that must not be rendered
-        removeButtons: "Underline,Strike,Anchor,TextColor",
+        removeButtons: "Underline,Strike,Anchor,TextColor,PasteFromWord,PasteText",
         // semicolon-separated list of dialog elements that must not be rendered
         // element is a string concatenation of dialog name + colon + tab name
         removeDialogTabs: "",
         // height of the editing area
         height: 515,
         //MathJax plugin configuration - Sets the path to the MathJax library
-        mathJaxLib: './webjars/MathJax/2.7.0/MathJax.js?config=default'
+        mathJaxLib: './webjars/MathJax/2.7.0/MathJax.js?config=default',
+        // LEOS-2887 removing tooltip title 
+        title: false
     };
     // adding the specific configs coming from the plugins.
     profileConfig = $.extend( profileConfig,  specificConfig);

@@ -1,0 +1,115 @@
+/*
+ * Copyright 2018 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+package eu.europa.ec.leos.annotate.model.entity;
+
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Parameter;
+
+import javax.persistence.*;
+
+import java.net.URI;
+import java.util.Objects;
+
+@Entity
+@Table(name = "DOCUMENTS", uniqueConstraints = @UniqueConstraint(columnNames = {
+        "URI"}))
+public class Document {
+
+    /**
+     * Class representing a document to which an annotation is associated 
+     */
+
+    // -------------------------------------
+    // column definitions
+    // -------------------------------------
+
+    @Id
+    @Column(name = "DOCUMENT_ID", nullable = false)
+    @GenericGenerator(name = "documentsSequenceGenerator", strategy = "org.hibernate.id.enhanced.SequenceStyleGenerator", parameters = {
+            @Parameter(name = "sequence_name", value = "DOCUMENTS_SEQ"),
+            // @Parameter(name = "initial_value", value = "1000"),
+            @Parameter(name = "increment_size", value = "1")
+    })
+    @GeneratedValue(generator = "documentsSequenceGenerator")
+    private long id;
+
+    @Column(name = "TITLE")
+    private String title;
+
+    @Column(name = "URI", nullable = false, unique = true)
+    private String uri;
+
+    // -----------------------------------------------------------
+    // Constructors
+    // -----------------------------------------------------------
+
+    public Document() {
+    }
+
+    public Document(URI uri, String title) {
+        this.uri = uri.toASCIIString();
+        this.title = title;
+    }
+
+    // -----------------------------------------------------------
+    // Getters & setters
+    // -----------------------------------------------------------
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
+    }
+
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, title, uri);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final Document other = (Document) obj;
+        return Objects.equals(this.id, other.id) &&
+                Objects.equals(this.title, other.title) &&
+                Objects.equals(this.uri, other.uri);
+    }
+}

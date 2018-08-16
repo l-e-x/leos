@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,6 +18,9 @@ internal enum class CmisProperties(
 ) {
     DOCUMENT_CATEGORY("leos:category"),
     DOCUMENT_TITLE("leos:title"),               // FIXME maybe move title property to metadata or remove it entirely
+    DOCUMENT_TEMPLATE("leos:template"),
+    DOCUMENT_LANGUAGE("leos:language"),
+    METADATA_REF("metadata:ref"),
     METADATA_STAGE("metadata:docStage"),
     METADATA_TYPE("metadata:docType"),
     METADATA_PURPOSE("metadata:docPurpose"),

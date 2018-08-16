@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+    <artifactId>annotate</artifactId>
+    <version>2.0.0</version>
+    <packaging>pom</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.maven.version>3.3.9</project.maven.version>
+        <project.java.version>1.8</project.java.version>
+        <project.java.debug>false</project.java.debug>
+        <project.java.optimize>true</project.java.optimize>
+        <project.java.showWarnings>true</project.java.showWarnings>
+        <project.java.showDeprecation>true</project.java.showDeprecation>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <wagon-ftp-extension.version>2.2</wagon-ftp-extension.version>
+        <proxy-servlet.version>1.9</proxy-servlet.version>
+        <spotbugs-annotations.version>3.1.0</spotbugs-annotations.version>
+        <apache-commons-io.version>1.3.2</apache-commons-io.version>
+        <apache-http-client.version>4.5.3</apache-http-client.version>
+        <auth0.version>3.2.0</auth0.version>
+        <aspectj.version>1.8.13</aspectj.version>
+        <aspectj.maven-plugin.version>1.11</aspectj.maven-plugin.version>
+        <mycila-license-plugin.version>3.0</mycila-license-plugin.version>
+        <maven-release-plugin.version>2.5.3</maven-release-plugin.version>
+        <jacoco-plugin.version>0.8.0</jacoco-plugin.version>
+        <spring-boot.version>1.5.9.RELEASE</spring-boot.version>
+        <spring.version>4.3.16.RELEASE</spring.version>
+        <build.env>local</build.env>
+    </properties>
+
+    <description>Legislation Editing Open Software, developed by the European Commission - DIGIT.B2</description>
+    <url>https://joinup.ec.europa.eu/software/leos</url>
+
+    <licenses>
+        <license>
+            <name>European Union Public Licence (EUPL)</name>
+            <url>https://joinup.ec.europa.eu/software/page/eupl</url>
+            <comments>European Free/Open Source Software (F/OSS) licence.</comments>
+        </license>
+    </licenses>
+
+    <organization>
+        <name>European Commission</name>
+        <url>https://ec.europa.eu</url>
+    </organization>
+
+    <modules>
+        <module>client</module>
+        <module>server</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Import dependency management from Spring Boot -->
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.aspectj</groupId>
+                <artifactId>aspectjrt</artifactId>
+                <version>${aspectj.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-io</artifactId>
+                <version>${apache-commons-io.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.httpcomponents</groupId>
+                <artifactId>httpclient</artifactId>
+                <version>${apache-http-client.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-context</artifactId>
+                <version>${spring.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.auth0</groupId>
+                <artifactId>java-jwt</artifactId>
+                <version>${auth0.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-annotations</artifactId>
+                <version>${spotbugs-annotations.version}</version>
+                <optional>true</optional>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>2.7</version>
+                    <configuration>
+                        <delimiters>
+                            <delimiter>@</delimiter>
+                        </delimiters>
+                        <useDefaultDelimiters>false</useDefaultDelimiters>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>com.mycila</groupId>
+                    <artifactId>license-maven-plugin</artifactId>
+                    <version>${mycila-license-plugin.version}</version>
+                    <configuration>
+                        <header>./server/src/etc/headers/NOTICE.txt</header>
+                        <headerDefinitions>
+                            <headerDefinition>./server/src/etc/headers/scss_definition.xml</headerDefinition>
+                        </headerDefinitions>
+                        <mapping>
+                            <java>SLASHSTAR_STYLE</java>
+                            <kt>SLASHSTAR_STYLE</kt>
+                            <scss>DOUBLESLASH_STYLE</scss>
+                        </mapping>
+                        <excludes>
+                            <exclude>**/.git*</exclude>
+                            <exclude>**/*.txt</exclude>
+                        </excludes>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <phase>none</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>${project.java.version}</source>
+                        <target>${project.java.version}</target>
+                        <debug>${project.java.debug}</debug>
+                        <optimize>${project.java.optimize}</optimize>
+                        <showWarnings>${project.java.showWarnings}</showWarnings>
+                        <showDeprecation>${project.java.showDeprecation}</showDeprecation>
+                        <compilerArgs>
+                            <!-- Enable recommended compiler warnings -->
+                            <arg>-Xlint</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>aspectj-maven-plugin</artifactId>
+                    <version>${aspectj.maven-plugin.version}</version>
+                    <configuration>
+                        <showWeaveInfo>true</showWeaveInfo>
+                        <source>${project.java.version}</source>
+                        <target>${project.java.version}</target>
+                        <Xlint>ignore</Xlint>
+                        <complianceLevel>${project.java.version}</complianceLevel>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <verbose>true</verbose>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <!-- IMPORTANT -->
+                            <phase>process-sources</phase>
+                            <goals>
+                                <goal>compile</goal>
+                                <goal>test-compile</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.aspectj</groupId>
+                            <artifactId>aspectjtools</artifactId>
+                            <version>${aspectj.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <plugin>
+                    <!-- JaCoCo plugin for generation of code coverage reports from tests -->
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>${jacoco-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-release-plugin</artifactId>
+                    <version>${maven-release-plugin.version}</version>
+                    <configuration>
+                        <tagNameFormat>@{project.version}</tagNameFormat>
+                        <preparationGoals>clean verify</preparationGoals>
+                        <arguments>-Dmaven.test.skip=true</arguments>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <profiles>
+        <!-- LOCAL -->
+        <profile>
+            <id>env-local</id>
+            <activation>
+                <property>
+                    <name>!env</name>
+                </property>
+            </activation>
+            <properties>
+                <build.env>local</build.env>
+                <execute.yarn.phase>generate-resources</execute.yarn.phase>
+                <project.java.debug>true</project.java.debug>
+                <project.java.optimize>false</project.java.optimize>
+            </properties>
+        </profile>
+    </profiles>
+</project>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,6 +22,7 @@ public class LeosTheme extends BaseTheme {
 
     // leos image resources
     public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_NEW =  new ThemeResource("img/logo_en.gif");
+    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_COUNCIL =  new ThemeResource("img/logo_council_en.gif");
     public static final ThemeResource LEOS_HEADER_HOME_ICON =   new ThemeResource("img/house.png");
 
     // leos theme icons resources

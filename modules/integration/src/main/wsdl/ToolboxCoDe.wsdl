@@ -1,36 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<wsdl:definitions xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://ec.europa.eu/digit/toolboxcode/v3.0" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" targetNamespace="http://ec.europa.eu/digit/toolboxcode/v3.0" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+<wsdl:definitions xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soap12="http://schemas.xmlsoap.org/wsdl/soap12/" xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" xmlns:tns="http://ec.europa.eu/digit/toolboxcode/v3.0" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" targetNamespace="http://ec.europa.eu/digit/toolboxcode/v3.0" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
   <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">This Web Service is an interface to the CoDe conversion platform. CoDe is a family of conversion services brought to you by DIGIT.</wsdl:documentation>
   <wsdl:types>
     <s:schema elementFormDefault="qualified" targetNamespace="http://ec.europa.eu/digit/toolboxcode/v3.0">
-      <s:element name="GetWebServiceStatus">
+      <s:element name="CreateJob">
         <s:complexType>
           <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="GetWebServiceStatusResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="GetWebServiceStatusResult" type="tns:WebServiceStatus" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:complexType name="WebServiceStatus">
-        <s:sequence>
-          <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string" />
-          <s:element minOccurs="0" maxOccurs="1" name="BuildDate" type="s:string" />
-          <s:element minOccurs="0" maxOccurs="1" name="ExtendedStatistics" type="s:string" />
-          <s:element minOccurs="1" maxOccurs="1" name="LogErrorCount" type="s:int" />
-          <s:element minOccurs="1" maxOccurs="1" name="LogWarningCount" type="s:int" />
-          <s:element minOccurs="0" maxOccurs="1" name="CallbackThrottlingCache" type="s:string" />
-        </s:sequence>
-      </s:complexType>
-      <s:element name="RegisterJob">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="userName" type="s:string" />
             <s:element minOccurs="0" maxOccurs="1" name="parameters" type="tns:CreateJobParameters" />
           </s:sequence>
         </s:complexType>
@@ -74,38 +50,6 @@
           <s:enumeration value="UncLink" />
         </s:restriction>
       </s:simpleType>
-      <s:element name="RegisterJobResponse">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="RegisterJobResult" type="tns:RegisteredWebServiceJob" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:complexType name="RegisteredWebServiceJob">
-        <s:sequence>
-          <s:element minOccurs="0" maxOccurs="1" name="WSJobId" type="s:string" />
-          <s:element minOccurs="0" maxOccurs="1" name="DestinationFolder" type="s:string" />
-        </s:sequence>
-      </s:complexType>
-      <s:element name="ReportJobCompleted">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="wsJobId" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="ReportJobCompletedResponse">
-        <s:complexType />
-      </s:element>
-      <s:element name="CreateJob">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="userName" type="s:string" />
-            <s:element minOccurs="0" maxOccurs="1" name="parameters" type="tns:CreateJobParameters" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
       <s:element name="CreateJobResponse">
         <s:complexType>
           <s:sequence>
@@ -181,16 +125,6 @@
           <s:enumeration value="Out" />
         </s:restriction>
       </s:simpleType>
-      <s:element name="RemoveJob">
-        <s:complexType>
-          <s:sequence>
-            <s:element minOccurs="0" maxOccurs="1" name="wsJobId" type="s:string" />
-          </s:sequence>
-        </s:complexType>
-      </s:element>
-      <s:element name="RemoveJobResponse">
-        <s:complexType />
-      </s:element>
       <s:element name="GetWebServiceSetting">
         <s:complexType>
           <s:sequence>
@@ -239,8 +173,98 @@
           <s:element minOccurs="0" maxOccurs="1" name="Message" type="s:string" />
         </s:sequence>
       </s:complexType>
+      <s:element name="GetWebServiceStatus">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetWebServiceStatusResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetWebServiceStatusResult" type="tns:WebServiceStatus" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="WebServiceStatus">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="Version" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="BuildDate" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="ExtendedStatistics" type="s:string" />
+          <s:element minOccurs="1" maxOccurs="1" name="LogErrorCount" type="s:int" />
+          <s:element minOccurs="1" maxOccurs="1" name="LogWarningCount" type="s:int" />
+          <s:element minOccurs="0" maxOccurs="1" name="CallbackThrottlingCache" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="RegisterJob">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="parameters" type="tns:CreateJobParameters" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="RegisterJobResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="RegisterJobResult" type="tns:RegisteredWebServiceJob" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:complexType name="RegisteredWebServiceJob">
+        <s:sequence>
+          <s:element minOccurs="0" maxOccurs="1" name="WSJobId" type="s:string" />
+          <s:element minOccurs="0" maxOccurs="1" name="DestinationFolder" type="s:string" />
+        </s:sequence>
+      </s:complexType>
+      <s:element name="ReportJobCompleted">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="authenticationCode" type="s:string" />
+            <s:element minOccurs="0" maxOccurs="1" name="wsJobId" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="ReportJobCompletedResponse">
+        <s:complexType />
+      </s:element>
+      <s:element name="RemoveJob">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="wsJobId" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="RemoveJobResponse">
+        <s:complexType />
+      </s:element>
     </s:schema>
   </wsdl:types>
+  <wsdl:message name="CreateJobSoapIn">
+    <wsdl:part name="parameters" element="tns:CreateJob" />
+  </wsdl:message>
+  <wsdl:message name="CreateJobSoapOut">
+    <wsdl:part name="parameters" element="tns:CreateJobResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetJobResultSoapIn">
+    <wsdl:part name="parameters" element="tns:GetJobResult" />
+  </wsdl:message>
+  <wsdl:message name="GetJobResultSoapOut">
+    <wsdl:part name="parameters" element="tns:GetJobResultResponse" />
+  </wsdl:message>
+  <wsdl:message name="GetWebServiceSettingSoapIn">
+    <wsdl:part name="parameters" element="tns:GetWebServiceSetting" />
+  </wsdl:message>
+  <wsdl:message name="GetWebServiceSettingSoapOut">
+    <wsdl:part name="parameters" element="tns:GetWebServiceSettingResponse" />
+  </wsdl:message>
+  <wsdl:message name="TestCallbackSoapIn">
+    <wsdl:part name="parameters" element="tns:TestCallback" />
+  </wsdl:message>
+  <wsdl:message name="TestCallbackSoapOut">
+    <wsdl:part name="parameters" element="tns:TestCallbackResponse" />
+  </wsdl:message>
   <wsdl:message name="GetWebServiceStatusSoapIn">
     <wsdl:part name="parameters" element="tns:GetWebServiceStatus" />
   </wsdl:message>
@@ -259,37 +283,33 @@
   <wsdl:message name="ReportJobCompletedSoapOut">
     <wsdl:part name="parameters" element="tns:ReportJobCompletedResponse" />
   </wsdl:message>
-  <wsdl:message name="CreateJobSoapIn">
-    <wsdl:part name="parameters" element="tns:CreateJob" />
-  </wsdl:message>
-  <wsdl:message name="CreateJobSoapOut">
-    <wsdl:part name="parameters" element="tns:CreateJobResponse" />
-  </wsdl:message>
-  <wsdl:message name="GetJobResultSoapIn">
-    <wsdl:part name="parameters" element="tns:GetJobResult" />
-  </wsdl:message>
-  <wsdl:message name="GetJobResultSoapOut">
-    <wsdl:part name="parameters" element="tns:GetJobResultResponse" />
-  </wsdl:message>
   <wsdl:message name="RemoveJobSoapIn">
     <wsdl:part name="parameters" element="tns:RemoveJob" />
   </wsdl:message>
   <wsdl:message name="RemoveJobSoapOut">
     <wsdl:part name="parameters" element="tns:RemoveJobResponse" />
   </wsdl:message>
-  <wsdl:message name="GetWebServiceSettingSoapIn">
-    <wsdl:part name="parameters" element="tns:GetWebServiceSetting" />
-  </wsdl:message>
-  <wsdl:message name="GetWebServiceSettingSoapOut">
-    <wsdl:part name="parameters" element="tns:GetWebServiceSettingResponse" />
-  </wsdl:message>
-  <wsdl:message name="TestCallbackSoapIn">
-    <wsdl:part name="parameters" element="tns:TestCallback" />
-  </wsdl:message>
-  <wsdl:message name="TestCallbackSoapOut">
-    <wsdl:part name="parameters" element="tns:TestCallbackResponse" />
-  </wsdl:message>
   <wsdl:portType name="ToolboxCoDeSoap">
+    <wsdl:operation name="CreateJob">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Creates a CoDe job via the web service interface. If a callback address is provided CoDe will notify the user as soon as the job is finished.</wsdl:documentation>
+      <wsdl:input message="tns:CreateJobSoapIn" />
+      <wsdl:output message="tns:CreateJobSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetJobResult">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves information about a CoDe job. The converted files are included if requested.</wsdl:documentation>
+      <wsdl:input message="tns:GetJobResultSoapIn" />
+      <wsdl:output message="tns:GetJobResultSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="GetWebServiceSetting">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Returns the value of the specified configuration setting.</wsdl:documentation>
+      <wsdl:input message="tns:GetWebServiceSettingSoapIn" />
+      <wsdl:output message="tns:GetWebServiceSettingSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="TestCallback">
+      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Test method for developers. Executes a callback and returns the result.</wsdl:documentation>
+      <wsdl:input message="tns:TestCallbackSoapIn" />
+      <wsdl:output message="tns:TestCallbackSoapOut" />
+    </wsdl:operation>
     <wsdl:operation name="GetWebServiceStatus">
       <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Used internally by CoDe to retrieve status information about the web service.</wsdl:documentation>
       <wsdl:input message="tns:GetWebServiceStatusSoapIn" />
@@ -305,34 +325,50 @@
       <wsdl:input message="tns:ReportJobCompletedSoapIn" />
       <wsdl:output message="tns:ReportJobCompletedSoapOut" />
     </wsdl:operation>
-    <wsdl:operation name="CreateJob">
-      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Creates a CoDe job via the web service interface. If a callback address is provided CoDe will notify the user as soon as the job is finished.</wsdl:documentation>
-      <wsdl:input message="tns:CreateJobSoapIn" />
-      <wsdl:output message="tns:CreateJobSoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="GetJobResult">
-      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Retrieves information about a CoDe job. The converted files are included if requested.</wsdl:documentation>
-      <wsdl:input message="tns:GetJobResultSoapIn" />
-      <wsdl:output message="tns:GetJobResultSoapOut" />
-    </wsdl:operation>
     <wsdl:operation name="RemoveJob">
       <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Instructs the web service to remove the given job from the server. Call this method after you retrieved the converted files.</wsdl:documentation>
       <wsdl:input message="tns:RemoveJobSoapIn" />
       <wsdl:output message="tns:RemoveJobSoapOut" />
     </wsdl:operation>
-    <wsdl:operation name="GetWebServiceSetting">
-      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Returns the value of the specified configuration setting.</wsdl:documentation>
-      <wsdl:input message="tns:GetWebServiceSettingSoapIn" />
-      <wsdl:output message="tns:GetWebServiceSettingSoapOut" />
-    </wsdl:operation>
-    <wsdl:operation name="TestCallback">
-      <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">Test method for developers. Executes a callback and returns the result.</wsdl:documentation>
-      <wsdl:input message="tns:TestCallbackSoapIn" />
-      <wsdl:output message="tns:TestCallbackSoapOut" />
-    </wsdl:operation>
   </wsdl:portType>
   <wsdl:binding name="ToolboxCoDeSoap" type="tns:ToolboxCoDeSoap">
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="CreateJob">
+      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/CreateJob" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetJobResult">
+      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetJobResult" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetWebServiceSetting">
+      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceSetting" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="TestCallback">
+      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/TestCallback" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="GetWebServiceStatus">
       <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceStatus" style="document" />
       <wsdl:input>
@@ -360,44 +396,8 @@
         <soap:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="CreateJob">
-      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/CreateJob" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetJobResult">
-      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetJobResult" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
     <wsdl:operation name="RemoveJob">
       <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/RemoveJob" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetWebServiceSetting">
-      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceSetting" style="document" />
-      <wsdl:input>
-        <soap:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="TestCallback">
-      <soap:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/TestCallback" style="document" />
       <wsdl:input>
         <soap:body use="literal" />
       </wsdl:input>
@@ -408,6 +408,42 @@
   </wsdl:binding>
   <wsdl:binding name="ToolboxCoDeSoap12" type="tns:ToolboxCoDeSoap">
     <soap12:binding transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="CreateJob">
+      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/CreateJob" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetJobResult">
+      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetJobResult" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetWebServiceSetting">
+      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceSetting" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="TestCallback">
+      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/TestCallback" style="document" />
+      <wsdl:input>
+        <soap12:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap12:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
     <wsdl:operation name="GetWebServiceStatus">
       <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceStatus" style="document" />
       <wsdl:input>
@@ -435,44 +471,8 @@
         <soap12:body use="literal" />
       </wsdl:output>
     </wsdl:operation>
-    <wsdl:operation name="CreateJob">
-      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/CreateJob" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetJobResult">
-      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetJobResult" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
     <wsdl:operation name="RemoveJob">
       <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/RemoveJob" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="GetWebServiceSetting">
-      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/GetWebServiceSetting" style="document" />
-      <wsdl:input>
-        <soap12:body use="literal" />
-      </wsdl:input>
-      <wsdl:output>
-        <soap12:body use="literal" />
-      </wsdl:output>
-    </wsdl:operation>
-    <wsdl:operation name="TestCallback">
-      <soap12:operation soapAction="http://ec.europa.eu/digit/toolboxcode/v3.0/TestCallback" style="document" />
       <wsdl:input>
         <soap12:body use="literal" />
       </wsdl:input>
@@ -484,10 +484,10 @@
   <wsdl:service name="ToolboxCoDe">
     <wsdl:documentation xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">This Web Service is an interface to the CoDe conversion platform. CoDe is a family of conversion services brought to you by DIGIT.</wsdl:documentation>
     <wsdl:port name="ToolboxCoDeSoap" binding="tns:ToolboxCoDeSoap">
-      <soap:address location="http://s-code-ws01.net1.cec.eu.int/toolboxcode.eval.ws/ToolboxCoDe.asmx" />
+      <soap:address location="http://intragate.acceptance.ec.europa.eu/codews.toolbox/ToolboxCoDe.asmx" />
     </wsdl:port>
     <wsdl:port name="ToolboxCoDeSoap12" binding="tns:ToolboxCoDeSoap12">
-      <soap12:address location="http://s-code-ws01.net1.cec.eu.int/toolboxcode.eval.ws/ToolboxCoDe.asmx" />
+      <soap12:address location="http://intragate.acceptance.ec.europa.eu/codews.toolbox/ToolboxCoDe.asmx" />
     </wsdl:port>
   </wsdl:service>
 </wsdl:definitions>

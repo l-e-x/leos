@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -61,8 +61,8 @@ internal class AnnexRepositoryImpl(
         return leosRepository.deleteDocumentById(id)
     }
 
-    override fun findAnnexVersions(id: String): List<Annex> {
+    override fun findAnnexVersions(id: String, fetchContent: Boolean): List<Annex> {
         logger.debug { "Finding Annex versions... [id=$id]" }
-        return leosRepository.findDocumentVersionsById(id, Annex::class)
+        return leosRepository.findDocumentVersionsById(id, Annex::class, fetchContent)
     }
 }

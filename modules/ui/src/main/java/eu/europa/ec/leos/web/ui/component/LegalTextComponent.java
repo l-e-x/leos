@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.web.ui.component;
 
 import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.StyleSheet;
 import com.vaadin.event.ShortcutAction;
 import com.vaadin.event.ShortcutAction.KeyCode;
@@ -26,13 +27,14 @@ import com.vaadin.ui.Button.ClickEvent;
 import com.vaadin.ui.Button.ClickListener;
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
+import eu.europa.ec.leos.ui.event.StateChangeEvent;
 import eu.europa.ec.leos.ui.extension.*;
 import eu.europa.ec.leos.ui.model.VersionType;
-import eu.europa.ec.leos.web.event.component.SplitPositionEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.ShowTimeLineWindowEvent;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
+import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
@@ -51,16 +53,27 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
+    private ConfigurationHelper cfgHelper;
     private LeosDisplayField docContent;
     private Label versionLabel;
-    private Button textRefreshNote;
     private Registration shortcutSearchReplace;
     
+    private Button legalTextMajorVersionButton;
+    private Button legalTextImportButton;
+    private Button textRefreshNote;
+    private Button textRefreshButton;
+    private Button userGuidanceButton;
+    private SearchAndReplaceComponent searchAndReplaceComponent;
+
+    protected LeosEditorExtension leosEditorExtension;
+    protected ActionManagerExtension actionManagerExtension;
+    
     @SuppressWarnings("serial")
-    public LegalTextComponent(final EventBus eventBus, final MessageHelper messageHelper) {
+    public LegalTextComponent(final EventBus eventBus, final MessageHelper messageHelper, ConfigurationHelper cfgHelper) {
 
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
+        this.cfgHelper  = cfgHelper;
 
         setSizeFull();
         VerticalLayout legalTextlayout = new VerticalLayout();
@@ -79,11 +92,13 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
     @Override
     public void attach() {
         super.attach();
+        eventBus.register(this);
     }
     
     @Override
     public void detach() {
         super.detach();
+        eventBus.unregister(this);
         removeReplaceAllShortcutListener();
     }
     
@@ -100,27 +115,20 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         toolsLayout.setWidth(LEOS_RELATIVE_FULL_WDT);
         toolsLayout.addStyleName("leos-viewdoc-padbar-both");
 
-        // create legal text slider button
-        final Button legalTextRightSlideButton = legalTextRightSliderButton();
-        toolsLayout.addComponent(legalTextRightSlideButton);
-        toolsLayout.setComponentAlignment(legalTextRightSlideButton, Alignment.MIDDLE_LEFT);
-
         final Button timeLineButton = buildTimeLineButton();
         toolsLayout.addComponent(timeLineButton);
         toolsLayout.setComponentAlignment(timeLineButton, Alignment.MIDDLE_LEFT);
 
         //create legal text major version button
-        final Button legalTextMajorVersionButton = buildLegalTextMajorVersionButton();
+        legalTextMajorVersionButton = buildLegalTextMajorVersionButton();
         toolsLayout.addComponent(legalTextMajorVersionButton);
         toolsLayout.setComponentAlignment(legalTextMajorVersionButton, Alignment.MIDDLE_LEFT);
                 
         // create oj importer button        
-        final Button legalTextImporterButton = buildLegalTextImporterButton();
-        toolsLayout.addComponent(legalTextImporterButton);
-        toolsLayout.setComponentAlignment(legalTextImporterButton, Alignment.MIDDLE_LEFT);
+        legalTextImportButton = buildLegalTextImporterButton();
+        toolsLayout.addComponent(legalTextImportButton);
+        toolsLayout.setComponentAlignment(legalTextImportButton, Alignment.MIDDLE_LEFT);
         
-        // create legal text slider button
-        final Button legalTextLeftSlideButton = legalTextLeftSliderButton();
 
         // create toolbar spacer label to push components to the sides
         versionLabel = new Label();
@@ -141,62 +149,15 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         toolsLayout.addComponent(guidanceButton);
         toolsLayout.setComponentAlignment(guidanceButton, Alignment.MIDDLE_RIGHT);
 
-        // create comments button
-        final Button commentsButton = legalTextCommentsButton();
-        toolsLayout.addComponent(commentsButton);
-        toolsLayout.setComponentAlignment(commentsButton, Alignment.MIDDLE_RIGHT);
-
         //add search and replace popup view
         toolsLayout.addComponent(buildSearchAndReplacePopup());
         
         // create text refresh button
-        final Button textRefreshButton = legalTextRefreshButton();
+        textRefreshButton = legalTextRefreshButton();
         toolsLayout.addComponent(textRefreshButton);
         toolsLayout.setComponentAlignment(textRefreshButton, Alignment.MIDDLE_RIGHT);
 
-        // add toc expand button last
-        toolsLayout.addComponent(legalTextLeftSlideButton);
-        toolsLayout.setComponentAlignment(legalTextLeftSlideButton, Alignment.MIDDLE_RIGHT);
-
         return toolsLayout;
-    }
-
-    // create legal text slider button
-    private Button legalTextLeftSliderButton() {
-        VaadinIcons legalTextSliderIcon = VaadinIcons.CARET_SQUARE_LEFT_O;
-
-        final Button legalTextSliderButton = new Button();
-        legalTextSliderButton.setIcon(legalTextSliderIcon);
-        legalTextSliderButton.setData(SplitPositionEvent.MoveDirection.LEFT);
-        legalTextSliderButton.setStyleName("link");
-        legalTextSliderButton.addStyleName("leos-toolbar-button");
-        legalTextSliderButton.addClickListener(new ClickListener() {
-            @Override
-            public void buttonClick(ClickEvent event) {
-                eventBus.post(new SplitPositionEvent((SplitPositionEvent.MoveDirection) event.getButton().getData(), LegalTextComponent.this));
-            }
-        });
-
-        return legalTextSliderButton;
-    }
-
-    // create legal text slider button
-    private Button legalTextRightSliderButton() {
-        VaadinIcons legalTextSliderIcon = VaadinIcons.CARET_SQUARE_RIGHT_O;
-
-        final Button legalTextSliderButton = new Button();
-        legalTextSliderButton.setIcon(legalTextSliderIcon);
-        legalTextSliderButton.setData(SplitPositionEvent.MoveDirection.RIGHT);
-        legalTextSliderButton.setStyleName("link");
-        legalTextSliderButton.addStyleName("leos-toolbar-button");
-        legalTextSliderButton.addClickListener(new ClickListener() {
-            @Override
-            public void buttonClick(ClickEvent event) {
-                eventBus.post(new SplitPositionEvent((SplitPositionEvent.MoveDirection) event.getButton().getData(), LegalTextComponent.this));
-            }
-        });
-
-        return legalTextSliderButton;
     }
 
     // create text refresh button
@@ -206,7 +167,7 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         textRefreshButton.setCaptionAsHtml(true);
         textRefreshButton.setIcon(VaadinIcons.REFRESH);
         textRefreshButton.setStyleName("link");
-        textRefreshButton.addStyleName("leos-dimmed-button");
+        textRefreshButton.addStyleName("leos-toolbar-button");
         textRefreshButton.addClickListener(new ClickListener() {
             private static final long serialVersionUID = 3714441703159576377L;
 
@@ -222,7 +183,7 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
 
     // create comments button
     private Button userGuidanceButton() {
-        Button userGuidanceButton = new Button();
+        userGuidanceButton = new Button();
         userGuidanceButton.setData(false); // user Guidance is true in start
         userGuidanceButton.setDescription(messageHelper.getMessage("leos.button.tooltip.show.guidance"));
         userGuidanceButton.addStyleName("link leos-toolbar-button");
@@ -241,35 +202,6 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
                     : messageHelper.getMessage("leos.button.tooltip.show.guidance")); // disabled
         });
         return userGuidanceButton;
-    }
-
-    // create comments button
-    private Button legalTextCommentsButton() {
-        final Button commentsButton = new Button();
-        commentsButton.setId("documentComments");
-        commentsButton.setDescription(messageHelper.getMessage("document.tab.legal.button.comments.tip.show"));
-        commentsButton.setIcon(VaadinIcons.COMMENT_ELLIPSIS_O);
-        commentsButton.setStyleName("link");
-        commentsButton.setData(false);
-        commentsButton.addClickListener(new ClickListener() {
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public void buttonClick(ClickEvent event) {
-                commentsButton.setData(! (Boolean)commentsButton.getData());
-                if((Boolean)commentsButton.getData()) {
-                    commentsButton.setDescription(messageHelper.getMessage("document.tab.legal.button.comments.tip.hide"));
-                    commentsButton.setIcon(VaadinIcons.COMMENT_ELLIPSIS);
-                }
-                else{
-                    commentsButton.setDescription(messageHelper.getMessage("document.tab.legal.button.comments.tip.show"));
-                    commentsButton.setIcon(VaadinIcons.COMMENT_ELLIPSIS_O);
-                }
-                eventBus.post(new LegalTextCommentToggleEvent());
-            }
-        });
-
-        return commentsButton;
     }
 
     // create text refresh button
@@ -319,7 +251,7 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         majorVersionButton.setCaptionAsHtml(true);
         majorVersionButton.setIcon(VaadinIcons.BOOKMARK);
         majorVersionButton.setStyleName("link");
-        majorVersionButton.addStyleName("leos-dimmed-button");
+        majorVersionButton.addStyleName("leos-toolbar-button");
         majorVersionButton.addClickListener(event -> eventBus.post(new ShowMajorVersionWindowEvent()));
         return majorVersionButton;
     }
@@ -330,13 +262,14 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         importerButton.setCaptionAsHtml(true);
         importerButton.setIcon(VaadinIcons.ARROW_CIRCLE_DOWN);
         importerButton.setStyleName("link");
-        importerButton.addStyleName("leos-dimmed-button");
+        importerButton.addStyleName("leos-toolbar-button");
         importerButton.addClickListener(event -> eventBus.post(new ShowImportWindowEvent()));
         return importerButton;
     }
 
     private SearchAndReplaceComponent buildSearchAndReplacePopup() {
-        SearchAndReplaceComponent searchAndReplaceComponent = new SearchAndReplaceComponent(messageHelper, eventBus);
+        searchAndReplaceComponent = new SearchAndReplaceComponent(messageHelper, eventBus);
+        searchAndReplaceComponent.setDescription(messageHelper.getMessage("document.search.minimized.description"), ContentMode.HTML);
         shortcutSearchReplace = searchAndReplaceComponent.addShortcutListener(new ShortcutListener("ReplaceAll", KeyCode.R, new int[]{ShortcutAction.ModifierKey.CTRL}) {
             private static final long serialVersionUID = 1L;
 
@@ -360,15 +293,15 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
         docContent = new LeosDisplayField();
         docContent.setSizeFull();
         docContent.setStyleName("leos-doc-content");
+        docContent.setId("docContainer");
 
         // create content extensions
         new MathJaxExtension<>(docContent);
         new SliderPinsExtension<>(docContent, getSelectorStyleMap());
-        new LeosEditorExtension<>(docContent, eventBus);
-        new LegalTextCommentsExtension<>(docContent, eventBus);
-        new ActionManagerExtension<>(docContent);
         new UserGuidanceExtension<>(docContent, eventBus);
         new RefToLinkExtension<>(docContent);
+        new AnnotateExtension<>(docContent, eventBus, cfgHelper);
+        
         return docContent;
     }
     private Map<String, String> getSelectorStyleMap(){
@@ -380,7 +313,7 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
     public void setDocumentVersionInfo(VersionInfoVO versionInfoVO) {
         String versionType = versionInfoVO.isMajor() ? VersionType.MAJOR.getVersionType() : 
                                     VersionType.MINOR.getVersionType();
-        this.versionLabel.setValue(messageHelper.getMessage("document.version.caption", versionInfoVO.getDocumentVersion(), versionType, versionInfoVO.getLastModifiedBy(), versionInfoVO.getDg(), versionInfoVO.getLastModificationInstant()));
+        this.versionLabel.setValue(messageHelper.getMessage("document.version.caption", versionInfoVO.getDocumentVersion(), versionType, versionInfoVO.getLastModifiedBy(), versionInfoVO.getEntity(), versionInfoVO.getLastModificationInstant()));
     }
 
     public void populateContent(String docContentText) {
@@ -392,11 +325,20 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
                 "</div>";
         docContent.setValue(docContentText + seed);
 
-        docContent.addStyleName(LeosCategory.BILL.name().toLowerCase());
-
         textRefreshNote.setVisible(false);
     }
 
+    @Subscribe
+    public void handleElementState(StateChangeEvent event) {
+        if(event.getState() != null) {
+            legalTextMajorVersionButton.setEnabled(event.getState().isState());
+            legalTextImportButton.setEnabled(event.getState().isState());
+            textRefreshNote.setEnabled(event.getState().isState());
+            textRefreshButton.setEnabled(event.getState().isState());
+            searchAndReplaceComponent.setEnabled(event.getState().isState());
+        }
+    }
+    
     @Override
     public float getDefaultPaneWidth(int numberOfFeatures) {
         float featureWidth=0f;
@@ -405,9 +347,24 @@ public class LegalTextComponent extends CustomComponent implements ContentPane {
                 featureWidth=100f;
                 break;
             default:
-                featureWidth = 50f;
+                featureWidth = 57.5f;
                 break;
         }//end switch
         return featureWidth;
+    }
+
+    public void setPermissions(boolean enableUpdate) {
+        legalTextMajorVersionButton.setVisible(enableUpdate);
+        legalTextImportButton.setVisible(enableUpdate);
+        searchAndReplaceComponent.setVisible(enableUpdate);
+        // add extensions only if the user has the permission.
+        if(enableUpdate) {
+            if(leosEditorExtension == null) {
+                leosEditorExtension = new LeosEditorExtension<>(docContent, eventBus);
+            }
+            if(actionManagerExtension == null) {
+                actionManagerExtension = new ActionManagerExtension<>(docContent);
+            }
+        }
     }
 }

@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -17,51 +17,72 @@
         border-collapse: collapse;
         border-color: grey;
         empty-cells: show;
-        margin-left: auto; 
+        margin-left: auto;
         margin-right: auto;
-        aknp {
-            display:block;
+        display: table;
+        aknP,
+        p {
+            display: block;
         }
-    }
-    table:not([border]) {
-        * > td, th {
-            border: 1px solid grey;
+        & > caption {
+            display: table-caption;
+            text-align: center;
         }
-        * > tr:first-child th, tr:first-child td {
-            border-top: 1px solid black;
+
+        & {
+            * > td, th {
+                border: 1px solid grey;
+            }
+            * > tr:first-child th, tr:first-child td {
+                border-top: 1px solid black;
+            }
+            * > tr:last-child th, tr:last-child td {
+                border-bottom: 1px solid black;
+            }
+            * > tr td:first-child, tr th:first-child {
+                border-left: 1px solid black;
+            }
+            * > tr td:last-child, tr th:last-child {
+                border-right: 1px solid black;
+            }
         }
-        * > tr:last-child th, tr:last-child td {
-            border-bottom: 1px solid black;
+
+        & > tr {
+            display: table-row;
+            &:first-child { // for XML styling
+                display: table-header-group;
+                font-weight: bold;
+            }
         }
-        * > tr td:first-child, tr th:first-child {
-            border-left: 1px solid black;
+
+        td, th {
+            // extra spacing for improved readability
+            display: table-cell;
+            & > aknP,
+            & > p { //for XML styling
+                padding: 5px;
+            }
         }
-        *> tr td:last-child, tr th:last-child {
-            border-right: 1px solid black;
-        }
-    }
-    td, th {
-        // extra spacing for improved readability
-        padding: 5px;
     }
 }
 
 %tableMargin {
     margin-top: 12pt;
-    margin-bottom: 12pt;    
-}    
+    margin-bottom: 12pt;
+}
 
 //--------------------------------XML table-----------------------------------/
 
 %xmlTable {
     @extend %table;
 }
+
 //--------------------------------Editor table--------------------------------/
 
 %editorTable {
     table p[data-akn-name="aknParagraph"] {
         @extend %simpleText;
-        padding:0;
-    }     
-}    
+    }
+}
+
 //--------------------------------Showblock table-----------------------------/

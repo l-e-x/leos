@@ -1,0 +1,38 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<div class="moderation-banner"
+     ng-if="vm.isHiddenOrFlagged()"
+     ng-class="{'is-flagged': vm.flagCount() > 0,
+                'is-hidden': vm.isHidden(),
+                'is-reply': vm.isReply()}">
+  <span ng-if="vm.flagCount() > 0 && !vm.isHidden()">
+    Flagged for review x{{ vm.flagCount() }}
+  </span>
+  <span ng-if="vm.isHidden()">
+    Hidden from users. Flagged x{{ vm.flagCount() }}
+  </span>
+  <span class="u-stretch"></span>
+  <button ng-if="!vm.isHidden()"
+          ng-click="vm.hideAnnotation()"
+          title="Hide this annotation from non-moderators">
+    Hide
+  </button>
+  <button ng-if="vm.isHidden()"
+          ng-click="vm.unhideAnnotation()"
+          title="Make this annotation visible to everyone">
+    Unhide
+  </button>
+</div>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure id="leosServer" class="org.eclipse.jetty.server.Server">
+    <Call name="setProperty" class="java.lang.System">
+        <Arg>org.eclipse.jetty.annotations.maxWait</Arg>
+        <Arg>120</Arg>
+    </Call>
+</Configure>

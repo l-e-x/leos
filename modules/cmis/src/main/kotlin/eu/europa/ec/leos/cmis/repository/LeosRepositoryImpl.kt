@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -50,7 +50,8 @@ internal class LeosRepositoryImpl(
         var doc: Document? = null
         val time = measureTimeMillis {
             val properties = mutableMapOf<String, Any>(PropertyIds.NAME to name)
-            properties.putAll(metadata.toCmisProperties())
+            // we filter the empty values as it will crash if we set empty props when creating the doc in the cmis side.
+            properties.putAll(metadata.toCmisProperties().filterValues { it !=""})
             properties.put(CmisProperties.COLLABORATORS.id, listOf(getAccessRecord(securityContext.user.login, LeosAuthority.OWNER)))
             doc = cmisRepository.createDocumentFromSource(templateId, path, properties)
         }
@@ -122,26 +123,26 @@ internal class LeosRepositoryImpl(
         return doc?.toLeosDocument(type) ?: throw IllegalArgumentException("Document not found! [path=$path, name=$name]")
     }
 
-    override fun <D : LeosDocument> findDocumentsByParentPath(path: String, type: KClass<out D>): List<D> {
+    override fun <D : LeosDocument> findDocumentsByParentPath(path: String, type: KClass<out D>, descendants: Boolean, fetchContent: Boolean): List<D> {
         logger.trace { "Finding documents by parent path... [path=$path, type=${type.simpleName}]" }
         var docs: List<Document>? = null
         val time = measureTimeMillis {
             val primaryType = CmisMapper.cmisPrimaryType(type)
             val categories = CmisMapper.cmisCategories(type)
-            docs = cmisRepository.findDocumentsByParentPath(path, primaryType, categories)
+            docs = cmisRepository.findDocumentsByParentPath(path, primaryType, categories, descendants)
         }
         logger.trace { "CMIS Repository document search took $time milliseconds." }
-        return docs?.map { it.toLeosDocument(type) } ?: emptyList()
+        return docs?.map { it.toLeosDocument(type, fetchContent) } ?: emptyList()
     }
 
-    override fun <D : LeosDocument> findDocumentVersionsById(id: String, type: KClass<out D>): List<D> {
+    override fun <D : LeosDocument> findDocumentVersionsById(id: String, type: KClass<out D>, fetchContent: Boolean): List<D> {
         logger.trace { "Finding document versions by ID... [id=$id]" }
         var docs: List<Document>? = null
         val time = measureTimeMillis {
             docs = cmisRepository.findAllVersions(id)
         }
         logger.trace { "CMIS Repository versions search took $time milliseconds." }
-        return docs?.map { it.toLeosDocument(type) } ?: emptyList()
+        return docs?.map { it.toLeosDocument(type, fetchContent) } ?: emptyList()
     }
 
     override fun deleteDocumentById(id: String) {

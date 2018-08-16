@@ -1,0 +1,82 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<!-- top bar for the sidebar and the stream.
+!-->
+<div class="top-bar"
+  ng-class="{'top-bar--theme-clean' : vm.isThemeClean }">
+  <!-- Legacy design for top bar, as used in the stream !-->
+  <div class="top-bar__inner content" ng-if="::!vm.isSidebar">
+    <search-input
+      class="search-input"
+      query="vm.searchController.query()"
+      on-search="vm.searchController.update($query)"
+      always-expanded="true">
+    </search-input>
+    <div class="top-bar__expander"></div>
+    <login-control
+      auth="vm.auth"
+      new-style="false"
+      on-show-help-panel="vm.onShowHelpPanel()"
+      on-login="vm.onLogin()"
+      on-logout="vm.onLogout()">
+    </login-control>
+  </div>
+  <!-- New design for the top bar, as used in the sidebar.
+
+       The inner div is styled with 'content' to center it in
+       the stream view.
+  !-->
+  <div class="top-bar__inner content" ng-if="::vm.isSidebar">
+    <group-list class="group-list" auth="vm.auth"></group-list>
+    <div class="top-bar__expander"></div>
+    <a class="top-bar__apply-update-btn"
+       ng-if="vm.pendingUpdateCount > 0"
+       ng-click="vm.onApplyPendingUpdates()"
+       h-tooltip
+       tooltip-direction="up"
+       aria-label="Show {{vm.pendingUpdateCount}} new/updated annotation(s)">
+       <svg-icon class="top-bar__apply-icon" name="'refresh'"></svg-icon>
+    </a>
+    <search-input
+      class="search-input"
+      query="vm.searchController.query()"
+      on-search="vm.searchController.update($query)"
+      title="Filter the annotation list">
+    </search-input>
+    <sort-dropdown
+      sort-keys-available="vm.sortKeysAvailable"
+      sort-key="vm.sortKey"
+      on-change-sort-key="vm.onChangeSortKey({sortKey: sortKey})">
+    </sort-dropdown>
+    <!-- LEOS Changes: Remove share and user button
+    <a class="top-bar__btn"
+       ng-click="vm.onSharePage()"
+       ng-if="vm.showSharePageButton()"
+       title="Share this page">
+      <i class="h-icon-annotation-share"></i>
+    </a>
+    <login-control
+      class="login-control"
+      auth="vm.auth"
+      new-style="true"
+      on-show-help-panel="vm.onShowHelpPanel()"
+      on-login="vm.onLogin()"
+      on-logout="vm.onLogout()"
+      on-sign-up="vm.onSignUp()">
+    </login-control>
+    LEOS Changes: End -->
+  </div>
+</div>

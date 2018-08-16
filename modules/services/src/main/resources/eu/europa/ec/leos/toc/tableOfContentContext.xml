@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:task="http://www.springframework.org/schema/task"
+       xmlns:cache="http://www.springframework.org/schema/cache"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+            http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
+            http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
+	
+	
+	<!-- Rules configuration for ANNEX TOC-->
+
+    <bean id="ANXPREFACE" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="preface"/>
+    </bean>
+
+    <bean id="ANXBODY" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="mainBody" />
+    </bean>
+
+    <bean id="ANXPART" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="part"/>
+    </bean>
+
+    <bean id="ANXTITLE" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="title"/>
+    </bean>
+    
+    <bean id="ANXCHAPTER" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="chapter"/>
+    </bean>
+
+    <bean id="ANXSECTION" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="section"/>
+    </bean>
+    
+    <bean id="ANXDIVISION" class="eu.europa.ec.leos.vo.toctype.AnnexTocItemType" factory-method="fromName">
+        <constructor-arg type="java.lang.String" value="division"/>
+    </bean>
+
+    
+    <!-- Rules configuration for BILL TOC-->
+    
+    <bean id="BODY" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="BODY" />
+    </bean>
+
+    <bean id="PREFACE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="PREFACE"/>
+    </bean>
+    <bean id="PREAMBLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="PREAMBLE"/>
+    </bean>
+    <bean id="CITATIONS" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="CITATIONS"/>
+    </bean>
+    <bean id="RECITALS" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="RECITALS"/>
+    </bean>
+    <bean id="PART" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="PART"/>
+    </bean>
+    <bean id="CHAPTER" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="CHAPTER"/>
+    </bean>
+    <bean id="TITLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="TITLE"/>
+    </bean>
+    <bean id="SECTION" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="SECTION"/>
+    </bean>
+    <bean id="ARTICLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="ARTICLE"/>
+    </bean>
+    <bean id="CONCLUSIONS" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
+        <constructor-arg type="java.lang.String" value="CONCLUSIONS"/>
+    </bean>
+
+    <bean class="eu.europa.ec.leos.services.content.toc.TocRulesServiceImpl">
+        <property name="defaultRules">
+            <map>
+                <entry>
+                    <key> 
+                        <ref bean="ANXPREFACE"/>
+                    </key>
+                    <list/>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXBODY"/>
+                    </key>
+                    <list>
+                        <ref bean="ANXPART"/>
+                        <ref bean="ANXTITLE"/>
+                        <ref bean="ANXCHAPTER"/>
+                        <ref bean="ANXSECTION"/>
+                        <ref bean="ANXDIVISION"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXPART"/>
+                    </key>
+                    <list>
+                        <ref bean="ANXPART"/> <!-- not a child  -->
+                        <ref bean="ANXTITLE"/>
+                        <ref bean="ANXCHAPTER"/>
+                        <ref bean="ANXSECTION"/>
+                        <ref bean="ANXDIVISION"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXTITLE"/>
+                    </key>
+                    <list>
+                        <ref bean="ANXTITLE"/> <!-- not a child  -->
+                        <ref bean="ANXCHAPTER"/>
+                        <ref bean="ANXSECTION"/>
+                        <ref bean="ANXDIVISION"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXCHAPTER"/>
+                    </key>
+                    <list>
+                        <ref bean="ANXCHAPTER"/> <!-- not a child  -->
+                        <ref bean="ANXSECTION"/>
+                        <ref bean="ANXDIVISION"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXSECTION"/>
+                    </key>
+                    <list>
+                        <ref bean="ANXSECTION"/> <!-- not a child  -->
+                        <ref bean="ANXDIVISION"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ANXDIVISION"/>
+                    </key>
+                    <list>                      
+                        <ref bean="ANXDIVISION"/> <!-- DIVISION is not allowed to have child elements but should be allowed to drop elements on it
+                                                     which will be added as siblings-->
+                    </list>
+                </entry>
+                 <entry>
+                    <key> 
+                        <ref bean="PREFACE"/>
+                    </key>
+                    <list/>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="PREAMBLE"/>
+                    </key>
+                    <list/>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="CITATIONS"/>
+                    </key>
+                    <list/>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="RECITALS"/>
+                    </key>
+                    <list/>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="BODY"/>
+                    </key>
+                    <list>
+                        <ref bean="PART"/>
+                        <ref bean="TITLE"/>
+                        <ref bean="CHAPTER"/>
+                        <ref bean="SECTION"/>
+                        <ref bean="ARTICLE"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="PART"/>
+                    </key>
+                    <list>
+                        <ref bean="PART"/> <!-- not a child  -->
+                        <ref bean="TITLE"/>
+                        <ref bean="CHAPTER"/>
+                        <ref bean="SECTION"/>
+                        <ref bean="ARTICLE"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="TITLE"/>
+                    </key>
+                    <list>
+                        <ref bean="TITLE"/> <!-- not a child  -->
+                        <ref bean="CHAPTER"/>
+                        <ref bean="SECTION"/>
+                        <ref bean="ARTICLE"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="CHAPTER"/>
+                    </key>
+                    <list>
+                        <ref bean="CHAPTER"/> <!-- not a child  -->
+                        <ref bean="SECTION"/>
+                        <ref bean="ARTICLE"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="SECTION"/>
+                    </key>
+                    <list>
+                        <ref bean="SECTION"/> <!-- not a child  -->
+                        <ref bean="ARTICLE"/>
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="ARTICLE"/>
+                    </key>
+                    <list>                      
+                        <ref bean="ARTICLE"/> <!-- Article is not allowed to have child elements but should be allowed to drop elements on it
+                                                     which will be added as siblings-->
+                    </list>
+                </entry>
+                <entry>
+                    <key> 
+                        <ref bean="CONCLUSIONS"/>
+                    </key>
+                    <list/>
+                </entry>
+            </map>
+        </property>
+    </bean>
+   
+    
+</beans>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,9 +28,15 @@ public class XmlNodeConfigHelper {
 
     private static final Map<LeosCategory, Map<String, XmlNodeConfig>> All_CONFIG_MAP = new HashMap<>();
 
+    public static final String DOC_LANGUAGE = "docLanguage";
+    public static final String DOC_TEMPLATE = "docTemplate";
+    public static final String DOC_SPECIFIC_TEMPLATE = "docSpecificTemplate";
+
+    public static final String DOC_REF_META = "docRef";
     public static final String DOC_PURPOSE_META = "docPurposeMeta";
     public static final String DOC_STAGE_META = "docStageMeta";
     public static final String DOC_TYPE_META = "docTypeMeta";
+    
 
     public static final String DOC_PURPOSE_COVER = "docPurposeCover";
     public static final String DOC_STAGE_COVER = "docStageCover";
@@ -60,7 +66,7 @@ public class XmlNodeConfigHelper {
     private static Map<String, XmlNodeConfig> createProposalConfig() {
         Map<String, XmlNodeConfig> proposalConfigMap = new HashMap<>();
 
-        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(4);
+        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(8);
         metadataConfig.put(DOC_STAGE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docstage", "leos:docStage"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
@@ -70,6 +76,14 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(DOC_PURPOSE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docPurpose", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docpurpose", "leos:docPurpose"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
+        metadataConfig.put(DOC_REF_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:ref", true, Collections.EMPTY_LIST));
+        metadataConfig.put(DOC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:template", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_template", "leos:template"))));
+        metadataConfig.put(DOC_SPECIFIC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docTemplate", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_docTemplate", "leos:docTemplate"))));
+        metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
+        Collections.EMPTY_LIST));
+
         proposalConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -92,7 +106,7 @@ public class XmlNodeConfigHelper {
     private static Map<String, XmlNodeConfig> createBillConfig() {
         Map<String, XmlNodeConfig> billConfigMap = new HashMap<>();
 
-        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(4);
+        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(8);
         metadataConfig.put(DOC_STAGE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docstage", "leos:docStage"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
@@ -102,6 +116,13 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(DOC_PURPOSE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docPurpose", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docpurpose", "leos:docPurpose"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
+        metadataConfig.put(DOC_REF_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:ref", true, Collections.EMPTY_LIST));
+        metadataConfig.put(DOC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:template", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_template", "leos:template"))));
+        metadataConfig.put(DOC_SPECIFIC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docTemplate", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_docTemplate", "leos:docTemplate"))));
+        metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
+                Collections.EMPTY_LIST));        
         billConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -132,7 +153,7 @@ public class XmlNodeConfigHelper {
     private static Map<String, XmlNodeConfig> createMemorandumConfig() {
         Map<String, XmlNodeConfig> memorandumConfigMap = new HashMap<>();
 
-        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(4);
+        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(8);
         metadataConfig.put(DOC_STAGE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docstage", "leos:docStage"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
@@ -142,6 +163,13 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(DOC_PURPOSE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docPurpose", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docpurpose", "leos:docPurpose"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
+        metadataConfig.put(DOC_REF_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:ref", true, Collections.EMPTY_LIST));
+        metadataConfig.put(DOC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:template", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_template", "leos:template"))));
+        metadataConfig.put(DOC_SPECIFIC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docTemplate", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_docTemplate", "leos:docTemplate"))));
+        metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
+                Collections.EMPTY_LIST));                
         memorandumConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -166,7 +194,7 @@ public class XmlNodeConfigHelper {
     private static Map<String, XmlNodeConfig> createAnnexConfig() {
         Map<String, XmlNodeConfig> annexConfigMap = new HashMap<>();
 
-        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(8);
+        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(16);
         metadataConfig.put(DOC_STAGE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docstage", "leos:docStage"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
@@ -176,6 +204,13 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(DOC_PURPOSE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docPurpose", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docpurpose", "leos:docPurpose"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
+        metadataConfig.put(DOC_REF_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:ref", true, Collections.EMPTY_LIST));
+        metadataConfig.put(DOC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:template", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_template", "leos:template"))));
+        metadataConfig.put(DOC_SPECIFIC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docTemplate", true,
+                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary_docTemplate", "leos:docTemplate"))));
+        metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
+                Collections.EMPTY_LIST)); 
 
         metadataConfig.put(ANNEX_INDEX_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:annexIndex", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__annexIndex", "leos:annexIndex"),
@@ -188,7 +223,7 @@ public class XmlNodeConfigHelper {
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
         annexConfigMap.putAll(metadataConfig);
 
-        final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
+        final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(8);
         coverPageConfig.put(DOC_STAGE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("GUID", "cover_docstage", "docStage"))));
         coverPageConfig.put(DOC_TYPE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docType", true,
@@ -217,7 +252,7 @@ public class XmlNodeConfigHelper {
     public Map<String, XmlNodeConfig> getConfig(LeosCategory category) {
         Map<String, XmlNodeConfig> config = All_CONFIG_MAP.get(category);
         if (config == null) {
-            throw new UnsupportedOperationException("There is no configuraiton present for category " + category);
+            throw new UnsupportedOperationException("There is no configuration present for category " + category);
         }
         return config;
     }
@@ -248,9 +283,15 @@ public class XmlNodeConfigHelper {
 
     public static Map<String, String> createValueMap(LeosMetadata.AnnexMetadata metadata) {
         Map<String, String> keyValueMap = new HashMap<>();
+
         keyValueMap.put(DOC_STAGE_META, metadata.getStage());
         keyValueMap.put(DOC_TYPE_META, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_META, metadata.getPurpose());
+        keyValueMap.put(DOC_LANGUAGE, metadata.getLanguage());
+        keyValueMap.put(DOC_TEMPLATE, metadata.getTemplate());
+        keyValueMap.put(DOC_SPECIFIC_TEMPLATE, metadata.getDocTemplate());
+        keyValueMap.put(DOC_REF_META, metadata.getRef());
+
         keyValueMap.put(ANNEX_INDEX_META, Integer.toString(metadata.getIndex()));
         keyValueMap.put(ANNEX_NUMBER_META, metadata.getNumber());
         keyValueMap.put(ANNEX_TITLE_META, metadata.getTitle());
@@ -268,9 +309,14 @@ public class XmlNodeConfigHelper {
 
     public static Map<String, String> createValueMap(LeosMetadata.ProposalMetadata metadata) {
         Map<String, String> keyValueMap = new HashMap<>();
+        
         keyValueMap.put(DOC_STAGE_META, metadata.getStage());
         keyValueMap.put(DOC_TYPE_META, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_META, metadata.getPurpose());
+        keyValueMap.put(DOC_LANGUAGE, metadata.getLanguage());
+        keyValueMap.put(DOC_TEMPLATE, metadata.getTemplate());
+        keyValueMap.put(DOC_SPECIFIC_TEMPLATE, metadata.getDocTemplate());
+        keyValueMap.put(DOC_REF_META, metadata.getRef());
 
         keyValueMap.put(DOC_STAGE_COVER, metadata.getStage());
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());
@@ -281,9 +327,14 @@ public class XmlNodeConfigHelper {
 
     public static Map<String, String> createValueMap(LeosMetadata.BillMetadata metadata) {
         Map<String, String> keyValueMap = new HashMap<>();
+
         keyValueMap.put(DOC_STAGE_META, metadata.getStage());
         keyValueMap.put(DOC_TYPE_META, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_META, metadata.getPurpose());
+        keyValueMap.put(DOC_LANGUAGE, metadata.getLanguage());
+        keyValueMap.put(DOC_TEMPLATE, metadata.getTemplate());
+        keyValueMap.put(DOC_SPECIFIC_TEMPLATE, metadata.getDocTemplate());
+        keyValueMap.put(DOC_REF_META, metadata.getRef());
 
         keyValueMap.put(DOC_STAGE_COVER, metadata.getStage());
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());
@@ -298,9 +349,14 @@ public class XmlNodeConfigHelper {
 
     public static Map<String, String> createValueMap(LeosMetadata.MemorandumMetadata metadata) {
         Map<String, String> keyValueMap = new HashMap<>();
+
         keyValueMap.put(DOC_STAGE_META, metadata.getStage());
         keyValueMap.put(DOC_TYPE_META, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_META, metadata.getPurpose());
+        keyValueMap.put(DOC_LANGUAGE, metadata.getLanguage());
+        keyValueMap.put(DOC_TEMPLATE, metadata.getTemplate());
+        keyValueMap.put(DOC_SPECIFIC_TEMPLATE, metadata.getDocTemplate());
+        keyValueMap.put(DOC_REF_META, metadata.getRef());
 
         keyValueMap.put(DOC_STAGE_COVER, metadata.getStage());
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());

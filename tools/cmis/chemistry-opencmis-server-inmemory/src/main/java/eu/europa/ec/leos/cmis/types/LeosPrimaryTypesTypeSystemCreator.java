@@ -35,6 +35,7 @@ public class LeosPrimaryTypesTypeSystemCreator implements TypeCreator {
                         LeosPropertyDefinition.LEOS_LANGUAGE,
                         LeosPropertyDefinition.LEOS_TITLE,
                         LeosPropertyDefinition.LEOS_COLLABORATORS,
+                        LeosPropertyDefinition.LEOS_METADATA_REF,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TEMPLATE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_STAGE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TYPE,

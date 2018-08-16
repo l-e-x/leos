@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -63,10 +63,32 @@ define(function contentScrollerModule(require) {
         }
     }
 
+    function _scrollToMarkedElement(elementId) {
+        var $markedContainer = $(".leos-marked-content");
+        if($markedContainer.length) {
+            var $docContainer = $(".leos-doc-content");
+            var docElement = document.getElementById(elementId);
+            var markedElement = document.getElementById("marked-" + elementId);
+            $markedContainer.animate({
+                scrollTop: _calculateMarkedElementPosition(docElement, markedElement, $docContainer.get(0), $markedContainer.get(0))
+            }, 500, "swing");
+        }
+    }
+
+    function _calculateMarkedElementPosition(docElement, markedElement, docContainer, markedContainer) {
+        var docElementPosition = docElement.getBoundingClientRect().top - docContainer.getBoundingClientRect().top;
+        var markedElementPosition = markedElement.getBoundingClientRect().top - markedContainer.getBoundingClientRect().top;
+        var elementNewPosition = markedContainer.scrollTop + markedElementPosition - docElementPosition;
+
+        return elementNewPosition;
+    }
+    
     //Exposing this function to used only for cases where modules are not available
     LEOS.scrollTo = _scrollTo;
+    LEOS.scrollToMarkedElement = _scrollToMarkedElement;
 
     return {
-        scrollTo : _scrollTo
+        scrollTo : _scrollTo,
+        scrollToMarkedElement: _scrollToMarkedElement
     };
 });

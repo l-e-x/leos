@@ -41,75 +41,24 @@
 
 
 <#macro akomaNtoso>
-<akomaNtoso id="akomaNtoso">
-    <#recurse/>
+<akomaNtoso id="${getLeosRef(.node)}">
+   <#recurse/>
 </akomaNtoso>
 </#macro>
-<#-----------------------------------------------------------------------------
- AKN xml tags. Necessary while using 'fallback' in other templates
------------------------------------------------------------------------------->
-<#macro blockContainer>
-    <@@element/>
-</#macro>
 
-<#macro recitals>
-    <@@element/>
-</#macro>
-
-<#macro recital>
-    <@@element/>
-</#macro>
-
-<#macro citations>
-    <@@element/>
-</#macro>
-
-<#macro article>
-    <@@element/>
-</#macro>
-
-<#macro clause>
-    <@@element/>
-</#macro>
-
-<#-----------------------------------------------------------------------------
- Below handlers decide how pages are generated
------------------------------------------------------------------------------->
 <#macro bill>
-    <@generateWithPages .node/>
+    <#local nodeName=.node?node_name>
+    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>>
 </#macro>
 
 <#macro doc>
-    <@generateWithPages .node/>
-</#macro>
-
-<#macro generateWithPages node>
-<${.node?node_name}${xmlFtl.handleAttributes(.node.@@)?no_esc}><#t>
-    <#if .node.coverPage??>
-        <#visit .node.coverPage><#t>
-    </#if>
-    <div class="page" id="contentPageWrapperId"><#t>
-        <#list .node?children as child>
-            <#if (child?node_name != 'coverPage')>
-                <#visit child><#t>
-            </#if>
-        </#list>
-        <@printAuthorialNotes/>
-    </div><#t>
-</${.node?node_name}><#t>
+    <#local nodeName=.node?node_name>
+    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>>
 </#macro>
 
 <#-----------------------------------------------------------------------------
  AKN cover page specific handlers
 ------------------------------------------------------------------------------>
-<#macro coverPage>
-<div class="page" id="coverPageWrapperId">
-    <coverPage${handleAttributes(.node.@@)?no_esc}>
-        <#recurse>
-    </coverPage>
-</div>
-</#macro>
-
 <#macro container>
     <#local language = (.node["@name"][0]!'') == 'language'>
     <#if (language)>
@@ -123,13 +72,13 @@
 ------------------------------------------------------------------------------>
 <#macro authorialNote>
 	<#assign authorialNoteList = authorialNoteList + [.node]>
-    <#local marker=.node.@marker[0]!'*'>
-    <#local noteText=.node.@@text?trim>
     <#local noteId=.node.@GUID[0]!''>
     <#if (noteId?length gt 0)>
-        <authorialNote id="${noteId}" data-tooltip="${noteText}" onClick="LEOS.scrollTo('endNote_${noteId}')">${marker}</authorialNote><#t>
+        <authorialNote${handleAttributes(.node.@@)?no_esc} onClick="LEOS.scrollTo('endNote_${noteId}')"><#t>
+        <#recurse><#t>
+        </authorialNote><#t>
     <#else>
-    	<authorialNote data-tooltip="${noteText}">${marker}</authorialNote><#t>
+    	<authorialNote${handleAttributes(.node.@@)?no_esc}><#recurse></authorialNote><#t>
     </#if>
 </#macro>
 
@@ -138,7 +87,7 @@ Cross Reference handler
 ------------------------------------------------------------------------------>
 <#macro ref>
     <#local refId=.node.@href[0]!''>
-    <ref ${.node.@@attributes_markup?no_esc} onClick="LEOS.scrollTo('${refId}')"><#recurse></ref><#t>
+    <ref${handleAttributes(.node.@@)?no_esc} onClick="LEOS.scrollTo('${refId}')"><#recurse></ref><#t>
 </#macro>
 
 <#-- AKN end-of-line handler -->
@@ -202,4 +151,9 @@ Cross Reference handler
         </#list>
     </#if>
     <#return str>
+</#function>
+
+<#function getLeosRef node auto_esc=false>
+    <#assign refNode = .node["//leos:ref"]>
+    <#return refNode?has_content?then(refNode.@@text, 'akomaNtoso')>
 </#function>

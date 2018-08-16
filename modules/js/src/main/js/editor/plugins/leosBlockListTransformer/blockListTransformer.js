@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,6 +20,9 @@ define(function blockListTransformer(require) {
     var DATA_AKN_NUM = "data-akn-num";
     var DATA_AKN_NUM_ID = "data-akn-num-id";
     var DATA_AKN_MP_ID = "data-akn-mp-id";
+    var DATA_NUM_ORIGIN = "data-num-origin";
+    var DATA_MP_ORIGIN = "data-mp-origin";
+    var DATA_ORIGIN = "data-origin";
 
     // Checks if an element is a text element or an inline element
     function _isTextOrInlineElement(element) {
@@ -42,6 +45,10 @@ define(function blockListTransformer(require) {
                 attrs: [{
                     from: DATA_AKN_MP_ID,
                     to: "GUID",
+                    action: "passAttributeTransformer"
+                },{
+                    from: DATA_MP_ORIGIN,
+                    to: "leos:origin",
                     action: "passAttributeTransformer"
                 }]
             });
@@ -77,7 +84,8 @@ define(function blockListTransformer(require) {
             elementName = element.name;
         } else if (element instanceof CKEDITOR.htmlParser.text) {
             elementName = "text";
-
+        } else {
+            elementName = "unknown";
         }
         return elementName;
     };
@@ -129,6 +137,10 @@ define(function blockListTransformer(require) {
                                             from: "GUID",
                                             to: "id",
                                             action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_ORIGIN,
+                                            action: "passAttributeTransformer"
                                         }]
                                     }]);
                                 } else if(rootElementsWithNumForAknRegExp.test(path)) {
@@ -137,6 +149,10 @@ define(function blockListTransformer(require) {
                                         attrs: [{
                                             from: "GUID",
                                             to: DATA_AKN_NUM_ID,
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_NUM_ORIGIN,
                                             action: "passAttributeTransformer"
                                         }]
                                     });
@@ -151,6 +167,10 @@ define(function blockListTransformer(require) {
                                         attrs: [{
                                             from: "GUID",
                                             to: DATA_AKN_MP_ID,
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            from: "leos:origin",
+                                            to: DATA_MP_ORIGIN,
                                             action: "passAttributeTransformer"
                                         }]
                                     });
@@ -177,12 +197,20 @@ define(function blockListTransformer(require) {
                                             from: "id",
                                             to: "GUID",
                                             action: "passAttributeTransformer"
+                                        },{
+                                            from: DATA_ORIGIN,
+                                            to: "leos:origin",
+                                            action: "passAttributeTransformer"
                                         }]
                                     }, {
                                         toPath: rootElementsWithNumPathForAkn,
                                         attrs: [{
                                             from: DATA_AKN_NUM_ID,
                                             to: "GUID",
+                                            action: "passAttributeTransformer"
+                                        },{
+                                            from: DATA_NUM_ORIGIN,
+                                            to: "leos:origin",
                                             action: "passAttributeTransformer"
                                         }]
                                     }, {

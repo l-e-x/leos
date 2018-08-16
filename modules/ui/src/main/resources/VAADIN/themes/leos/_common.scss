@@ -14,6 +14,10 @@
 //global variables
 $WHITE:#FFFFFF;
 $GREY:#EEEEEE;
+$DARK_GREY: #808080;
+$DARK_SLATE_GREY: #474747;
+$GREEN_COLOR:#2c9720;
+$RED_COLOR:#ed473b;
 
 $MAIN_BLUE:#0066A5;         //Navigation Blue
 $HEADER_BLUE:#0065A2;
@@ -42,4 +46,9 @@ $G_BROWN_COLOR:#ee7c08;
 //for usages by vaadin-icons addon
 .Vaadin-Icons {
     font-family: 'Vaadin-Icons';
+}
+
+//To add on input prompt of vaadin text field component
+.v-textfield[class*="prompt"] {
+    font-style: italic;
 }

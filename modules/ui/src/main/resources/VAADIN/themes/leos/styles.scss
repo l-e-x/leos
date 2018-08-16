@@ -29,6 +29,8 @@
 @import "scss/component/annexView";
 @import "scss/component/timeLine";
 @import "scss/component/import";
+@import "scss/component/wizard";
+@import "scss/component/tableOfContent";
 
 .leos {
     @include addons;
@@ -48,4 +50,6 @@
     @include annexView;
     @include timeLine;
     @include import;
+    @include wizard;
+    @include tableOfContent;
 }

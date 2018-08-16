@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,11 +44,11 @@ public class UserServiceImplTest extends LeosTest {
         String user1Login = "smithj";
         String user1Mail = "smithj@test.com";
 
-        String dgName = "DG";
+        String entity = "Entity";
 
         String userId = "smithj";
         
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, dgName, user1Mail);
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail);
 
         when(usersClient.getUserByLogin(userId)).thenReturn(user1);
 
@@ -57,7 +57,7 @@ public class UserServiceImplTest extends LeosTest {
         assertEquals(result.getLogin(),userId);
         assertEquals(result.getId(), Long.valueOf(1));
         assertEquals(result.getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.getDg(), dgName);
+        assertEquals(result.getEntity(), entity);
     }
 
     @Test
@@ -72,12 +72,12 @@ public class UserServiceImplTest extends LeosTest {
         String user2Login = "surryp";
         String user2Mail = "surryp@test.com";
 
-        String dgName = "DG";
+        String entity = "Entity";
 
         String searchKey = "smith";
         
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, dgName, user1Mail);
-        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, dgName, user2Mail);
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail);
+        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, entity, user2Mail);
 
         String key = searchKey;
         List<User> users = new ArrayList();
@@ -94,10 +94,10 @@ public class UserServiceImplTest extends LeosTest {
         assertEquals(results.get(0).getLogin(),user1Login);
         assertEquals(results.get(0).getId(), Long.valueOf(1));
         assertEquals(results.get(0).getName(), user1LastName + " " + user1FirstName);
-        assertEquals(results.get(0).getDg(), dgName);
+        assertEquals(results.get(0).getEntity(), entity);
         assertEquals(results.get(1).getLogin(),user2Login);
         assertEquals(results.get(1).getId(), Long.valueOf(0));
         assertEquals(results.get(1).getName(), user2LastName + " " + user2FirstName);
-        assertEquals(results.get(1).getDg(), dgName);
+        assertEquals(results.get(1).getEntity(), entity);
     }
 }

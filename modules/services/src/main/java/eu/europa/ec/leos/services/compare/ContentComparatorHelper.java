@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,7 +26,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
-
+import org.jsoup.parser.Parser;
 import difflib.*;
 
 class ContentComparatorHelper {
@@ -117,10 +117,10 @@ class ContentComparatorHelper {
      */
     private List<String> contentToLines(String content) {
         List<String> listAllElements = new ArrayList<>();
-        Document doc = Jsoup.parse(content);
+        Document doc = Jsoup.parse(content, "", Parser.xmlParser());
         doc.outputSettings().indentAmount(0).prettyPrint(false);
-        Element body = doc.body();
-        List<Node> contentNodes = body.childNodes();
+        Node root = doc.root();
+        List<Node> contentNodes = root.childNodes();
         for (Node node : contentNodes) {
             if (node.getClass().isAssignableFrom(TextNode.class)) {
                 Collections.addAll(listAllElements, splitTextInWords(((TextNode) node).getWholeText()));
@@ -129,7 +129,8 @@ class ContentComparatorHelper {
                 if (TAGS_NOT_TO_SPLIT_LIST.contains(node.nodeName())) {
                     // element that must not be splited
                     if (nodeEl.tag().isSelfClosing() && nodeEl.tag().isEmpty()) {
-                        listAllElements.add(node.toString() + "</" + nodeEl.tagName() + ">");
+                        listAllElements.add("<" + node.nodeName() + ((node.attributes().size() == 0) ? "" : node.attributes().toString())
+                                + "></" + node.nodeName() + ">");
                     } else {
                         listAllElements.add(node.toString());
                     }

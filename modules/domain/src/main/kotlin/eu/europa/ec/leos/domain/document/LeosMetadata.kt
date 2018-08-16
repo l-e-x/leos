@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -23,37 +23,52 @@ sealed class LeosMetadata(
             val stage: String,
             val type: String,
             val purpose: String,
-            val docTemplate:String
+            val template:String,
+            val language:String,
+            val docTemplate:String,
+            val ref:String?
     ) : LeosMetadata(PROPOSAL) {
 
         fun withPurpose(p: String): ProposalMetadata = copy(purpose = p)
+        fun withRef(id: String): ProposalMetadata = copy(ref = id)
     }
 
     data class MemorandumMetadata(
             val stage: String,
             val type: String,
             val purpose: String,
-            val docTemplate:String
+            val template:String,
+            val language:String,
+            val docTemplate:String,
+            val ref:String?
     ) : LeosMetadata(MEMORANDUM) {
 
         fun withPurpose(p: String): MemorandumMetadata = copy(purpose = p)
+        fun withRef(id: String): MemorandumMetadata = copy(ref = id)
     }
 
     data class BillMetadata(
             val stage: String,
             val type: String,
             val purpose: String,
-            val docTemplate:String
+            val template:String,
+            val language:String,
+            val docTemplate:String,
+            val ref:String?
     ) : LeosMetadata(BILL) {
 
         fun withPurpose(p: String): BillMetadata = copy(purpose = p)
+        fun withRef(id: String): BillMetadata = copy(ref = id)
     }
 
     data class AnnexMetadata(
             val stage: String,
             val type: String,
             val purpose: String,
+            val template:String,
+            val language:String,
             val docTemplate:String,
+            val ref:String?,
             val index: Int,
             val number: String,
             val title: String
@@ -66,5 +81,7 @@ sealed class LeosMetadata(
         fun withNumber(n: String): AnnexMetadata = copy(number = n)
 
         fun withTitle(t: String): AnnexMetadata = copy(title = t)
+
+        fun withRef(id: String): AnnexMetadata = copy(ref = id)
     }
 }

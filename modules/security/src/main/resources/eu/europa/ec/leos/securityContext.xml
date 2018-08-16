@@ -18,6 +18,16 @@
     </sec:http>
 
     <bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint"/>
+    
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.springframework.security.core.context.SecurityContextHolder" />
+        <property name="targetMethod" value="setStrategyName" />
+        <property name="arguments">
+            <list>
+                <value>MODE_INHERITABLETHREADLOCAL</value>
+            </list>
+        </property>
+    </bean>
 
     <!-- J2EE pre-authentication filter is applied on any request coming via DelegatingFilterProxy -->
     <bean id="jeePreAuthenticatedFilter" class="org.springframework.security.web.authentication.preauth.j2ee.J2eePreAuthenticatedProcessingFilter">

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -123,7 +123,7 @@ interface LeosRepository {
      * @param type the type class of the document.
      * @return the list of found documents or empty.
      */
-    fun <D : LeosDocument> findDocumentsByParentPath(path: String, type: KClass<out D>): List<D>
+    fun <D : LeosDocument> findDocumentsByParentPath(path: String, type: KClass<out D>, descendants: Boolean, fetchContent: Boolean): List<D>
 
     /**
      * Finds all versions of a document with the specified characteristics.
@@ -133,7 +133,7 @@ interface LeosRepository {
      * @param type the type class of the document.
      * @return the list of found document versions or empty.
      */
-    fun <D : LeosDocument> findDocumentVersionsById(id: String, type: KClass<out D>): List<D>
+    fun <D : LeosDocument> findDocumentVersionsById(id: String, type: KClass<out D>, fetchContent: Boolean): List<D>
 
     /**
      * Deletes a document with the specified characteristics.

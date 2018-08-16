@@ -1,54 +1,121 @@
-INTRODUCTION
-================================================================================
+ABOUT LEOS
+==================================================================================================
 
-    LEOS is a software created to address the need of the European Institutions 
-to generate draft legislation in a legal XML format.
-
-    It is a legislation editor and it currently supports the drafting of the 
-'secondary' legislation of the EU law which has to be adopted under the Ordinary
-Legislative Procedure.
-
-    Therefore, it covers the writing of Proposals for Directive, Decision and 
-Regulation submitted by the Commission to the Council and the Parliament.
-
-    This Beta version is currently used for a pilot across the Commission 
-services. The main differences compared to the previous prototype version are:
--   Acts are managed as a set of elements (explanatory memorandum, legal text, 
-        annexes…) and global metadata are propagated across sub-elements
--   Improved version management, with major versions and possibility to see 
-        differences between versions
--   Import feature, enabling to import some content already published in the 
-        Official Journal of the EU
--   New security layer
--   Support of images
-
-Note that some features of the prototype were removed :
--   The locking of the edited area and the notifications mechanism have not been
-        retained because judged too cumbersome; it might come back under another
-        form
--	The pdf rendering is now delegated to a service external to the project 
--   Feedback view is removed as workflows are not part of system
-
-    A significant part of the business logic being into the code, LEOS is not 
-intended to be a generic software supporting the drafting of any kind of 
-national legislative tradition. Nevertheless, it is released Open Source as we 
-believe that some parts of it could be reused and adapted by some other Public 
-Administration having similar needs. The code is available for free under EUPL 
-licence, and the development team paid attention to organise the code in a 
-structured way to ease its reusability (modules, plugins…).
+    LEOS is a software that was created under ISA Action 2016.38 Legislation Interoperability 
+Tools - LegIT to address the need of the public administration and European Institutions to 
+generate draft legislation in a legal XML format.
     
-    We are envisaging to create an open source community on software for 
-legislation drafting, in order to share best practices, experiences, expertise, 
-and why not code!!
+    It is a legislation editor and this current prototype supports the drafting of the 'secondary' 
+legislation of the EU law which has to be adopted under the Ordinary Legislative Procedure. 
 
-Should you be interested or would you just like to share with us some 
-observations on our work, you can contact us at DIGIT-LEOS-FEEDBACK@ec.europa.eu
+    Therefore, it covers the writing of Proposals for Directive, Decision and Regulation 
+submitted by the Commission to the Council and the Parliament.
 
-The LEOS Team
+    If you want to find out more about this procedure, please read the European Parliament's 
+article.
+http://www.europarl.europa.eu/about-parliament/en/powers-and-procedures/legislative-powers
 
+    Given the high diversity of legislative traditions encountered across the Union and the 
+different levels of modernisation, it was extremely difficult to provide a universal single 
+turnkey ICT solution that adapts to each specific context.
+
+    Even if a significant part of the business logic can be found embedded in the code, we design 
+with the goal of delivering re-usable building blocks so LEOS is released Open Source as we 
+believe that some parts of it could be reused and adapted by some other Public Administration
+having similar needs.
+
+    For more information on the features please follow us on Joinup:
+https://joinup.ec.europa.eu/solution/leos-open-source-software-editing-legislation
+
+    The code is available for free under EUPL licence, and the development team paid attention to 
+organise the code in a structured way to ease its reusability (modules, plugins…).
+    For more information on the EUPL licence:
+https://joinup.ec.europa.eu/collection/eupl/licence-compatibility
+
+    The LEOS demo provided in our release comes with an example user interface that includes the logo of the European Commission. 
+This is just for demonstration purpose and please note that the logo of the European Commission may be used by third parties only if:
+-  Permission is requested and granted before the logo is used
+-  There is no likelihood of the user of the logo being confused with the European Commission
+-  It is not used in connection with objectives or activities which are incompatible with the aims and principles of the European Commission
+-  It is not used to imply or suggest unintended endorsement or promotion of the objectives and activities of the user of the logo by the European Commission
+
+    For more information please visit :
+https://ec.europa.eu/info/resources-partners/european-commission-visual-identity_en
+
+WHAT'S NEW?
+==================================================================================================
+What’s new?
+This Beta version is currently used for a pilot across the Commission services. The main 
+differences compared to the previous prototype version are:
+-  Possible to add comments & highligts using annotations
+-  Possible to add suggestions on a part of text with the feature to accept and reject 
+a suggestion
+-  Improved version management, with major versions and possibility to see differences between versions
+-  Improved table of content edition
+
+
+WHAT'S GONE?
+==================================================================================================
+Nothing this time :-)
+
+
+GET IN TOUCH
+==================================================================================================
+
+    We are envisaging to create an open source community on software for legislation drafting, 
+in order to share best practices, experiences, expertise, and why not code!!
+Should you be interested or would you just like to share with us some observations on our 
+work, you can join the conversation one legislative drafting here 
+https://joinup.ec.europa.eu/news/efficient-legislative-drafting 
+OR contact us at DIGIT-LEOS-FEEDBACK@ec.europa.eu .
+
+We are looking forward to hearing from you,
+
+The LEOS Team for LegIT ISA2 Action
 
 CHANGE LOG
-================================================================================
+==================================================================================================
+2.0.0 (LEOS-Pilot)
+------------------
+    * Updated HOWTO documentation
+    
+    * Repository Browser
+        - New upload feature
+    
+    * Proposal Viewer
+        - Improved user interface
+        - Download
+            - Styles for XML added to the downloaded file.
+    
+    * Legal Text Viewer
+        - Improved user interface
+        - Sync scrolling between edit and changes pane
+        - Improved Toc edition
+        - Internal reference auto label generation
+        - LEOS Editor
+            - Improved image plugin
+            - Context menu to update list number styles
+            - Smart break feature to identify the id attribute
+        - Validating AKN xml documents asynchronously
+    
+    * Explanatory Memorandum Viewer
+        - Improved user interface
+        - Improved Toc edition
+    
+    * Annex Viewer
+        - Improved user interface
+        - Improved Toc edition
+        - LEOS Editor
+        - New justify and centre text plugin.
+    
+    * Annotations
+        - Add comments and highlights on Legal text
+        - Provide suggestions on a part of text
+        - Accept or reject a suggestion
+    
+    * Technical improvements
+    * Bug fixes
+    * Updated dependencies (frameworks and libraries)
 
 1.0.0 (LEOS-Pilot)
 ------------------
@@ -120,9 +187,10 @@ CHANGE LOG
     * Updated user database management with roles
     * Technical improvements and enhanced user experience
     
-Note: Some features/sections which were part of the previous releases are
-    removed for e.g. Comments viewer, suggestions, document locking as they are 
-    currently being re-developed in Pilot.    
+Note that some features of the prototype were removed:
+- The locking of the edited area and the notifications mechanism have not been retained because judged too cumbersome; it might come back under another form
+- The pdf rendering is now delegated to a service external to the project 
+- Feedback view is removed
 
 3.1.0 (Prototype)
 -----------------
@@ -179,7 +247,7 @@ Note: Some features/sections which were part of the previous releases are
     * Initial joinup open source release.
     
 BUGS
-================================================================================
+==================================================================================================
     
     There might be bugs or incomplete features present in this version as pilot 
 is still under active development.

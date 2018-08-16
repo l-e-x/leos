@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -36,9 +36,6 @@ define(function aknCitationsProfileModule(require) {
     plugins.push(require("plugins/aknHtmlSuperScript/aknHtmlSuperScriptPlugin"));
     plugins.push(require("plugins/aknHtmlSubScript/aknHtmlSubScriptPlugin"));
     plugins.push(require("plugins/leosAttrHandler/leosAttrHandlerPlugin"));
-    plugins.push(require("plugins/leosHighlight/leosHighlightPlugin"));
-    plugins.push(require("plugins/leosComments/leosCommentsPlugin"));
-    plugins.push(require("plugins/leosCommentAction/leosCommentActionPlugin"));
     plugins.push(require("plugins/leosPaste/leosPastePlugin"));
     plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
     plugins.push(require("plugins/leosFloatingSpace/leosFloatingSpacePlugin"));
@@ -46,6 +43,9 @@ define(function aknCitationsProfileModule(require) {
     plugins.push(require("plugins/leosMessageBus/leosMessageBusPlugin"));
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));
     plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));
+    plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
+    plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
+    plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
     
     var pluginNames=[];
     var specificConfig={};
@@ -73,10 +73,10 @@ define(function aknCitationsProfileModule(require) {
         customConfig: "",
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath," +
-                 "clipboard,undo,pastefromword,basicstyles,enterkey," +
-                 "button,dialog,dialogui,colorbutton",
+                 "clipboard,undo,pastefromword,basicstyles,specialchar,enterkey," +
+                 "button,dialog,dialogui,widget",
         // comma-separated list of toolbar button names that must not be rendered
-        removeButtons: "Underline,Strike,TextColor",
+        removeButtons: "Underline,Strike,TextColor,PasteFromWord",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
         // disable Advanced Content Filter (allow all content)
@@ -89,9 +89,11 @@ define(function aknCitationsProfileModule(require) {
         // height of the editing area
         height : 522,
         //show toolbar on startup
-        startupFocus: true,
+        startupFocus: 'end',
         //Use native spellchecker
         disableNativeSpellChecker: false,
+        // LEOS-2887 removing tooltip title 
+        title: false,
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
@@ -103,7 +105,7 @@ define(function aknCitationsProfileModule(require) {
             groups : [ "clipboard", "undo" ]
         }, {
             name : "editing",
-            groups : [ "find", "selection" ]
+            groups : ["selection" ]
         }, {
             name : "forms"
         }, {
@@ -112,16 +114,16 @@ define(function aknCitationsProfileModule(require) {
         }, {
             name : "paragraph"
         }, {
+            name : "ref"
+        }, {
             name : "insert"
         }, {
             name : "styles"
         }, {
-            name : "colors"
-        }, {
             name : "tools"
         }, {
             name : "others"
-        }, {
+        },{
             name : "mode"
         }, {
             name : "about"

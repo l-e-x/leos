@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -21,15 +21,41 @@ $PAGE-MARGIN-VERTICAL: 2cm;
 $PAGE-MARGIN-HORIZONTAL: 2.5cm;
 
 %pageLayout {
-    .page {
-        position: relative;
+    position: relative;
+    display: block;
+    margin: 0.5cm auto;
+    width: $A4-PAGE_WIDTH;
+    min-height: $A4-PAGE_HEIGHT;
+    padding: $PAGE-MARGIN-VERTICAL $PAGE-MARGIN-HORIZONTAL;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    white-space: normal;
+    background-color: white;
+}
+
+%xmlSecondPage {
+    & > :not(coverPage) {
         display: block;
-        margin: 0.5cm auto;
-        width:      $A4-PAGE_WIDTH;
-        min-height: $A4-PAGE_HEIGHT;
-        padding:    $PAGE-MARGIN-VERTICAL $PAGE-MARGIN-HORIZONTAL;
-        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        position:relative;
+        width: $A4-PAGE_WIDTH;
         white-space: normal;
         background-color: white;
+        padding-left: $PAGE-MARGIN-HORIZONTAL;
+        padding-right: $PAGE-MARGIN-HORIZONTAL;
+        margin-left: auto;
+        margin-right: auto;
+        box-shadow: 0 20px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    & > preface {
+        padding-top: $PAGE-MARGIN-VERTICAL;
+    }
+
+    & > :last-child {
+        padding-bottom: $PAGE-MARGIN-VERTICAL;
+        margin-bottom: 0.5cm;
+    }
+
+    & > mainBody{
+        min-height: calc(#{$A4-PAGE_HEIGHT} - 125px);
     }
 }

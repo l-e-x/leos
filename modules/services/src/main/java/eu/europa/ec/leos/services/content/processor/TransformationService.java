@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,16 +15,18 @@ package eu.europa.ec.leos.services.content.processor;
 
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.security.LeosPermission;
 
 import java.io.InputStream;
+import java.util.List;
 
 public interface TransformationService {
 
-    String toEditableXml(InputStream documentStream, String contextPath, LeosCategory category);
+    String toEditableXml(InputStream documentStream, String contextPath, LeosCategory category, List<LeosPermission> permissions);
 
-    String toXmlFragmentWrapper(InputStream documentStream, String contextPath);
+    String toXmlFragmentWrapper(InputStream documentStream, String contextPath, List<LeosPermission> permissions);
     
-    String toImportXml(InputStream documentStream, String contextPath);
+    String toImportXml(InputStream documentStream, String contextPath, List<LeosPermission> permissions);
 
     /**
      * This methods gets the document from repository, converts it in html format
@@ -33,5 +35,5 @@ public interface TransformationService {
      * @param contextPath the base path to be used while creating HTML for resources
      * @return document String in html format
      */
-    String formatToHtml(XmlDocument versionDocument, String contextPath);
+    String formatToHtml(XmlDocument versionDocument, String contextPath, List<LeosPermission> permissions);
 }

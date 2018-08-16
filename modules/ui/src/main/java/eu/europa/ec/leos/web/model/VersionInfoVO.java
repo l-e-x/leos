@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,15 +17,15 @@ public class VersionInfoVO {
 
     String documentVersion;
     String lastModifiedBy;
-    String dg;
+    String entity;
     String lastModificationInstant;
     boolean isMajor;
 
-    public VersionInfoVO(String documentVersion, String lastModifiedBy, String dg, String lastModificationInstant, boolean isMajor) {
+    public VersionInfoVO(String documentVersion, String lastModifiedBy, String entity, String lastModificationInstant, boolean isMajor) {
         super();
         this.documentVersion = documentVersion;
         this.lastModifiedBy = lastModifiedBy;
-        this.dg = dg;
+        this.entity = entity;
         this.lastModificationInstant = lastModificationInstant;
         this.isMajor = isMajor;
     }
@@ -46,12 +46,12 @@ public class VersionInfoVO {
         this.lastModifiedBy = lastModifiedBy;
     }
     
-    public String getDg() {
-        return dg;
+    public String getEntity() {
+        return entity;
     }
     
-    public void setDg(String dg) {
-        this.dg = dg;
+    public void setEntity(String entity) {
+        this.entity = entity;
     }
     
     public String getLastModificationInstant() {

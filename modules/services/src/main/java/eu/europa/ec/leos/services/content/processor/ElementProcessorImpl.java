@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -55,5 +55,17 @@ public class ElementProcessorImpl<T extends XmlDocument> implements ElementProce
 
         byte[]  updatedXmlContent = xmlContentProcessor.deleteElementByTagNameAndId(document.getContent().get().getSource().getByteString().toByteArray(), elementDype, elementId);
         return updatedXmlContent;
+    }
+
+
+    @Override
+    public byte[] replaceTextInElement(T document, String origText, String newText, String elementId, int startOffset, int endOffset) {
+        Validate.notNull(document, "Document is required.");
+        Validate.notEmpty(origText, "Orginal Text is required");
+        Validate.notNull(elementId, "Element Id is required");
+        Validate.notNull(newText, "New Text is required");
+
+        byte[] byteXmlContent = document.getContent().get().getSource().getByteString().toByteArray();
+        return xmlContentProcessor.replaceTextInElement(byteXmlContent, origText, newText, elementId, startOffset, endOffset);
     }
 }

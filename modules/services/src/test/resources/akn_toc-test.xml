@@ -34,16 +34,6 @@
                         <section GUID="sect1">
                             <num>section-num</num>
                             <heading>section-head</heading>
-                            <subsection GUID="subsec1">
-                                <num>Subsection 1</num>
-                                <heading>subsection-head</heading>
-                                <article GUID="art1">
-                                    art 1
-                                </article>
-                            </subsection>
-                            <subsection GUID="subsec2">
-                                sub 2
-                            </subsection>
                         </section>
                         <article GUID="art2">
                             art 2

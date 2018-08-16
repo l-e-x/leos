@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>eu.europa.ec.digit.leos.pilot.annotate</groupId>
+    <artifactId>anot-client</artifactId>
+    <packaging>jar</packaging>
+
+    <parent>
+        <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+        <artifactId>annotate</artifactId>
+        <version>2.0.0</version>
+    </parent>
+
+    <name>anot-client</name>
+    <description>Annotate Client</description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>install node and yarn</id>
+                        <goals>
+                            <goal>install-node-and-yarn</goal>
+                        </goals>
+                        <phase>${execute.yarn.phase}</phase>
+                        <configuration>
+                            <nodeVersion>v8.4.0</nodeVersion>
+                            <yarnVersion>v1.2.1</yarnVersion>
+                            <installDirectory>target</installDirectory>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>yarn install</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <phase>${execute.yarn.phase}</phase>
+                        <configuration>
+                            <arguments>install --env=${build.env}</arguments>
+                            <installDirectory>target</installDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.0.2</version>
+                <executions>
+                    <execution>
+                        <id>copy-resources</id>
+                        <!-- after build copy the output -->
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/target/classes/META-INF/resources/client</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>build</directory>
+                                    <filtering>false</filtering><!-- set to true if need to replace something with filters-->
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <!--<fileset>
+                            <directory>node_modules</directory>
+                        </fileset> -->
+                        <fileset>
+                            <directory>node</directory>
+                        </fileset>
+                        <fileset>
+                            <directory>coverage</directory>
+                        </fileset>
+                        <fileset>
+                            <directory>build</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>${mycila-license-plugin.version}</version>
+                <configuration>
+                    <header>../server/src/etc/headers/NOTICE.txt</header>
+                    <headerDefinitions>
+                        <headerDefinition>../server/src/etc/headers/scss_definition.xml</headerDefinition>
+                        <headerDefinition>../server/src/etc/headers/coffee_definition.xml</headerDefinition>
+
+                    </headerDefinitions>
+                    <mapping>
+                        <java>SLASHSTAR_STYLE</java>
+                        <kt>SLASHSTAR_STYLE</kt>
+                        <scss>DOUBLESLASH_STYLE</scss>
+                    </mapping>
+                    <excludes>
+                        <exclude>**/node_modules/**</exclude>
+                        <exclude>**/coverage/**</exclude>
+                        <exclude>**/build/**</exclude>
+                        <exclude>**/src/**</exclude>
+                        <exclude>**/docs/**</exclude>
+                        <exclude>**/scripts/**</exclude>
+                        <exclude>**/js/**/*.html</exclude>
+                        <exclude>**/*.scss</exclude>
+                        <exclude>*.txt</exclude>
+                        <exclude>*</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

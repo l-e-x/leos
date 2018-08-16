@@ -1,0 +1,4 @@
+build/**
+**/vendor/**/*.js
+**/coverage/**
+docs/_build/*

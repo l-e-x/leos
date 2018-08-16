@@ -31,7 +31,9 @@
                 <TLCConcept GUID="memorandum" href="/software/leos/memorandum" showAs="Memorandum"/>
             </references>
             <proprietary source="~leos">
-                <leos:version>1.0.0</leos:version>
+                <leos:version>1.0.2</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>PR-023</leos:docTemplate>
             </proprietary>
         </meta>
         <coverPage GUID="coverpage">

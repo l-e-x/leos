@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2017 European Commission
+    Copyright 2018 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -16,9 +16,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>eu.europa.ec.leos.pilot</groupId>
+        <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>leos-modules</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>2.0.0</version>
     </parent>
 
     <artifactId>leos-security</artifactId>
@@ -26,27 +26,28 @@
 
     <dependencies>
         <dependency>
-            <groupId>eu.europa.ec.leos.pilot</groupId>
-            <artifactId>leos-model</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.leos.pilot</groupId>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
             <artifactId>leos-domain</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>eu.europa.ec.leos.pilot</groupId>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
             <artifactId>leos-integration</artifactId>
             <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+            <artifactId>leos-test-support</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
         </dependency>
         <!--Logging frameworks -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
-        <!-- Spring framework -->
-        <!-- security -->
+        <!-- Security framework -->
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-core</artifactId>
@@ -58,6 +59,10 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-config</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
         </dependency>
     </dependencies>
 </project>

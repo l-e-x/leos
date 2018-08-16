@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,16 +21,23 @@ import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
 import eu.europa.ec.leos.repository.document.BillRepository;
 import eu.europa.ec.leos.repository.store.PackageRepository;
 import eu.europa.ec.leos.services.content.processor.AttachmentProcessor;
+import eu.europa.ec.leos.services.document.util.DocumentVOProvider;
+import eu.europa.ec.leos.services.support.xml.NumberProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.services.validation.ValidationService;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.LegalTextTocItemType;
+
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -48,28 +55,33 @@ public class BillServiceImpl implements BillService {
     private final XmlContentProcessor xmlContentProcessor;
     private final XmlNodeConfigHelper xmlNodeConfigHelper;
     private final AttachmentProcessor attachmentProcessor;
+    private final ValidationService validationService;
+    private final DocumentVOProvider documentVOProvider;
+    private final NumberProcessor numberingProcessor;
 
-    BillServiceImpl(BillRepository billRepository,
-                    PackageRepository packageRepository,
-                    XmlNodeProcessor xmlNodeProcessor,
-                    XmlContentProcessor xmlContentProcessor,
-                    XmlNodeConfigHelper xmlNodeConfigHelper,
-                    AttachmentProcessor attachmentProcessor) {
+    BillServiceImpl(BillRepository billRepository, PackageRepository packageRepository,
+                    XmlNodeProcessor xmlNodeProcessor, XmlContentProcessor xmlContentProcessor,
+                    XmlNodeConfigHelper xmlNodeConfigHelper, AttachmentProcessor attachmentProcessor,
+                    ValidationService validationService, DocumentVOProvider documentVOProvider, NumberProcessor numberingProcessor) {
         this.billRepository = billRepository;
         this.packageRepository = packageRepository;
         this.xmlNodeProcessor = xmlNodeProcessor;
         this.xmlContentProcessor = xmlContentProcessor;
         this.xmlNodeConfigHelper = xmlNodeConfigHelper;
         this.attachmentProcessor = attachmentProcessor;
+        this.validationService = validationService;
+        this.documentVOProvider = documentVOProvider;
+        this.numberingProcessor = numberingProcessor;
     }
 
     @Override
-    public Bill createBill(String templateId, String path, BillMetadata metadata) {
+    public Bill createBill(String templateId, String path, BillMetadata metadata, String actionMsg, byte[] content) {
         LOG.trace("Creating Bill... [templateId={}, path={}, metadata={}]", templateId, path, metadata);
         String name = generateBillName();
+        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
         Bill bill = billRepository.createBill(templateId, path, name, metadata);
-        byte[] updatedBytes = updateDataInXml(bill, metadata);
-        return billRepository.updateBill(bill.getId(), metadata, updatedBytes, false, "Metadata updated.");
+        byte[] updatedBytes = updateDataInXml((content==null)? getContent(bill) : content, metadata);
+        return billRepository.updateBill(bill.getId(), metadata, updatedBytes, false, actionMsg);
     }
 
     @Override
@@ -79,10 +91,18 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
+    @Cacheable(value="docVersions", cacheManager = "cacheManager")
+    public Bill findBillVersion(String id) {
+        LOG.trace("Finding Bill version... [it={}]", id);
+        return billRepository.findBillById(id, false);
+    }
+
+    @Override
     public Bill findBillByPackagePath(String path) {
         LOG.trace("Finding Bill by package path... [path={}]", path);
-        // FIXME temporary workaround
-        List<Bill> docs = packageRepository.findDocumentsByPackagePath(path, Bill.class);
+        // FIXME can be improved, now we dont fetch ALL docs because it's loaded later the one needed, 
+        // this can be improved adding a page of 1 item or changing the method/query.
+        List<Bill> docs = packageRepository.findDocumentsByPackagePath(path, Bill.class,false);
         Bill bill = findBill(docs.get(0).getId());
         return bill;
     }
@@ -91,21 +111,31 @@ public class BillServiceImpl implements BillService {
     public Bill updateBill(Bill bill, byte[] updatedBillContent, String comments) {
         LOG.trace("Updating Bill Xml Content... [id={}]", bill.getId());
         final BillMetadata metadata = bill.getMetadata().getOrError(() -> "Bill metadata is required!");
-        return billRepository.updateBill(bill.getId(), metadata, updatedBillContent, false, comments);
+        bill = billRepository.updateBill(bill.getId(), metadata, updatedBillContent, false, comments); 
+        
+        //call validation on document with updated content
+        validationService.validateDocumentAsync(documentVOProvider.createDocumentVO(bill, updatedBillContent));
+        
+        return bill;
     }
 
     @Override
-    public Bill updateBill(Bill bill, BillMetadata updatedMetadata) {
+    public Bill updateBill(Bill bill, BillMetadata updatedMetadata, String actionMsg) {
         LOG.trace("Updating Bill... [id={}, updatedMetadata={}]", bill.getId(), updatedMetadata);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        byte[] updatedBytes = updateDataInXml(bill, updatedMetadata); //FIXME: Do we need latest data again??
-        bill = billRepository.updateBill(bill.getId(), updatedMetadata, updatedBytes, false, "Metadata updated.");
+        byte[] updatedBytes = updateDataInXml(getContent(bill), updatedMetadata); //FIXME: Do we need latest data again??
+        
+        bill = billRepository.updateBill(bill.getId(), updatedMetadata, updatedBytes, false, actionMsg);
+        
+        //call validation on document with updated content
+        validationService.validateDocumentAsync(documentVOProvider.createDocumentVO(bill, updatedBytes));
+        
         LOG.trace("Updated Bill ...({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return bill;
     }
 
     @Override
-    public Bill addAttachment(Bill bill, String href, String showAs) {
+    public Bill addAttachment(Bill bill, String href, String showAs, String actionMsg) {
         LOG.trace("Add attachment in bill ... [id={}, href={}]", bill.getId(), href);
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -114,14 +144,14 @@ public class BillServiceImpl implements BillService {
         byte[] updatedBytes = attachmentProcessor.addAttachmentInBill(xmlBytes, href, showAs);
 
         //save updated xml
-        bill = billRepository.updateBill(bill.getId(), bill.getMetadata().get(), updatedBytes, false, "Attachment added.");
+        bill = billRepository.updateBill(bill.getId(), bill.getMetadata().get(), updatedBytes, false, actionMsg);
 
         LOG.trace("Added attachment in Bill ...({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return bill;
     }
 
     @Override
-    public Bill removeAttachment(Bill bill, String href) {
+    public Bill removeAttachment(Bill bill, String href, String actionMsg) {
         LOG.trace("Remove attachment from bill ... [id={}, href={}]", bill.getId(), href);
         Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -130,12 +160,28 @@ public class BillServiceImpl implements BillService {
         byte[] updatedBytes = attachmentProcessor.removeAttachmentFromBill(xmlBytes, href);
 
         //save updated xml
-        bill = billRepository.updateBill(bill.getId(), bill.getMetadata().get(), updatedBytes, false, "Attachment removed.");
+        bill = billRepository.updateBill(bill.getId(), bill.getMetadata().get(), updatedBytes, false, actionMsg);
 
         LOG.trace("Removed attachment from Bill ...({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return bill;
     }
 
+    @Override
+    public Bill updateAttachments(Bill bill, HashMap<String, String> attachmentsElements, String actionMsg) {
+        LOG.trace("Update attachments in bill ... [id={}]", bill.getId());
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
+        //Do the xml update
+        byte[] xmlBytes = getContent(bill);
+        byte[] updatedBytes = attachmentProcessor.updateAttachmentsInBill(xmlBytes, attachmentsElements);
+
+        //save updated xml
+        bill = billRepository.updateBill(bill.getId(), bill.getMetadata().get(), updatedBytes, false, actionMsg);
+
+        LOG.trace("Update attachments in Bill ...({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+        return bill;
+    }
+    
     @Override
     public Bill createVersion(String id, boolean major, String comment) {
         LOG.trace("Creating Bill version... [id={}, major={}, comment={}]", id, major, comment);
@@ -149,7 +195,8 @@ public class BillServiceImpl implements BillService {
     @Override
     public List<Bill> findVersions(String id) {
         LOG.trace("Finding Bill versions... [id={}]", id);
-        return billRepository.findBillVersions(id);
+        //LEOS-2813 We have memory issues is we fetch the content of all versions.
+        return billRepository.findBillVersions(id, false);
     }
 
     @Override
@@ -159,17 +206,20 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList) {
+    public Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList, String actionMsg) {
         Validate.notNull(bill, "Bill is required");
         Validate.notNull(tocList, "Table of content list is required");
+        final BillMetadata metadata = bill.getMetadata().getOrError(() -> "Document metadata is required!");
 
         byte[] newXmlContent;
-        newXmlContent = xmlContentProcessor.createDocumentContentWithNewTocList(LegalTextTocItemType::getTocItemTypeFromName, tocList, getContent(bill));
+
+        newXmlContent = xmlContentProcessor.createDocumentContentWithNewTocList(LegalTextTocItemType::getTocItemTypeFromName, LegalTextTocItemType.BODY, tocList, getContent(bill));
         // TODO validate bytearray for being valid xml/AKN content
 
-        newXmlContent = xmlContentProcessor.renumberArticles(newXmlContent, bill.getLanguage());
+        newXmlContent = numberingProcessor.renumberArticles(newXmlContent, metadata.getLanguage());
+        newXmlContent = xmlContentProcessor.doXMLPostProcessing(newXmlContent);
 
-        return updateBill(bill, newXmlContent, "operation.toc.updated");
+        return updateBill(bill, newXmlContent, actionMsg);
     }
 
     @Override
@@ -178,18 +228,20 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public List<String> getAncestorsIdsForElementId(Bill bill, String elementId) {
+    public List<String> getAncestorsIdsForElementId(Bill bill, List<String> elementIds) {
         Validate.notNull(bill, "Bill is required");
-        Validate.notNull(elementId, "Element id is required");
-
-        return xmlContentProcessor.getAncestorsIdsForElementId(
+        Validate.notNull(elementIds, "Element id is required");
+        List<String> ancestorIds = new ArrayList<String>();
+        for(String elementId : elementIds) {
+            ancestorIds.addAll(xmlContentProcessor.getAncestorsIdsForElementId(
                 getContent(bill),
-                elementId);
+                elementId));
+        }
+        return ancestorIds;
     }
 
-    private byte[] updateDataInXml(Bill bill, BillMetadata dataObject) {
-        byte[] xmlBytes = getContent(bill);
-        byte[] updatedBytes = xmlNodeProcessor.setValuesInXml(xmlBytes, createValueMap(dataObject), xmlNodeConfigHelper.getConfig(bill.getCategory()));
+    private byte[] updateDataInXml(final byte[] content, BillMetadata dataObject) {
+        byte[] updatedBytes = xmlNodeProcessor.setValuesInXml(content, createValueMap(dataObject), xmlNodeConfigHelper.getConfig(dataObject.getCategory()));
         return xmlContentProcessor.doXMLPostProcessing(updatedBytes);
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,7 +12,7 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 /**
- * @fileOverview Handles the indentation of lists. This is a customized plugin similar to ckeditor indentList plugin. The customization is done to disable the
+ * @fileOverview Handles the indentation of lists. This is a customized plugin similar to CKEditor_4.9.2 indentList plugin. The customization is done to disable the
  * 'outdent' toolbar button for the first level list items so that it will not be possible to convert it into '<p>'.
  * Here are the main customizations:
  *     - Changed the pluginName from "indentlist" to "leosArticleIndentlist"
@@ -139,6 +139,7 @@ define(function leosArticleIndentListPluginModule(require) {
 
     function aknindentList(editor) {
         var that = this, database = this.database, context = this.context, range;
+        editor.fire("beforeAknIndentList");
 
         function indent(listNode) {
             // Our starting and ending points of the range might be inside some blocks under a list item...
@@ -191,6 +192,15 @@ define(function leosArticleIndentListPluginModule(require) {
                 // Make sure the newly created sublist get a brand-new element of the same type. (http://dev.ckeditor.com/ticket/5372)
                 if (indentOffset > 0) {
                     var listRoot = listArray[i].parent;
+                    
+					// Find previous list item which has the same indention offset as the new indention offset
+					// of current item to copy its root tag (so the proper list-style-type is used) (#842).
+					for ( var j = i - 1; j >= 0; j-- ) {
+						if ( listArray[ j ].indent === indentOffset ) {
+							listRoot = listArray[ j ].parent;
+							break;
+						}
+					}
                     listArray[i].parent = new CKEDITOR.dom.element(listRoot.getName(), listRoot.getDocument());
                 }
             }

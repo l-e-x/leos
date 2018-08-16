@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,9 +24,13 @@ val Document.proposalMetadataOption: Option<ProposalMetadata>               // F
         val stage = this.metadataStage
         val type = this.metadataType
         val purpose = this.metadataPurpose
+        val template = this.template
+        val language = this.language
         val docTemplate = this.metadataDocTemplate
-        return if ((stage != null) && (type != null) && (purpose != null) && (docTemplate != null)) {
-            Option.some(ProposalMetadata(stage, type, purpose, docTemplate))
+        val ref = this.metadataRef
+        return if ((stage != null) && (type != null) && (purpose != null) && (template != null)
+         && (language != null) && (docTemplate != null)) {
+            Option.some(ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref))
         } else {
             Option.none()
         }
@@ -37,9 +41,13 @@ val Document.memorandumMetadataOption: Option<MemorandumMetadata>           // F
         val stage = this.metadataStage
         val type = this.metadataType
         val purpose = this.metadataPurpose
+        val template = this.template
+        val language = this.language
         val docTemplate = this.metadataDocTemplate
-        return if ((stage != null) && (type != null) && (purpose != null) && (docTemplate != null)) {
-            Option.some(MemorandumMetadata(stage, type, purpose, docTemplate))
+        val ref = this.metadataRef
+        return if ((stage != null) && (type != null) && (purpose != null) && (template != null)
+         && (language != null) && (docTemplate != null)) {
+            Option.some(MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref))
         } else {
             Option.none()
         }
@@ -50,9 +58,13 @@ val Document.billMetadataOption: Option<BillMetadata>                   // FIXME
         val stage = this.metadataStage
         val type = this.metadataType
         val purpose = this.metadataPurpose
+        val template = this.template
+        val language = this.language
         val docTemplate = this.metadataDocTemplate
-        return if ((stage != null) && (type != null) && (purpose != null) && (docTemplate != null)) {
-            Option.some(BillMetadata(stage, type, purpose, docTemplate))
+        val ref = this.metadataRef
+        return if ((stage != null) && (type != null) && (purpose != null) && (template != null)
+         && (language != null) && (docTemplate != null)) {
+            Option.some(BillMetadata(stage, type, purpose, template, language, docTemplate, ref))
         } else {
             Option.none()
         }
@@ -63,13 +75,16 @@ val Document.annexMetadataOption: Option<AnnexMetadata>                     // F
         val stage = this.metadataStage
         val type = this.metadataType
         val purpose = this.metadataPurpose
+        val template = this.template
+        val language = this.language
         val docTemplate = this.metadataDocTemplate
+        val ref = this.metadataRef
         val index = this.annexIndex
         val number = this.annexNumber
         val title = this.annexTitle ?: ""
-        return if ((stage != null) && (type != null) && (purpose != null) && (docTemplate != null) &&
-                   (index != null) && (number != null)) {
-            Option.some(AnnexMetadata(stage, type, purpose, docTemplate, index, number, title))
+        return if ((stage != null) && (type != null) && (purpose != null) && (template != null)
+         && (language != null) && (docTemplate != null) && (index != null) && (number != null)) {
+            Option.some(AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title))
         } else {
             Option.none()
         }
@@ -95,3 +110,12 @@ private val Document.annexNumber: String?                               // FIXME
 
 private val Document.annexTitle: String?                                // FIXME make this property mandatory???
     get() = this.getPropertyValue<String>(ANNEX_TITLE.id)
+
+private val Document.metadataRef: String?                                   // FIXME make this property mandatory???
+    get() = this.getPropertyValue<String>(METADATA_REF.id)
+
+private val Document.template: String?
+    get() = this.getPropertyValue<String>(DOCUMENT_TEMPLATE.id)
+
+private val Document.language: String?
+    get() = this.getPropertyValue<String>(DOCUMENT_LANGUAGE.id)

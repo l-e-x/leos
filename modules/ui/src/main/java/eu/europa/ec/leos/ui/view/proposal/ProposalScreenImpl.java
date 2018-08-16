@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,21 +15,23 @@ package eu.europa.ec.leos.ui.view.proposal;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.annotations.DesignRoot;
+import com.vaadin.data.Binder;
+import com.vaadin.data.ReadOnlyHasValue;
+import com.vaadin.data.provider.ListDataProvider;
 import com.vaadin.server.*;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Link;
-import com.vaadin.ui.MenuBar;
+import com.vaadin.ui.*;
 import com.vaadin.ui.MenuBar.Command;
 import com.vaadin.ui.MenuBar.MenuItem;
 import com.vaadin.ui.declarative.Design;
-import com.vaadin.v7.data.Item;
 import com.vaadin.v7.data.Property;
 import com.vaadin.v7.data.util.BeanItem;
-import com.vaadin.v7.data.util.ObjectProperty;
-import com.vaadin.v7.ui.*;
 import eu.europa.ec.leos.domain.common.LeosAuthority;
+import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.vo.MetadataVO;
+import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.export.ExportOptions;
@@ -38,7 +40,8 @@ import eu.europa.ec.leos.web.event.view.document.OpenLegalTextEvent;
 import eu.europa.ec.leos.web.event.view.memorandum.OpenMemorandumEvent;
 import eu.europa.ec.leos.web.event.view.proposal.*;
 import eu.europa.ec.leos.web.event.window.SaveMetaDataRequestEvent;
-import eu.europa.ec.leos.web.model.*;
+import eu.europa.ec.leos.web.model.CollaboratorVO;
+import eu.europa.ec.leos.web.model.UserVO;
 import eu.europa.ec.leos.web.support.UrlBuilder;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
@@ -47,8 +50,10 @@ import eu.europa.ec.leos.web.ui.component.AnnexBlockComponent;
 import eu.europa.ec.leos.web.ui.component.EditBoxComponent;
 import eu.europa.ec.leos.web.ui.component.HeadingComponent;
 import eu.europa.ec.leos.web.ui.component.collaborators.CollaboratorsComponent;
-import eu.europa.ec.leos.web.ui.converter.LangCodeToDescriptionConverter;
+import eu.europa.ec.leos.web.ui.converter.LangCodeToDescriptionV8Converter;
 import eu.europa.ec.leos.web.ui.converter.UserLoginDisplayConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.WebApplicationContext;
 import org.vaadin.dialogs.ConfirmDialog;
@@ -56,16 +61,20 @@ import org.vaadin.dialogs.ConfirmDialog;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @SpringComponent
 @ViewScope
 @DesignRoot("ProposalScreenDesign.html")
 class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
+
+	private static final Logger LOG = LoggerFactory.getLogger(ProposalScreenImpl.class);
+
     public static SimpleDateFormat dataFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm");
     private static final long serialVersionUID = 1L;
-    
+
     private FileDownloader fileDownloader;
 
     // Top block components
@@ -82,15 +91,18 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
     protected Button closeButton;
 
     // Details
-    protected HeadingComponent detailsBlockHeading;        
-    protected NativeSelect securityLevel;    
-    protected EditBoxComponent packageTitle;    
+    protected HeadingComponent detailsBlockHeading;
+    protected NativeSelect<MetadataVO.SecurityLevel> securityLevel;
+    protected EditBoxComponent packageTitle;
     protected EditBoxComponent template;
     protected EditBoxComponent internalRef;
     protected Label proposalLanguage;
     protected CheckBox eeaRelevance;
     private boolean enableSave;
-    private BeanItem<MetadataVO> beanItem = new BeanItem<>(new MetadataVO(), MetadataVO.class);
+    private Binder<DocumentVO> legalTextBinder;
+    private Binder<DocumentVO> memorandumBinder;
+    private Binder<MetadataVO> metadataBinder;
+    private BeanItem<MetadataVO> beanItem = new BeanItem<>(new MetadataVO(), MetadataVO.class);//TODO remove
 
     // memorandum block components
     protected VerticalLayout memorandumBlock;
@@ -118,7 +130,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
     //General
     private MessageHelper messageHelper;
     private EventBus eventBus;
-    private LanguageHelper langHelper;
+    private LangCodeToDescriptionV8Converter langConverter;
     private WebApplicationContext webApplicationContext;
     private SecurityContext securityContext;
     private UserHelper userHelper;
@@ -130,7 +142,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         Design.read(this);
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
-        this.langHelper = langHelper;
+        this.langConverter = new LangCodeToDescriptionV8Converter(langHelper);
         this.webApplicationContext = webApplicationContext;
         this.securityContext = securityContext;
         this.userHelper = userHelper;
@@ -162,7 +174,6 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
     }
 
     private void initStaticData() {
-        proposalLanguage.setConverter(new LangCodeToDescriptionConverter(langHelper));
         detailsBlockHeading.setCaption(messageHelper.getMessage("proposal.block.caption.details"));
         closeButton.setDescription(messageHelper.getMessage("proposal.description.button.close"));
         closeButton.setCaption(messageHelper.getMessage("proposal.caption.button.close"));
@@ -179,30 +190,25 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         downloadProposal.setCaption(messageHelper.getMessage("proposal.caption.button.download"));
         downloadProposal.setDescription(messageHelper.getMessage("proposal.description.button.download"));
         packageTitle.setCaption(messageHelper.getMessage("proposal.caption.package.title"));
-        template.setCaption(messageHelper.getMessage("proposal.caption.template"));       
+        template.setCaption(messageHelper.getMessage("proposal.caption.template"));
         proposalLanguage.setCaption(messageHelper.getMessage("proposal.caption.language"));
         internalRef.setCaption(messageHelper.getMessage("proposal.caption.internal.ref"));
         eeaRelevance.setCaption(messageHelper.getMessage("proposal.caption.eea.relevance"));
         securityLevel.setCaption(messageHelper.getMessage("proposal.caption.security.level"));
         // handle security levels..
-        securityLevel.setNullSelectionAllowed(false);
-        securityLevel.setItemCaptionMode(AbstractSelect.ItemCaptionMode.EXPLICIT);
-        for (MetadataVO.SecurityLevel level : MetadataVO.SecurityLevel.values()) {
-            Item item = securityLevel.addItem(level);
-            securityLevel.setItemCaption(level, messageHelper.getMessage("proposal.caption.security." + level.toString().toLowerCase()));
-        }
-        securityLevel.select(MetadataVO.SecurityLevel.STANDARD);
+        securityLevel.setEmptySelectionAllowed(false);
+        securityLevel.setDataProvider(new ListDataProvider<>(Arrays.asList(MetadataVO.SecurityLevel.values())));
+        securityLevel.setItemCaptionGenerator((ItemCaptionGenerator<MetadataVO.SecurityLevel>) item ->
+                messageHelper.getMessage("proposal.caption.security." + item.toString().toLowerCase()));
 
         memorandumBlockHeading.setCaption(messageHelper.getMessage("proposal.block.caption.memorandum"));
         memorandumOpenButton.addClickListener(listener -> openMemorandum());
         memorandumOpenButton.setCaption(messageHelper.getMessage("leos.button.open"));
         memorandumLanguage.setCaption(messageHelper.getMessage("proposal.caption.language"));
-        memorandumLanguage.setConverter(new LangCodeToDescriptionConverter(langHelper));
 
         legalTextBlockHeading.setCaption(messageHelper.getMessage("proposal.block.caption.legal.text"));
         legalTextOpenButton.setCaption(messageHelper.getMessage("leos.button.open"));
         legalTextLanguage.setCaption(messageHelper.getMessage("proposal.caption.language"));
-        legalTextLanguage.setConverter(new LangCodeToDescriptionConverter(langHelper));
 
         annexesBlockHeading.addRightButton(addCreateAnnexButton());
         annexesBlockHeading.setCaption(messageHelper.getMessage("proposal.block.caption.annexes"));
@@ -235,14 +241,14 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
     }
 
     @Override
-    public void populateData(ProposalVO proposalVO) {
+    public void populateData(DocumentVO proposalVO) {
         resetBasedOnPermissions(proposalVO);
 
-        populateDetailsData(proposalVO.getMetaData());
-        populateMemorandumData(proposalVO.getExplanatoryMemorandum());
-        populateLegalTextData(proposalVO.getLegalText());
+        populateDetailsData(proposalVO.getMetadata());
+        populateMemorandumData(proposalVO.getChildDocument(LeosCategory.MEMORANDUM));
+        populateLegalTextData(proposalVO.getChildDocument(LeosCategory.BILL));
 
-        populateCollaborators(proposalVO.getCollaborators());
+        populateCollaborators(getCollaboratorVOs(userHelper::getUser, proposalVO.getCollaborators()));
         setProposalURL();
     }
 
@@ -253,8 +259,13 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
             private static final long serialVersionUID = -4584979099145066535L;
             @Override
             public boolean handleConnectorRequest(VaadinRequest request, VaadinResponse response, String path) throws IOException {
-                eventBus.post(new DownloadProposalEvent());
-                boolean result = super.handleConnectorRequest(request, response, path);
+                boolean result =false;
+				try {
+					eventBus.post(new DownloadProposalEvent());
+					result = super.handleConnectorRequest(request, response, path);
+				} catch (Exception exception) {
+					LOG.error("Error occured in download", exception.getMessage());
+				}
 
                 return result;
             }
@@ -262,7 +273,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         fileDownloader.extend(downloadProposal);
     }
 
-    private void resetBasedOnPermissions(ProposalVO proposalVO){
+    private void resetBasedOnPermissions(DocumentVO proposalVO){
         boolean enableExportToLegiswrite = securityContext.hasPermission(proposalVO, LeosPermission.CAN_PRINT_LW);
         exportProposalToLegiswrite.setVisible(enableExportToLegiswrite);
 
@@ -275,10 +286,15 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         boolean enableShare = securityContext.hasPermission(proposalVO, LeosPermission.CAN_SHARE);
         collaboratorsBlockHeading.getRightButton().setVisible(enableShare);
         collaboratorsComponent.setEnabled(enableShare);
-        
+
         //Download button should only be visible to Support or higher role 
         boolean enableDownload = securityContext.hasRole(LeosAuthority.SUPPORT);
         downloadProposal.setVisible(enableDownload);
+
+        boolean enableUpdate = securityContext.hasPermission(proposalVO, LeosPermission.CAN_UPDATE);
+        docPurpose.setEnabled(enableUpdate);
+        createAnnexButton.setVisible(enableUpdate);
+        createAnnexButton.setEnabled(enableUpdate);
     }
 
     @Override
@@ -326,15 +342,36 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
     }
 
     private void bind(BeanItem<MetadataVO> beanItem) {
-        docStage.setPropertyDataSource(beanItem.getItemProperty("docStage"));
-        docType.setPropertyDataSource(beanItem.getItemProperty("docType"));
-        docPurpose.setPropertyDataSource(beanItem.getItemProperty("docPurpose"));     
+        docPurpose.setPropertyDataSource(beanItem.getItemProperty("docPurpose"));
         packageTitle.setPropertyDataSource(beanItem.getItemProperty("packageTitle"));
         template.setPropertyDataSource(beanItem.getItemProperty("template"));
         internalRef.setPropertyDataSource(beanItem.getItemProperty("internalRef"));
-        securityLevel.setPropertyDataSource(beanItem.getItemProperty("securityLevel"));
-        proposalLanguage.setPropertyDataSource(beanItem.getItemProperty("language"));
-        eeaRelevance.setPropertyDataSource(beanItem.getItemProperty("eeaRelevance"));
+
+        metadataBinder = new Binder<>();
+        metadataBinder.forField(new ReadOnlyHasValue<>(docStage::setValue)).bind(MetadataVO::getDocStage, MetadataVO::setDocStage);
+        metadataBinder.forField(new ReadOnlyHasValue<>(docType::setValue)).bind(MetadataVO::getDocType, MetadataVO::setDocType);
+        metadataBinder.forField(eeaRelevance).bind(MetadataVO::isEeaRelevance, MetadataVO::setEeaRelevance);
+        metadataBinder.forField(securityLevel).bind(MetadataVO::getSecurityLevel, MetadataVO::setSecurityLevel);
+        metadataBinder.forField(new ReadOnlyHasValue<>(proposalLanguage::setValue))
+                .withConverter(langConverter)
+                .bind(MetadataVO::getLanguage, MetadataVO::setLanguage);
+
+        //Bind legal texts
+        legalTextBinder = new Binder<>();
+        legalTextBinder.forField(new ReadOnlyHasValue<>(legalTextLanguage::setValue))
+                .withConverter(langConverter)
+                .bind(DocumentVO::getLanguage, DocumentVO::setLanguage);
+        legalTextBinder.forField(new ReadOnlyHasValue<>(legalTextLastUpdated::setValue))
+                .bind(this::setLastUpdated, null);
+
+        //Bind memo
+        memorandumBinder = new Binder<>();
+        memorandumBinder.forField(new ReadOnlyHasValue<>(memorandumLanguage::setValue))
+                .withConverter(langConverter)
+                .bind(DocumentVO::getLanguage, DocumentVO::setLanguage);
+
+        memorandumBinder.forField(new ReadOnlyHasValue<>(memorandumLastUpdated::setValue))
+                .bind(this::setLastUpdated, null);
     }
 
     private void saveData() {
@@ -349,6 +386,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         createAnnexButton.setIcon(FontAwesome.PLUS_CIRCLE);
         createAnnexButton.setDescription(messageHelper.getMessage("proposal.description.button.create.annex"));
         createAnnexButton.addStyleName("create-annex-button");
+        createAnnexButton.setDisableOnClick(true);
         return createAnnexButton;
     }
 
@@ -362,6 +400,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
 
     private void populateDetailsData(MetadataVO metadataVO) {
         enableSave = false; //To avoid triggering save on load of data
+        metadataBinder.setBean(metadataVO);
 
         BeanItem newItem = new BeanItem<>(metadataVO, MetadataVO.class);
         if (newItem != null) {
@@ -384,8 +423,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         else {
             memorandumBlock.setVisible(true);
             memorandumBlock.setData(explanatoryMemorandum);
-            memorandumLanguage.setPropertyDataSource(new ObjectProperty(explanatoryMemorandum.getLanguage()));
-            setLastUpdated(memorandumLastUpdated, explanatoryMemorandum.getUpdatedBy(), explanatoryMemorandum.getUpdatedOn());
+            memorandumBinder.setBean(explanatoryMemorandum);
         }
     }
 
@@ -396,8 +434,7 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         else {
             legalTextBlock.setVisible(true);
             legalTextBlock.setData(legalTextVo);
-            legalTextLanguage.setPropertyDataSource(new ObjectProperty(legalTextVo.getLanguage()));
-            setLastUpdated(legalTextLastUpdated, legalTextVo.getUpdatedBy(), legalTextVo.getUpdatedOn());
+            legalTextBinder.setBean(legalTextVo);
 
             annexesLayout.removeAllComponents();
             if (legalTextVo.getChildDocuments().size() > 0) {
@@ -412,6 +449,22 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
 
     private void populateCollaborators(List<CollaboratorVO> collaborators){
         collaboratorsComponent.populateData(collaborators);
+    }
+
+    private List<CollaboratorVO> getCollaboratorVOs(Function<String, User> userConverter, Map<String, LeosAuthority> collaborators) {
+        return Collections.unmodifiableList(collaborators.entrySet().stream()
+                .map(entry -> createCollaboratorVO(entry.getKey(), entry.getValue(), userConverter))
+                .filter(option -> option.isPresent())
+                .map(option -> option.get())
+                .collect(Collectors.toList()));
+    }
+
+    private Optional<CollaboratorVO> createCollaboratorVO(String login, LeosAuthority authority, Function<String, User> converter) {
+        try {
+            return Optional.of(new CollaboratorVO(new UserVO(converter.apply(login)),authority));
+        } catch (Exception e) {
+            return Optional.empty();
+        }
     }
 
     @Override
@@ -437,8 +490,10 @@ class ProposalScreenImpl extends VerticalLayout implements ProposalScreen {
         eventBus.post(new CreateAnnexRequest());
     }
 
-    private void setLastUpdated(Label field, String lastUpdatedBy, Date lastUpdatedOn) {
-        field.setValue(messageHelper.getMessage("proposal.caption.document.lastupdated", dataFormat.format(lastUpdatedOn), new UserLoginDisplayConverter(userHelper).convertToPresentation(lastUpdatedBy, null, null)));
+    private String setLastUpdated(DocumentVO vo) {
+        return messageHelper.getMessage("proposal.caption.document.lastupdated",
+                dataFormat.format(vo.getUpdatedOn()),
+                new UserLoginDisplayConverter(userHelper).convertToPresentation(vo.getUpdatedBy(), null, null));
     }
 
     public void setDownloadStreamResource(Resource downloadResource) {

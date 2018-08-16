@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,23 +13,22 @@
  */
 package eu.europa.ec.digit.userdata;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import java.util.stream.Stream;
-
 import eu.europa.ec.digit.userdata.entities.User;
 import eu.europa.ec.digit.userdata.repositories.UserRepository;
+import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.stream.Stream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -41,12 +40,14 @@ public class ApplicationTests {
     private UserRepository userRepository;
 
     @Test
+    @Transactional(readOnly = true)
     public void test_findUsersByKey() {
         Stream<User> users = userRepository.findUsersByKey("doe");
         users.forEach(user -> LOG.debug(user.getLogin()));
     }
 
     @Test
+    @Transactional(readOnly = true)
     public void test_findBylogin() {
         User user = userRepository.findByLogin("jane");
         assertNotNull(user);
@@ -56,8 +57,9 @@ public class ApplicationTests {
     }
 
     @Test
+    @Transactional(readOnly = true)
     public void test_findAllDg() {
-        Stream<String> dgs = userRepository.findAllDg();
+        Stream<String> dgs = userRepository.findAllEntities();
         assertNotNull(dgs);
         assertEquals(dgs.count(), 2); //unique dgs from data-h2.sql
     }

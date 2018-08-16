@@ -47,6 +47,7 @@ public class LeosSecondaryTypesTypeSystemCreator implements TypeCreator {
         TypeDefinition leosMetadataSecType =
                 LeosSecondaryTypes.createLeosMetadataType(
                         LeosSecondaryTypes.CMIS_SECONDARY_TYPE,
+                        LeosPropertyDefinition.LEOS_METADATA_REF,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TEMPLATE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_STAGE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TYPE,

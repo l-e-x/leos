@@ -1,0 +1,37 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<div ng-transclude ng-if="!vm.enabled"></div>
+<div class="excerpt__container" ng-if="vm.enabled">
+  <div class="excerpt" ng-style="vm.contentStyle()">
+    <div ng-transclude></div>
+    <div ng-click="vm.expand()"
+         ng-class="vm.bottomShadowStyles()"
+         title="Show the full excerpt"></div>
+    <div class="excerpt__inline-controls"
+         ng-show="vm.showInlineControls()">
+      <span class="excerpt__toggle-link" ng-show="vm.isExpandable()">
+        … <a ng-click="vm.toggle($event)"
+            title="Show the full excerpt"
+            h-branding="accentColor, selectionFontFamily">More</a>
+      </span>
+      <span class="excerpt__toggle-link" ng-show="vm.isCollapsible()">
+        <a ng-click="vm.toggle($event)"
+            title="Show the first few lines only"
+            h-branding="accentColor, selectionFontFamily">Less</a>
+      </span>
+    </div>
+  </div>
+</div>

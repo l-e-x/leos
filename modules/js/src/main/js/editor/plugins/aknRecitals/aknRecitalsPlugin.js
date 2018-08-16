@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -27,7 +27,7 @@ define(function aknRecitalsPluginModule(require) {
     };
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
-    
+
     /*
      * Removes the initial snapshot which don't have 'recitals'('div') as top level element 
      */
@@ -48,8 +48,11 @@ define(function aknRecitalsPluginModule(require) {
             akn: "GUID",
             html: "id"
         }, {
-        	   akn: "leos:editable",
-        	   html: "data-akn-attr-editable"
+            akn: "leos:editable",
+            html: "data-akn-attr-editable"
+        }, {
+            akn: "leos:origin",
+            html: "data-origin"
         }, {
             html : ["data-akn-name", RECITALS_NAME].join("=")
         }]

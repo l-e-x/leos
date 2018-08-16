@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,7 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.TocItemType;
 
 import java.util.List;
@@ -21,6 +21,14 @@ import java.util.Map;
 import java.util.function.Function;
 
 public interface XmlContentProcessor {
+	
+	/**
+	 * @param xmlContent Pass xml which contains attribute to be evaluated
+	 * @param xPath Xpath of element to be evaluated
+	 * @param namespaceEnabled TODO
+	 * @return the value of the tag in xPath
+	 */
+	public String getElementValue(byte[] xmlContent,String xPath, boolean namespaceEnabled);
 
 	public List<String> getAncestorsIdsForElementId(byte[] xmlContent, String idAttributeValue);
     /**
@@ -56,15 +64,11 @@ public interface XmlContentProcessor {
 
     List<TableOfContentItemVO> buildTableOfContent(String startingNode, Function<String, TocItemType> getTocItemType, byte[] xmlContent);
 
-    byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, List<TableOfContentItemVO> tableOfContentItemVOs, byte[] contentStream);
+    byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, TocItemType type, List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content);
 
     byte[] replaceElementsWithTagName(byte[] xmlContent, String tagName, String newContent);
 
     byte[] appendElementToTag(byte[] xmlContent, String tagName, String newContent);
-
-    byte[] renumberArticles(byte[] xmlContent, String language);
-    
-    byte[] renumberRecitals(byte[] xmlContent);
     
     byte[] injectTagIdsinXML(byte[] xmlContent) ;
     
@@ -99,9 +103,10 @@ public interface XmlContentProcessor {
     /**
      * returns a map with new article id as key and the updated content.
      * @param content
+     * @param elementType
      * @return updated content
      */
-    String doImportedElementPreProcessing(String content);
+    String doImportedElementPreProcessing(String content, String elementType);
     
     /**
      * returns the id of the last element based on the xPath present in the xml
@@ -110,4 +115,44 @@ public interface XmlContentProcessor {
      * @return elementId
      */
     String getElementIdByPath(byte[] xmlContent, String xPath);
+
+    /**
+     * searches the {@param origText} in the element {@param elementId} and replace it with the {@param newText}.
+     * @param byteXmlContent
+     * @param origText
+     * @param elementId
+     * @param startOffset
+     * @param endOffset
+     * @param newText
+     * @return: On success returns updated content. On failure throws exception.
+     */
+    byte[] replaceTextInElement(byte[] xmlContent, String origText, String newText, String elementId, int startOffset, int endOffset);
+
+    /**
+     * adding and attribute {@param attributeName} on all children of an XML element {@param parentTag}.
+     * @param xmlContent
+     * @param parentTag
+     * @param attributeName
+     * @param attributeValue
+     * @return: On success returns updated content. On failure throws exception.
+     */
+    byte[] setOriginAttribute(byte[] xmlContent, String parentTag) throws Exception;
+
+    /**
+     *  get the parent element id given a child id attribute value
+     * @param xmlContent
+     * @param tagName
+     * @param idAttributeValue
+     * @return
+     */
+    String getParentElement(byte[] xmlContent, String tagName, String idAttributeValue);
+
+    /**
+     * get the parent element id given a child id attribute value
+     * @param xmlContent
+     * @param tagName
+     * @param idAttributeValue
+     * @return
+     */
+    String getParentElementId(byte[] xmlContent, String tagName, String idAttributeValue);
 }

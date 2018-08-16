@@ -19,6 +19,7 @@
 4. Document toolbar provides quick links to document level features.
    Compare two version - see 'Compare two versions' section.
    Save as major version - see 'Major minor version' section
+   Import from Official Journal
    Show user guidance - display guidance linked to a template (if any)
    Show comments - display all document comments has floating elements
    Search and replace - this will let you search and replace text in the entire

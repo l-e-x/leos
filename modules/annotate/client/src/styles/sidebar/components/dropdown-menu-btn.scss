@@ -1,0 +1,101 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@import './primary-action-btn';
+
+// the primary action button for a form
+.dropdown-menu-btn {
+  $text-color: $color-seashell;
+  $default-background-color: $color-dove-gray;
+  $hover-background-color: $color-mine-shaft;
+  $h-padding: 9px;
+  $height: 35px;
+  $border-radius: 2px;
+  $arrow-indicator-width: 26px;
+
+  height: $height;
+  position: relative;
+
+  &__btn {
+    @include primary-action-btn;
+
+    // the label occupies the entire space of the button and
+    // shows a darker state on hover
+    width: 100%;
+    height: 100%;
+    text-align: left;
+    padding-left: $h-padding;
+    padding-right: $arrow-indicator-width + 8px;
+  }
+
+  // dropdown arrow which reveals the button's associated menu
+  // when clicked
+  &__dropdown-arrow {
+    position: absolute;
+    right: 0px;
+    top: 0px;
+
+    height: 100%;
+    width: $arrow-indicator-width;
+    padding-left: 0px;
+    padding-right: $h-padding;
+    margin-left: 8px;
+
+    border: none;
+    background-color: transparent;
+    border-top-right-radius: $border-radius;
+    border-bottom-right-radius: $border-radius;
+
+    &:hover {
+      background-color: $hover-background-color;
+    }
+
+    &:hover &-separator {
+      // hide the 1px vertical separator when the dropdown arrow
+      // is hovered
+      background-color: transparent;
+    }
+
+    // 1px vertical separator between label and dropdown arrow
+    &-separator {
+      position: absolute;
+      top: 0px;
+      bottom: 0px;
+      margin-top: auto;
+      margin-bottom: auto;
+
+      width: 1px;
+      height: 15px;
+
+      background-color: $color-gray;
+    }
+
+    // the ▼ arrow which reveals the dropdown menu when clicked
+    &-indicator {
+      color: $text-color;
+      position: absolute;
+      left: 0px;
+      right: 0px;
+      top: 0px;
+      bottom: 0px;
+      line-height: $height;
+      text-align: center;
+
+
+      & > div {
+        transform: scaleY(0.7);
+      }
+    }
+  }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,7 +12,7 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 /**
- * @fileOverview This plugin was copied from the official plugin CKEditor "toolbar" to be able to update the toolbar after the init and to avoid re-initilization of toolbar plugin. 
+ * @fileOverview This plugin was copied from the official plugin CKEditor_4.7.1 "toolbar" to be able to update the toolbar after the init and to avoid re-initilization of toolbar plugin. 
  * Here are the main customizations:
  *     - Change the pluginName from "toolbar" to "leosToolbar"
  *     - Assign language toolbar config to the normal toolbar object

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
 
 // REFACTOR SecurityService API should probably be moved into WorkspaceService
@@ -37,17 +36,15 @@ class SecurityServiceImpl implements SecurityService {
 
     @Override
     public <T extends XmlDocument> T addOrUpdateCollaborator(String id, String userLogin, LeosAuthority authority, Class<T> type) {
-        Map<String, LeosAuthority> collaborators = new HashMap<>();
+        T document = workspaceRepository.findDocumentById(id, type, true);
+        Map<String, LeosAuthority> collaborators = document.getCollaborators();
         collaborators.put(userLogin, authority);
-        return addOrUpdateCollaborators(id, collaborators, type);
+        return updateCollaborators(id, collaborators, type);
     }
 
     @Override
-    public <T extends XmlDocument> T addOrUpdateCollaborators(String id, Map<String, LeosAuthority> collaborators, Class<T> type) {
-        T document = workspaceRepository.findDocumentById(id, type, true);
-        Map<String, LeosAuthority> documentCollaborators = document.getCollaborators();
-        documentCollaborators.putAll(collaborators);
-        return workspaceRepository.updateDocumentCollaborators(id, documentCollaborators, type);
+    public <T extends XmlDocument> T updateCollaborators(String id, Map<String, LeosAuthority> collaborators, Class<T> type) {
+        return workspaceRepository.updateDocumentCollaborators(id, collaborators, type);
     }
 
     @Override

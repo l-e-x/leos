@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -10,6 +10,16 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+/**
+ * @fileOverview 
+ * This plugin was customized from the official CKEditor_4.7.1 showblocks plugin to apply different styles and to change the list of tags on which this plugin
+ * takes action.
+ * Here are the main customizations:
+ *     - Changed the pluginName from showblocks to leosShowblocks
+ *     - Changed the supported elements/tags 
+ *     - Removed "lang" and changed "icons" from the plugin definition
+ *     - Removed the function "AddCss"
  */
 ; // jshint ignore:line
 define(function leosShowblocksPluginModule(require) {

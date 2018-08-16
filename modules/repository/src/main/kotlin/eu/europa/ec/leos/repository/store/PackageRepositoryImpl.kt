@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -46,9 +46,9 @@ internal class PackageRepositoryImpl(
         return leosRepository.findPackageByDocumentId(documentId)
     }
 
-    override fun <D : LeosDocument> findDocumentsByPackagePath(path: String, type: Class<out D>): List<D> {
+    override fun <D : LeosDocument> findDocumentsByPackagePath(path: String, type: Class<out D>, fetchContent: Boolean): List<D> {
         logger.debug{ "Finding document by package path... [path=$path, type=${type.simpleName}]" }
-        return leosRepository.findDocumentsByParentPath(path, type.kotlin)
+        return leosRepository.findDocumentsByParentPath(path, type.kotlin,false, fetchContent)
     }
 
     override fun <D : LeosDocument> findDocumentByPackagePathAndName(path: String, name: String, type: Class<out D>): D {

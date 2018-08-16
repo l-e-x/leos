@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -37,7 +37,7 @@ $LIST_PADDING: 1.5cm;
             float: left;
         }
 
-        & > aknP {
+        & > aknP, & > p {
             display: block;
             position: relative;
         }
@@ -77,13 +77,13 @@ $LIST_PADDING: 1.5cm;
 
 //------------------------------- Showblock Styles --------------------------//
 %showblockList {
-    div[data-akn-name="blockContainer"] ul[data-akn-name="UnNumberedBlockList"] {
+    div[data-akn-name="division"] ul[data-akn-name="UnNumberedBlockList"] {
         & li {
             @include blockOutline("INDENT", $LIST_PADDING);
         }
     }
 
-    div[data-akn-name="blockContainer"] ol[data-akn-name="NumberedBlockList"] {
+    div[data-akn-name="division"] ol[data-akn-name="NumberedBlockList"] {
         & li {
             @include blockOutline("POINT", $LIST_PADDING);
         }

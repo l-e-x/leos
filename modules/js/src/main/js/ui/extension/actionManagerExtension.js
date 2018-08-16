@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -25,73 +25,171 @@ define(function actionManagerExtensionModule(require) {
     // configuration
     var EDITOR_CHANNEL_CFG = CONFIG.channels.editor;
 
+    // configuration
+    const EDITABLE_ELEMENTS = "citations, recitals, article, clause, blockcontainer, division";
+
     // handle extension initialization
     function _initExtension(connector) {
         log.debug("Initializing Action Manager extension...");
 
         // restrict scope to the extended target
-        var rootElement = UTILS.getParentElement(connector);
+        let $rootElement = $(UTILS.getParentElement(connector));
+        connector.actionsEnabled = true;
 
-        _setupEditorChannel(connector);
-        _registerActionsHandler(connector, rootElement);
+        _setupEditorChannel(connector, $rootElement);
+        _registerEditorChannelSubscriptions(connector, $rootElement);
+        _registerActionTriggers(connector, $rootElement);
+        _registerActionsHandler(connector, $rootElement);
 
         log.debug("Registering Action Manager extension unregistration listener...");
         connector.onUnregister = _connectorUnregistrationListener;
     }
 
-    function _getWrappedId($wrap) {
-        return $wrap.attr("data-wrapped-id");
+    function _getElementId($element) {
+        return $element.attr("id");
     }
 
-    function _getWrappedType($wrap) {
-        return $wrap.attr("data-wrapped-type");
+    const htmlToXmlTagMap = {blockcontainer: "blockContainer"};
+
+    function _getType($element) {
+        let tagName = $element.prop('tagName').toLowerCase();
+        return htmlToXmlTagMap[tagName] ? htmlToXmlTagMap[tagName] : tagName;
     }
 
-    function _getWrappedEditable($wrap) {
-        return _getDataDefaultedTrue($wrap, "wrapped-editable");
+    function _getEditable($element) {
+        return _getDataDefaultedTrue($element, "leos:editable");
     }
 
-    function _getWrappedDeletable($wrap) {
-        return _getDataDefaultedTrue($wrap, "wrapped-deletable");
+    function _getDeletable($element) {
+        return _getDataDefaultedTrue($element, "leos:deletable");
     }
 
     function _getDataDefaultedTrue($element, key) {
         var value = $element.data(key);
-        if (typeof value != "boolean") {
+        if (typeof value !== "boolean") {
             // true for undefined or empty string, false otherwise
             value =
-                (typeof value == "undefined") ||
-                (typeof value == "string" && value.length == 0);
+                (typeof value === "undefined") ||
+                (typeof value === "string" && value.length === 0);
         }
         return value;
     }
 
-    function _registerActionsHandler(connector, rootElement) {
+    function _registerActionsHandler(connector, $rootElement) {
         // register delegated event handlers for content
-        $(rootElement).on("dblclick.actions",
-            ".leos-wrap[data-wrapped-editable!=false] .leos-wrap-content",
-            _handleAction.bind(undefined, connector, "edit"));
+        // LEOS-2764 Listening on 'mouseup' events for double clicks in place of 'dblclick' to avoid that double click will be managed by annotate
+        $rootElement.on("mouseup.actions", ".leos-editable-content",
+            _handleDoubleClickAction.bind(undefined, connector, "edit"));
         // register delegated event handlers for widgets
-        $(rootElement).on("click.actions",
-            ".leos-wrap [data-widget-type='insert.before']",
+        $rootElement.on("click.actions", "[data-widget-type='insert.before']",
             _handleAction.bind(undefined, connector, "insert.before"));
-        $(rootElement).on("click.actions",
-            ".leos-wrap[data-wrapped-editable!=false] [data-widget-type='edit']",
+        $rootElement.on("click.actions", "[data-widget-type='edit']",
             _handleAction.bind(undefined, connector, "edit"));
-        $(rootElement).on("click.actions",
-            ".leos-wrap[data-wrapped-deletable!=false] [data-widget-type='delete']",
+        $rootElement.on("click.actions", "[data-widget-type='delete']",
             _handleAction.bind(undefined, connector, "delete"));
-        $(rootElement).on("click.actions",
-            ".leos-wrap [data-widget-type='insert.after']",
+        $rootElement.on("click.actions", "[data-widget-type='insert.after']",
             _handleAction.bind(undefined, connector, "insert.after"));
     }
 
+    function _registerActionTriggers(connector, $rootElement) {
+        $rootElement.on("mouseenter.actions", EDITABLE_ELEMENTS, _attachActions.bind(undefined, connector));
+        $rootElement.on("mouseleave.actions", EDITABLE_ELEMENTS, _detachActions.bind(undefined, connector));
+
+        $rootElement.on("mouseenter.actions", ".leos-actions", _showActions.bind(undefined, connector));
+        $rootElement.on("mouseleave.actions", ".leos-actions", _hideActions.bind(undefined, connector));
+    }
+
+    function _registerEditorChannelSubscriptions(connector, $rootElement) {
+        if (connector.editorChannel) {
+            connector.editorChannel.subscribe("editor.open", _disableAllActions.bind(undefined, connector));
+            connector.editorChannel.subscribe("editor.close", _enableAllActions.bind(undefined, connector));
+        }
+    }
+
+
+    function _attachActions(connector, event) {
+        event.stopPropagation();
+
+        if (!connector.actionsEnabled) {
+            return;
+        }
+
+        let element = event.currentTarget;
+        let actions = _getActionButtons(connector, element);
+        actions.target = element;
+        element.actions = actions;
+
+        _showActionButtons(actions, element);
+    }
+
+    function _detachActions(connector, event) {
+        event.stopPropagation();
+        let element = event.currentTarget;
+        _hideActionButtons(element.actions, element);
+    }
+
+    function _disableAllActions(connector, data) {
+        connector.actionsEnabled = false;
+        let element = document.getElementById(data.elementId);
+        _hideActionButtons(element.actions, element);
+    }
+
+    function _enableAllActions(connector, data) {
+        connector.actionsEnabled = true;
+    }
+
+    function _showActions(connector, event) {
+        event.stopPropagation();
+        if (!connector.actionsEnabled) {
+            return;
+        }
+
+        let actions = event.currentTarget;
+        _showActionButtons(actions, actions.target)
+    }
+
+    function _hideActions(connector, event) {
+        event.stopPropagation();
+
+        let actions = event.currentTarget;
+        _hideActionButtons(actions, actions.target)
+    }
+
+    function _showActionButtons(actions, element) {
+        let $element = $(element);
+        let $actions = $(actions);
+        $actions.css({
+            top: $element.position().top,
+            height: element.clientHeight,
+        });
+
+        $element.addClass("leos-editable-content");
+        $actions.children().css({display: "inline-block"})
+    }
+
+    function _hideActionButtons(actions, element) {
+        $(actions).children().css({display: "none"});
+        $(element).removeClass("leos-editable-content");
+    }
+
+    function _handleDoubleClickAction(connector, action, event) {
+        if (event.detail > 1) /*Means 'double mouseup' == double click */ {
+            _handleAction(connector, "edit", event)
+        }
+    }
+
     function _handleAction(connector, action, event) {
-        var $wrap = $(event.currentTarget).parents(".leos-wrap");
-        var elementId = _getWrappedId($wrap);
-        var elementType = _getWrappedType($wrap);
-        var editable = _getWrappedEditable($wrap);
-        var deletable = _getWrappedDeletable($wrap);
+        // LEOS-2764 Set an attribute on these events to avoid them to be managed other components like annotate
+        event.originalEvent.hostEventType = 'ckEvent';
+        let $element = $(event.currentTarget);
+        let originIsButton = $element.parents('.leos-actions')[0];
+        if (originIsButton) {
+            $element = $(originIsButton.target);
+        }
+        var elementId = _getElementId($element);
+        var elementType = _getType($element);
+        var editable = _getEditable($element);
+        var deletable = _getDeletable($element);
         var user = connector.user;
         if (_isValidAction(action, elementId, elementType, editable, deletable, user)) {
             var data = {
@@ -129,6 +227,52 @@ define(function actionManagerExtensionModule(require) {
     function _teardownEditorChannel(connector) {
         // clear editor channel
         connector.editorChannel = null;
+    }
+
+    function _getActionButtons(connector, element) {
+        let actions = element.actions;
+        if (!actions) {
+            let $element = $(element);
+            let actionString = _generateActions($element, _getEditable($element), _getDeletable($element));
+            actions = ($.parseHTML(actionString))[0];
+            $element.after(actions);
+        }
+        return actions;
+    }
+
+    function _generateActions($element, editable, deletable) {
+        let template = ['<div class="leos-actions Vaadin-Icons">']; //FIXME: we can directly create elements
+        let type = _getType($element);
+        switch (type) {
+            case 'article':
+            case 'division': {
+                template.push(`<span data-widget-type="insert.before" title="Insert ${type} before">&#xe622</span>`);
+                if (editable) {
+                    template.push(`<span data-widget-type="edit" title="Edit text">&#xe7fa</span>`);
+                }
+                if (deletable) {
+                    template.push(`<span data-widget-type="delete" title="Delete ${type}">&#xe80b</span>`);
+                }
+                template.push(`<span style="transform: rotate(180deg);" data-widget-type="insert.after" title="Insert ${type} after">&#xe623</span>`);
+            }
+                break;
+            case 'clause': {
+                if (editable && $element.attr('leos\:optionlist')) {
+                    template.push('<span data-widget-type="edit" title="Edit text">&#xe7fa</span>');
+                }
+            }
+                break;
+            case 'blockContainer':
+            case 'citations':
+            case 'recitals': {
+                if (editable) {
+                    template.push('<span data-widget-type="edit" title="Edit text">&#xe7fa</span>');
+                }
+            }
+                break;
+        }
+        template.push('</div>');
+        return template.join('');
     }
 
     return {

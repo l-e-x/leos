@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,15 +13,17 @@
  */
 package eu.europa.ec.leos.web.event.view.document;
 
+import java.util.List;
+
 public class FetchCrossRefTocRequestEvent {
 
-    private String elementId;
+    private List<String> elementIds;
 
-    public FetchCrossRefTocRequestEvent(String elementId) {
-        this.elementId = elementId;
+    public FetchCrossRefTocRequestEvent(List<String> elementIds) {
+        this.elementIds = elementIds;
     }
 
-    public String getElementId() {
-        return elementId;
+    public List<String> getElementIds() {
+        return elementIds;
     }
 }

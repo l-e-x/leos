@@ -1,0 +1,57 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <title>Annotate</title>
+    <base target="_top" href="/annotate/"/>
+</head>
+<body>
+<hypothesis-app></hypothesis-app>
+
+<!--
+Need to supply some of below parameters to startup the client.
+If connecting with h server, need to configure h with oauth
+-->
+
+<script class="js-hypothesis-config js-hypothesis-settings" type="application/json">
+    {
+        "oauthClientId": "@auth.client_id@",
+        "websocketUrl": "@annotate.websocket.url@",
+        "rpcAllowedOrigins": null,
+        "release": "annotate-release-1",
+        "serviceUrl": "@annotate.server.url@/",
+        "oauthEnabled": true,
+        "authDomain": "@auth.authority@",
+        "services": [{
+            "authority": "@auth.authority@",
+            "apiUrl": "@annotate.server.url@/api/",       
+            "grantToken": "$$grant-token$$"           
+        }]
+    }
+</script>
+          <!--the token is valid for about a month (should end on february 27th):
+          stands for user "darth" of dummy UD-repo
+          eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhY2N0OnZhZGVyQGVjYXMiLCJuYmYiOjE1MTY5NTY1NzYsImlzcyI6IjI4MGE4NGJhLWMzMTktMTFlNy04ZjA3LTRmMzcxYjdkYzY1YiIsImV4cCI6MTUxOTk1NjU3NiwiaWF0IjoxNTE2OTU2NTc2fQ.3yw1en3cuGGYf3CUlFJwYvquomFuC5JecLi6VwuNrM0-->    
+            <!--"grantToken": "$$grant-token$$"-->
+
+<!-- Client boot script !-->
+<script src="@annotate.client.url@/boot.js"></script>
+
+</body>
+</html>

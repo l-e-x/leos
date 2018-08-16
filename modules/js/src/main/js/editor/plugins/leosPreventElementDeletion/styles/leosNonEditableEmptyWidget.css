@@ -1,0 +1,33 @@
+/**
+ * Copyright 2018 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty:hover,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty:focus,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty:active,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_focused,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_focused:hover,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_focused:focus,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_focused:active,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_selected,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_selected:hover,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_selected:focus,
+.cke_widget_wrapper.cke_widget_block.cke_widget_leosNonEditableEmptyWidget.cke_widget_wrapper_non-editable-empty.cke_widget_selected:active,
+.cke_widget_wrapper        .cke_widget_element.non-editable-empty,
+.cke_widget_wrapper:hover  .cke_widget_element.non-editable-empty,
+.cke_widget_wrapper:focus  .cke_widget_element.non-editable-empty,
+.cke_widget_wrapper:active .cke_widget_element.non-editable-empty
+{
+    display: none ;
+}

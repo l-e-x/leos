@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -34,6 +34,7 @@ import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.web.event.view.proposal.EditCollaboratorRequest;
 import eu.europa.ec.leos.web.event.view.proposal.RemoveCollaboratorRequest;
 import eu.europa.ec.leos.web.model.CollaboratorVO;
+import eu.europa.ec.leos.web.support.UrlBuilder;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.converter.UserDisplayConverter;
 import org.slf4j.Logger;
@@ -58,11 +59,11 @@ import java.util.stream.Stream;
 @ViewScope
 public class CollaboratorsComponent extends CustomComponent {
     private static final Logger LOG = LoggerFactory.getLogger(CollaboratorsComponent.class);
-    private static final EnumSet<LeosAuthority> selectableAuthorities = EnumSet.of(LeosAuthority.CONTRIBUTOR, LeosAuthority.OWNER);
+    private static final EnumSet<LeosAuthority> selectableAuthorities = EnumSet.of(LeosAuthority.CONTRIBUTOR, LeosAuthority.OWNER, LeosAuthority.REVIEWER);
 
     enum COLUMN {
         NAME("user"),
-        DG("user.dg"),
+        ENTITY("user.entity"),
         AUTHORITY("leosAuthority"),
         ACTION("action");
 
@@ -86,11 +87,13 @@ public class CollaboratorsComponent extends CustomComponent {
     private CollaboratorEditor editor;
     private MessageHelper messageHelper;
     private EventBus eventBus;
+    private UrlBuilder urlBuilder;
 
     @Autowired
-    public CollaboratorsComponent(MessageHelper messageHelper, EventBus eventBus) {
+    public CollaboratorsComponent(MessageHelper messageHelper, EventBus eventBus, UrlBuilder urlBuilder) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
+        this.urlBuilder= urlBuilder;
         initGrid();
     }
 
@@ -112,7 +115,7 @@ public class CollaboratorsComponent extends CustomComponent {
         collaboratorGrid.setColumns(COLUMN.getKeys());// Explicitly restricting the visible columns
 
         collaboratorGrid.getColumn(COLUMN.NAME.getKey()).setExpandRatio(2).setConverter(new UserDisplayConverter());
-        collaboratorGrid.getColumn(COLUMN.DG.getKey()).setExpandRatio(1);
+        collaboratorGrid.getColumn(COLUMN.ENTITY.getKey()).setExpandRatio(1);
         collaboratorGrid.getColumn(COLUMN.AUTHORITY.getKey()).setExpandRatio(1).setRenderer(new ComponentRenderer());
         collaboratorGrid.getColumn(COLUMN.ACTION.getKey()).setExpandRatio(0).setRenderer(new ComponentRenderer());
 
@@ -129,7 +132,7 @@ public class CollaboratorsComponent extends CustomComponent {
     private Container.Indexed createDataContainer() {
         // Initialize Containers
         BeanItemContainer dataContainer = new BeanItemContainer<>(CollaboratorVO.class);
-        dataContainer.addNestedContainerProperty(COLUMN.DG.getKey());
+        dataContainer.addNestedContainerProperty(COLUMN.ENTITY.getKey());
 
         GeneratedPropertyContainer generatedPropertyContainer = new GeneratedPropertyContainer(dataContainer);
         generatedPropertyContainer.addGeneratedProperty(COLUMN.ACTION.getKey(), new PropertyValueGenerator<Component>() {
@@ -165,9 +168,9 @@ public class CollaboratorsComponent extends CustomComponent {
         deleteButton.setPrimaryStyleName(ValoTheme.BUTTON_ICON_ONLY);
         deleteButton.setIcon(FontAwesome.MINUS_CIRCLE);
         deleteButton.addStyleName("delete-button");
+        deleteButton.setDisableOnClick(true);        
         deleteButton.addClickListener(event -> {
-            collaboratorGrid.getContainerDataSource().removeItem(collaborator);// FIXME: remove first and fire or fire and remove in another update
-                eventBus.post(new RemoveCollaboratorRequest(collaborator));
+                eventBus.post(new RemoveCollaboratorRequest(collaborator, urlBuilder.getDocumentUrl(this.getUI().getPage())));
             });
         return deleteButton;
     }
@@ -177,6 +180,7 @@ public class CollaboratorsComponent extends CustomComponent {
         ComboBox comboBox = new ComboBox();
         for (LeosAuthority authority : selectableAuthorities) {
             comboBox.addItem(authority);
+            comboBox.setItemCaption(authority, messageHelper.getMessage("collaborator.column.leosAuthority." + authority.name()));
         }
         comboBox.addStyleName("role-editor");
         comboBox.setPropertyDataSource(item.getItemProperty(propertyId));
@@ -185,7 +189,7 @@ public class CollaboratorsComponent extends CustomComponent {
             // this will be called if value is changed from editor before save is pressed
             // so need to ignore values if request is originated from editor. This should be handled via commit event(save).
             if (!collaboratorGrid.isEditorActive()) {
-                eventBus.post(new EditCollaboratorRequest(collaborator));
+                eventBus.post(new EditCollaboratorRequest(collaborator, urlBuilder.getDocumentUrl(this.getUI().getPage())));
             }
         });
         return comboBox;
@@ -193,7 +197,7 @@ public class CollaboratorsComponent extends CustomComponent {
 
     public void addCollaborator() {
         if (editor == null) {
-            editor = new CollaboratorEditor(collaboratorGrid, messageHelper, eventBus);
+            editor = new CollaboratorEditor(collaboratorGrid, messageHelper, eventBus, urlBuilder.getDocumentUrl(this.getUI().getPage()));
         }
         editor.addCollaborator();
     }

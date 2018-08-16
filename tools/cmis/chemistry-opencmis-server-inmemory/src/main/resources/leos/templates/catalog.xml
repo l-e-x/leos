@@ -27,7 +27,7 @@
                     <description lang="EN">Regulation to be adopted by the European Parliament and the Council</description>
                     <description lang="FR">Règlement à adopter conjointement par le Parlement Européen et le Conseil</description>
                 </descriptions>
-                <item type="TEMPLATE" id="PR-023;EM-023;BL-023" enabled="true">
+                <item type="TEMPLATE" id="PR-023;EM-023;BL-023;AN-023" enabled="true">
                     <names>
                         <name lang="EN">SJ-023 - Proposal for a Regulation of the European Parliament and of the Council</name>
                         <name lang="FR">SJ-023 - Proposition de règlement du Parlement européen et du Conseil</name>
@@ -51,7 +51,7 @@
                     <description lang="EN">Directive to be adopted by the European Parliament and the Council</description>
                     <description lang="FR">Directive à adopter conjointement par le Parlement Européen et le Conseil</description>
                 </descriptions>
-                <item type="TEMPLATE" id="PR-024;EM-024;BL-024" enabled="false">
+                <item type="TEMPLATE" id="PR-024;EM-024;BL-024;AN-024" enabled="false">
                     <names>
                         <name lang="EN">SJ-024 - Proposal for a Directive of the European Parliament and of the Council</name>
                         <name lang="FR">SJ-024 - Proposition de directive du Parlement européen et du Conseil</name>
@@ -79,7 +79,7 @@
                     <language lang="EN">English</language>
                     <language lang="FR">Français</language>
                 </languages>
-                <item type="TEMPLATE" id="PR-025;EM-025;BL-025" enabled="false">
+                <item type="TEMPLATE" id="PR-025;EM-025;BL-025;AN-025" enabled="false">
                     <names>
                         <name lang="EN">SJ-025 - Proposal for a Decision of the European Parliament and of the Council</name>
                         <name lang="FR">SJ-025 - Proposition de décision du Parlement européen et du Conseil</name>
@@ -93,7 +93,7 @@
                         <!--<language lang="FR">Français</language>-->
                     </languages>
                 </item>
-                <item type="TEMPLATE" id="SJ-026" enabled="false">
+                <item type="TEMPLATE" id="PR-026;EM-026;BL-026;AN-026" enabled="false">
                     <names>
                         <name lang="EN">SJ-026 - Proposal for a Decision of the European Parliament and of the Council (without addressees)</name>
                         <name lang="FR">SJ-026 - Proposition de décision du Parlement européen et du Conseil (sans destinataires)</name>

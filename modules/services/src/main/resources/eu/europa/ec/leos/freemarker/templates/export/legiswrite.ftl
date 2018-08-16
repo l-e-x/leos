@@ -39,7 +39,7 @@
 
 <@compress>
     <importOptions>
-        <importJob filename="${bill.getLeosCategory().name()?capitalize}">
+        <importJob filename="${bill.getLeosCategory().name()?capitalize}" convertAnnotations="true">
             <leos>
                 <resource ref="${proposalRef}">
                     <includes>

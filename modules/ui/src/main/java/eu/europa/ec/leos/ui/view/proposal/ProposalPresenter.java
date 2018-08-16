@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -25,13 +25,21 @@ import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Proposal;
 import eu.europa.ec.leos.domain.document.LeosMetadata.AnnexMetadata;
 import eu.europa.ec.leos.domain.document.LeosMetadata.ProposalMetadata;
 import eu.europa.ec.leos.domain.document.LeosPackage;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.vo.MetadataVO;
+import eu.europa.ec.leos.model.notification.collaborators.AddCollaborator;
+import eu.europa.ec.leos.model.notification.collaborators.EditCollaborator;
+import eu.europa.ec.leos.model.notification.collaborators.RemoveCollaborator;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.document.*;
 import eu.europa.ec.leos.services.export.ExportOptions;
 import eu.europa.ec.leos.services.export.ExportService;
+import eu.europa.ec.leos.services.notification.NotificationService;
 import eu.europa.ec.leos.services.store.PackageService;
-import eu.europa.ec.leos.services.user.UserService;
+import eu.europa.ec.leos.usecases.document.ContextAction;
+import eu.europa.ec.leos.web.event.view.document.DocumentUpdatedEvent;
+import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
 import eu.europa.ec.leos.ui.view.AbstractLeosPresenter;
 import eu.europa.ec.leos.usecases.document.BillContext;
@@ -45,6 +53,7 @@ import eu.europa.ec.leos.web.event.view.proposal.*;
 import eu.europa.ec.leos.web.event.window.SaveMetaDataRequestEvent;
 import eu.europa.ec.leos.web.model.*;
 import eu.europa.ec.leos.web.support.SessionAttribute;
+import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.xml.DownloadStreamResource;
 import eu.europa.ec.leos.web.ui.component.MoveAnnexEvent;
 import eu.europa.ec.leos.web.ui.navigation.Target;
@@ -57,7 +66,6 @@ import org.springframework.stereotype.Component;
 import javax.inject.Provider;
 import javax.servlet.http.HttpSession;
 import javax.xml.ws.WebServiceException;
-import javax.xml.ws.soap.SOAPFaultException;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -71,42 +79,38 @@ class ProposalPresenter extends AbstractLeosPresenter {
     private static final Logger LOG = LoggerFactory.getLogger(ProposalPresenter.class);
 
     private final ProposalScreen proposalScreen;
-    private final ProposalService proposalService;
     private final Provider<ProposalContext> proposalContextProvider;
-    private final MemorandumService memorandumService;
-    private final BillService billService;
     private final Provider<BillContext> billContextProvider;
     private final AnnexService annexService;
     private final PackageService packageService;
-    private final UserService userService;
+    private final UserHelper userHelper;
     private final ExportService exportService;
     private final SecurityService securityService;
+    private final NotificationService notificationService;
+    private final MessageHelper messageHelper;
 
     @Autowired
     ProposalPresenter(SecurityContext securityContext, HttpSession httpSession, EventBus eventBus,
                       ProposalScreen proposalScreen,
-                      ProposalService proposalService,
                       Provider<ProposalContext> proposalContextProvider,
-                      MemorandumService memorandumService,
-                      BillService billService,
                       Provider<BillContext> billContextProvider,
                       AnnexService annexService,
                       PackageService packageService,
-                      UserService userService,
+                      UserHelper userHelper,
                       ExportService exportService,
-                      SecurityService securityService) {
+                      SecurityService securityService,
+                      NotificationService notificationService, MessageHelper messageHelper) {
         super(securityContext, httpSession, eventBus);
         this.proposalScreen = proposalScreen;
-        this.proposalService = proposalService;
         this.proposalContextProvider = proposalContextProvider;
-        this.memorandumService = memorandumService;
-        this.billService = billService;
         this.billContextProvider = billContextProvider;
         this.annexService = annexService;
         this.packageService = packageService;
-        this.userService = userService;
+        this.userHelper = userHelper;
         this.exportService = exportService;
         this.securityService = securityService;
+        this.notificationService = notificationService;
+        this.messageHelper = messageHelper;
     }
 
     @Override
@@ -118,40 +122,43 @@ class ProposalPresenter extends AbstractLeosPresenter {
     private void populateData() {
         String proposalId = getProposalId();
         LeosPackage leosPackage = packageService.findPackageByDocumentId(proposalId);
-        List<XmlDocument> documents = packageService.findDocumentsByPackagePath(leosPackage.getPath(), XmlDocument.class);
+        List<XmlDocument> documents = packageService.findDocumentsByPackagePath(leosPackage.getPath(), XmlDocument.class, false);
 
-        ProposalVO proposalVO = createViewObject(documents);
+        DocumentVO proposalVO = createViewObject(documents);
         proposalScreen.populateData(proposalVO);
     }
 
-    private ProposalVO createViewObject(List<XmlDocument> documents) {
-        ProposalVO proposalVO = new ProposalVO();
+    private DocumentVO createViewObject(List<XmlDocument> documents) {
+        DocumentVO proposalVO = new DocumentVO(LeosCategory.PROPOSAL);
         List<DocumentVO> annexVOS = new ArrayList<>();
-
+        //We have the latest version of the document, no need to search for them again
         for (XmlDocument document : documents) {
             switch (document.getCategory()) {
                 case PROPOSAL: {
-                    Proposal proposal = proposalService.findProposal(document.getId());
+                    Proposal proposal = (Proposal) document;
                     MetadataVO metadataVO = createMetadataVO(proposal);
                     proposalVO.setMetaData(metadataVO);
-                    proposalVO.addCollaborators(createCollaboratorVOs(proposal.getCollaborators()));
+                    proposalVO.addCollaborators(proposal.getCollaborators());
                     break;
                 }
                 case MEMORANDUM: {
-                    Memorandum memorandum = memorandumService.findMemorandum(document.getId());
+                    Memorandum memorandum = (Memorandum) document;
                     DocumentVO memorandumVO = getMemorandumVO(memorandum);
-                    proposalVO.setExplanatoryMemorandum(memorandumVO);
+                    proposalVO.addChildDocument(memorandumVO);
+                    memorandumVO.addCollaborators(memorandum.getCollaborators());
                     break;
                 }
                 case BILL: {
-                    Bill bill = billService.findBill(document.getId());
+                    Bill bill = (Bill) document;
                     DocumentVO billVO = getLegalTextVO(bill);
-                    proposalVO.setLegalText(billVO);
+                    proposalVO.addChildDocument(billVO);
+                    billVO.addCollaborators(bill.getCollaborators());
                     break;
                 }
                 case ANNEX: {
-                    Annex annex = annexService.findAnnex(document.getId());
+                    Annex annex = (Annex) document;
                     DocumentVO annexVO = createAnnexVO(annex);
+                    annexVO.addCollaborators(annex.getCollaborators());
                     annexVOS.add(annexVO);
                     break;
                 }
@@ -159,9 +166,10 @@ class ProposalPresenter extends AbstractLeosPresenter {
         }
 
         Collections.sort(annexVOS, Comparator.comparingInt(DocumentVO::getDocNumber));
-        if (proposalVO.getLegalText() != null) {
+        DocumentVO legalText = proposalVO.getChildDocument(LeosCategory.BILL);
+        if (legalText != null) {
             for (DocumentVO annexVO : annexVOS) {
-                proposalVO.getLegalText().addChildDocument(annexVO);
+                legalText.addChildDocument(annexVO);
             }
         }
 
@@ -171,7 +179,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
     // FIXME refine
     private DocumentVO getMemorandumVO(Memorandum memorandum) {
         return new DocumentVO(memorandum.getId(),
-                         memorandum.getLanguage(),
+                         memorandum.getMetadata().exists(m -> m.getLanguage() != null) ? memorandum.getMetadata().get().getLanguage() : "EN",
                          LeosCategory.MEMORANDUM,
                          memorandum.getLastModifiedBy(),
                          Date.from(memorandum.getLastModificationInstant()));
@@ -180,7 +188,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
     // FIXME refine
     private DocumentVO getLegalTextVO(Bill bill) {
         return new DocumentVO(bill.getId(),
-                         bill.getLanguage(),
+                         bill.getMetadata().exists(m -> m.getLanguage() != null) ? bill.getMetadata().get().getLanguage() : "EN",
                          LeosCategory.BILL,
                          bill.getLastModifiedBy(),
                          Date.from(bill.getLastModificationInstant()));
@@ -190,7 +198,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
     private DocumentVO createAnnexVO(Annex annex) {
         DocumentVO annexVO =
                 new DocumentVO(annex.getId(),
-                          annex.getLanguage(),
+                        annex.getMetadata().exists(m -> m.getLanguage() != null) ? annex.getMetadata().get().getLanguage() : "EN",
                           LeosCategory.ANNEX,
                           annex.getLastModifiedBy(),
                           Date.from(annex.getLastModificationInstant()));
@@ -204,27 +212,10 @@ class ProposalPresenter extends AbstractLeosPresenter {
         return annexVO;
     }
 
-    private List<CollaboratorVO> createCollaboratorVOs(Map<String, LeosAuthority> allowedUsers) {
-        return allowedUsers.entrySet().parallelStream()
-                .map(entry -> createCollaboratorVO(entry.getKey(), entry.getValue()))
-                .filter(option -> option.isPresent())
-                .map(option -> option.get())
-                .collect(Collectors.toList());
-    }
-
-    private Optional<CollaboratorVO> createCollaboratorVO(String login, LeosAuthority authority) {
-        try {
-            return Optional.of(new CollaboratorVO(new UserVO(userService.getUser(login)),authority));
-        } catch (Exception e) {
-            LOG.error(String.format("Exception while creating collaborator VO:%s, %s",login, authority), e);
-            return Optional.empty();
-        }
-    }
-
     // TODO dummy impl
     private MetadataVO createMetadataVO(Proposal proposal) {
         ProposalMetadata metadata = proposal.getMetadata().getOrError(() -> "Proposal metadata is not available!");
-        return new MetadataVO(metadata, proposal.getTemplate(), proposal.getLanguage());
+        return new MetadataVO(metadata.getStage(), metadata.getType(), metadata.getPurpose(), metadata.getTemplate(), metadata.getLanguage());
     }
 
     @Subscribe
@@ -233,6 +224,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
         ProposalContext context = proposalContextProvider.get();
         context.useProposal(getProposalId());
         context.usePurpose(event.getMetaDataVO().getDocPurpose());
+        context.useActionMessage(ContextAction.METADATA_UPDATED, messageHelper.getMessage("operation.metadata.updated"));
         context.executeUpdateProposal();
         eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "metadata.edit.saved"));
         // TODO optimize refresh of data on the screen
@@ -247,8 +239,8 @@ class ProposalPresenter extends AbstractLeosPresenter {
         AnnexMetadata updatedMetadata = metadata.withTitle(event.getAnnex().getTitle());
 
         // 2. save metadata
-        annexService.updateAnnex(annex, updatedMetadata,false, "Metadata updated.");
-
+        annexService.updateAnnex(annex, updatedMetadata,false, messageHelper.getMessage("proposal.block.annex.metadata.updated"));
+        eventBus.post(new DocumentUpdatedEvent());
         // 3.update ui
         eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "proposal.block.annex.metadata.updated"));
         populateData();
@@ -261,8 +253,10 @@ class ProposalPresenter extends AbstractLeosPresenter {
 
         BillContext billContext = billContextProvider.get();
         billContext.usePackage(leosPackage);
+        billContext.useActionMessage(ContextAction.ANNEX_METADATA_UPDATED, messageHelper.getMessage("proposal.block.annex.metadata.updated"));
+        billContext.useActionMessage(ContextAction.ANNEX_ADDED, messageHelper.getMessage("proposal.block.annex.added"));
         billContext.executeCreateBillAnnex();
-
+        eventBus.post(new DocumentUpdatedEvent());
         populateData();
     }
 
@@ -272,7 +266,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
     }
 
     @Subscribe
-    void deleteAnnexEvent(DeleteAnnexEvent event) {
+    void deleteAnnex(DeleteAnnexEvent event) {
         // FIXME To be implemented, this part is commented: add a confirmation dialog?
         // 1. delete Annex
         LeosPackage leosPackage = packageService.findPackageByDocumentId(getProposalId());
@@ -280,7 +274,10 @@ class ProposalPresenter extends AbstractLeosPresenter {
         BillContext billContext = billContextProvider.get();
         billContext.useAnnex(event.getAnnex().getId());
         billContext.usePackage(leosPackage);
+        billContext.useActionMessage(ContextAction.ANNEX_METADATA_UPDATED, messageHelper.getMessage("proposal.block.annex.metadata.updated"));
+        billContext.useActionMessage(ContextAction.ANNEX_DELETED, messageHelper.getMessage("proposal.block.annex.removed"));
         billContext.executeRemoveBillAnnex();
+        eventBus.post(new DocumentUpdatedEvent());
         // 2. update ui
         populateData();
         eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "annex.deleted"));
@@ -295,9 +292,9 @@ class ProposalPresenter extends AbstractLeosPresenter {
         billContext.usePackage(leosPackage);
         billContext.useMoveDirection(event.getDirection().toString());
         billContext.useAnnex(event.getAnnexVo().getId());
-
+        billContext.useActionMessage(ContextAction.ANNEX_METADATA_UPDATED, messageHelper.getMessage("proposal.block.annex.metadata.updated"));
         billContext.executeMoveAnnex();
-
+        eventBus.post(new DocumentUpdatedEvent());
         //2. update screen to show update
         populateData();
     }
@@ -394,7 +391,7 @@ class ProposalPresenter extends AbstractLeosPresenter {
 
     @Subscribe
     void searchUser(SearchUserRequest event) {
-        List<User> users = userService.searchUsersByKey(event.getSearchKey());
+        List<User> users = userHelper.searchUsersByKey(event.getSearchKey());
         proposalScreen.proposeUsers(users.stream().map(user -> new UserVO(user)).collect(Collectors.toList()));
     }
 
@@ -403,25 +400,34 @@ class ProposalPresenter extends AbstractLeosPresenter {
         User user = event.getCollaborator().getUser();
         LeosAuthority authority = event.getCollaborator().getLeosAuthority();
         LOG.trace("Adding collaborator...{}, with authority {}", user.getLogin(), authority);
-
         getXmlDocuments()
-                .forEach(doc ->
-                        securityService.addOrUpdateCollaborator(doc.getId(), user.getLogin(), authority, doc.getClass()));
+                .forEach(doc -> {
+                    updateCollaborators(user, authority, doc, false);
+                });
 
-        eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.added", user.getName(), authority));
+        notificationService.sendNotification(new AddCollaborator(user, authority, getProposalId(), event.getProposalURL()));
+        eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.added", user.getName(),
+                messageHelper.getMessage("collaborator.column.leosAuthority." + authority.name())));
     }
 
     @Subscribe
     void removeCollaborator(RemoveCollaboratorRequest event) {
         User user = event.getCollaborator().getUser();
         LeosAuthority authority = event.getCollaborator().getLeosAuthority();
+        List<XmlDocument> documents = getXmlDocuments();
         LOG.trace("Removing collaborator...{}, with authority {}", user.getLogin(), authority);
-
-        getXmlDocuments()
-                .forEach(doc ->
-                        securityService.removeCollaborator(doc.getId(), user.getLogin(), doc.getClass()));
-
-        eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.removed", user.getName()));
+        if (!checkCollaboratorIsLastOwner(documents, authority)) {
+            documents
+                    .forEach(doc -> {
+                        updateCollaborators(user, authority, doc, true);
+                    });
+            notificationService.sendNotification(new RemoveCollaborator(user, authority, getProposalId(), event.getProposalURL()));
+            eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.removed", user.getName()));
+        } else {
+            eventBus.post(new NotificationEvent(NotificationEvent.Type.ERROR, "collaborator.message.last.owner.removed",
+                    messageHelper.getMessage("collaborator.column.leosAuthority." + authority.name())));
+        }
+        populateData();
     }
 
     @Subscribe
@@ -431,16 +437,57 @@ class ProposalPresenter extends AbstractLeosPresenter {
         List<XmlDocument> documents = getXmlDocuments();
         LeosAuthority oldAuthority = documents.get(0).getCollaborators().get(user.getLogin());
         LOG.trace("Updating collaborator...{}, old authority {}, with new authority {}", user.getLogin(), oldAuthority, authority);
-        documents
-                .forEach(doc ->
-                        securityService.addOrUpdateCollaborator(doc.getId(), user.getLogin(), authority, doc.getClass()));
+        if (!checkCollaboratorIsLastOwner(documents, oldAuthority)) {
+            documents
+                    .forEach(doc -> {
+                        updateCollaborators(user, authority, doc, false);
+                    });
+            
+            notificationService.sendNotification(new EditCollaborator(user, authority, getProposalId(), event.getProposalURL()));
+            eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.edited", user.getName(),
+                    messageHelper.getMessage("collaborator.column.leosAuthority." + oldAuthority.name()),
+                    messageHelper.getMessage("collaborator.column.leosAuthority." + authority.name())));
+        } else {
+            eventBus.post(new NotificationEvent(NotificationEvent.Type.ERROR, "collaborator.message.last.owner.edited",
+                    messageHelper.getMessage("collaborator.column.leosAuthority." + oldAuthority.name())));
+        }
+        populateData();
+        
+    }
 
-        eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "collaborator.message.edited", user.getName(), oldAuthority, authority));
+    //Update document based on action(add/edit/remove)
+    private void updateCollaborators(User user, LeosAuthority authority, XmlDocument doc, boolean isRemoveAction) {
+        Map<String, LeosAuthority> collaborators = doc.getCollaborators();
+        if (isRemoveAction) {
+            collaborators.remove(user.getLogin());
+        } else {
+            collaborators.put(user.getLogin(), authority);
+        }
+        securityService.updateCollaborators(doc.getId(), collaborators, doc.getClass());
+    }
+
+    //Check if in collaborators there is only one author 
+    private boolean checkCollaboratorIsLastOwner(List<XmlDocument> documents, LeosAuthority authority) {
+        boolean isLastOwner = false;
+        if (authority == LeosAuthority.OWNER) {
+            Map<String, LeosAuthority> collaborators = documents.get(0).getCollaborators();
+            if (Collections.frequency(collaborators.values(), LeosAuthority.OWNER) == 1) {
+                isLastOwner = true;
+            }
+        }
+        return isLastOwner;
     }
 
     private  List<XmlDocument> getXmlDocuments(){
         String proposalId = getProposalId();
         LeosPackage leosPackage = packageService.findPackageByDocumentId(proposalId);
-        return packageService.findDocumentsByPackagePath(leosPackage.getPath(), XmlDocument.class);
+        return packageService.findDocumentsByPackagePath(leosPackage.getPath(), XmlDocument.class, false);
+    }
+
+    @Subscribe
+    void updateProposalMetadata(DocumentUpdatedEvent event) {
+        ProposalContext context = proposalContextProvider.get();
+        context.useChildDocument(getProposalId());
+        context.executeUpdateProposalAsync();
     }
 }

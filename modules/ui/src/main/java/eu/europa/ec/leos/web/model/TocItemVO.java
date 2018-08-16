@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,9 +14,10 @@
 package eu.europa.ec.leos.web.model;
 
 import elemental.json.JsonException;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.converter.TableOfContentItemConverter;
+import eu.europa.ec.leos.ui.component.toc.TableOfContentItemConverter;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,20 +38,18 @@ public class TocItemVO extends TableOfContentItemVO implements Serializable {
     private String text;
     private List <TocItemVO> children;
 
-    public TocItemVO(){
-
-    }
-
     public TocItemVO(TableOfContentItemVO tableOfContentItemVO, MessageHelper messageHelper) {
         super(tableOfContentItemVO.getType(),
                 tableOfContentItemVO.getId(),
+                tableOfContentItemVO.getOriginAttr(),
                 tableOfContentItemVO.getNumber(),
+                tableOfContentItemVO.getOriginNumAttr(),
                 tableOfContentItemVO.getHeading(),
                 tableOfContentItemVO.getNumTagIndex(),
                 tableOfContentItemVO.getHeadingTagIndex(),
                 tableOfContentItemVO.getVtdIndex());
 
-        this.setText(TableOfContentItemConverter.buildItemDescription(tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading(), tableOfContentItemVO.getType(), messageHelper));
+        this.setText(TableOfContentItemConverter.buildItemCaption(tableOfContentItemVO, TableOfContentItemConverter.DEFAULT_CAPTION_MAX_SIZE, messageHelper));
         this.setChildren( convertChildren(tableOfContentItemVO.getChildItemsView(),messageHelper));
     }
 

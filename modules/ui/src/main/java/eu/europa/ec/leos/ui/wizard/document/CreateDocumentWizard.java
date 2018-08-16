@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@ package eu.europa.ec.leos.ui.wizard.document;
 
 import com.google.common.eventbus.EventBus;
 import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.ui.event.CreateDocumentRequestEvent;
 import eu.europa.ec.leos.ui.wizard.AbstractWizard;
 import eu.europa.ec.leos.ui.wizard.WizardStep;
@@ -33,18 +34,22 @@ public class CreateDocumentWizard extends AbstractWizard {
     private static final long serialVersionUID = 1L;
 
     private LanguageHelper languageHelper;
-    private WizardData wizardData;
+    private final DocumentVO document;
 
     public CreateDocumentWizard(List<CatalogItem> templates, MessageHelper messageHelper, LanguageHelper languageHelper, EventBus eventBus) {
         super(messageHelper, eventBus);
         this.languageHelper = languageHelper;
+        document = new DocumentVO(LeosCategory.PROPOSAL);
+        document.setUploaded(false);
         init(templates);
     }
 
     public void init(List<CatalogItem> templates) {
-        wizardData = new WizardData();
-        registerWizardStep(new TemplateSelectionStep(wizardData, templates, messageHelper));
-        registerWizardStep(new MetadataInputStep(wizardData, messageHelper, languageHelper));
+        // Currently there is only one use case: create proposal!
+        // Ideally the category would be resolved from wizard data,
+        // depending on some attribute of the selected template...
+        registerWizardStep(new TemplateSelectionStep(document, templates, messageHelper));
+        registerWizardStep(new MetadataInputStep(document, messageHelper, languageHelper));
         setWizardStep(0);
     }
 
@@ -55,16 +60,7 @@ public class CreateDocumentWizard extends AbstractWizard {
 
     @Override
     protected boolean handleFinishAction(List<WizardStep> stepList) {
-        // Currently there is only one use case: create proposal!
-        // Ideally the category would be resolved from wizard data,
-        // depending on some attribute of the selected template...
-        LeosCategory category = LeosCategory.PROPOSAL;
-
-        // Currently the catalog items provide a string concatenation of IDs!
-        // Ideally the mapping to templates should be configured somewhere...
-        String[] templates = (wizardData.ids != null) ? wizardData.ids.split(";") : new String[0];
-        
-        eventBus.post(new CreateDocumentRequestEvent(category, templates, wizardData.purpose));
+        eventBus.post(new CreateDocumentRequestEvent(document));
         return true;
     }
 }

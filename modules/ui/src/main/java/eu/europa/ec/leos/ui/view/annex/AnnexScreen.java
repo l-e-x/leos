@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,10 +13,15 @@
  */
 package eu.europa.ec.leos.ui.view.annex;
 
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 interface AnnexScreen {
     void setTitle(String title);
@@ -28,4 +33,10 @@ interface AnnexScreen {
     void displayComparison(HashMap<Integer, Object> htmlCompareResult);
     void showMajorVersionWindow();
     void setDocumentVersionInfo(VersionInfoVO versionInfoVO);
+    void setToc(List<TableOfContentItemVO> tableOfContentItemVoList);
+    void showTocEditWindow(List<TableOfContentItemVO> tableOfContentItemVoList,
+            Map<TocItemType, List<TocItemType>> tableOfContentRules);
+    void setPermissions(DocumentVO annex);
+    void scrollToMarkedChange(final String elementId);
+    void sendUserPermissions(List<LeosPermission> userPermissions);
 }

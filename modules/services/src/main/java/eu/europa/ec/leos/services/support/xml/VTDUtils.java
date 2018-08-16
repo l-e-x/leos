@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,19 +13,20 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
+import com.ximpleware.*;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-
-import com.ximpleware.*;
 
 class VTDUtils {
 
     static final String GUID = "GUID";
     static final Charset UTF_8 = Charset.forName("UTF-8");
+    static final String WHITESPACE = " ";
 
     static VTDNav setupVTDNav(byte[] xmlContent) throws NavException {
-        return setupVTDNav(xmlContent, false);
+        return setupVTDNav(xmlContent, true);
     }
 
     static VTDNav setupVTDNav(byte[] xmlContent, boolean namespaceEnabled) throws NavException {
@@ -35,6 +36,8 @@ class VTDUtils {
             vtdGen.setDoc(xmlContent);
             vtdGen.parse(namespaceEnabled);
             vtdNav = vtdGen.getNav();
+        } catch (ParseException parseException) {
+            throw new RuntimeException("Exception occured while Vtd generator parsing", parseException);
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error occoured during setup of VTDNav", e);
         }
@@ -73,6 +76,14 @@ class VTDUtils {
         return baos.toByteArray();
     }
 
+    static byte[] getStartTag(VTDNav vtdNav) throws NavException {
+        long token = (long) vtdNav.getElementFragment();
+        int offsetContent = (int) vtdNav.getContentFragment();
+        int offset = (int) token;
+        int taglength = offsetContent != -1 ? (offsetContent - offset) : (int) (token >> 32);
+        return vtdNav.getXML().getBytes(offset, taglength);
+    }
+
     static String getFragmentAsString(VTDNav contentNavigator, long fragmentLocation, boolean removeTags) throws NavException {
         String fragmentContent = null;
         if (fragmentLocation > -1) {
@@ -88,5 +99,13 @@ class VTDUtils {
             }
         }
         return fragmentContent;
+    }
+
+    static String extractNumber(String numberStr) {
+        if(numberStr!= null) {
+            return (numberStr.contains(WHITESPACE)) ?
+                    numberStr.substring(numberStr.indexOf(WHITESPACE) + 1, numberStr.length()) : numberStr;
+        }
+        return null;
     }
 }

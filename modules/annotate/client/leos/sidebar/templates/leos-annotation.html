@@ -1,0 +1,117 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<header class="annotation-header" ng-if="!vm.user()">
+  <strong>You must be logged in to create comments/suggestions.</strong>
+</header>
+
+<div ng-keydown="vm.onKeydown($event)" ng-if="vm.user()">
+
+  <div id="annotation-wrapper" ng-class="{'is-annotation-selected' : vm.isSelected() && !vm.editing() && !vm.isSaving}" ng-mouseover="vm.showButtons($event)" ng-mouseout="vm.hideButtons($event)">
+    <leos-annotation-header annotation="vm.annotation"
+                     is-editing="vm.editing()"
+                     is-highlight="vm.isHighlight()"
+                     is-private="vm.state().isPrivate"
+                     is-saving = "vm.isSaving"
+                     is-deleted = "vm.isDeleted()"
+                     is-selected = "vm.isSelected()"
+                     id = "vm.id()"
+                     edit = "vm.edit()"
+                     reply = "vm.reply()"
+                     delete = "vm.delete()"
+                     authorize = "vm.authorize(action)"
+                     on-reply-count-click="vm.onReplyCountClick()"
+                     reply-count="vm.replyCount"
+                     show-document-info="vm.showDocumentInfo">
+    </leos-annotation-header>
+    <!-- Excerpts -->
+    <section class="annotation-quote-list"
+      ng-class="{'is-orphan' : vm.isOrphan()}"
+      ng-if="vm.quote()">
+      <excerpt collapsed-height="35"
+        inline-controls="true"
+        overflow-hysteresis="20"
+        content-data="selector.exact">
+        <blockquote class="annotation-quote"
+          h-branding="selectionFontFamily"
+          ng-bind="vm.quote()"></blockquote>
+      </excerpt>
+    </section>
+
+    <!-- / Excerpts -->
+
+    <!-- Body -->
+    <section name="text" class="annotation-body">
+      <excerpt enabled="!vm.editing()"
+        inline-controls="false"
+        on-collapsible-changed="vm.setBodyCollapsible(collapsible)"
+        collapse="vm.collapseBody"
+        collapsed-height="400"
+        overflow-hysteresis="20"
+        content-data="vm.diffText()">
+        <markdown text="vm.diffText()"
+                  custom-text-class="{'annotation-body is-hidden':vm.isHiddenByModerator(),
+                                      'has-content':vm.hasContent()}"
+                  on-edit-text="vm.setText(text)"
+                  read-only="!vm.editing()">
+        </markdown>
+      </excerpt>
+    </section>
+  </div>
+
+  <span class="annotation-header__share-info">
+    <a class="annotation-header__group"
+      target="_blank" ng-if="vm.group() && vm.group().url" href="{{vm.group().url}}">
+      <i class="h-icon-group"></i><span class="annotation-header__group-name">{{vm.group().name}}</span>
+    </a>
+    <span ng-show="vm.state().isPrivate"
+    title="This annotation is visible only to you.">
+      <i class="h-icon-lock"></i><span class="annotation-header__group-name" ng-show="!vm.group().url">Only me</span>
+    </span>
+    <i class="h-icon-border-color" ng-show="vm.isHighlight() && !vm.editing()" title="This is a highlight. Click 'edit' to add a note or tag."></i>
+  </span>
+
+  <footer class="annotation-footer">
+    <div class="annotation-form-actions" ng-if="vm.editing()">
+      <publish-annotation-btn
+        class="publish-annotation-btn"
+        group="vm.group()"
+        can-post="vm.hasContent()"
+        is-shared="vm.isShared()"
+        on-cancel="vm.revert()"
+        on-save="vm.save()"
+        on-set-privacy="vm.setPrivacy(level)"></publish-annotation-btn>
+    </div>
+
+    <div class="annotation-replies" ng-if="!vm.isReply() && vm.replyCount > 0">
+      <a href=""
+        ng-click="vm.onReplyCountClick()">
+        <span class="annotation-replies__link">{{ vm.isCollapsed ? 'Show replies' : 'Hide replies' }}</span>
+        <span class="annotation-replies__count">({{ vm.replyCount }})</span>
+      </a>
+    </div>
+
+    <div class="annotation-actions" ng-if="vm.isSaving">
+      Saving...
+    </div>
+
+    <leos-suggestion-buttons
+      ng-if="!vm.isSaving && !vm.editing() && vm.id() && vm.isSuggestion() && !vm.isOrphan()"
+      annotation="vm.annotation"
+      onSaving="vm.onSaving"
+    >
+    </leos-suggestion-buttons>
+  </footer>
+</div>

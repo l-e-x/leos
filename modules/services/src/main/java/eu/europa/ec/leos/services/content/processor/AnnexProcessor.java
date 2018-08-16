@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,5 +22,5 @@ public interface AnnexProcessor {
      * @param before true if the new block needs to be inserted before the given block, false if it needs to be inserted after.
      * @return The updated document
      */
-    byte[] insertAnnexBlock(byte[] content, String elementId, boolean before);
+    byte[] insertAnnexBlock(byte[] content, String elementId, String tagName, boolean before);
 }

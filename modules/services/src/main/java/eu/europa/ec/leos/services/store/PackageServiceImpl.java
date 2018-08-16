@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,18 +26,24 @@ import eu.europa.ec.leos.integration.toolbox.ExportResource;
 import eu.europa.ec.leos.integration.utils.zip.ZipPackageUtil;
 import eu.europa.ec.leos.repository.store.PackageRepository;
 import eu.europa.ec.leos.repository.store.WorkspaceRepository;
+import eu.europa.ec.leos.services.Annotate.AnnotateService;
 import eu.europa.ec.leos.services.content.processor.AttachmentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfig;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import io.atlassian.fugue.Pair;
+
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +59,14 @@ class PackageServiceImpl implements PackageService {
     private final AttachmentProcessor attachmentProcessor;
     private final XmlNodeProcessor xmlNodeProcessor;
     private final XmlNodeConfigHelper xmlNodeConfigHelper;
+    private final AnnotateService  annotateService;
+
+    private static final String MEDIA_DIR = "media/";
+    private static final String ANNOT_FILE_EXT = ".json";
+    private static final String ANNOT_FILE_PREFIX = "annot_";
+    
+    private static final String STYLE_DEST_DIR = "support/styles/";
+    private static final String STYLES_SOURCE_PATH = "META-INF/resources/assets/css/";
 
     @Value("${leos.workspaces.path}")
     protected String storagePath;
@@ -61,12 +75,14 @@ class PackageServiceImpl implements PackageService {
             WorkspaceRepository workspaceRepository,
             AttachmentProcessor attachmentProcessor,
             XmlNodeProcessor xmlNodeProcessor,
-            XmlNodeConfigHelper xmlNodeConfigHelper) {
+            XmlNodeConfigHelper xmlNodeConfigHelper,
+            AnnotateService  annotateService) {
         this.packageRepository = packageRepository;
         this.workspaceRepository = workspaceRepository;
         this.attachmentProcessor = attachmentProcessor;
         this.xmlNodeProcessor = xmlNodeProcessor;
         this.xmlNodeConfigHelper = xmlNodeConfigHelper;
+        this.annotateService = annotateService;
     }
 
     @Override
@@ -86,8 +102,8 @@ class PackageServiceImpl implements PackageService {
     }
 
     @Override
-    public <T extends LeosDocument> List<T> findDocumentsByPackagePath(String path, Class<T> filterType) {
-        return packageRepository.findDocumentsByPackagePath(path, filterType);
+    public <T extends LeosDocument> List<T> findDocumentsByPackagePath(String path, Class<T> filterType, Boolean fetchContent) {
+        return packageRepository.findDocumentsByPackagePath(path, filterType, fetchContent);
     }
 
     private String generatePackageName() {
@@ -99,7 +115,7 @@ class PackageServiceImpl implements PackageService {
         LOG.trace("Creating Leg Package... [documentId={}]", proposalId);
 
         LeosPackage leosPackage = packageRepository.findPackageByDocumentId(proposalId);
-        List<MediaDocument> mediaDocs = packageRepository.findDocumentsByPackagePath(leosPackage.getPath(), MediaDocument.class);
+        List<MediaDocument> mediaDocs = packageRepository.findDocumentsByPackagePath(leosPackage.getPath(), MediaDocument.class, true);
         Map<String, Object> contentToZip = new HashMap<String, Object>();
 
         //Get Proposal
@@ -157,6 +173,9 @@ class PackageServiceImpl implements PackageService {
         contentToZip.put(memorandum.getName(), xmlContent);
         LOG.trace("Add Memorandum to Package");
         exportProposalResource.addChildResource(exportMemorandumResource);
+        //Adding bill Memorandum to zip packages
+        addAnnotateToZipContent(contentToZip,memorandum.getName());
+        addStyleSheetsToZipContent(contentToZip, "memorandum.css");
 
         ExportResource exportBillResource = new ExportResource(LeosCategory.BILL);
         exportBillResource.setResourceId(billResourceRef);
@@ -171,6 +190,9 @@ class PackageServiceImpl implements PackageService {
         contentToZip.put(bill.getName(), xmlContent);
         LOG.trace("Add Bill to Package");
         exportProposalResource.addChildResource(exportBillResource);
+        //Adding bill annotation to zip packages
+        addAnnotateToZipContent(contentToZip,bill.getName());
+        addStyleSheetsToZipContent(contentToZip, "bill.css");
 
         //Getting annexes from bill
         Map<String, String> attachmentIds = attachmentProcessor.getAttachmentsIdFromBill(xmlContent);
@@ -189,17 +211,48 @@ class PackageServiceImpl implements PackageService {
             contentToZip.put(annex.getName(), xmlAnnexContent);
             LOG.trace("Add Annex to Package");
             exportBillResource.addChildResource(exportAnnexResource);
+            //Adding Annexes annotation to zip packages
+            addAnnotateToZipContent(contentToZip, annex.getName());
         });
+        if(!attachmentIds.isEmpty()) {
+            addStyleSheetsToZipContent(contentToZip, "annex.css");    
+        }
+        
 
         for (MediaDocument mediaDoc : mediaDocs) {
             content = mediaDoc.getContent().getOrError(() -> "Document content is required!");
             byte[] byteContent = content.getSource().getByteString().toByteArray();
-            contentToZip.put("media/" + mediaDoc.getName(), byteContent);
+            contentToZip.put(MEDIA_DIR + mediaDoc.getName(), byteContent);
         }
 
         return new Pair(ZipPackageUtil.zipFiles(legPackageName + ".leg", contentToZip), exportProposalResource);
     }
 
+    /**
+     * Adds styles to exported .leg file in support/style folder
+     */
+    private void addStyleSheetsToZipContent(Map<String, Object> contentToZip, String fileName) {
+        try {
+            Resource resource = new ClassPathResource(STYLES_SOURCE_PATH + fileName);
+            contentToZip.put(STYLE_DEST_DIR + fileName, IOUtils.toByteArray(resource.getInputStream()));
+        } catch (IOException io) {
+            LOG.error("Error occurred while getting styles ", io);
+        }
+    }
+    
+	/**
+	 * Calls service to get Annotations per document
+	 */
+	private void addAnnotateToZipContent(Map<String, Object> contentToZip, String docName) {
+		String annotations = annotateService.getAnnotations(docName);
+		final byte[] xmlAnnotationContent = annotations.getBytes();
+		contentToZip.put(creatAnnotationFileName(docName), xmlAnnotationContent);
+	}
+
+	private String creatAnnotationFileName(String docName) {
+		return MEDIA_DIR + ANNOT_FILE_PREFIX + docName + ANNOT_FILE_EXT;
+	}
+	
     private void setComponentsRefs(LeosCategory leosCategory, final ExportResource exportResource, byte[] xmlContent) {
         Map<String, String> componentMap = xmlNodeProcessor.getValuesFromXml(xmlContent,
                 new String[]{XmlNodeConfigHelper.DOC_REF_COVER},

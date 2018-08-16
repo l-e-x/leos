@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,17 +24,26 @@ define(function leosTableTransformer(require) {
     };
 
     // Parse all the children of a cell (td, th or caption) and map it into the HTML table cell
-    function _createContentChildrenAknToHtml(element, rootPath) {
+    function _createContentChildrenAknToHtml(element, rootPath, childMp) {
         var that = this;
         var children = element.children;
 
         children.forEach(function(childElement) {
             var childElementName = that._getElementName(childElement);
 
-            // Not possible to have a 'text' element in an Akn cell
-            that.mapToNestedChildProduct(childElement, {
-                toPath: rootPath
-            });
+            if (childElementName === 'text' && !childMp) {
+                // If there is a text elements, they should be included in an Akn p element
+                that.mapToChildProducts(element, {
+                    toPath: rootPath,
+                    toChild: 'text',
+                    toChildTextValue: childElement.value
+                });
+            } else {                 
+                // Not possible to have a 'text' element in an Akn cell
+                that.mapToNestedChildProduct(childElement, {
+                    toPath: rootPath
+                });
+            }
         });
     }
 
@@ -47,13 +56,16 @@ define(function leosTableTransformer(require) {
 
     // Parse all the children of a cell (td,th or caption) and map it directly to the Akn cell if these are NOT inline elements
     // All other inline elements should be mapped into Akn p elements
-    function _createContentChildrenFromHtmlToAkn(element, rootPath) {
+    function _createContentChildrenFromHtmlToAkn(element, rootPath, childMp) {
         var that = this;
         var children = element.children;
-
-        // If they are text or inline elements, they should be included in an Akn p element
+        var toChild ='';
+        if(childMp) {
+            toChild='/mp';
+        }
+        // If they are text or inline elements, they should be included in an Akn p element, except it chilMp is false
         // This p element should be added only once
-        if (children.some(_isTextOrInlineElement, that)) {
+        if (childMp && children.some(_isTextOrInlineElement, that)) {
             that.mapToChildProducts(element, {
                 toPath : rootPath,
                 toChild : 'mp'
@@ -63,17 +75,17 @@ define(function leosTableTransformer(require) {
         children.forEach(function(childElement) {
             var childElementName = that._getElementName(childElement);
 
-            // If there are text elements, they should be included in an Akn p element
+            // If there are text elements, they should be included in an Akn p element, except it chilMp is false
             if (childElementName === 'text') {
                 that.mapToChildProducts(element, {
-                    toPath: rootPath + '/mp',
+                    toPath: rootPath + toChild,
                     toChild: 'text',
                     toChildTextValue: childElement.value
                 });
-            // If they are inline elements, they should be included in an Akn p element
+            // If they are inline elements, they should be included in an Akn p element, except it chilMp is false
             } else if (CKEDITOR.dtd.$inline.hasOwnProperty(childElementName)) {
                 that.mapToNestedChildProduct(childElement, {
-                    toPath: rootPath + '/mp'
+                    toPath: rootPath + toChild
                 });
             // Other elements are put in the akn cell
             } else {
@@ -152,6 +164,9 @@ define(function leosTableTransformer(require) {
             // Reg exps to match path /table/caption
             var CAPTION_MATCH_TO = new RegExp(_anchor([aknTableTag,'caption'].join(PSR)),'i');
             var CAPTION_MATCH_FROM = new RegExp(_anchor([htmlTableTag,'caption'].join(PSR)),'i');
+    
+            // Reg exps to match path /table/tbody
+            var TBODY_MATCH_TO = new RegExp(_anchor([aknTableTag,'tbody'].join(PSR)),'i');
 
             // Reg exps to match paths /table/tr for AKN and /table/thead/tr or /table/tbody/tr for HTML
             // REMARK: Added tbody in the AKN reg exp because browsers add by default tbody in the DOM
@@ -213,15 +228,19 @@ define(function leosTableTransformer(require) {
                             } else if (CAPTION_MATCH_FROM.test(path)) {
                                 var targetPath = aknTableTag + '/caption'; // table/caption
                                 this.mapToProducts(element, {
-                                    toPath: aknTableTag + '/caption',
+                                    toPath: targetPath,
                                     attrs: [{
                                         from: 'id',
                                         to: 'GUID',
                                         action: 'passAttributeTransformer'
+                                    },{
+                                        from: 'data-origin',
+                                        to: 'leos:origin',
+                                        action: 'passAttributeTransformer'
                                     }]
                                 });
-                                //Matches all content elements of caption to /table/caption or /table/caption/mp if these are inline elements
-                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath);
+                                //Matches all content elements of caption to /table/caption
+                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath, false);
                             // From /table/tbody/tr or /table/thead/tr to /table/tr
                             } else if ((TR_BODY_MATCH_FROM.test(path)) || (TR_HEAD_MATCH_FROM.test(path))) { 
                                 var targetPath = aknTableTag + '/' + rowTransformationConfig.akn; // table/tr
@@ -237,7 +256,7 @@ define(function leosTableTransformer(require) {
                                     attrs: _convertAttrs.call(this, cellTransformationConfig.attr)
                                 });
                                 //Matches all content elements of th to td to /table/tr/th or /table/tr/th/mp if these are inline elements
-                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath);
+                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath, true);
                             // From /table/tbody/tr/td to /table/tr/td
                             } else if (TD_MATCH_FROM.test(path)) {
                                 var targetPath = aknTableTag + '/' + rowTransformationConfig.akn + '/' + cellTransformationConfig.akn.body; // table/tr/td
@@ -246,7 +265,7 @@ define(function leosTableTransformer(require) {
                                     attrs: _convertAttrs.call(this, cellTransformationConfig.attr)
                                 });
                                 //Matches all content elements of td to /table/tr/td or /table/tr/td/mp if these are inline elements
-                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath);
+                                _createContentChildrenFromHtmlToAkn.call(this, element, targetPath, true);
                             }
                         }
                     },
@@ -265,6 +284,9 @@ define(function leosTableTransformer(require) {
                                     toPath: targetPath,
                                     attrs: _convertAttrs.call(this, attrsTableConfig)
                                 });
+                            } else if (TBODY_MATCH_TO.test(path)) {
+                                // Create structure of table /table/thead, /table/tbody, table/caption is optional
+                                var targetPath = htmlTableTag;
                                 this.mapToChildProducts(element, {
                                     toPath : targetPath,
                                     toChild : 'thead',
@@ -276,16 +298,24 @@ define(function leosTableTransformer(require) {
                             // From /table/caption to /table/caption
                             } else if (CAPTION_MATCH_TO.test(path)) {
                                 var targetPath = htmlTableTag + '/caption';
+                                this.mapToChildProducts(element, {
+                                    toPath : htmlTableTag,
+                                    toChild : 'caption',
+                                });
                                 this.mapToProducts(element, {
                                     toPath: targetPath,
                                     attrs: [{
                                         from: 'GUID',
                                         to: 'id',
                                         action: 'passAttributeTransformer'
+                                    },{
+                                        from: 'leos:origin',
+                                        to: 'data-origin',
+                                        action: 'passAttributeTransformer'
                                     }]
                                 });
                                 //Matches all content elements of caption to /table/caption or to /table/caption/mp if these are inline elements
-                                _createContentChildrenAknToHtml.call(this, element, htmlTableTag + '/caption');
+                                _createContentChildrenAknToHtml.call(this, element, htmlTableTag + '/caption', false);
                             // From /table/tr to /table/thead/tr or /table/tbody/tr
                             } else if(TR_MATCH_TO.test(path)) {
                                 var targetPath = htmlTableTag + '/' + target + '/' + rowTransformationConfig.html; // table/thead/tr or table/tbody/tr
@@ -301,7 +331,7 @@ define(function leosTableTransformer(require) {
                                     attrs: _convertAttrs.call(this, cellTransformationConfig.attr)
                                 });
                                 //Matches all content elements of td to /table/tbody/tr/td or to /table/tbody/tr/td/mp if these are inline elements
-                                _createContentChildrenAknToHtml.call(this, element, targetPath);
+                                _createContentChildrenAknToHtml.call(this, element, targetPath, true);
                             // From /table/tr/th to /table/thead/th or /table/tbody/th
                             } else if (TH_MATCH_TO.test(path)) {
                                 var targetPath = htmlTableTag + '/' + target + '/' + rowTransformationConfig.html + '/' + cellTransformationConfig.html.head; // table/thead/tr/th or table/tbody/tr/th
@@ -310,7 +340,7 @@ define(function leosTableTransformer(require) {
                                     attrs: _convertAttrs.call(this, cellTransformationConfig.attr)
                                 });
                                 //Matches all content elements of th to /table/(tbody|thead)/tr/th or to /table/(tbody|thead)/tr/th/mp if these are inline elements
-                                _createContentChildrenAknToHtml.call(this, element, targetPath);
+                                _createContentChildrenAknToHtml.call(this, element, targetPath, true);
                             }
                         }
                     }

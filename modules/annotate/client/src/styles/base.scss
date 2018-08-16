@@ -1,0 +1,51 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@import "./variables";
+@import "./util";
+@import '../../../leos/styles/leos-base'; /* LEOS Change */
+
+/* Style input placeholders */
+@mixin placeholder {
+  &.placeholder { @content; }
+  &:placeholder { @content; }
+  &::placeholder { @content; }
+}
+
+/* Shadow mixins */
+@mixin smallshadow($a: 0, $b: 1px, $c: .1) {
+  box-shadow: $a $b 1px hsla(0, 0%, 0%, $c);
+}
+
+@mixin quote {
+  @include font-normal;
+
+  border-left: 3px solid $gray-lighter;
+  color: $grey-4;
+  font-family: sans-serif;
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: 0.1px;
+  padding: 0 1em;
+}
+
+//Provides the grey-background
+@mixin grey-background {
+  background: $grey-2;
+}
+
+.annotator-hide {
+  display: none;
+  visibility: hidden;
+}

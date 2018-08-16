@@ -2,6 +2,7 @@ $SPINDLE_BLUE: #ADBDCE;
 $LIGHT_PINK_COLOR: #FFFAFF;
 $PALE_BLUE: #E1EFFE;
 $HEATHER: #ADB4BB;
+$DARK_GREY: #A9A9A9;
 
 @mixin import {
 
@@ -60,4 +61,8 @@ $HEATHER: #ADB4BB;
         transition: none;
      }    
     
+    .leos-non-import-wrapper {
+        color:$DARK_GREY;
+        padding: 0 5px; 
+    }
 }

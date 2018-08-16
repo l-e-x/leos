@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,39 +17,51 @@ define(function leosHierarchicalElementShiftEnterHandlerModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
+    var identityHandler = require("plugins/leosAttrHandler/leosIdentityHandlerModule");
     var pluginName = "leosHierarchicalElementShiftEnterHandler";
     var LOG = require("logger");
     var SHIFT_ENTER = CKEDITOR.SHIFT + 13;
-    // This array provide white list of elements in which shift+enter is allowed
-    var ALLOWED_ELEMENTS = [ "span", "strong", "em", "u", "sup", "sub", "a", "p", "li" ];
 
     var DATA_AKN_NUM = "data-akn-num";
 
     var pluginDefinition = {
         init : function init(editor) {
-            editor.on('key', function(event) {
-                if (event.data.keyCode === SHIFT_ENTER && isAllowedInThisContext(event)) {
-                    LOG.debug("SHIFT_ENTER event intercepted: ", event);
-                    var selection = event.editor.getSelection();
-                    // grab the content from selection to the end of the current inline content
-                    var contentAfterShiftEnter = getContentAfterShiftEnter(editor);
-                    var startElement = selection.getStartElement();
-                    // if the current inline content is not wrap in p, wrap it
-                    var wrappingP = wrapCurrentInlineContent(startElement, editor);
-                    // insert new subparagraph with extracted content in the next line
-                    contentAfterShiftEnter.insertAfter(wrappingP);
-                    // make selection at the begining of the new subparagraph
-                    setNewSelection(editor, contentAfterShiftEnter);
-                    event.editor.fire("contentChange");
-                    event.cancel();
-                }
-                else if (event.data.keyCode === SHIFT_ENTER && !isAllowedInThisContext(event)) {
-                    LOG.debug("SHIFT_ENTER event intercepted but cancelled: ", event);
-                    event.cancel();
-                }
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : SHIFT_ENTER,
+                action : _onShiftEnterKey
             });
         }
     };
+
+    function _onShiftEnterKey(context) {
+        var event = context.event;
+        var editor = event.editor;
+        var selection = editor.getSelection();
+        var startElement = leosKeyHandler.getSelectedElement(selection);
+
+        if (isShiftEnterAllowedInThisContext(startElement)) {
+            LOG.debug("SHIFT_ENTER event intercepted: ", event);
+            // grab the content from selection to the end of the current inline content
+            var contentAfterShiftEnter = getContentAfterShiftEnter(editor);
+            // if the current inline content is not wrap in p, wrap it
+            var wrappingP = wrapCurrentInlineContent(startElement, editor);
+            // insert new subparagraph with extracted content in the next line
+            contentAfterShiftEnter.insertAfter(wrappingP);
+            // make selection at the beginning of the new subparagraph
+            setNewSelection(editor, contentAfterShiftEnter);
+            var commonDetails = identityHandler.getElementDetails(contentAfterShiftEnter);
+            identityHandler.handleIdentity(wrappingP, commonDetails, contentAfterShiftEnter, commonDetails);
+            event.cancel();
+            event.editor.fire("change");
+        }
+        else {
+            LOG.debug("SHIFT_ENTER event intercepted but cancelled: ", event);
+            event.cancel();
+        }
+    }
 
     var getInlineWrapper = function getInlineWrapper(el) {
         var inlineWrapper = el.getAscendant("p", true);
@@ -95,7 +107,7 @@ define(function leosHierarchicalElementShiftEnterHandlerModule(require) {
         var fromShiftEnterRange = getRangeAfterShiftEnter(firstRange, startElement);
         var content = fromShiftEnterRange.extractContents();
         var pElement = new CKEDITOR.dom.element('p');
-        if (isContentEmptyTextNode(content)) {
+        if (leosKeyHandler.isContentEmptyTextNode(content)) {
             pElement.appendBogus();
         } else {
             pElement.append(content);
@@ -131,22 +143,6 @@ define(function leosHierarchicalElementShiftEnterHandlerModule(require) {
         return firstRange;
     }
 
-    var isContentEmptyTextNode = function isContentEmptyTextNode(fragment) {
-        if (fragment.getChildCount() === 1) {
-            var childElement = fragment.getChild(0);
-            if (childElement.type === CKEDITOR.NODE_TEXT) {
-                if (childElement.getText().trim() === "") {
-                    return true;
-                }
-            }
-        }
-
-        if (fragment.getChildCount() === 0) {
-            return true;
-        }
-        return false;
-    };
-
     var setNewSelection = function setNewSelection(editor, content) {
         var rangeToSelect, firstChildElement = content.getFirst();
         rangeToSelect = editor.createRange();
@@ -155,11 +151,12 @@ define(function leosHierarchicalElementShiftEnterHandlerModule(require) {
         rangeToSelect.select();
     }
 
-    var isAllowedInThisContext = function isAllowedInThisContext(event) {
-        var selection = event.editor.getSelection();
-        var startElement = selection.getStartElement();
-        var currentElement = startElement;
-
+    //Shift-enter is allowed when not present in an unnumbered paragraph
+    var isShiftEnterAllowedInThisContext = function isShiftEnterAllowedInThisContext(currentElement) {
+        // If element is empty shift enter should be forbidden
+	if (leosKeyHandler.isContentEmptyTextNode(currentElement)) {
+            return false;
+        }
         // in order to check if the shift enter is allowed in current selection, take the start element and
         // check ancestors one by one and compare them against allowed_elements
         do {
@@ -170,9 +167,6 @@ define(function leosHierarchicalElementShiftEnterHandlerModule(require) {
             }
             if (elementName === "ol") {
                 break;
-            }
-            if (ALLOWED_ELEMENTS.indexOf(elementName) < 0) {
-                return false;
             }
     	} while (currentElement = currentElement.getParent());
         return true;

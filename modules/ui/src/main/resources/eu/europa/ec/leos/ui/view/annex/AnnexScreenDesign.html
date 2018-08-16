@@ -3,15 +3,16 @@
 <head>
     <meta name="package-mapping" content="content:eu.europa.ec.leos.ui.component"/>
     <meta name="package-mapping" content="comp:eu.europa.ec.leos.web.ui.component"/>
+    <meta name="package-mapping" content="toc:eu.europa.ec.leos.ui.component.toc"/>
 </head>
 <body>
     <vaadin-vertical-layout size-full spacing="false" margin="false">
-        <vaadin-horizontal-layout width="100%" spacing>
+        <vaadin-horizontal-layout width-full spacing>
             <vaadin-label style-name="leos-annexview-icon" contentMode="HTML" width="32px" :middle :left>
                 <span>&#xe7e1</span>
             </vaadin-label>
-            <vaadin-label _id="annexTitle" style-name="leos-annexview-title" :expand="1.0" :middle :left></vaadin-label>
-            <comp-menu-bar-component :top :right/>
+            <vaadin-label _id="annexTitle" style-name="leos-annexview-title" :expand="1.0" width-full :middle :left></vaadin-label>
+            <comp-menu-bar-component width="125px" :top :right/>
         </vaadin-horizontal-layout>
         <vaadin-vertical-layout size-full :top :center :expand="1.0" spacing="false" margin="false">
             <vaadin-horizontal-split-panel _id="annexSplit" :expand="1.0">
@@ -19,14 +20,15 @@
                     <comp-marked-text-component _id="markedTextComponent"/>
                     <comp-annex-component _id="annexDoc" :top :left size-full :expand="1.0" spacing="false" margin="false">
                         <vaadin-horizontal-layout style-name="leos-viewdoc-docbar leos-viewdoc-padbar-both" width="100%" spacing>
-                            <vaadin-button _id="rightSliderButton" icon="fonticon://Vaadin-Icons/e7c1" style-name="link leos-toolbar-button" :middle :left></vaadin-button>
                             <vaadin-button _id="timeLineButton" icon="fonticon://Vaadin-Icons/e7d4"  style-name="link leos-toolbar-button" :middle :left></vaadin-button>
                             <vaadin-button _id="majorVersionButton" icon="fonticon://Vaadin-Icons/e7b6"  style-name="link leos-toolbar-button" :middle :left></vaadin-button>
-                            <vaadin-label _id="versionInfoLabel" :expand="1.0" :middle :center></vaadin-label>                           
+                            <vaadin-label _id="versionInfoLabel" :expand="1.0" :middle :center></vaadin-label>
+                            <vaadin-button _id="refreshButton" icon="fonticon://Vaadin-Icons/e790" style-name="link leos-toolbar-button" :middle :right></vaadin-button>
                         </vaadin-horizontal-layout>
-                        <content-leos-display-field _id="annexContent" style-name="leos-doc-content" size-full :expand="1.0"/>
+                        <content-leos-display-field _id="annexContent" id="docContainer" style-name="leos-doc-content" size-full :expand="1.0"/>
                     </comp-annex-component>
                 </vaadin-horizontal-split-panel>
+                <toc-table-of-content-component _id="annexToc" size-full :expand="1.0" spacing="false" margin="false"/>
             </vaadin-horizontal-split-panel>
         </vaadin-vertical-layout>
     </vaadin-vertical-layout>

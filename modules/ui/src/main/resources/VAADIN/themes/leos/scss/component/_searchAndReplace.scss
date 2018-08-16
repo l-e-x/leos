@@ -3,8 +3,12 @@
     .search-and-replace-min {
         color:$MAIN_BLUE;
         vertical-align: baseline;
-        padding-top: 3px;
     }
+
+    .search-and-replace-min:not(.v-disabled):hover {
+        color: $LIGHT_BLUE;
+    }
+    
     .search-and-replace-max {
         background: white;
         color:#1a1a1a;//menubar color

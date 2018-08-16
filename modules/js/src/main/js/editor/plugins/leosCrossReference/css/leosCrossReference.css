@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -96,5 +96,34 @@ article subparagraph {
 
 .error-label {
 	font-size: 12px;
+	font-weight: bold;
 	color: red;
+}
+
+.warning-label {
+    font-size: 12px;
+    font-weight: bold;
+    color: blue;
+}
+
+.no-preview-available {
+	font-weight: bold;
+	text-align: center;
+}
+
+.crDialogbox #brokenRefLabel   {
+    padding-top : 16px;
+}
+
+.crDialogbox #brokenRefLabel  mref[leos\:broken] {
+    font-style: italic;
+}
+
+.crDialogbox #brokenRefLabel  mref[leos\:broken]:after {
+    color: red;
+    display: inline;
+    font-style: normal;
+    font-family: "Vaadin-Icons";
+    content: "warning";
+    vertical-align: bottom;
 }

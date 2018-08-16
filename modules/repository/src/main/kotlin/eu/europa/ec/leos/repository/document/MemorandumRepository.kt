@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -80,7 +80,8 @@ interface MemorandumRepository {
      * Finds all versions of a [Memorandum] document with the specified characteristics.
      *
      * @param id the ID of the Memorandum document to retrieve.
+     * @param  fetchContent streams the content
      * @return the list of found Memorandum document versions or empty.
      */
-    fun findMemorandumVersions(id: String): List<Memorandum>
+    fun findMemorandumVersions(id: String, fetchContent: Boolean): List<Memorandum>
 }

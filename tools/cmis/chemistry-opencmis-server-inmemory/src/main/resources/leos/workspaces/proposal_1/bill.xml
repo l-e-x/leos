@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="support/styles/bill.css"?>
 <akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos">
     <bill name="regulation" contains="originalVersion">
         <meta>
@@ -15,7 +16,7 @@
                     <FRBRuri value=""/>
                     <FRBRdate date="9999-01-01" name=""/>
                     <FRBRauthor href=""/>
-                    <FRBRlanguage language="eng"/>
+                    <FRBRlanguage language="EN"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis value=""/>
@@ -24,7 +25,15 @@
                     <FRBRauthor href=""/>
                 </FRBRManifestation>
             </identification>
-            <proprietary source="~leos"><leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose><leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage><leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType></proprietary></meta>
+            <proprietary source="~leos">
+                <leos:version>1.0.3</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>BL-023</leos:docTemplate>
+                <leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose>
+                <leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage>
+                <leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType>
+                <leos:ref>bill</leos:ref>
+            </proprietary></meta>
         <coverPage GUID="coverpage">
             <container name="institutionOwnerLogo" GUID="coverpage__container_1">
                 <p  GUID="coverpage__container_1__p">

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,8 +24,8 @@ class RepositoryViewImpl extends AbstractLeosView<RepositoryScreenImpl> implemen
     private static final long serialVersionUID = 1L;
 
     @Autowired
-    RepositoryViewImpl(RepositoryScreenImpl screen, RepositoryPresenter presenter) {
-        super(screen, presenter);
+    RepositoryViewImpl(RepositoryScreen repositoryScreen, RepositoryPresenter presenter) {
+        super((RepositoryScreenImpl) repositoryScreen, presenter);
         Validate.notNull(presenter, "Presenter must not be null!");
     }
 

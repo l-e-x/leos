@@ -1,0 +1,89 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<span ng-if="vm.auth.status === 'logged-out'"
+      ng-switch on="vm.groups.focused().public">
+  <img class="group-list-label__icon group-list-label__icon--third-party"
+    ng-src="{{ vm.thirdPartyGroupIcon }}"
+    ng-if="vm.thirdPartyGroupIcon"
+    ng-switch-when="true"><!-- nospace
+  !--><i class="group-list-label__icon h-icon-public"
+    ng-if="!vm.thirdPartyGroupIcon"
+    ng-switch-when="true"></i><!-- nospace
+  !--><i class="group-list-label__icon h-icon-group" ng-switch-default></i>
+  <span class="group-list-label__label">{{vm.groups.focused().name}}</span>
+</span>
+
+<div class="pull-right"
+     ng-if="vm.auth.status === 'logged-in'"
+     dropdown
+     keyboard-nav>
+  <div class="dropdown-toggle"
+        dropdown-toggle
+        data-toggle="dropdown"
+        role="button"
+        ng-switch on="vm.groups.focused().public"
+        title="Change the selected group">
+    <img class="group-list-label__icon group-list-label__icon--third-party"
+         ng-src="{{ vm.thirdPartyGroupIcon }}"
+         ng-if="vm.thirdPartyGroupIcon"
+         ng-switch-when="true"><!-- nospace
+    !--><i class="group-list-label__icon h-icon-public"
+           ng-switch-when="true"
+           ng-if="!vm.thirdPartyGroupIcon"></i><!-- nospace
+    !--><i class="group-list-label__icon h-icon-group"
+           ng-switch-default></i>
+    <span class="group-list-label__label">{{vm.groups.focused().name}}</span><!-- nospace
+    !--><i class="h-icon-arrow-drop-down"></i>
+  </div>
+  <div class="dropdown-menu__top-arrow"></div>
+  <ul class="dropdown-menu pull-none" role="menu">
+    <li class="dropdown-menu__row dropdown-menu__row--unpadded "
+        ng-repeat="group in vm.groups.all()">
+      <div ng-class="{'group-item': true, selected: group.id == vm.groups.focused().id}"
+           ng-click="vm.focusGroup(group.id)">
+        <!-- the group icon !-->
+        <div class="group-icon-container" ng-switch on="group.public">
+          <img class="group-list-label__icon group-list-label__icon--third-party"
+               ng-src="{{ vm.thirdPartyGroupIcon }}"
+               ng-if="vm.thirdPartyGroupIcon"
+               ng-switch-when="true">
+          <i class="h-icon-public" ng-if="!vm.thirdPartyGroupIcon" ng-switch-when="true"></i>
+          <i class="h-icon-group" ng-switch-default></i>
+        </div>
+        <!-- the group name and share link !-->
+        <div class="group-details">
+          <div class="group-name-container">
+            <a class="group-name-link"
+               href=""
+               title="{{ group.public ? 'Show public annotations' : 'Show and create annotations in ' + group.name }}">
+               {{group.name}}
+            </a>
+          </div>
+        </div>
+      </div>
+    </li>
+    <li ng-if="!vm.isThirdPartyUser()" class="dropdown-menu__row dropdown-menu__row--unpadded new-group-btn">
+      <div class="group-item" ng-click="vm.createNewGroup()">
+        <div class="group-icon-container"><i class="h-icon-add"></i></div>
+        <div class="group-details">
+          <a href="" class="group-name-link" title="Create a new group to share annotations">
+            New group
+          </a>
+        </div>
+      </div>
+    </li>
+  </ul>
+</div>

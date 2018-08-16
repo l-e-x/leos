@@ -12,6 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
+@import "changePane";
 
 @mixin documentView {
 
@@ -34,15 +35,27 @@
     }
 
     .leos-markedtext-bar {
-        padding-left: 80px;
+        padding-left: 10px;
     }
 
-    .leos-toolbar-button.v-button {
+    .leos-toolbar-button {
         padding: 0 5px;
         color: $MAIN_BLUE; //#474747;
         .v-icon {
             font-size: 16px;
         }
+    }
+
+    .leos-toolbar-button.enable-sync {
+       color: $HEADER_BLUE;
+    }
+    
+    .leos-toolbar-button.disable-sync {
+       color: $G_BORDER_COLOR;
+    }
+
+    .leos-toolbar-button.v-disabled {
+        color: $DARK_GREY;
     }
 
     .leos-viewdoc-toctree-panel {
@@ -56,14 +69,7 @@
         position: relative;
     }
 
-    .leos-marked-content {
-        overflow: auto;
-        position: relative;
-        akomantoso .page {
-            color: #4D4848;
-            box-shadow: 0 0 1px rgba(0, 0, 0, 0.15);
-        }
-    }
+    @include changePane("bill");
 
     .bookmark-container {
         background:  $HEADER_BLUE;

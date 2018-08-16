@@ -20,6 +20,9 @@ class LeosPropertyDefinition {
     static final PropertyDefinition<String> LEOS_TITLE =
             PropertyCreationHelper.createStringDefinition("leos:title", "Document Title", Updatability.READWRITE);
 
+    static final PropertyDefinition<String> LEOS_METADATA_REF =
+            PropertyCreationHelper.createStringDefinition("metadata:ref", "LEOS REF", Updatability.READWRITE);
+
     static final PropertyDefinition<String> LEOS_COLLABORATORS =
             PropertyCreationHelper.createStringMultiDefinition("leos:collaborators", "Document Collaborators", Updatability.READWRITE);
 

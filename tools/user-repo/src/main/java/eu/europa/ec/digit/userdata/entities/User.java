@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -41,7 +41,7 @@ public class User implements Serializable {
     private String firstName;
 
     @Column(name = "USER_DG", nullable = false, insertable = false, updatable = false)
-    private String dg;
+    private String entity;
 
     @Column(name = "USER_EMAIL", nullable = false, insertable = false, updatable = false)
     private String email;
@@ -55,12 +55,12 @@ public class User implements Serializable {
     public User() {
     }
 
-    public User(String login, Long perId, String lastName, String firstName, String dg, String email, List<Role> roleEntities) {
+    public User(String login, Long perId, String lastName, String firstName, String entity, String email, List<Role> roleEntities) {
         this.login = login;
         this.perId = perId;
         this.lastName = lastName;
         this.firstName = firstName;
-        this.dg = dg;
+        this.entity = entity;
         this.email = email;
         this.roleEntities = roleEntities;
     }
@@ -81,8 +81,8 @@ public class User implements Serializable {
         return firstName;
     }
 
-    public String getDg() {
-        return dg;
+    public String getEntity() {
+        return entity;
     }
     public String getEmail() {
         return email;

@@ -1,0 +1,65 @@
+/*
+ * Copyright 2018 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+package eu.europa.ec.leos.services.Annotate;
+
+import java.net.URI;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import eu.europa.ec.leos.integration.AnnotationProvider;
+import eu.europa.ec.leos.security.SecurityContext;
+
+@Service
+public class AnnotateServiceImpl implements AnnotateService {
+
+	private static final Logger LOG = LoggerFactory.getLogger(AnnotateServiceImpl.class);
+
+	private final SecurityContext securityContext;
+	private final AnnotationProvider annotationProvider;
+
+	@Value("${annotate.api.host}")
+	private String annotationHost;
+
+	@Autowired
+	AnnotateServiceImpl(SecurityContext securityContext, AnnotationProvider annotationProvider) {
+		this.securityContext = securityContext;
+		this.annotationProvider = annotationProvider;
+	}
+
+	@Override
+	public String getAnnotations(String docName) {
+
+		URI uri = UriComponentsBuilder.fromHttpUrl(annotationHost + "search")
+				.queryParam("_separate_replies", true)
+				.queryParam("group", "__world__")
+				.queryParam("limit", -1)
+				.queryParam("offset", 0)
+				.queryParam("order", "asc")
+				.queryParam("sort", "created")
+				.queryParam("uri", "uri://LEOS/" + docName).build().encode().toUri();
+
+		try {
+			return annotationProvider.searchAnnotations(uri, securityContext.getToken(annotationHost + "token"));
+		} catch (Exception exception) {
+			LOG.error("Error getting annotations: ", exception.getMessage());
+			throw new RuntimeException("Error Occured While Getting Annotation");
+		}
+	}
+
+}

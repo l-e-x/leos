@@ -1,0 +1,27 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@import "../variables";
+
+// In order for our highlights to be visible we need to use solid colors.
+#viewer.has-transparent-text-layer .textLayer {
+  opacity: 1;
+  ::selection { background: rgba(0, 0, 255, .2); }
+  ::-moz-selection { background: rgba(0 , 0 , 255, .2); }
+}
+
+// When using search funcionality of PDF.js the matches should highlight the content but not cover it. Fix for #648
+.textLayer .highlight.selected {
+  background-color: rgba(0, 100, 0, 0.5);
+}

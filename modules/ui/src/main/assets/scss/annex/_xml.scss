@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -14,26 +14,32 @@
 
 @mixin xml {
 
-    @extend %defaultBoxSizing;
-
-    akomantoso {
-        @extend %pageLayout;
+    akomaNtoso {
+        @extend %defaultBoxSizing;
         @extend %pageFont;
-        @extend %documentFooter;
-    }    
+        doc[name="annex"] {
+            @extend %xmlCoverPage;
+            @extend %xmlSecondPage;
+        }
+        meta *{
+             display: none;
+        }
+    }
     
     // AKN styles
     doc[name="annex"] {
         @extend %xmlAuthorialNote;
         @extend %elementActions;
-        @extend %xmlBlockcontainer;
+        @extend %xmlDivision;
         @extend %xmlParagraph;
         @extend %xmlLongTitle;
         @extend %xmlList;
         @extend %xmlTable;
-        @extend %xmlCoverPage;
         @extend %xmlAnnexCoverPage;
         @extend %compare;
+        @extend %xmlHigherElements;
+        @extend %xmlImage;
+        @extend %documentFooter;
 
         @include editor;
         

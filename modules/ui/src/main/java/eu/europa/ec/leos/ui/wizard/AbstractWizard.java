@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,7 @@ package eu.europa.ec.leos.ui.wizard;
 import com.google.common.eventbus.EventBus;
 import com.vaadin.server.AbstractErrorMessage;
 import com.vaadin.server.ErrorMessage;
+import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.Alignment;
@@ -189,7 +190,7 @@ public abstract class AbstractWizard extends AbstractWindow {
                         setWizardStep(currentStep + 1);
                     } else {
                         button.setComponentError(new UserError(messageHelper.getMessage("wizard.error"), AbstractErrorMessage.ContentMode.TEXT,
-                                ErrorMessage.ErrorLevel.WARNING));
+                                ErrorLevel.WARNING));
                     }
                 } else {
                     LOG.trace("Wizard backward button was clicked!");
@@ -226,11 +227,11 @@ public abstract class AbstractWizard extends AbstractWindow {
                         close();
                     } else {
                         finishButton.setComponentError(new UserError(messageHelper.getMessage("wizard.error.finish"),
-                                AbstractErrorMessage.ContentMode.TEXT, ErrorMessage.ErrorLevel.WARNING));
+                                AbstractErrorMessage.ContentMode.TEXT, ErrorLevel.WARNING));
                     }
                 } else {
                     finishButton.setComponentError(new UserError(messageHelper.getMessage("wizard.error"), AbstractErrorMessage.ContentMode.TEXT,
-                            ErrorMessage.ErrorLevel.WARNING));
+                            ErrorLevel.WARNING));
                 }
             }
         });

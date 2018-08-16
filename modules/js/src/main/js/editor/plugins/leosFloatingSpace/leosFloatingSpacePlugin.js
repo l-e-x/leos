@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -336,6 +336,17 @@ define(function floatingSpacePluginModule(require) {
                 if (!evt.getTarget().hasAscendant('a', 1))
                     evt.preventDefault();
             });
+
+            // LEOS-2764 set 'ckevent' type on all events coming from the toolbox to avoid mixing with other events like annotation(hypothesis) events.
+            var _setEventType = function(event) {
+                event.hostEventType = 'ckEvent';
+            }
+            for (var key in floatSpace.$){
+                if(key.search('on') === 0) {
+                    floatSpace.$.addEventListener(key.slice(2), _setEventType)
+                }
+            }
+            // ------------------------------------------------------------------------------------------------------------------------------------
 
             editor.on('focus', function(evt) {
                 layout(evt);

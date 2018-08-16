@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.services.content.processor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public interface AttachmentProcessor {
@@ -37,4 +38,11 @@ public interface AttachmentProcessor {
      * @return documentRef GUID values with href as keys
      */
     Map<String, String> getAttachmentsIdFromBill(byte[] xmlContent);
+
+    /** This method update existing elements "attachment/documentRef" section to 'attachments' tag.
+     * @param xmlContent
+     * @param attachments
+     * @return udpated xml content
+     */
+    byte[] updateAttachmentsInBill(byte[] xmlContent, HashMap<String, String> attachments);
 }

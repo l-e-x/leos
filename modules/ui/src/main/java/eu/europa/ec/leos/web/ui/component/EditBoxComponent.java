@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,7 @@ package eu.europa.ec.leos.web.ui.component;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.server.AbstractErrorMessage;
 import com.vaadin.server.ErrorMessage;
+import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.CustomComponent;
@@ -182,11 +183,11 @@ public class EditBoxComponent extends CustomComponent implements Property.Editor
                 } else {
                     if (save.getComponentError() == null) {
                         save.setComponentError(
-                                new UserError(editbox.getRequiredError(), AbstractErrorMessage.ContentMode.TEXT, ErrorMessage.ErrorLevel.WARNING));
+                                new UserError(editbox.getRequiredError(), AbstractErrorMessage.ContentMode.TEXT, ErrorLevel.WARNING));
                     }
                     if (editbox.getComponentError() == null) {
                         editbox.setComponentError(
-                                new UserError("", AbstractErrorMessage.ContentMode.TEXT, ErrorMessage.ErrorLevel.WARNING));
+                                new UserError("", AbstractErrorMessage.ContentMode.TEXT, ErrorLevel.WARNING));
                     }
                 }
             }
@@ -196,7 +197,7 @@ public class EditBoxComponent extends CustomComponent implements Property.Editor
         save.addClickListener(event -> {            
             if (StringUtils.isEmpty(editbox.getValue()) && editbox.isRequired()) {
                 if (save.getComponentError() == null) {
-                    save.setComponentError(new UserError(editbox.getRequiredError(), AbstractErrorMessage.ContentMode.TEXT, ErrorMessage.ErrorLevel.WARNING));
+                    save.setComponentError(new UserError(editbox.getRequiredError(), AbstractErrorMessage.ContentMode.TEXT, ErrorLevel.WARNING));
                 }
             } else {
                 if (editbox.isRequired()) {

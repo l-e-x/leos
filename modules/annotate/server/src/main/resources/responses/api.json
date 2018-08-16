@@ -1,0 +1,68 @@
+{
+  "message": "Annotator Store API",
+  "links": {
+    "profile": {
+      "read": {
+        "url": "@annotate.server.url@/api/profile",
+        "method": "GET",
+        "desc": "Fetch the user's profile"
+      },
+      "update": {
+        "url": "@annotate.server.url@/api/profile",
+        "method": "PATCH",
+        "desc": "Update a user's preferences"
+      }
+    },
+    "search": {
+      "url": "@annotate.server.url@/api/search",
+      "method": "GET",
+      "desc": "Search for annotations"
+    },
+    "groups": {
+        "read": {
+            "url": "@annotate.server.url@/api/groups",
+            "method": "GET",
+            "desc": "Fetch the user's groups"
+        }
+    },
+    "annotation": {
+      "read": {
+        "url": "@annotate.server.url@/api/annotations/:id",
+        "method": "GET",
+        "desc": "Fetch an annotation"
+      },
+      "create": {
+        "url": "@annotate.server.url@/api/annotations",
+        "method": "POST",
+        "desc": "Create an annotation"
+      },
+      "update": {
+        "url": "@annotate.server.url@/api/annotations/:id",
+        "method": "PATCH",
+        "desc": "Update an annotation"
+      },
+      "delete": {
+        "url": "@annotate.server.url@/api/annotations/:id",
+        "method": "DELETE",
+        "desc": "Delete an annotation"
+      }
+    },
+    "suggestion": {
+      "accept": {
+        "url": "@annotate.server.url@/api/annotations/:id/accept",
+        "method": "DELETE",
+        "desc": "Accept a suggestion"
+      },
+      "reject": {
+        "url": "@annotate.server.url@/api/annotations/:id/reject",
+        "method": "DELETE",
+        "desc": "Reject a suggestion"
+      }
+    },
+    "links": {
+      "url": "@annotate.server.url@/api/links",
+      "method": "GET",
+      "desc": "URL templates for generating URLs for HTML pages"
+    }
+  }
+}

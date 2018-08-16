@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,7 +12,7 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 /**
- * @fileOverview This plugin was copied from the official plugin CKEditor "list" and developed to avoid the bug described in the task LEOS-2300. 
+ * @fileOverview This plugin was copied from the official plugin CKEditor_4.7.1 "list" and developed to avoid the bug described in the task LEOS-2300. 
  * The "indentlist" plugin was firstly customized using the same name to change the default indent behavior on the first list's line. 
  * But since the default indentlist plugin is used in the Explanatory Memorandum view, 
  * there was an conflict with the Legal Text view and behavior was not the required one anymore while browsing from a view to another. 

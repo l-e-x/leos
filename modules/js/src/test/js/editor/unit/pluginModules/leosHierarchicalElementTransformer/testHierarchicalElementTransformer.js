@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -106,13 +106,13 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1])).toEqual(
-                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/content/mp","toChild":"text","toChildTextValue":"fdsafsa"}');
@@ -148,17 +148,17 @@ define(function testHierarchicalElementTransformer(require) {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1]))
                                                                     .toEqual(
-                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 3) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"fds"}');
@@ -214,17 +214,17 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1])).toEqual(
-                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 3) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"fds"}');
@@ -233,10 +233,10 @@ define(function testHierarchicalElementTransformer(require) {
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
                                                             } else if (mapToChildProductsCounter === 5) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 6) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 7) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
@@ -268,6 +268,63 @@ define(function testHierarchicalElementTransformer(require) {
 
                                                     });
                                                 });
+                                        
+                                        it("Element with table and nested inline content wrapped in p.",
+                                                function() {
+                                                    var elementToBeTransformed = fromFragmentToElement(ckEditorFragmentFactory
+                                                            .getCkFragmentForHtml("<ul><li data-akn-num='1'><table></table><p>Text</p></li></ul>"));
+                                                    var fromAction = transformationConfig.transformer.from.action;
+                                                    var mapToChildProductsCounter = 0;
+                                                    var mapToNestedChildProductCounter = 0;
+                                                    var fragmentMock = {
+                                                        mapToProducts : function() {
+                                                            expect(JSON.stringify(arguments[1]))
+                                                                    .toEqual(
+                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                        },
+                                                        mapToChildProducts : function() {
+                                                            if (mapToChildProductsCounter === 0) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 1) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual(
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 2) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 3) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual(
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 4) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual(
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 5) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual(
+                                                                        '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"Text"}');
+                                                            } else {
+                                                                // expect not to be called for mapToChildProductsCounter > 7
+                                                                expect(true).toBe(false);
+                                                            }
+                                                            mapToChildProductsCounter++;
+                                                        },
+                                                        _getElementName : getElementName,
+                                                        mapToNestedChildProduct : function() {
+                                                            if (mapToNestedChildProductCounter === 0) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent/alinea/content"}');
+                                                            } else {
+                                                                // expect not to be called for mapToChildProductsCounter > 1
+                                                                expect(true).toBe(false);
+                                                            }
+
+                                                            mapToNestedChildProductCounter++;
+                                                        },
+                                                        _ : {}
+                                                    }
+
+                                                    elementToBeTransformed.forEach(function(el) {
+                                                        el.transformationContext = getTransformationContextForElement(el, elementToBeTransformed);
+                                                        fromAction.call(fragmentMock, el);
+
+                                                    });
+                                                });
                                     })
 
                             describe("From AKN to HTML side ",
@@ -282,13 +339,13 @@ define(function testHierarchicalElementTransformer(require) {
                                             var fragmentMock = {
                                                 mapToProducts : function() {
                                                     if(mapToProductsCounter === 0) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToProductsCounter === 1) {
                                                         expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
                                                     } else if (mapToProductsCounter === 2) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-content-id","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-content-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-content-origin","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToProductsCounter === 3) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
                                                     } else {
                                                      // expect not to be called for mapToProductsCounter > 3
                                                         expect(true).toBe(false);
@@ -297,7 +354,7 @@ define(function testHierarchicalElementTransformer(require) {
                                                 },
                                                 mapToChildProducts : function() {
                                                     if (mapToChildProductsCounter === 0) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToChildProductsCounter === 1) {
                                                         expect(JSON.stringify(arguments[1])).toEqual(
                                                                 '{"toPath":"ul/li","toChild":"text","toChildTextValue":"fdsafsa"}');
@@ -335,13 +392,13 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                             mapToProducts : function() {
                                                                 if(mapToProductsCounter === 0) {
-                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"}]}');
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
                                                                 } else if (mapToProductsCounter === 1) {
                                                                     expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
                                                                 } else if (mapToProductsCounter === 2) {
-                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","attrs":[{"from":"GUID","to":"data-akn-wrapped-content-id","action":"passAttributeTransformer"}]}');
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
                                                                 } else if (mapToProductsCounter === 3) {
-                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","attrs":[{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"}]}');
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
                                                                 } else {
                                                                  // expect not to be called for mapToProductsCounter > 3
                                                                     expect(true).toBe(false);
@@ -350,9 +407,9 @@ define(function testHierarchicalElementTransformer(require) {
                                                             },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"from":"GUID","to":"data-akn-alinea-id","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","toChild":"text","toChildTextValue":"fd"}');
                                                             } else if (mapToChildProductsCounter === 3) {
@@ -385,6 +442,70 @@ define(function testHierarchicalElementTransformer(require) {
 
                                                     });
                                                 });
+                                        
+                                        it("Element with table and nested inline content.",
+                                                function() {
+                                                    var elementToBeTransformed = fromFragmentToElement(ckEditorFragmentFactory
+                                                            .getCkFragmentForHtml("<list><indent><num>1</num><alinea><content><table></table></content></alinea><alinea><content><mp>Text</mp></content></alinea></indent></list>"));
+                                                    var toAction = transformationConfig.transformer.to.action;
+                                                    var mapToProductsCounter = 0;
+                                                    var mapToChildProductsCounter = 0;
+                                                    var mapToNestedChildProductCounter = 0;
+                                                    
+                                                    var fragmentMock = {
+                                                            mapToProducts : function() {
+                                                                if(mapToProductsCounter === 0) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
+                                                                } else if (mapToProductsCounter === 1) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
+                                                                } else if (mapToProductsCounter === 2) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
+                                                                } else if (mapToProductsCounter === 3) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
+                                                                } else if (mapToProductsCounter === 4) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
+                                                                } else if (mapToProductsCounter === 5) {
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
+                                                                } else {
+                                                                 // expect not to be called for mapToProductsCounter > 3
+                                                                    expect(true).toBe(false);
+                                                                }
+                                                                mapToProductsCounter++;
+                                                            },
+                                                        mapToChildProducts : function() {
+                                                            if (mapToChildProductsCounter === 0) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 1) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
+                                                            } else if (mapToChildProductsCounter === 2) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","toChild":"text","toChildTextValue":"Text"}');
+                                                            } else {
+                                                                // expect not to be called for mapToChildProductsCounter > 3
+                                                                expect(true).toBe(false);
+                                                            }
+                                                            mapToChildProductsCounter++;
+
+                                                        },
+                                                        _getElementName : getElementName,
+                                                        mapToNestedChildProduct : function() {
+                                                            if (mapToNestedChildProductCounter === 0) {
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"to":"data-akn-alinea-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-alinea-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"}]}');
+                                                            } else {
+                                                                // expect not to be called for mapToChildProductsCounter > 2
+                                                                expect(true).toBe(false);
+                                                            }
+                                                            mapToNestedChildProductCounter += 1;
+                                                        },
+                                                        _ : {}
+                                                    }
+
+                                                    elementToBeTransformed.forEach(function(el) {
+                                                        el.transformationContext = getTransformationContextForElement(el, elementToBeTransformed);
+                                                        toAction.call(fragmentMock, el);
+
+                                                    });
+                                                });
+                                        
                                     })
 
                         })

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,20 +15,22 @@ package eu.europa.ec.leos.services.document;
 
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
 import eu.europa.ec.leos.domain.document.LeosMetadata.MemorandumMetadata;
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
 import java.util.List;
 
 public interface MemorandumService {
 
-    Memorandum createMemorandum(String templateId, String path, MemorandumMetadata metadata);
+    Memorandum createMemorandum(String templateId, String path, MemorandumMetadata metadata, String actionMsg, byte[] content);
 
     Memorandum findMemorandum(String id);
+    
+    Memorandum findMemorandumVersion(String id);
 
     // FIXME temporary workaround
     Memorandum findMemorandumByPackagePath(String path);
 
-    Memorandum updateMemorandum(String memorandumId, byte[] updatedMemorandumContent, boolean major, String comment);
+    Memorandum updateMemorandum(Memorandum memorandum, byte[] updatedMemorandumContent, boolean major, String comment);
 
     Memorandum updateMemorandum(Memorandum memorandum, MemorandumMetadata metadata, boolean major, String comment);
 

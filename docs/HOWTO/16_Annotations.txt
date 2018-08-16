@@ -1,0 +1,125 @@
+                         LEOS ANNOTATIONS - HOWTO
+-------------------------------------------------------------------------------
+                             INTRODUCTION
+
+The annotation features available allow users to create highlights, page notes, 
+comments and suggestions on the content shown in the document view.
+
+                            CREATE HIGHLIGHTS
+-------------------------------------------------------------------------------
+1. On selection of text in the document view, three action buttons will be
+    visible on top of the highlighted text.
+
+2. Click on the action button marked as 'Highlight' to create a highlight.
+
+                            CREATE PAGE NOTES
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. Click on the action button marked as 'New page note' to create a page note.
+
+3. Click on "Post to Collaborators" to store it and make it public to other 
+    users or click on "Post to Only me" to store it and make it private.
+
+                            CREATE COMMENTS
+-------------------------------------------------------------------------------
+1. On selection of text in the document view, three action buttons will be
+    visible on top of the highlighted text.
+
+2. Click on the action button marked as 'Comment' to create a comment.
+
+3. Click on "Post to Collaborators" to store it and make it public to other 
+    users or click on "Post to Only me" to store it and make it private.
+
+                            EDIT COMMENTS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over comments, the action buttons will be visible on the bottom 
+    side of the highlighted comment.
+
+3. Click on the action button marked as 'Edit' to edit a comment.
+
+                            REPLY TO A COMMENT
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over comments, the action buttons will be visible on the bottom 
+    side of the highlighted comment.
+
+3. Click on the action button marked as 'Reply' to reply to a comment.
+
+                            DELETE COMMENTS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over comments, the action buttons will be visible on the bottom 
+    side of the highlighted comment.
+
+3. Click on the action button marked as 'Delete' to delete a comment.
+
+                            CREATE SUGGESTIONS
+-------------------------------------------------------------------------------
+1. On selection of text in the document view, three action buttons will be
+    visible on top of the highlighted text.
+
+2. Click on the action button marked as 'Suggest' to create a suggestion.
+
+3. Click on "Post to Collaborators" to store it and make it public to other 
+    users or click on "Post to Only me" to store it and make it private.
+
+                            EDIT SUGGESTIONS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over suggestions, the action buttons will be visible on the bottom 
+    side of the highlighted suggestion.
+
+3. Click on the action button marked as 'Edit' to edit a suggestion.
+
+                            REPLY TO A SUGGESTION
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over suggestions, the action buttons will be visible on the bottom 
+    side of the highlighted suggestion.
+
+3. Click on the action button marked as 'Reply' to reply to a suggestion.
+
+                            DELETE SUGGESTIONS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. On mouse-over suggestions, the action buttons will be visible on the bottom 
+    side of the highlighted suggestion.
+
+3. Click on the action button marked as 'Delete' to delete a suggestion.
+
+                            ACCEPT SUGGESTIONS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. The action buttons are visible on the bottom side of the suggestion.
+
+3. Click on the action button marked as 'Accept' to accept a suggestion.
+
+4. The suggested text will replace the original text on the document view.
+
+                            REJECT SUGGESTIONS
+-------------------------------------------------------------------------------
+1. In the document view, on the right side of the document view, open the 
+    annotations panel by clicking the "<" button.
+
+2. The action buttons are visible on the bottom side of the suggestion.
+
+3. Click on the action button marked as 'Reject' to reject a suggestion.
+
+4. The suggestion will be deleted.

@@ -22,7 +22,15 @@
 -->
 
 <#if !.globals.webContextPath??>
-    <#if .data_model.headers?? && .data_model.headers.contextPath??>
-        <#global webContextPath=.data_model.headers.contextPath>
+    <#if .data_model.headers??>
+        <#if .data_model.headers.contextPath??>
+            <#global webContextPath=.data_model.headers.contextPath>
+        </#if>
+        <#if .data_model.headers.userPermissions??>
+            <#global userPermissions=.data_model.headers.userPermissions>
+        </#if>
+        <#if .data_model.headers.LeosPermission??>
+            <#global LeosPermission=.data_model.headers.LeosPermission>
+        </#if>
     </#if>
 </#if>

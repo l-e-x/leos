@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -33,16 +33,14 @@ class CmisSessionFactoryImpl : CmisSessionFactory {
     private val sessionFactory: SessionFactory? = null
     @Value("\${leos.cmis.repository.id}")
     private val repositoryId: String? = null
-    @Value("\${leos.cmis.repository.username}")
-    private val repositoryUsername: String? = null
-    @Value("\${leos.cmis.repository.password}")
-    private val repositoryPassword: String? = null
     @Value("\${leos.cmis.repository.binding}")
     private val repositoryBinding: String? = null
-    @Value("\${leos.cmis.repository.url}")
-    private val repositoryUrl: String? = null
     @Value("\${leos.cmis.ws.repository.url}")
     private val repositoryRepositoryServiceWsUrl: String? = null
+    @Value("\${leos.cmis.atom.repository.url}")
+    private val repositoryRepositoryAtomUrl: String? = null
+    @Value("\${leos.cmis.browser.repository.url}")
+    private val repositoryRepositoryBrowserUrl: String? = null
     @Value("\${leos.cmis.ws.discovery.url}")
     private val repositoryDiscoveryServiceWsUrl: String? = null
     @Value("\${leos.cmis.ws.multifiling.url}")
@@ -59,6 +57,8 @@ class CmisSessionFactoryImpl : CmisSessionFactory {
     private val repositoryVersioningServiceWsUrl: String? = null
     @Value("\${leos.cmis.ws.acl.url}")
     private val repositoryAclServiceWsUrl: String? = null
+    @Value("\${leos.cmis.ws.authentication.provider.class}")
+    private val repositoryAuthProviderClass: String? = null
     @Value("\${leos.cmis.httpInvoker.class:}")
     private val httpInvokerClass: String? = null
     @Autowired
@@ -74,15 +74,8 @@ class CmisSessionFactoryImpl : CmisSessionFactory {
             LOG!!.debug("Overriding default HTTP invoker with class: {}", httpInvokerClass)
             parameters!!.put(SessionParameter.HTTP_INVOKER_CLASS, httpInvokerClass!!)
         }
-        // NOTE when no username is configured, link the CMIS session to the LEOS User, through the user's login
-        if (repositoryUsername.isNullOrBlank()) {
-            parameters!!.put(SessionParameter.USER, leosSecurityContext!!.getUser().getLogin())
-        } else {
-            parameters!!.put(SessionParameter.USER, repositoryUsername!!)
-        }
-        if (!repositoryPassword.isNullOrBlank()) {
-            parameters!!.put(SessionParameter.PASSWORD, repositoryPassword!!)
-        }
+        parameters!!.put(SessionParameter.AUTHENTICATION_PROVIDER_CLASS, repositoryAuthProviderClass!!)
+
         when (bindingType) {
             BindingType.WEBSERVICES -> {
                 parameters!!.put(SessionParameter.WEBSERVICES_JAXWS_IMPL, "cxf")
@@ -96,19 +89,17 @@ class CmisSessionFactoryImpl : CmisSessionFactory {
                 parameters!!.put(SessionParameter.WEBSERVICES_REPOSITORY_SERVICE, repositoryRepositoryServiceWsUrl!!)
                 parameters!!.put(SessionParameter.WEBSERVICES_VERSIONING_SERVICE, repositoryVersioningServiceWsUrl!!)
             }
-            BindingType.ATOMPUB -> parameters!!.put(SessionParameter.ATOMPUB_URL, repositoryUrl!!)
-            BindingType.BROWSER -> parameters!!.put(SessionParameter.BROWSER_URL, repositoryUrl!!)
+            BindingType.ATOMPUB -> parameters!!.put(SessionParameter.ATOMPUB_URL, repositoryRepositoryAtomUrl!!)
+            BindingType.BROWSER -> parameters!!.put(SessionParameter.BROWSER_URL, repositoryRepositoryBrowserUrl!!)
             else -> throw IllegalArgumentException("Repository binding of type '" + repositoryBinding + "' is not supported!")
         }
         val session = sessionFactory!!.createSession(parameters)
-// KLUGE LEOS-2398 completely disable client-side session cache by default
+        // KLUGE LEOS-2398 completely disable client-side session cache by default
         session!!.getDefaultContext().setCacheEnabled(false)
-
-        // KLUGE LEOS-2369 load all properties by default, including those from secondary types
+        // KLUGE LEOS-2369 load all properties by default
         session.defaultContext.filterString = "*"
-        session.defaultContext.setLoadSecondaryTypeProperties(true)
 
-// FIXME find a better place to log the repository info on demand
+        // FIXME find a better place to log the repository info on demand
         logRepositoryInfo(session)
         checkMandatoryCapabilities(session)
         return session

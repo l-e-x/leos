@@ -1,11 +1,11 @@
 PROJECT: LEOS
-Joinup Release: 1.0.0-SNAPSHOT
-Date: 2017-09-29
+Joinup Release: 2.0.0-SNAPSHOT
+Date: 2018-08-16
 
 INTRODUCTION
 ============
 
-This is a joinup release of Project LEOS (pilot) which enables users to edit legal texts in AkomaNtoso XML format.
+This is a joinup release of Project LEOS (pilot) which enables users to draft and edit legal texts in AkomaNtoso XML format.
 
 
 IMPORTANT NOTES
@@ -31,11 +31,18 @@ To compile the supplied source files and run the generated WAR the following sof
 DEMO
 ====
 
-You can experience LEOS on your local machine by executing a few steps in order, following the instructions for option A OR option B.
+You can experience LEOS on your local machine by executing a few steps. You have two options available:
+    * Option A: for Windows as operating system.
+    * Option B: for other operating systems. This option might also be preferable if you experience connections reset failures when
+      maven dependencies are being downloaded.
+
+For both options if you are behind a proxy it is needed to add your proxy settings in file {LEOS}\modules\annotate\client\.npmrc
+ie: proxy=http://user:password@proxy-server:port
 
 OPTION A)
 If your machine's operating system is Microsoft Windows, you can simply execute the provided script: run-all.bat.
-This script will execute individual scripts that will compile AND run each of the required software components.
+This script will execute individual scripts that will compile AND run each of the required software components (user database,
+document repository, annotation service and LEOS).
 
 Open the browser and navigate to the LEOS web interface available at the following URL:
 
@@ -51,6 +58,8 @@ LEOS is pre-configured with these demo users:
     | John Doe  | john  | demo     |Normal  |
     +-----------+-------+----------+--------+
     | Jane Doe  | jane  | demo     |Support |
+    +-----------+-------+----------+--------+
+    | S Leo     | leos  | demo     |Support |
     +-----------+-------+----------+--------+
 
 OPTION B) 
@@ -79,8 +88,13 @@ You must compile the sources on the command line.
         a) Traverse to folder {LEOS}\tools\user-repo
         b) Execute the following command:
             mvn clean install
-
-    3) To compile LEOS:
+            
+    3) To compile annotate:
+        a) Traverse to folder {LEOS}\modules\annotate
+        b) Execute the following command:
+            mvn clean install
+    
+    4) To compile LEOS:
         a) Traverse to folder {LEOS}
         b) Execute the following command:
             mvn clean install
@@ -105,14 +119,26 @@ You must run the repository on the command line.
             mvn jetty:run-war
 
 
-B5. RUNNING LEOS
+B5. RUNNING ANNOTATE
+====================
+
+You must run annotate on the command line.
+
+    1) Traverse to folder {LEOS}\modules\annotate\server
+    2) Execute the following command:
+            mvn spring-boot:run -Dspring.profiles.active=h2
+
+Once you'll run LEOS, annotate sidebar will be available to annotate documents.
+For more details about DB and running this module, check {LEOS}\modules\annotate\README.txt file.
+
+B6. RUNNING LEOS
 ================
 
 Note: database and repository must already be running.
 
 You must run LEOS on the command line.
 
-    1) Traverse to folder {LEOS}\modules\web-os
+    1) Traverse to folder {LEOS}\modules\web
     2) Execute the following command:
             mvn jetty:run-war
 

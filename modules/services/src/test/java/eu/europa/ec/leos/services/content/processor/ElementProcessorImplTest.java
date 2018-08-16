@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -52,7 +52,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -62,7 +62,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "7474";
@@ -81,7 +81,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -93,7 +93,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
@@ -112,7 +112,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -124,7 +124,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
@@ -142,7 +142,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -155,7 +155,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         when(xmlContentProcessor.getElementByNameAndId(byteContent, tagName, tagId)).thenReturn(contentString);
 
@@ -174,7 +174,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -186,7 +186,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String tagName = "citations";
         String tagId = "cits";
@@ -209,7 +209,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -222,7 +222,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         when(xmlContentProcessor.getElementByNameAndId(byteContent, tagName, tagId)).thenReturn(contentString);
 
@@ -240,7 +240,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -252,7 +252,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String tagName = "recitals";
         String tagId = "recs";
@@ -275,7 +275,7 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "");
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
 
@@ -288,7 +288,7 @@ public class ElementProcessorImplTest extends LeosTest {
         when(content.getSource()).thenReturn(source);
 
         XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "BL-000.xml", "fr", "title", collaborators, Option.some(content), Option.some(billMetadata));
+                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
 
         String elementTag = "article";
         String elementId = "486";

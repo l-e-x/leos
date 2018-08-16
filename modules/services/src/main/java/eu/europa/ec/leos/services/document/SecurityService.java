@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,9 +20,9 @@ import eu.europa.ec.leos.domain.common.LeosAuthority;
 
 public interface SecurityService {
 
-    <T extends LeosDocument.XmlDocument> T addOrUpdateCollaborators(String id, Map<String, LeosAuthority> collaborators, Class<T> type);
-
     <T extends LeosDocument.XmlDocument> T addOrUpdateCollaborator(String id, String userLogin, LeosAuthority authority, Class<T> type);
+    
+    <T extends LeosDocument.XmlDocument> T updateCollaborators(String id, Map<String, LeosAuthority> collaborators, Class<T> type);
 
     <T extends LeosDocument.XmlDocument> T removeCollaborator(String id, String userLogin, Class<T> type);
 }

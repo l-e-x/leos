@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,6 +21,7 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 
 import javax.xml.bind.JAXBContext;
@@ -34,7 +35,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,14 +43,14 @@ import java.util.Map;
 class ToolBoxServiceImpl implements ToolBoxService {
     private static Logger LOG = LoggerFactory.getLogger(ToolBoxServiceImpl.class);
 
-    @Value("#{integrationProperties['leos.export.url']}")
-    private String toolBoxWebServiceUrl;
-
     @Value("#{integrationProperties['leos.export.username']}")
     private String toolBoxUserName;
 
     @Value("#{integrationProperties['leos.export.mimetype']}")
     private String mimeTypeContent;
+
+    @Value(value = "classpath:/ToolboxCoDe.wsdl")
+    private Resource wsdlResource;
 
     private static final QName SERVICE_NAME = new QName("http://ec.europa.eu/digit/toolboxcode/v3.0", "ToolboxCoDe");
 
@@ -87,11 +87,10 @@ class ToolBoxServiceImpl implements ToolBoxService {
         }
         arrayOfFileContent.getFileContent().add(fileContent);
         parameters.setFiles(arrayOfFileContent);
-        
         ToolboxCoDe service;
         String jobId;
         try {
-            service = new ToolboxCoDe(new URL(toolBoxWebServiceUrl), SERVICE_NAME);
+            service = new ToolboxCoDe(wsdlResource.getURL(), SERVICE_NAME);
             ToolboxCoDeSoap client = service.getToolboxCoDeSoap();
             jobId = client.createJob(toolBoxUserName, parameters); // create a job with the given user and the created parameters
         } catch (SOAPFaultException sfe) {
@@ -108,8 +107,8 @@ class ToolBoxServiceImpl implements ToolBoxService {
         return jobId;
     }
 
-    public String getJobResult(String jobId) throws MalformedURLException {
-        ToolboxCoDe service = new ToolboxCoDe(new URL(toolBoxWebServiceUrl), SERVICE_NAME);
+    public String getJobResult(String jobId) throws IOException, MalformedURLException {
+        ToolboxCoDe service = new ToolboxCoDe(wsdlResource.getURL(), SERVICE_NAME);
         ToolboxCoDeSoap client = service.getToolboxCoDeSoap();
         return client.getJobResult(jobId, WebServiceJobDataType.CONVERTED_FILES).getStatusMessage(); // get job result with the given job id 
     }

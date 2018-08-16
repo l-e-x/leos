@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="support/styles/memorandum.css"?>
 <akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos">
     <doc name="memorandum" contains="originalVersion">
         <meta>
@@ -24,8 +25,31 @@
                     <FRBRauthor href=""/>
                 </FRBRManifestation>
             </identification>
+            <references source="">
+                <TLCReference name="contentSubject" eId="proposalsContext" href="" showAs="proposal's context"/>
+                <TLCReference name="contentSubject" eId="rationale" href="" showAs="rationale"/>
+                <TLCReference name="contentSubject" eId="consistencyAreaPolicy" href="" showAs="consistency area policy"/>
+                <TLCReference name="contentSubject" eId="consistencyUnionPolicy" href="" showAs="consistency Union policy"/>
+                <TLCReference name="contentSubject" eId="statementOfLegalReasons" href="" showAs="statement of legal reasons"/>
+                <TLCReference name="contentSubject" eId="legalBasis" href="http://eurovoc.europa.eu/5456" showAs="Legal basis"/>
+                <TLCReference name="contentSubject" eId="subsidiarity" href="" showAs="subsidiarity"/>
+                <TLCReference name="contentSubject" eId="proportionality" href="" showAs="proportionality"/>
+                <TLCReference name="contentSubject" eId="legalInstrument" href="" showAs="legal instrument"/>
+                <TLCReference name="contentSubject" eId="resultsOfPreparatoryAnalysis" href="" showAs="results of preparatory analys"/>
+                <TLCReference name="contentSubject" eId="exPostEvaluation" href="" showAs="ex-post evaluation"/>
+                <TLCReference name="contentSubject" eId="stakeholderConsultation" href="" showAs="stakeholder consultation"/>
+                <TLCReference name="contentSubject" eId="expertGroupInput" href="" showAs="expert group input"/>
+                <TLCReference name="contentSubject" eId="impactAssessment" href="" showAs="impact assessment"/>
+                <TLCReference name="contentSubject" eId="regulatoryFitness" href="" showAs="regulatory fitness"/>
+                <TLCReference name="contentSubject" eId="fundamentalRights" href="" showAs="fundamental rights"/>
+                <TLCReference name="contentSubject" eId="budgetaryImplications" href="" showAs="budgetary implications"/>
+                <TLCReference name="contentSubject" eId="proposalImplementation" href="" showAs="proposal implementation"/>
+                <TLCReference name="contentSubject" eId="provisions" href="" showAs="provisions"/>
+            </references>
             <proprietary source="~leos">
-                <leos:version>1.0.0</leos:version>
+                <leos:version>1.0.4</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>EM-023</leos:docTemplate>
             </proprietary>
         </meta>
         <coverPage GUID="coverpage">
@@ -56,24 +80,24 @@
             </longTitle>
         </preface>
         <mainBody GUID="body">
-            <tblock GUID="tblock_1">
+            <tblock GUID="tblock_1" refersTo="~proposal_s_context">
                 <num GUID="tblock_1__num">1.</num>
                 <heading GUID="tblock_1__heading">CONTEXT OF THE PROPOSAL</heading>
-                <tblock GUID="tblock_1__tblock_1">
+                <tblock GUID="tblock_1__tblock_1" refersTo="~rationale">
                     <num GUID="tblock_1__tblock_1__num">•</num>
                     <heading GUID="tblock_1__tblock_1__heading">Reasons for and objectives of the proposal</heading>
                     <blockContainer GUID="tblock_1__tblock_1__blockcontainer" leos:editable="true">
                         <p GUID="tblock_1__tblock_1__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_1__tblock_2">
+                <tblock GUID="tblock_1__tblock_2" refersTo="~consistencyAreaPolicy">
                     <num GUID="tblock_1__tblock_2__num">•</num>
                     <heading GUID="tblock_1__tblock_2__heading">Consistency with existing policy provisions in the policy area</heading>
                     <blockContainer GUID="tblock_1__tblock_2__blockcontainer" leos:editable="true">
                         <p GUID="tblock_1__tblock_2__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_1__tblock_3">
+                <tblock GUID="tblock_1__tblock_3" refersTo="~consistencyUnionPolicy">
                     <num GUID="tblock_1__tblock_3__num">•</num>
                     <heading GUID="tblock_1__tblock_3__heading">Consistency with other Union policies</heading>
                     <blockContainer GUID="tblock_1__tblock_3__blockcontainer" leos:editable="true">
@@ -81,31 +105,31 @@
                     </blockContainer>
                 </tblock>
             </tblock>
-            <tblock GUID="tblock_2">
+            <tblock GUID="tblock_2" refersTo="~statementOfLegalReasons">
                 <num GUID="tblock_2__num">2.</num>
                 <heading GUID="tblock_2__heading">LEGAL BASIS, SUBSIDIARITY AND PROPORTIONALITY</heading>
-                <tblock GUID="tblock_2__tblock_1">
+                <tblock GUID="tblock_2__tblock_1" refersTo="~legalBasis">
                     <num GUID="tblock_2__tblock_1__num">•</num>
                     <heading GUID="tblock_2__tblock_1__heading">Legal basis</heading>
                     <blockContainer GUID="tblock_2__tblock_1__blockcontainer" leos:editable="true">
                         <p GUID="tblock_2__tblock_1__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_2__tblock_2">
+                <tblock GUID="tblock_2__tblock_2" refersTo="~subsidiarity">
                     <num GUID="tblock_2__tblock_2__num">•</num>
                     <heading GUID="tblock_2__tblock_2__heading">Subsidiarity (for non-exclusive competence)</heading>
                     <blockContainer GUID="tblock_2__tblock_2__blockcontainer" leos:editable="true">
                         <p GUID="tblock_2__tblock_2__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_2__tblock_3">
+                <tblock GUID="tblock_2__tblock_3" refersTo="~proportionality">
                     <num GUID="tblock_2__tblock_3__num">•</num>
                     <heading GUID="tblock_2__tblock_3__heading">Proportionality</heading>
                     <blockContainer GUID="tblock_2__tblock_3__blockcontainer" leos:editable="true">
                         <p GUID="tblock_2__tblock_3__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_2__tblock_4">
+                <tblock GUID="tblock_2__tblock_4" refersTo="~legalInstrument">
                     <num GUID="tblock_2__tblock_4__num">•</num>
                     <heading GUID="tblock_2__tblock_4__heading">Choice of the instrument</heading>
                     <blockContainer GUID="tblock_2__tblock_4__blockcontainer" leos:editable="true">
@@ -113,45 +137,45 @@
                     </blockContainer>
                 </tblock>
             </tblock>
-            <tblock GUID="tblock_3">
+            <tblock GUID="tblock_3" refersTo="~resultsOfPreparatoryAnalysis">
                 <num GUID="tblock_3__num">3.</num>
                 <heading GUID="tblock_3__heading">RESULTS OF EX-POST EVALUATIONS, STAKEHOLDER CONSULTATIONS AND IMPACT ASSESSMENTS</heading>
-                <tblock GUID="tblock_3__tblock_1">
+                <tblock GUID="tblock_3__tblock_1" refersTo="~ex_post_evaluation">
                     <num GUID="tblock_3__tblock_1__num">•</num>
                     <heading GUID="tblock_3__tblock_1__heading">Ex-post evaluations/fitness checks of existing legislation</heading>
                     <blockContainer GUID="tblock_3__tblock_1__blockcontainer" leos:editable="true">
                         <p GUID="tblock_3__tblock_1__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_3__tblock_2">
+                <tblock GUID="tblock_3__tblock_2" refersTo="~stakeholderConsultation">
                     <num GUID="tblock_3__tblock_2__num">•</num>
                     <heading GUID="tblock_3__tblock_2__heading">Stakeholder consultations</heading>
                     <blockContainer GUID="tblock_3__tblock_2__blockcontainer" leos:editable="true">
                         <p GUID="tblock_3__tblock_2__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_3__tblock_3">
+                <tblock GUID="tblock_3__tblock_3" refersTo="~expertGroupInput">
                     <num GUID="tblock_3__tblock_3__num">•</num>
                     <heading GUID="tblock_3__tblock_3__heading">Collection and use of expertise</heading>
                     <blockContainer GUID="tblock_3__tblock_3__blockcontainer" leos:editable="true">
                         <p GUID="tblock_3__tblock_3__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_3__tblock_4">
+                <tblock GUID="tblock_3__tblock_4" refersTo="~impactAssessment">
                     <num GUID="tblock_3__tblock_4__num">•</num>
                     <heading GUID="tblock_3__tblock_4__heading">Impact assessment</heading>
                     <blockContainer GUID="tblock_3__tblock_4__blockcontainer" leos:editable="true">
                         <p GUID="tblock_3__tblock_4__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_3__tblock_5">
+                <tblock GUID="tblock_3__tblock_5" refersTo="~regulatoryFitness">
                     <num GUID="tblock_3__tblock_5__num">•</num>
                     <heading GUID="tblock_3__tblock_5__heading">Regulatory fitness and simplification</heading>
                     <blockContainer GUID="tblock_3__tblock_5__blockcontainer" leos:editable="true">
                         <p GUID="tblock_3__tblock_5__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_3__tblock_6">
+                <tblock GUID="tblock_3__tblock_6" refersTo="~fundamentalRights">
                     <num GUID="tblock_3__tblock_6__num">•</num>
                     <heading GUID="tblock_3__tblock_6__heading">Fundamental rights</heading>
                     <blockContainer GUID="tblock_3__tblock_6__blockcontainer" leos:editable="true">
@@ -159,7 +183,7 @@
                     </blockContainer>
                 </tblock>
             </tblock>
-            <tblock GUID="tblock_4">
+            <tblock GUID="tblock_4" refersTo="~budgetaryImplications">
                 <num GUID="tblock_4__num">4.</num>
                 <heading GUID="tblock_4__heading">BUDGETARY IMPLICATIONS</heading>
                 <blockContainer GUID="tblock_4__blockcontainer" leos:editable="true">
@@ -169,14 +193,14 @@
             <tblock GUID="tblock_5">
                 <num GUID="tblock_5__num">5.</num>
                 <heading GUID="tblock_5__heading">OTHER ELEMENTS</heading>
-                <tblock GUID="tblock_5__tblock_1">
+                <tblock GUID="tblock_5__tblock_1" refersTo="~proposalImplementation">
                     <num GUID="tblock_5__tblock_1_num">•</num>
                     <heading GUID="tblock_5__tblock_1__heading">Implementation plans and monitoring, evaluation and reporting arrangements</heading>
                     <blockContainer GUID="tblock_5__tblock_1__blockcontainer" leos:editable="true">
                         <p GUID="tblock_5__tblock_1__blockcontainer__p">Not Applicable</p>
                     </blockContainer>
                 </tblock>
-                <tblock GUID="tblock_5__tblock_2">
+                <tblock GUID="tblock_5__tblock_2" refersTo="~provisions">
                     <num GUID="tblock_5__tblock_2__num">•</num>
                     <heading GUID="tblock_5__tblock_2__heading">Detailed explanation of the specific provisions of the proposal</heading>
                     <blockContainer GUID="tblock_5__tblock_2__blockcontainer" leos:editable="true">

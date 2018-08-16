@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,11 +17,9 @@ define(function aknRecitalPluginModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
+    var numberModule = require("plugins/leosNumber/recitalNumberModule");
 
     var pluginName = "aknRecital";
-    var DATA_AKN_NUM = "data-akn-num";
-    var LEFT_NUM_DELIMITER = "(";
-    var RIGHT_NUM_DELIMITER = ")";
 
     var pluginDefinition = {
         init: function init(editor) {
@@ -29,25 +27,14 @@ define(function aknRecitalPluginModule(require) {
                 event.editor.fire( 'lockSnapshot');
                 if (event.editor.mode != 'source') {
                     if (event.editor.checkDirty()) {
-                        renumberRecital(event);
+                        numberModule.numberRecitals(event);
                     }
                 }
                 event.editor.fire( 'unlockSnapshot' );
             });
         }
     };
-    
-    function renumberRecital(event) {
-    	var jqEditor = $(event.editor.editable().$);
-    	//TODO: Put more restricted check for eg. Check for preamble/data-akn-name='recital'.
-        var recitals = jqEditor.find("*[data-akn-name='recital']");
-        if (recitals) {
-            for (var index = 0; index < recitals.length; index++) {
-                var num = index + 1;
-                recitals[index].setAttribute(DATA_AKN_NUM,LEFT_NUM_DELIMITER+num+RIGHT_NUM_DELIMITER);
-            }
-        }
-      }
+
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
@@ -63,7 +50,10 @@ define(function aknRecitalPluginModule(require) {
             akn: "leos:editable",
             html: "contenteditable"
         }, {
-            html : ["data-akn-name", RECITAL_NAME].join("=")
+            html: ["data-akn-name", RECITAL_NAME].join("=")
+        }, {
+            akn: "leos:origin",
+            html: "data-origin"
         }],
         sub: [{
             akn: "num",
@@ -71,6 +61,9 @@ define(function aknRecitalPluginModule(require) {
             attr: [{
                 akn: "GUID",
                 html: "data-akn-num-id"
+            }, {
+                akn: "leos:origin",
+                html: "data-num-origin"
             }],
             sub: {
                 akn: "text",
@@ -82,6 +75,9 @@ define(function aknRecitalPluginModule(require) {
             attr: [{
                 akn: "GUID",
                 html: "data-akn-mp-id"
+            }, {
+                akn: "leos:origin",
+                html: "data-mp-origin"
             }],
             sub: {
                 akn: "text",
@@ -96,7 +92,7 @@ define(function aknRecitalPluginModule(require) {
     var pluginModule = {
         name: pluginName,
         transformationConfig: transformationConfig,
-        renumberRecital: renumberRecital
+        renumberRecital:numberModule.numberRecitals
     };
 
     return pluginModule;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -93,14 +93,8 @@ internal class CmisRepository(
 
     private fun checkInWorkingCopy(pwc: Document, properties: Map<String, Any>, updatedDocumentBytes: ByteArray, major: Boolean, comment: String?): Document {
 
-        // KLUGE LEOS-2368 workaround for issue related to lost secondary type IDs with OpenCMIS In-Memory server
-        // NOTE this workaround is also solved by LEOS-2408, nevertheless both kluges are kept in place for clarity
-        logger.trace { "KLUGE LEOS-2368 workaround for lost secondary type IDs..." }
-        val secondaryTypeIds = pwc.getPropertyValue<List<String>>(PropertyIds.SECONDARY_OBJECT_TYPE_IDS)
-        val updatedProperties = mutableMapOf<String, Any?>(PropertyIds.SECONDARY_OBJECT_TYPE_IDS to secondaryTypeIds)
-
+        val updatedProperties = mutableMapOf<String, Any?>()
         // KLUGE LEOS-2408 workaround for issue related to reset properties values with OpenCMIS In-Memory server
-        // NOTE this workaround also solves LEOS-2368, nevertheless both kluges are kept in place for clarity
         logger.trace { "KLUGE LEOS-2408 workaround for reset properties values..." }
         pwc.properties.forEach {
             if (Updatability.READWRITE == it.definition.updatability) {
@@ -121,12 +115,21 @@ internal class CmisRepository(
                         .createContentStream(pwc.contentStream.fileName, -1, pwc.contentStream.mimeType, byteStream)
                 updatedDocId = pwc.checkIn(major, updatedProperties, contentStream, comment)
                 logger.trace("Document checked-in successfully...[updated document id:${updatedDocId.id}]")
-                return findDocumentById(updatedDocId.id, true, context)
             } catch (e: CmisBaseException) {
                 logger.error("Document update failed, trying to cancel the checkout", e)
                 pwc.cancelCheckOut()
                 throw e
             }
+            // If major version, remove previous version
+            // FIXME: Couldn't update major version flag and comment in CMIS without checking out and checking in 
+            if (pwc.getAllVersions().size > 1) {
+                val beforeLastVersion = pwc.getAllVersions().get(1)
+                if (major && !beforeLastVersion.isMajorVersion &&  beforeLastVersion.getLastModifiedBy() == pwc.getLastModifiedBy()) {
+                    logger.trace("Major version - Removing the before last version...")
+                    beforeLastVersion.delete(false) //Remove the before last version
+                }
+            }
+            return findDocumentById(updatedDocId.id, true, context)
         }
     }
 
@@ -147,7 +150,7 @@ internal class CmisRepository(
     }
 
     // FIXME replace primaryType string with some enum value
-    fun findDocumentsByParentPath(path: String, primaryType: String, categories: Set<LeosCategory>, descendants: Boolean = true): List<Document> {
+    fun findDocumentsByParentPath(path: String, primaryType: String, categories: Set<LeosCategory>, descendants: Boolean): List<Document> {
         logger.trace { "Finding documents by parent path... [path=$path, primaryType=$primaryType, categories=$categories, descendants=$descendants]" }
         val context = cmisSession.defaultContext                        // FIXME use optimized context
         val folder = findFolderByPath(path, context)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,12 +21,13 @@ define(function leosCrossReferencePluginModule(require) {
     var jsTree = require("jsTree");
     var dialogDefinition = require("./leosCrossReferenceDialog");
     var leosCrossReferenceWidget = require("./leosCrossReferenceWidget");
-    
+    var leosCommandStateHandler = require("plugins/leosCommandStateHandler/leosCommandStateHandler");
     
     var pluginName = "leosCrossReference";
 
     var pluginDefinition = {
         icons : 'leoscrossreference',
+        lang: 'en',
         requires : "dialog",
         init : function(editor) {
 
@@ -36,42 +37,60 @@ define(function leosCrossReferencePluginModule(require) {
             // adds widget
             editor.widgets.add(leosCrossReferenceWidget.name, leosCrossReferenceWidget.config);
             
-            //creates dialog command
-            var dialogCommand = editor.addCommand(dialogDefinition.dialogName, new CKEDITOR.dialogCommand(dialogDefinition.dialogName));
-
-            // adds command for 'Cross-reference' button
-            editor.addCommand('insertCrossReference', {
-                exec : function insertCrossReference(editor) {
-                    dialogCommand.exec();
-                }
-            });
-
             editor.ui.add('LeosCrossReference', CKEDITOR.UI_BUTTON, {
-                label : 'Cross-reference',
-                title : 'Cross-reference',
-                toolbar : 'insert,' + 20,
+                label : 'Internal-reference',
+                title : 'Internal reference',
+                toolbar : 'ref,20',
                 command : leosCrossReferenceWidget.name
             });
+            
+            editor.on('selectionChange', _onSelectionChange);
 
         }
     };
+    
+    function _onSelectionChange(event) {
+        leosCommandStateHandler.changeCommandState(event, leosCrossReferenceWidget.name);
+    }
 
     var transformationConfig = {
-        akn : "ref",
-        html : 'a[data-akn-name=ref]',
-        attr : [ {
+        akn :  "mref",
+        html : "mref",
+        attr : [{
             akn : "GUID",
-            html : "id"
+            html : "id" 
         }, {
-            html : "data-akn-name=ref"
+            akn : "leos:origin",
+            html : "data-origin"
+        },{
+            akn : "leos:broken",
+            html : "leos:broken" 
         }, {
-            akn : "href",
-            html : "href"
-        } ],
-        sub : {
+            html : "data-akn-name=mref"
+        }],
+        sub : [{
             akn : "text",
-            html : "a/text"
-        }
+            html : "mref/text"
+        },{     
+           akn : "ref",
+           html : "mref/ref",
+           attr : [{
+               akn : "GUID",
+               html : "id"
+           }, {
+               akn : "leos:origin",
+               html : "data-origin"
+           }, {
+               html : "data-akn-name=ref"
+           }, {
+               akn : "href",
+               html : "href"
+           }],
+           sub : {
+               akn : "text",
+               html : "mref/ref/text"
+           }
+        }]
     };
 
     pluginTools.addTransformationConfigForPlugin(transformationConfig, pluginName);

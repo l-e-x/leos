@@ -1,0 +1,75 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<header class="annotation-header">
+  <!-- User -->
+  <span ng-if="vm.user()">
+    <!-- LEOS Changes: Added style to disable link -->
+    <a class="annotation-header__user"
+      target="_blank"
+      ng-if="!vm.isThirdPartyUser()"
+      ng-href="{{vm.serviceUrl('user',{user:vm.user()})}}"
+      style="pointer-events: none;cursor: default;"
+      >{{vm.displayName()}}</a>
+    <!-- LEOS Changes: Added style to disable link -->
+    <a class="annotation-header__user"
+      target="_blank"
+      ng-if="vm.isThirdPartyUser() && vm.thirdPartyUsernameLink()"
+      href="{{ vm.thirdPartyUsernameLink() }}"
+      style="pointer-events: none;cursor: default;"
+      >{{vm.displayName()}}</a>
+    <span class="annotation-header__user"
+      ng-if="vm.isThirdPartyUser() && !vm.thirdPartyUsernameLink()"
+      >{{vm.displayName()}}</span>
+    <span class="annotation-collapsed-replies">
+      <a class="annotation-link" href=""
+        ng-click="vm.onReplyCountClick()"
+        ng-pluralize count="vm.replyCount"
+        when="{'0': '', 'one': '1 reply', 'other': '{} replies'}"></a>
+    </span>
+    <br>
+    <span class="annotation-header__share-info">
+      <a class="annotation-header__group"
+        target="_blank" ng-if="vm.group() && vm.group().links.html" href="{{vm.group().links.html}}">
+        <i class="h-icon-group"></i><span class="annotation-header__group-name">{{vm.group().name}}</span>
+      </a>
+      <span ng-show="vm.isPrivate"
+        title="This annotation is visible only to you.">
+        <i class="h-icon-lock"></i><span class="annotation-header__group-name" ng-show="!vm.group().links.html">Only me</span>
+      </span>
+      <i class="h-icon-border-color" ng-show="vm.isHighlight && !vm.isEditing" title="This is a highlight. Click 'edit' to add a note or tag."></i>
+      <span ng-if="::vm.showDocumentInfo">
+        <span class="annotation-citation" ng-if="vm.documentMeta().titleLink">
+          on "<a ng-href="{{vm.documentMeta().titleLink}}">{{vm.documentMeta().titleText}}</a>"
+        </span>
+        <span class="annotation-citation" ng-if="!vm.documentMeta().titleLink">
+          on "{{vm.documentMeta().titleText}}"
+        </span>
+        <span class="annotation-citation-domain"
+              ng-if="vm.documentMeta().domain">({{vm.documentMeta().domain}})</span>
+      </span>
+    </span>
+  </span>
+
+  <span class="u-flex-spacer"></span>
+
+  <!-- LEOS Changes: Added style to disable link -->
+  <timestamp
+    class-name="'annotation-header__timestamp'"
+    timestamp="vm.updated()"
+    href="vm.htmlLink()"
+    style="pointer-events: none;cursor: default;"
+    ng-if="!vm.editing() && vm.updated()"></timestamp>
+</header>

@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -12,42 +12,35 @@
 // See the Licence for the specific language governing permissions and limitations under the Licence.
 //
 
+$HEADER_BLUE:#0065A2;
+
 %elementActions {
-    .leos-wrap {
-         position:relative;
-        
-        .leos-wrap-content {
-            border: solid 1px transparent;
-            margin: 0 -5px;
-            padding: 0 5px;
-        }
-        
-        &:hover {
-            & > .leos-wrap-content {
-                background-color: #FFFAFF;
-                border-color: #ADBDCE;
-            }
-            & > .leos-wrap-widgets * {
-                visibility:visible;
-            }
-        }
-        
-        .leos-wrap-widgets {
-            float: right;
-            vertical-align: top;
-            height:100%;
-            position: absolute;
-            right: -5px;
-            top: 0;
-            width: 0;
-            * {
-                padding-top: 5px;
-                cursor: pointer;
-                visibility:hidden;
-            }
-            .leos-inactive {
-                display:none;
-            }
+    [leos\:editable=true],
+    .leos-placeholder{
+        border: solid 1px transparent;
+        margin: 0 -5px;
+        padding: 0 5px;
+    }
+
+    .leos-placeholder {
+        border-color: #ADBDCE;
+    }
+
+    .leos-editable-content {
+        background-color: #FFFAFF;
+        border-color: #ADBDCE;
+    }
+
+    .leos-actions {
+        position: absolute;
+        right: 69px;
+        width: 20px;
+        user-select: none;
+        color:$HEADER_BLUE;
+        * {
+            margin-top: 3px;
+            cursor: pointer;
+            display: none;
         }
     }
 }

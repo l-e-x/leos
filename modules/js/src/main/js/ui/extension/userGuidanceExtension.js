@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -93,7 +93,12 @@ define(function userGuidanceExtensionModule(require) {
         function _getTargetObject(target) {
             var wrapper = /((BEFORE)|(AFTER))-WRAPPER/i;
             if (wrapper.test(target.position)) {
-                return $("[data-wrapped-id=" + target.destinationId+ "]");
+                var targetObject = $("[data-wrapped-id=" + target.destinationId+ "]");
+                if(targetObject.length === 0) {
+                    // if the above selection is empty we try to find the element by id, e.g we remove the wrappers for some roles.
+                    targetObject = $('#' + target.destinationId);
+                }
+                return targetObject;
             }
             else{
                 return $('#' + target.destinationId);

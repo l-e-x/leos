@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -69,14 +69,14 @@ public class UsersClientTest extends LeosTest{
         String user2Login = "surryp";
         String user2Mail = "surryp@test.com";
 
-        String dg = "DG";
+        String entity = "Entity";
 
         String searchKey = "smith";
         
         List<LeosAuthority> authorities = new ArrayList<>(); 
 
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, dg, user1Mail, authorities);
-        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, dg, user2Mail, authorities);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, authorities);
+        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, entity, user2Mail, authorities);
 
         List<UserJSON> users = new ArrayList<UserJSON>();
         users.add(user1);
@@ -84,12 +84,12 @@ public class UsersClientTest extends LeosTest{
 
         String uri = testServerUrl + "/users?searchKey={searchKey}";
 
-        ResponseEntity<List<UserJSON>> entity = new ResponseEntity<List<UserJSON>>((List<UserJSON>) users, HttpStatus.OK);
+        ResponseEntity<List<UserJSON>> responseEntity = new ResponseEntity<List<UserJSON>>((List<UserJSON>) users, HttpStatus.OK);
 
         Map<String, String> params = new HashMap<String, String>();
         params.put("searchKey", searchKey);
 
-        when(restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<UserJSON>>() {}, params)).thenReturn(entity);
+        when(restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<UserJSON>>() {}, params)).thenReturn(responseEntity);
 
         List<User> result = usersClientImpl.searchUsers(searchKey);
 
@@ -97,12 +97,12 @@ public class UsersClientTest extends LeosTest{
         assertThat(result.size(), is(2));
         assertEquals(result.get(0).getLogin(),user1Login);
         assertEquals(result.get(0).getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.get(0).getDg(), dg);
+        assertEquals(result.get(0).getEntity(), entity);
         assertEquals(result.get(0).getId(), Long.valueOf(1));
         assertEquals(((UserJSON) result.get(0)).getAuthorities(), authorities);
         assertEquals(result.get(1).getLogin(),user2Login);
         assertEquals(result.get(1).getName(), user2LastName + " " + user2FirstName);
-        assertEquals(result.get(1).getDg(), dg);
+        assertEquals(result.get(1).getEntity(), entity);
         assertEquals(result.get(1).getId(), Long.valueOf(0));
         assertEquals(((UserJSON) result.get(1)).getAuthorities(), authorities);
     }
@@ -114,13 +114,13 @@ public class UsersClientTest extends LeosTest{
         String user1Login = "smithj";
         String user1Mail = "smithj@test.com";
 
-        String dg = "DG";
+        String entity = "Entity";
 
         String userId = "smithj";
 
         List<LeosAuthority> authorities = new ArrayList<>(); 
         
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, dg, user1Mail, authorities);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, authorities);
 
         String uri = testServerUrl + "/users/{userId}";
 
@@ -135,7 +135,7 @@ public class UsersClientTest extends LeosTest{
         assertEquals(result.getLogin(),user1Login);
         assertEquals(result.getId(), Long.valueOf(1));
         assertEquals(result.getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.getDg(), dg);
+        assertEquals(result.getEntity(), entity);
         assertEquals(((UserJSON) result).getAuthorities(), authorities);
     }
 }

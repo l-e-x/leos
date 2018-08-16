@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,8 @@ package eu.europa.ec.leos.usecases.document;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
 import eu.europa.ec.leos.domain.document.LeosMetadata.MemorandumMetadata;
 import eu.europa.ec.leos.domain.document.LeosPackage;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.vo.MetadataVO;
 import eu.europa.ec.leos.services.document.MemorandumService;
 import io.atlassian.fugue.Option;
 import org.apache.commons.lang3.Validate;
@@ -23,6 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 @Scope("prototype")
@@ -36,8 +41,13 @@ public class MemorandumContext {
     private Memorandum memorandum = null;
     private String purpose = null;
 
+    private DocumentVO memoDocument;
+
+    private final Map<ContextAction, String> actionMsgMap;
+
     MemorandumContext(MemorandumService memorandumService) {
         this.memorandumService = memorandumService;
+        this.actionMsgMap = new HashMap<>();
     }
 
     public void usePackage(LeosPackage leosPackage) {
@@ -52,12 +62,23 @@ public class MemorandumContext {
         this.memorandum = memorandum;
     }
 
+    public void useActionMessageMap(Map<ContextAction, String> messages) {
+        Validate.notNull(messages, "Action message map is required!");
+
+        actionMsgMap.putAll(messages);
+    }
+
     public void usePurpose(String purpose) {
         Validate.notNull(purpose, "Memorandum purpose is required!");
         LOG.trace("Using Memorandum purpose: {}", purpose);
         this.purpose = purpose;
     }
 
+    public void useDocument(DocumentVO document) {
+        Validate.notNull(document, "Memorandum document is required!");
+        memoDocument = document;
+    }
+    
     public Memorandum executeCreateMemorandum() {
         LOG.trace("Executing 'Create Memorandum' use case...");
         Validate.notNull(leosPackage, "Memorandum package is required!");
@@ -69,7 +90,7 @@ public class MemorandumContext {
         Validate.notNull(purpose, "Memorandum purpose is required!");
         MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata);
+        return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
     }
 
     public void executeUpdateMemorandum() {
@@ -84,6 +105,23 @@ public class MemorandumContext {
         Validate.notNull(purpose, "Memorandum purpose is required!");
         MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        memorandumService.updateMemorandum(memorandum, metadata, false, "Metadata updated.");
+        memorandumService.updateMemorandum(memorandum, metadata, false, actionMsgMap.get(ContextAction.METADATA_UPDATED));
+    }
+
+    public Memorandum executeImportMemorandum() {
+        LOG.trace("Executing 'Import Memorandum' use case...");
+        Validate.notNull(leosPackage, "Memorandum package is required!");
+        Validate.notNull(memorandum, "Memorandum template is required!");
+        MetadataVO memoMeta = memoDocument.getMetadata();
+        Option<MemorandumMetadata> metadataOption = memorandum.getMetadata();
+        Validate.isTrue(metadataOption.isDefined(), "Memorandum metadata is required!");
+
+        Validate.notNull(purpose, "Memorandum purpose is required!");
+        // TODO right now it's only needed the docPurpose and docRef, we will have to add more in the future.
+        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
+        
+        Validate.notNull(memoDocument.getSource(), "Memorandum xml is required!");
+
+        return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), memoDocument.getSource());
     }
 }

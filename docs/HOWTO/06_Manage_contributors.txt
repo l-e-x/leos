@@ -10,15 +10,16 @@
 
 3.  To add a collaborator, click on the  '+' icon. Type the beginning of the
     collaborator name then click on it in the displayed result. 
-    
+
 4.  Choose his role in the drop list next to his name . Possibility are owner 
     (can give ownership and edit) and collaborator (can only edit).
 
 5.  Click on the small "V" to save your choice or "X" to cancel.
     If saved, the users will be added to the list of collaborators and will be 
-    visible below the 'Collaborators' title. Now, this document will be available 
-    in repository browser to all the collaborators and owners for viewing and editing.
-   
+    visible below the 'Collaborators' title. Now, this document will be 
+    available in repository browser to all the collaborators and owners for 
+    viewing and editing.
+
 4.  To remove an existing contributor, click on the small '-' icon after the
     collaborator's name. The user will be removed from the list of collaborators 
     of the document and hence will not be able to view or edit the document.

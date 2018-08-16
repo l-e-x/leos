@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,6 +19,8 @@ import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Proposal;
 import eu.europa.ec.leos.domain.document.LeosMetadata.ProposalMetadata;
 import eu.europa.ec.leos.domain.document.LeosPackage;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.vo.MetadataVO;
 import eu.europa.ec.leos.services.store.PackageService;
 import eu.europa.ec.leos.services.store.TemplateService;
 import eu.europa.ec.leos.services.document.ProposalService;
@@ -30,12 +32,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Provider;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import static eu.europa.ec.leos.domain.document.LeosCategory.BILL;
-import static eu.europa.ec.leos.domain.document.LeosCategory.MEMORANDUM;
-import static eu.europa.ec.leos.domain.document.LeosCategory.PROPOSAL;
+import static eu.europa.ec.leos.domain.document.LeosCategory.*;
 import static eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.*;
 
 @Component
@@ -53,8 +52,13 @@ public class ProposalContext {
 
     private final Map<LeosCategory, XmlDocument> categoryTemplateMap;
 
+    private final Map<ContextAction, String> actionMsgMap;
+
     private Proposal proposal;
     private String purpose;
+
+    private DocumentVO propDocument;
+    private String propChildDocument;
 
     ProposalContext(TemplateService templateService,
                     PackageService packageService,
@@ -67,6 +71,7 @@ public class ProposalContext {
         this.memorandumContextProvider = memorandumContextProvider;
         this.billContextProvider = billContextProvider;
         this.categoryTemplateMap = new HashMap<>();
+        this.actionMsgMap = new HashMap<>();
     }
 
     public void useTemplate(String name) {
@@ -76,6 +81,14 @@ public class ProposalContext {
 
         LOG.trace("Using {} template... [id={}, name={}]", template.getCategory(), template.getId(), template.getName());
         categoryTemplateMap.put(template.getCategory(), template);
+    }
+
+    public void useActionMessage(ContextAction action, String actionMsg) {
+        Validate.notNull(actionMsg, "Action message is required!");
+        Validate.notNull(action, "Context Action not found! [name=%s]", action);
+
+        LOG.trace("Using action message... [action={}, name={}]", action, actionMsg);
+        actionMsgMap.put(action, actionMsg);
     }
 
     public void useProposal(String id) {
@@ -89,6 +102,65 @@ public class ProposalContext {
         Validate.notNull(purpose, "Proposal purpose is required!");
         LOG.trace("Using Proposal purpose... [purpose={}]", purpose);
         this.purpose = purpose;
+    }
+
+    public void useDocument(DocumentVO document) {
+        Validate.notNull(document, "Proposal document is required!");
+        propDocument = document;
+    }
+
+    public void useChildDocument(String documentId) {
+        Validate.notNull(documentId, "Proposal child document is required!");
+        propChildDocument = documentId;
+    }
+
+    public void executeImportProposal() {
+        LOG.trace("Executing 'Import Proposal' use case...");
+        MetadataVO propMeta = propDocument.getMetadata();
+        Validate.notNull(propMeta, "Proposal metadata is required!");
+        Validate.notNull(propDocument.getChildDocuments(), "Proposal must contain child documents to import!");
+        // create package
+        LeosPackage leosPackage = packageService.createPackage();
+        // use template
+        Proposal proposalTemplate = cast(categoryTemplateMap.get(PROPOSAL));
+        Validate.notNull(proposalTemplate, "Proposal template is required!");
+
+        // get metadata from template
+        Option<ProposalMetadata> metadataOption = proposalTemplate.getMetadata();
+        Validate.isTrue(metadataOption.isDefined(), "Proposal metadata is required!");
+        purpose = propMeta.getDocPurpose();
+        Validate.notNull(purpose, "Proposal purpose is required!");
+        // TODO right now it's only needed the docPurpose and docRef, we will have to add more in the future.
+        ProposalMetadata metadata = metadataOption.get().withPurpose(purpose);
+
+        Validate.notNull(propDocument.getSource(), "Proposal xml is required!");
+        proposal = proposalService.createProposal(proposalTemplate.getId(), leosPackage.getPath(), metadata, propDocument.getSource());
+
+        // create child element
+        for (DocumentVO docChild : propDocument.getChildDocuments()) {
+            if (docChild.getCategory() == MEMORANDUM) {
+                MemorandumContext memorandumContext = memorandumContextProvider.get();
+                memorandumContext.usePackage(leosPackage);
+                // use template
+                memorandumContext.useTemplate(cast(categoryTemplateMap.get(MEMORANDUM)));
+                // We want to use the same purpose that was set in the wizzard for all the documents.
+                memorandumContext.usePurpose(purpose);
+                memorandumContext.useDocument(docChild);
+                memorandumContext.useActionMessageMap(actionMsgMap);
+                Memorandum memorandum = memorandumContext.executeImportMemorandum();
+                proposal = proposalService.addComponentRef(proposal, memorandum.getName(), LeosCategory.MEMORANDUM);
+            } else if (docChild.getCategory() == BILL) {
+                BillContext billContext = billContextProvider.get();
+                billContext.usePackage(leosPackage);
+                // use template
+                billContext.useTemplate(cast(categoryTemplateMap.get(BILL)));
+                billContext.usePurpose(purpose);
+                billContext.useDocument(docChild);
+                billContext.useActionMessageMap(actionMsgMap);
+                Bill bill = billContext.executeImportBill();
+                proposal = proposalService.addComponentRef(proposal, bill.getName(), LeosCategory.BILL);
+            }
+        }
     }
 
     public void executeCreateProposal() {
@@ -105,12 +177,13 @@ public class ProposalContext {
         Validate.notNull(purpose, "Proposal purpose is required!");
         ProposalMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        Proposal proposal = proposalService.createProposal(proposalTemplate.getId(), leosPackage.getPath(), metadata);
+        Proposal proposal = proposalService.createProposal(proposalTemplate.getId(), leosPackage.getPath(), metadata, null);
 
         MemorandumContext memorandumContext = memorandumContextProvider.get();
         memorandumContext.usePackage(leosPackage);
         memorandumContext.useTemplate(cast(categoryTemplateMap.get(MEMORANDUM)));
         memorandumContext.usePurpose(purpose);
+        memorandumContext.useActionMessageMap(actionMsgMap);
         Memorandum memorandum = memorandumContext.executeCreateMemorandum();
         proposal = proposalService.addComponentRef(proposal, memorandum.getName(), LeosCategory.MEMORANDUM);
 
@@ -118,6 +191,7 @@ public class ProposalContext {
         billContext.usePackage(leosPackage);
         billContext.useTemplate(cast(categoryTemplateMap.get(BILL)));
         billContext.usePurpose(purpose);
+        billContext.useActionMessageMap(actionMsgMap);
         Bill bill = billContext.executeCreateBill();
         proposalService.addComponentRef(proposal, bill.getName(), LeosCategory.BILL);
     }
@@ -140,11 +214,13 @@ public class ProposalContext {
         MemorandumContext memorandumContext = memorandumContextProvider.get();
         memorandumContext.usePackage(leosPackage);
         memorandumContext.usePurpose(purpose);
+        memorandumContext.useActionMessageMap(actionMsgMap);
         memorandumContext.executeUpdateMemorandum();
 
         BillContext billContext = billContextProvider.get();
         billContext.usePackage(leosPackage);
         billContext.usePurpose(purpose);
+        billContext.useActionMessageMap(actionMsgMap);
         billContext.executeUpdateBill();
     }
 
@@ -155,6 +231,11 @@ public class ProposalContext {
 
         packageService.deletePackage(leosPackage);
     }
+
+    public void executeUpdateProposalAsync() {
+        proposalService.updateProposalAsync(propChildDocument);
+    }
+
 
     @SuppressWarnings("unchecked")
     private static <T> T cast(Object obj) {

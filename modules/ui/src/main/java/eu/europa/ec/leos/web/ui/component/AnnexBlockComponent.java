@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -23,10 +23,12 @@ import com.vaadin.v7.data.Property;
 import com.vaadin.v7.data.util.ObjectProperty;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.VerticalLayout;
+import eu.europa.ec.leos.security.LeosPermission;
+import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.web.event.view.annex.OpenAnnexEvent;
 import eu.europa.ec.leos.web.event.view.proposal.DeleteAnnexRequest;
 import eu.europa.ec.leos.web.event.view.proposal.SaveAnnexMetaDataRequest;
-import eu.europa.ec.leos.web.model.DocumentVO;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
@@ -59,13 +61,15 @@ public class AnnexBlockComponent extends VerticalLayout {
     private LanguageHelper languageHelper;
     private EventBus eventBus;
     private UserHelper userHelper;
+    private SecurityContext securityContext;
 
     @Autowired
-    public AnnexBlockComponent(LanguageHelper languageHelper, MessageHelper messageHelper, EventBus eventBus, UserHelper userHelper) {
+    public AnnexBlockComponent(LanguageHelper languageHelper, MessageHelper messageHelper, EventBus eventBus, UserHelper userHelper, SecurityContext securityContext) {
         this.languageHelper = languageHelper;
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
         this.userHelper = userHelper;
+        this.securityContext = securityContext;
         Design.read(this);
     }
 
@@ -103,6 +107,7 @@ public class AnnexBlockComponent extends VerticalLayout {
     }
 
     public void populateData(DocumentVO annex) {
+        resetBasedOnPermissions(annex);
         this.setData(annex);
         heading.setCaption(messageHelper.getMessage("proposal.block.caption.annex", annex.getDocNumber())); //update
         title.setPropertyDataSource(new ObjectProperty(annex.getTitle()));//FIXME remove once LEOS-2226 is fixed(annex.getTitle());
@@ -110,6 +115,14 @@ public class AnnexBlockComponent extends VerticalLayout {
         setLastUpdated(annex.getUpdatedBy(), annex.getUpdatedOn());
     }
 
+    private void resetBasedOnPermissions(DocumentVO annexVO){
+        boolean enableUpdate = securityContext.hasPermission(annexVO, LeosPermission.CAN_UPDATE);
+        heading.getRightButton().setVisible(enableUpdate);
+        moveUpButton.setVisible(enableUpdate);
+        moveDownButton.setVisible(enableUpdate);
+        title.setEnabled(enableUpdate);
+    }
+    
     private void openAnnex() {
         eventBus.post(new OpenAnnexEvent((DocumentVO) this.getData()));
     }

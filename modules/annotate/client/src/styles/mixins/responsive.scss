@@ -1,0 +1,75 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$break-wide-handheld: 480px !default;
+$break-tablet: 768px !default;
+$break-desktop: 1024px !default;
+
+// DEPRECATED: Use mobile first mixins defined below.
+@mixin respond-to($media) {
+  @if type-of($media) == 'string' {
+    @if $media == 'handhelds' {
+      @media only screen and (max-width: $break-wide-handheld) { @content; }
+    }
+    @else if $media == 'wide-handhelds' {
+      @media only screen and (min-width: $break-wide-handheld + 1) and (max-width: $break-tablet) { @content; }
+    }
+    @else if $media == 'tablets' {
+      @media only screen and (min-width: $break-tablet + 1) and (max-width: $break-desktop) { @content; }
+    }
+    @else if $media == 'desktops' {
+      @media only screen and (min-width: $break-desktop + 1) { @content; }
+    }
+  }
+  @else if type-of($media) == 'list' {
+    @if index($media, 'handhelds') {
+      @media only screen and (max-width: $break-wide-handheld) { @content; }
+    }
+    @if index($media, 'wide-handhelds') {
+      @media only screen and (min-width: $break-wide-handheld + 1) and (max-width: $break-tablet) { @content; }
+    }
+    @if index($media, 'tablets') {
+      @media only screen and (min-width: $break-tablet + -1) and (max-width: $break-desktop){ @content; }
+    }
+    @if index($media, 'desktops') {
+      @media only screen and (min-width: $break-desktop + 1) { @content; }
+    }
+  }
+}
+
+@mixin breakpoint($min) {
+  @media only screen and (min-width: $min) {
+    @content;
+  }
+}
+
+// Mobile first media queries. Encourages development to work with mobile and
+// modify as the viewport grows rather than designing for individual bands.
+@mixin wide-handheld-and-up {
+  @include breakpoint($break-wide-handheld + 1) {
+    @content;
+  }
+}
+
+@mixin tablet-and-up {
+  @include breakpoint($break-tablet + 1) {
+    @content;
+  }
+}
+
+@mixin desktop-and-up {
+  @include breakpoint($break-desktop + 1) {
+    @content;
+  }
+}

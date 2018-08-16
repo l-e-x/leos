@@ -1,0 +1,115 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@import '../../base';
+@import '../../mixins/responsive';
+
+.top-bar {
+  background: $white;
+  border-bottom: solid 1px $gray-lighter;
+  height: $top-bar-height;
+  font-size: 15px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 5;
+
+  // Force top-bar onto a new compositor layer so that it does not judder when
+  // the window is scrolled.
+  transform: translate3d(0,0,0);
+}
+
+.top-bar--theme-clean {
+  border-bottom: none;
+}
+
+.top-bar__inner {
+  // the edges of the top-bar's contents should be aligned
+  // with the edges of annotation cards displayed below
+  $h-padding: 9px;
+
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: flex-end;
+
+  padding-left: $h-padding;
+  padding-right: $h-padding;
+
+  height: 100%;
+}
+
+.top-bar__inner .group-list {
+  margin-right: .75em;
+  white-space: nowrap;
+}
+
+// an expander which adds spacing between the groups list
+// and the toolbar icons (in the new top-bar design)
+.top-bar__expander {
+  flex-grow: 1;
+}
+
+// Removes the native styling from a <button> element
+@mixin reset-native-btn-styles {
+  padding: 0px;
+  margin: 0px;
+  background-color: transparent;
+  border-style: none;
+  outline: none;
+}
+
+.top-bar__btn {
+  @include reset-native-btn-styles;
+
+  color: $gray-light;
+  display: inline-block;
+  cursor: pointer;
+  padding: 0 3px;
+
+  &:hover {
+    color: $gray-dark;
+  }
+}
+
+// Button which indicates that other users have made or edited annotations
+// on the current page and applies them when clicked
+//
+// The button displays a 'refresh' icon and an update count, both of which
+// should be vertically centered within the icon.
+.top-bar__apply-update-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: 5px;
+
+  border-radius: 2px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  padding-bottom: 2px;
+  padding-top: 2px;
+  user-select: none;
+}
+
+.top-bar__apply-icon {
+  display: inline-block;
+  line-height: 12px;
+}
+
+.top-bar__dropdown-arrow {
+  color: $color-dove-gray;
+}

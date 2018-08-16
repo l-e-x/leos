@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@ package eu.europa.ec.leos.ui.wizard.document;
 
 import com.vaadin.server.AbstractErrorMessage;
 import com.vaadin.server.ErrorMessage;
+import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.*;
@@ -31,6 +32,7 @@ import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.ListSelect;
 import com.vaadin.v7.ui.TextField;
 import com.vaadin.v7.ui.VerticalLayout;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.ui.wizard.WizardStep;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
@@ -58,13 +60,13 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
     private Tree tree;
     private String selectedItemId;
 
-    private WizardData wizardData;
+    private final DocumentVO document;
     private MessageHelper messageHelper;
 
-    TemplateSelectionStep(WizardData wizardData, List<CatalogItem> templateItems, MessageHelper messageHelper) {
+    TemplateSelectionStep(final DocumentVO document, List<CatalogItem> templateItems, MessageHelper messageHelper) {
         catalogContainer = CatalogUtil.getCatalogContainer(templateItems);
 
-        this.wizardData = wizardData;
+        this.document = document;
         this.messageHelper = messageHelper;
 
         initLayout();
@@ -367,7 +369,7 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
         // in this state we validate that the name was filled in and that an item was selected from the tree
         if (selectedItemId == null || Boolean.FALSE.equals(tree.getItem(selectedItemId).getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue())) {
             tree.setComponentError(new UserError(messageHelper.getMessage("wizard.document.create.template.error.item"), AbstractErrorMessage.ContentMode.TEXT,
-                    ErrorMessage.ErrorLevel.WARNING));
+                    ErrorLevel.WARNING));
             isValid = false;
         } else {
             tree.setComponentError(null);
@@ -375,10 +377,10 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
 
         if (isValid) {
             Item item = tree.getItem(selectedItemId);
-            wizardData.ids = selectedItemId;
-            wizardData.name = (String) item.getItemProperty(CatalogUtil.NAME_PROPERTY).getValue();
-            wizardData.description = (String) item.getItemProperty(CatalogUtil.DESC_PROPERTY).getValue();
-            wizardData.language = (String) langSelector.getValue();
+            document.getMetadata().setDocTemplate(selectedItemId);
+            document.getMetadata().setTemplateName((String) item.getItemProperty(CatalogUtil.NAME_PROPERTY).getValue());
+            document.getMetadata().setLanguage((String) langSelector.getValue());
+            document.getMetadata().setDocPurpose(messageHelper.getMessage("wizard.document.create.metadata.purpose.default"));
         }
 
         return isValid;

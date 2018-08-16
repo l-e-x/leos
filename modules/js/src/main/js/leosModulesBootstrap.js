@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -59,8 +59,8 @@
             wnumb: "lib/wNumb_1.1.0/wNumb",
             jsTree: "lib/jsTree_3.3.2/jstree",
             cuid: "lib/cuid_1.3.8/client-cuid",
-            ckEditor: "lib/ckeditor_4.7.1/ckeditor",
-            "ckEditor.jquery": "lib/ckeditor_4.7.1/adapters/jquery",
+            ckEditor: "lib/ckeditor_4.9.2/ckeditor",
+            "ckEditor.jquery": "lib/ckeditor_4.9.2/adapters/jquery",
             // CKEditor External Plugins
             /*=> start section with external ckEditor plugins,      // FIXME re-evaluate the need to keep this!!!
              * they are not valid requirejs modules so they shouldn't be resolved as one
@@ -68,12 +68,11 @@
              * In order to add new external ckEditor plugin put it in this section and prefix it with
              * 'ck_' value.
              */
-            ck_base64image:"lib/ck_base64image_1.3/plugin.js",
             /*<= end section with external ckEditor plugins */
             // LEOS JavaScript libraries
             sliderPins: "js/lib/sliderPins/js/sliderPins",
             contentScroller:"js/lib/contentScroller",
-            refToLink:"lib/refToLink_0.0/jquery-parsetext.min",
+            refToLink:"lib/Ref2Link_1.0.03/jquery-parsetext.min",
             // LEOS Core, Editor, Views, Components & Extensions
             core: "js/core",
             editor: "js/editor",
@@ -92,11 +91,6 @@
                 name: "waypoints",
                 location: "lib/waypoints_4.0.0",
                 main: "jquery.waypoints"
-            },
-            {
-                name: "bootstrap",
-                location: "lib/bootstrap_3.3.6/js",
-                main: ""
             }
         ],
         // map given module ID into substitute module ID

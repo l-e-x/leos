@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,10 +21,17 @@ define(function aknAuthorialNotePluginModule(require) {
     var $ = require('jquery');
 
     var authorialNoteWidgetDefinition = require("./authorialNoteWidget");
+    var leosCommandStateHandler = require("plugins/leosCommandStateHandler/leosCommandStateHandler");
 
     var pluginName = "aknAuthorialNote";
     var widgetName = "authorialNoteWidget";
     var dialogName = "authorialNoteDialog";
+    var changeStateElements = {
+        articleHeading : {
+            elementName: 'h2',
+            selector: '[data-akn-name=aknHeading]'
+        }
+    };
 
     var pluginDefinition = {
         requires : "widget,dialog",
@@ -34,12 +41,18 @@ define(function aknAuthorialNotePluginModule(require) {
             editor.on("receiveData", _handleAuthNotes); //LEOS-2114
             editor.widgets.add(widgetName, authorialNoteWidgetDefinition);
             editor.ui.addButton(widgetName, {
-                label : "Create a reference note",
+                label : "Insert Footnote",
                 command : widgetName,
-                toolbar : 'insert,10'
+                toolbar : 'ref,10'
             });
+            
+            editor.on('selectionChange', _onSelectionChange);
         }
     };
+    
+    function _onSelectionChange(event) {
+        leosCommandStateHandler.changeCommandState(event, widgetName, changeStateElements);
+    }
 
     function _handleAuthNotes(evt) {
     	var editor = evt.editor;
@@ -57,7 +70,7 @@ define(function aknAuthorialNotePluginModule(require) {
 
     function initializeDialog(editor) {
         var dialogDefinition = {
-            title : "Edit reference note.",
+            title : "Edit Footnote",
             minWidth : 400,
             minHeight : 100,
             contents : [ {
@@ -103,6 +116,9 @@ define(function aknAuthorialNotePluginModule(require) {
             akn : "GUID",
             html : "id"
         }, {
+            akn : "leos:origin",
+            html : "data-origin"
+        }, {
             html : ["data-akn-name", "aknAuthorialNote"].join("=")
         } ],
         sub : {
@@ -111,6 +127,9 @@ define(function aknAuthorialNotePluginModule(require) {
             attr : [ {
                 akn : "GUID",
                 html : "data-akn-mp-id"
+            }, {
+                akn : "leos:origin",
+                html : "data-mp-origin"
             }],
             sub : [ {
                 akn : 'text',

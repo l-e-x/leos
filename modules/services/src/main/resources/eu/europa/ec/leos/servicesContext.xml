@@ -15,6 +15,9 @@
 	
     <!-- XSLT Context -->
     <import resource="classpath:eu/europa/ec/leos/xslt/xsltContext.xml"/>
+    
+    <!-- TOC V8 Context -->
+    <import resource="classpath:eu/europa/ec/leos/toc/tableOfContentContext.xml"/>
 	
     <cache:annotation-driven />
  
@@ -25,10 +28,13 @@
             </bean>
         </property>
     </bean>
-
-    <task:annotation-driven scheduler="taskScheduler"/>
+    
     <task:scheduler id="taskScheduler" />
     
+    <!-- Using the SimpleAsyncTaskExecutor to spawn a new thread executing asynchronously. This implementation does not reuse threads -->
+    <task:annotation-driven scheduler="taskScheduler" executor="simpleAsyncNonReusableThreadPool"/>
+    <task:executor id="simpleAsyncNonReusableThreadPool" pool-size="5"/>
+   
         <!-- Message Source -->
     <bean id="servicesMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
         <property name="cacheSeconds" value="-1"/>
@@ -42,125 +48,16 @@
         </property>
     </bean>
 
-    <bean id="BODY" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="BODY" />
-    </bean>
-
-    <bean id="PREFACE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="PREFACE"/>
-    </bean>
-    <bean id="PREAMBLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="PREAMBLE"/>
-    </bean>
-    <bean id="PART" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="PART"/>
-    </bean>
-    <bean id="CHAPTER" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="CHAPTER"/>
-    </bean>
-    <bean id="TITLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="TITLE"/>
-    </bean>
-    <bean id="SECTION" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="SECTION"/>
-    </bean>
-    <bean id="SUBSECTION" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="SUBSECTION"/>
-    </bean>
-    <bean id="ARTICLE" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="ARTICLE"/>
-    </bean>
-    <bean id="CONCLUSIONS" class="eu.europa.ec.leos.vo.toctype.LegalTextTocItemType" factory-method="getTocItemTypeFromName">
-        <constructor-arg type="java.lang.String" value="CONCLUSIONS"/>
-    </bean>
-
-    <bean class="eu.europa.ec.leos.services.content.RulesServiceImpl">
-        <property name="defaultRules">
-            <map>
-                <entry>
-                    <key> 
-                        <ref bean="PREFACE"/>
-                    </key>
-                    <list/>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="PREAMBLE"/>
-                    </key>
-                    <list/>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="BODY"/>
-                    </key>
-                    <list>
-                        <ref bean="PART"/>
-                        <ref bean="TITLE"/>
-                        <ref bean="CHAPTER"/>
-                        <ref bean="SECTION"/>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="PART"/>
-                    </key>
-                    <list>
-                        <ref bean="TITLE"/>
-                        <ref bean="CHAPTER"/>
-                        <ref bean="SECTION"/>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="TITLE"/>
-                    </key>
-                    <list>
-                        <ref bean="CHAPTER"/>
-                        <ref bean="SECTION"/>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="CHAPTER"/>
-                    </key>
-                    <list>
-                        <ref bean="SECTION"/>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="SECTION"/>
-                    </key>
-                    <list>
-                        <ref bean="SUBSECTION"/>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="SUBSECTION"/>
-                    </key>
-                    <list>
-                        <ref bean="ARTICLE"/>
-                    </list>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="ARTICLE"/>
-                    </key>
-                    <list/>
-                </entry>
-                <entry>
-                    <key> 
-                        <ref bean="CONCLUSIONS"/>
-                    </key>
-                    <list/>
-                </entry>
-            </map>
+        <!-- Message Source -->
+    <bean id="emailsMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+        <property name="cacheSeconds" value="-1"/>
+        <property name="defaultEncoding" value="UTF-8"/>
+        <property name="useCodeAsDefaultMessage" value="true"/>
+        <property name="fallbackToSystemLocale" value="false"/>
+        <property name="basenames">
+            <list>
+                <value>classpath:eu/europa/ec/leos/email</value>
+            </list>
         </property>
     </bean>
 </beans>

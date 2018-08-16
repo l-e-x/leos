@@ -1,0 +1,251 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@import '../base';
+@import '../mixins/icons';
+
+@import './adder';
+@import './../../../leos/styles/annotator/leos-annotator';  //LEOS Change: style customization
+
+$base-font-size: 14px;
+
+//HIGHLIGHTS////////////////////////////////
+.annotator-highlights-always-on {
+  .annotator-hl {
+    background-color: $highlight-color;
+
+    // cursor pointer gives mobile devices click
+    // event support. Using the pointer:coarse gives
+    // us good targeting to mobile devices that this effects
+    @media (pointer:coarse) {
+      cursor: pointer;
+    }
+  }
+
+  .annotator-hl .annotator-hl {
+    background-color: $highlight-color-second;
+  }
+
+  .annotator-hl .annotator-hl .annotator-hl {
+    background-color: $highlight-color-third;
+  }
+}
+
+.annotator-hl.annotator-hl-focused {
+  background-color: $highlight-color-focus !important;
+
+  .annotator-hl {
+    background-color: transparent !important;
+  }
+}
+
+// Sidebar
+.annotator-frame {
+  // a CSS reset which attempts to prevent the host page's styles
+  // from affecting the styles of the sidebar.
+  //
+  // FIXME - This component and other annotator components which currently
+  // live on the page could be isolated from the host page's CSS/JS via
+  // transparent same-origin iframes
+  @import '../reset';
+  @include nested-reset;
+  @include reset-box-model;
+
+  // frame styles
+  @import './bucket-bar';
+  user-select: none;
+  @include grey-background;
+  direction: ltr;
+  background: none;
+  font-size: $base-font-size;
+  line-height: $base-line-height;
+  height: 100%;
+  position: fixed;
+  top: 0;
+  left: 100%;
+  z-index: 2147483647;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+
+  &.annotator-collapsed {
+    margin-left: 0;
+  }
+
+  * {
+    background: none;
+    font-size: 100%;
+    text-indent: 0;
+    height: initial;
+    width: initial;
+  }
+
+  .h-sidebar-iframe {
+    border: none;
+    height: 100%;
+    width: 100%;
+    z-index: 3;
+    position: relative;
+  }
+
+  @include icons {
+    font-family: 'h';
+  }
+
+  // the vertical toolbar at the left-edge of the sidebar
+  // which provides controls for toggling the sidebar,
+  // toggling highlights etc.
+
+  // note: These components CSS classes are nested inside
+  // .annotator-frame to avoid being overridden by the
+  // CSS reset styles applied to .annotator-frame, which would otherwise
+  // have higher specificity
+  .annotator-toolbar {
+    position: absolute;
+    left: -($bucket-bar-width + 18px - 7px);
+    width: 37px;
+    z-index: 2;
+
+    ul {
+      height: 100%;
+    }
+
+    ul, li {
+      box-sizing: border-box;
+      list-style: none;
+      @include reset-box-model;
+    }
+  }
+
+  .annotator-frame-button {
+    transition: background-color .25s .25s;
+    @include smallshadow;
+    background: $white;
+    border: solid 1px $gray-lighter;
+    border-radius: 4px;
+    color: $gray-light;
+    text-decoration: none;
+    height: 30px;
+    width: 30px;
+    padding: 0;
+    font-size: 16px;
+    margin-bottom: 5px;
+
+    &:active {
+      transition: background-color .25s;
+      background-color: $gray-light;
+    }
+
+    &:focus, &:hover {
+      outline: 0;
+      color: $text-color;
+    }
+  }
+
+  .annotator-frame-button--sidebar_toggle {
+    box-shadow: none;
+    border-radius: 0px;
+    border-style: none none solid solid;
+    padding-right: 6px;
+    width: 36px;
+    margin-bottom: 10px;
+
+    // the height of the sidebar toggle is set
+    // to match the height of the top bar
+    height: 40px;
+  }
+
+  .annotator-frame-button--sidebar_close {
+    box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.5);
+    border-radius: 0px;
+    border-style: solid none solid solid;
+    width: 27px;
+    margin-top: 140px;
+    margin-left: 6px;
+    height: 27px;
+  }
+}
+
+.annotator-frame--drop-shadow-enabled {
+  box-shadow: 0px 2px 4px 0px rgba(0, 0, 0, 0.5);
+}
+
+.annotator-placeholder {
+  opacity: 0;
+  position: absolute;
+  top: 50%;
+  z-index: -1;
+}
+
+// this disables the width transition for the sidebar when
+// it is manually resized by dragging
+.annotator-no-transition {
+  transition: none !important;
+}
+
+/*
+  Mobile layout
+  240-479 px
+  Zoomed out below 320 px
+*/
+
+@media screen and (min-width: 15em) {
+  .annotator-frame {
+    width: 90%;
+    margin-left: -90%;
+  }
+}
+
+/*
+  Wide mobile layout
+  480-767 px
+  Zoomed in above 480 px
+*/
+
+@media screen and (min-width: 30em) {
+  .annotator-frame {
+    width: 70%;
+    margin-left: -70%;
+  }
+}
+
+/*
+  Tablet layout
+  600-911 px
+  Zoomed in above 600 px
+*/
+
+@media screen and (min-width: 37.5em) {
+  .annotator-frame {
+    transition: margin-left .15s cubic-bezier(.55, 0, .2, .8);
+    width: 428px;
+    margin-left: -428px;
+  }
+}
+
+/*
+  Widescreen layout
+  912-1887 px
+  Zoomed in above 912 px
+*/
+
+@media screen and (min-width: 57em) {
+}
+
+/*
+  Huge-screen layout
+  1888-2520 px
+  Zoomed in above 1920 px
+*/
+
+@media screen and (min-width: 118em) {
+}

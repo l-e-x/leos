@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,10 @@
  */
 package eu.europa.ec.leos.ui.view.document;
 
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 
 import java.util.HashMap;
@@ -48,13 +50,21 @@ interface DocumentScreen {
     
     void displayComparison(HashMap<Integer, Object> htmlCompareResult);
 
-    void setTocAndAncestors(List<TableOfContentItemVO> tocItemList, String elementId, List<String> elementAncestorsIds);
+    void setTocAndAncestors(List<TableOfContentItemVO> tocItemList, List<String> elementAncestorsIds);
 
     void setElement(String elementId, String elementTagName, String elementContent);
 
     void setUserGuidance(String jsonGuidance);
-    
+
+    void sendUserPermissions(List<LeosPermission> userPermissions);
+
     void displaySearchedContent(String content);
     
     void closeImportWindow();
+
+    void setPermissions(DocumentVO bill); 
+    
+    void scrollToMarkedChange(final String elementId);
+
+    void setReferenceLabel(String referenceLabels);
 }

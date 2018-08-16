@@ -23,4 +23,17 @@
         <property name="preferFileSystemAccess" value="false"/>
         <property name="freemarkerSettings" ref="freemarkerProperties"/>
     </bean>
+
+    <bean id="version" class="freemarker.template.Version" >
+        <constructor-arg type="java.lang.String" value="#{freemarkerProperties['incompatible_improvements']}"/>
+    </bean>
+    
+    <bean id="defaultObjectWrapperBuilder" class="freemarker.template.DefaultObjectWrapperBuilder">
+        <constructor-arg name="incompatibleImprovements" ref="version"/>
+    </bean>
+
+    <bean id="defaultObjectWrapper" class="freemarker.template.DefaultObjectWrapper" factory-bean="defaultObjectWrapperBuilder" factory-method="build"/>
+
+    <bean id="enumModels" class="freemarker.template.TemplateModel" factory-bean="defaultObjectWrapper" factory-method="getEnumModels"/>
+    
 </beans>

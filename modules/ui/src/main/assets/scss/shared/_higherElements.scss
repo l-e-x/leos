@@ -1,0 +1,129 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+@mixin heading($type) {
+    display: block;
+    text-align: center;
+    padding-top: 6pt;
+    padding-bottom: 18pt;
+
+    @if $type=="part" {
+       font-size: 18pt;
+       font-weight: bold;
+    }
+    @else if $type=="aknTitle" {
+       font-size: 18pt;
+       font-weight: bold;
+    }
+    @else if $type=="chapter" {
+       font-size: 16pt;
+       font-weight: bold;
+    }
+    @else if $type=="section" {
+        font-size: 14pt;
+        font-weight: bold;
+        font-variant: small-caps;
+        letter-spacing: 1px; // extra spacing for improved readability
+    }
+}
+
+//--------------------------------XML higher elements-------------------------/
+%xmlHigherElements {
+    //   AKN body styles
+    part {
+        display: block;
+    }
+    
+    part > num, part > heading {
+        @include heading("part");
+    }
+    
+    aknTitle {
+        display: block;
+    }
+    
+    aknTitle > num, aknTitle > heading {
+        @include heading("aknTitle");
+    }
+    
+    chapter {
+        display: block;
+    }
+    
+    chapter > num, chapter > heading {
+        @include heading("chapter");
+    }
+    
+    section {
+        display: block;
+    }
+    
+    section > num, section > heading {
+        @include heading("section");
+        
+    }
+    
+    //    AKN signature styles
+    conclusions {
+        display: block;
+        padding-top: 20pt; // extra spacing for improved readability
+    }
+    
+    signature {
+        display: block;
+        padding: 16pt 0;
+        & > * {
+            display: block;
+            text-align: center;
+            padding: 3pt 0;
+            font-style: italic;
+        }
+    }
+
+    //    AKN miscellaneous styles
+    placeholder {
+        display: inline;
+        font-weight: bold;
+        color: blue;
+    }
+    
+    omissis {
+        display: inline;
+        font-weight: bold;
+    }
+    
+    date {
+        display: inline;
+        font-weight: bold;
+    }
+
+    formula {
+        @extend %paddedText;
+        display: block;
+    }
+
+    block {
+        @extend %paddedText;
+        display: block;
+    }
+
+    //    AKN custom element styles
+    application {
+        display: block;
+        //Application directe: Space Before: 24pt
+        padding-top: 24pt;
+        //Normal: Space After: 6pt
+        padding-bottom: 6pt;
+    }
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,7 +26,7 @@ define(function leosInlineCancelDialog(require) {
 
     dialogDefinition.initializeDialog = function initializeDialog(editor) {
 
-        var msg = "<span>There are some unsave changes. Are you sure to continue? </span>";
+        var msg = "<span>There are some unsaved changes which will all be lost. Are you sure to continue? </span>";
 
         var dialogDefinition = {
             title : "Confirm cancel editing.",

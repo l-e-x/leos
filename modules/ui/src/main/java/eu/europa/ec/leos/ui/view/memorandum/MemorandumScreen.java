@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.ui.view.memorandum;
 
-import eu.europa.ec.leos.vo.TableOfContentItemVO;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 
 import java.util.HashMap;
@@ -30,6 +32,8 @@ interface MemorandumScreen {
 
     void setUserGuidance(String guidance);
 
+    void sendUserPermissions(List<LeosPermission> userPermissions);
+
     void setToc(List<TableOfContentItemVO> tableOfContentItemVoList);
 
     void populateMarkedContent(String markedContent);
@@ -41,4 +45,8 @@ interface MemorandumScreen {
     void showMajorVersionWindow();
     
     void setDocumentVersionInfo(VersionInfoVO versionInfoVO);
+    
+    void setPermissions(DocumentVO memorandum);
+    
+    void scrollToMarkedChange(final String elementId);
 }

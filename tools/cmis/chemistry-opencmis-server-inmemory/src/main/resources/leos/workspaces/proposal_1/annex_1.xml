@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="support/styles/annex.css"?>
 <akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos">
     <doc name="annex">
         <meta>
@@ -15,7 +16,7 @@
                     <FRBRuri value=""/>
                     <FRBRdate date="9999-01-01" name=""/>
                     <FRBRauthor href=""/>
-                    <FRBRlanguage language="eng"/>
+                    <FRBRlanguage language="EN"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis value=""/>
@@ -24,7 +25,19 @@
                     <FRBRauthor href=""/>
                 </FRBRManifestation>
             </identification>
-            <proprietary source="~leos"><leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose><leos:annexNumber GUID="proprietary__annexNumber">Annex 1</leos:annexNumber><leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage><leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType><leos:annexIndex GUID="proprietary__annexIndex">1</leos:annexIndex><leos:annexTitle GUID="proprietary__annexTitle">Annex title 1</leos:annexTitle></proprietary></meta>
+            <proprietary source="~leos">
+                <leos:version>1.0.3</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>AN-023</leos:docTemplate>
+                <leos:docPurpose GUID="proprietary__docpurpose">on XYZ</leos:docPurpose>
+                <leos:annexNumber GUID="proprietary__annexNumber">Annex 1</leos:annexNumber>
+                <leos:docStage GUID="proprietary__docstage">Proposal for a</leos:docStage>
+                <leos:docType GUID="proprietary__doctype">REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</leos:docType>
+                <leos:annexIndex GUID="proprietary__annexIndex">1</leos:annexIndex>
+                <leos:annexTitle GUID="proprietary__annexTitle">Annex title 1</leos:annexTitle>
+                <leos:ref>annex_1</leos:ref>
+            </proprietary>
+        </meta>
         <coverPage GUID="coverpage">
             <container name="institutionOwnerLogo" GUID="coverpage__container_1">
                 <p GUID="coverpage__container_1__p">
@@ -60,9 +73,11 @@
             </longTitle>
         </preface>
         <mainBody GUID="body">
-            <blockContainer GUID="body__blockcontainer_1" leos:editable="true" leos:deletable="true">
-                <p GUID="body__blockcontainer_1__p">TEXT...</p>
-            </blockContainer>
+            <division GUID="body_division_1" leos:editable="true" leos:deletable="true">
+                <content GUID="body_division_1_content">
+                    <p GUID="body_division_1_content_p">TEXT...</p>
+                </content>
+            </division>
         </mainBody>
     </doc>
 </akomaNtoso>

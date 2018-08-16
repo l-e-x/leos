@@ -1,0 +1,19 @@
+@mixin wizard {
+
+    .upload-wizard {
+        .file-valid > .v-icon-check {
+            color: green;
+        }
+
+        .file-invalid > .v-icon-close {
+            color: red;
+            padding-top: 3px;
+        }
+
+        .gwt-FileUpload {
+            opacity: 0;
+            z-index: -1;
+            position: absolute;
+        }
+    }
+}

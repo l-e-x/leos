@@ -1,3 +1,5 @@
+@import "changePane";
+
 @mixin annexView {
 
     .leos-annex-view {
@@ -29,7 +31,9 @@
             background: $GREY;
             position: relative;
         }
-    
+
+        @include changePane("doc");
+
         .leos-padbar {
             border-bottom: 1px solid $G_BORDER_COLOR;
         }

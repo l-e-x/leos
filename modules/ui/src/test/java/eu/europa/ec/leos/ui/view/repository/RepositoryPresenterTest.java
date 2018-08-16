@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,7 +28,7 @@ import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.ui.model.RepositoryType;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.view.repository.SelectDocumentEvent;
-import eu.europa.ec.leos.web.model.DocumentVO;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import io.atlassian.fugue.Option;
@@ -78,15 +78,15 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         String proposalId = "878";
 
         List<XmlDocument.Proposal> documents = new ArrayList<>();
-        ProposalMetadata proposalMetadata = new ProposalMetadata("", "REGULATION for EC", "", "");
+        ProposalMetadata proposalMetadata = new ProposalMetadata("", "REGULATION for EC", "", "PR-00.xml", "EN","", "proposal-id");
         Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
         collaborators.put("login", LeosAuthority.OWNER);
         XmlDocument.Proposal leosProposal = new XmlDocument.Proposal(proposalId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "PR-000.xml", "EN", "REGULATION for EC", collaborators,
+                "REGULATION for EC", collaborators,
                 Option.some(content), Option.some(proposalMetadata));
         documents.add(leosProposal);
-        when(workspaceService.browseWorkspace(XmlDocument.Proposal.class)).thenReturn(documents);
+        when(workspaceService.browseWorkspace(XmlDocument.Proposal.class, false)).thenReturn(documents);
         when((RepositoryType) httpSession.getAttribute(SessionAttribute.REPOSITORY_TYPE.name())).thenReturn(RepositoryType.PROPOSALS);
 
         when(proposalService.findProposal(proposalId)).thenReturn(leosProposal);
@@ -98,7 +98,7 @@ public class RepositoryPresenterTest extends LeosPresenterTest {
         repositoryPresenter.enter();
 
         verify(repositoryScreen).setRepositoryType(RepositoryType.PROPOSALS);
-        verify(workspaceService).browseWorkspace(XmlDocument.Proposal.class);
+        verify(workspaceService).browseWorkspace(XmlDocument.Proposal.class, false);
         ArgumentCaptor<List> argument = ArgumentCaptor.forClass(List.class);
         verify(repositoryScreen).populateData(argument.capture());
 

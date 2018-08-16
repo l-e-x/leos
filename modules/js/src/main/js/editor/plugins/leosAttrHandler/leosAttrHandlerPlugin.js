@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,8 +16,7 @@ define(function leosAttrHandlerPluginModule(require) {
     "use strict";
 
     // load module dependencies
-    var CKEDITOR = require("promise!ckEditor");
-    var LOG = require("logger");
+    var identityHandler = require("plugins/leosAttrHandler/leosIdentityHandlerModule");
     var pluginTools = require("plugins/pluginTools");
 
     var pluginName = "leosAttrHandler";
@@ -25,31 +24,24 @@ define(function leosAttrHandlerPluginModule(require) {
     var pluginDefinition = {
 
         init: function init(editor) {
+            var oldSelectedElementDetails;
+            editor.on('beforeCommandExec', function(e) {
+                if (e.data.name === 'enter') {
+                    oldSelectedElementDetails = identityHandler.getElementDetails(e.editor.getSelection().getStartElement());
+                }
+            });
+            
             editor.on('afterCommandExec', function(e) {
                 if (e.data.name === 'enter') {
                     var element = e.editor.getSelection().getStartElement();
                     if (element) {
-                        //Check to avoid nested inline elements
-                        while (!element.isBlockBoundary()) {
-                            element = element.getParent();
-                        }
-                        if (element && element.$.attributes) {
-                            // Regular expression to match attributes similar to - "data-akn-num-id"
-                            var regex = new RegExp("data-akn-\\w+-id");
-                            var attributes = [];
-                            
-                            for (var idx = 0; idx < element.$.attributes.length; idx++) {
-                                if (element.$.attributes[idx].name.match(regex)) {
-                                    attributes.push(element.$.attributes[idx].name);
-                                }
-                            }
-                            element.removeAttributes(attributes);
-                        }
+                        var newSelectedElementDetails = identityHandler.getElementDetails(element);
+                        identityHandler.handleIdentity(oldSelectedElementDetails.ancestors[0], oldSelectedElementDetails, newSelectedElementDetails.ancestors[0], newSelectedElementDetails);
                         editor.fire("change"); // for re-numbering
                     }
                 }
             });
-        }
+        },
     };
 
     pluginTools.addPlugin(pluginName, pluginDefinition);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -87,7 +87,11 @@ define(function refToLinkExtensionModule(require) {
 
         function _ejectPlaceholders(text, cache) {
             Object.keys(cache).forEach(function (placeholder) {
-                text = text.replace(new RegExp(placeholder, 'g'), cache[placeholder].views[0].view);
+                // the new value to replace is coming as an attribute of the array cache[placeholder].views
+                var arrViews = cache[placeholder].views;
+                Object.keys(arrViews).forEach(function (key) {
+                    text = text.replace(new RegExp(placeholder, 'g'), arrViews[key]);
+                });
             });
             return text;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -103,5 +103,21 @@ class TemplateServiceImpl implements TemplateService {
     public XmlDocument getTemplate(String name) {
         LOG.trace("Getting template... [path={}, name={}]", templatesPath, name);
         return configRepository.findTemplate(templatesPath, name);
+    }
+
+    @Override
+    public String getTemplateName(List<CatalogItem> catalogItems, String name, String language) {
+        String templateName = "";
+        for (CatalogItem item : catalogItems) {
+            if (item.getId().contains(name)) {
+                return item.getName(language);
+            } else {
+                templateName = getTemplateName(item.getItems(), name, language);
+                if (!templateName.isEmpty()) {
+                    return templateName;
+                }
+            }
+        }
+        return templateName;
     }
 }

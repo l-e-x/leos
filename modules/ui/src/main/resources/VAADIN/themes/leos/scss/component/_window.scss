@@ -56,6 +56,11 @@
         background-color: #FFF;       /*KLUGE: fix for IE8 transparency blur*/
     }
 
+    .v-tree-node-drag-top:before, .v-tree-node-drag-bottom:after, .v-tree-node-drag-bottom.v-tree-node-dragfolder.v-tree-node-expanded > .v-tree-node-children:before {
+        box-shadow: 0 0 0 2px #7bd2f6;  //this style is added to show a bigger highlight
+                                        //while dragging an item in between two tree elements
+    }    
+
     /* LEOS draggable ToC item styles */
     .leos-dragItem {
         // this style is copied from the v-tree-node-caption-drag-center

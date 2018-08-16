@@ -36,14 +36,17 @@
 <#macro @createWrapper>
     <#local elementId = .node.@GUID[0]!>
     <#local elementName=.node?node_name>
-    <#if (elementId?length gt 0)>
+    <#local compliant = (.node["@leos:compliant"][0]!'true') == 'true'>
+    <#if (elementId?length gt 0) && (compliant)>
         <div class="leos-import-wrapper">
             <input type="checkbox" data-element-type="import" data-wrapped-type="${elementName}" value="${elementId}">
             <div class="leos-wrapped-content">
-                <#fallback>
+                <@xmlFtl.@element/>
             </div>
         </div>
     <#else>
-        <#fallback>
-    </#if>    
+        <div class="leos-non-import-wrapper">
+            <@xmlFtl.@element/>
+        </div>
+    </#if>
 </#macro>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -32,6 +32,7 @@ define(function aknInlineClauseProfileModule(require) {
     plugins.push(require("plugins/aknClause/aknClausePlugin"));
     plugins.push(require("plugins/leosTransformer/leosTransformerPlugin"));
     plugins.push(require("plugins/leosFixNestedPs/leosFixNestedPsPlugin"));
+    plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -65,10 +66,12 @@ define(function aknInlineClauseProfileModule(require) {
         // disable Advanced Content Filter (allow all content)
         allowedContent: true,
         //show toolbar on startup
-        startupFocus: true,
+        startupFocus: 'end',
 
         //Use native spellchecker
         disableNativeSpellChecker: false,
+        // LEOS-2887 removing tooltip title 
+        title: false,
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"

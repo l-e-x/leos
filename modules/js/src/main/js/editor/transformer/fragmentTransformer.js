@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -322,9 +322,11 @@ define(function fragmentTransformerModule(require) {
                             element.transformationContext = element.transformationContext || this._getTransformationContext(element);
                             var nestedProduct = this._getNestedProduct(element);
                             if (nestedProduct) {
-                                this._appendChildToProduct(element.parent, {
+                                this._appendChildToProduct(element, {
                                     toPath : elementConfig.toPath,
-                                    toChildProduct : nestedProduct
+                                    toChildProduct : nestedProduct,
+                                    toChild : nestedProduct.name,
+                                    attrs: elementConfig.attrs
                                 });
                             }
                         },
@@ -513,7 +515,8 @@ define(function fragmentTransformerModule(require) {
                                 elementName = element.name;
                             } else if (element instanceof CKEDITOR.htmlParser.text) {
                                 elementName = "text";
-
+                            } else {
+                                elementName = "unknown";
                             }
                             return elementName;
                         },

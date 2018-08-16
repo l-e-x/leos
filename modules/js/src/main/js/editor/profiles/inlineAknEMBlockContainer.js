@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -29,6 +29,7 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
     plugins.push(require("plugins/leosWidget/leosWidgetPlugin"));               //requried for handing widget
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));     //required for Widget drag drop
     plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));     //required for xml entities <--> html entities
+    plugins.push(require("plugins/leosAttrHandler/leosAttrHandlerPlugin"));     //required for id cleanup on enter
     plugins.push(require("plugins/aknUnNumberedBlockList/aknUnNumberedBlockListPlugin"));
     plugins.push(require("plugins/aknNumberedBlockList/aknNumberedBlockListPlugin"));
     plugins.push(require("plugins/leosTable/leosTablePlugin"));
@@ -44,7 +45,13 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
     plugins.push(require("plugins/aknHtmlSubScript/aknHtmlSubScriptPlugin"));
     plugins.push(require("plugins/aknBlockContainer/aknBlockContainerPlugin"));
     plugins.push(require("plugins/aknParagraph/aknParagraphPlugin"));
-    
+    plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
+    plugins.push(require("plugins/aknHtmlJustify/aknHtmlJustifyPlugin"));
+    plugins.push(require("plugins/leosBase64Image/leosBase64ImagePlugin"));
+    plugins.push(require("plugins/leosImageResize/leosImageResizePlugin"));
+    plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
+    plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
+
     var pluginNames=[];
     var specificConfig={};
     $.each(plugins, function( index, value ) {
@@ -54,7 +61,7 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
     var transformationConfigResolver = transformationConfigManager.getTransformationConfigResolverForPlugins(pluginNames);
     
     // holds ckEditor external plugins names
-    var externalPluginsNames = ["base64image"];
+    var externalPluginsNames = [];
     pluginTools.addExternalPlugins(externalPluginsNames);
     var extraPlugins = pluginNames.concat(externalPluginsNames).join(",");
 
@@ -69,17 +76,19 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath," +
                  "clipboard,undo,basicstyles,enterkey," + "list,indent," +
-                 "table,tableresize,tabletools,tableselection,button,dialog,dialogui,widget,pastetext",
+                 "specialchar,table,tableresize,tabletools,tableselection,button,dialog,dialogui,widget,pastetext",
         // comma-separated list of toolbar button names that must not be rendered
-        removeButtons: "Strike,TextColor",
+        removeButtons: "Strike,TextColor,PasteText",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
         // disable Advanced Content Filter (allow all content)
         allowedContent: true,
         //show toolbar on startup
-        startupFocus: true,
+        startupFocus: 'end',
         //Use native spellchecker
         disableNativeSpellChecker: false,
+        // LEOS-2887 removing tooltip title 
+        title: false,
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
@@ -96,9 +105,13 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
             name : "paragraph",
             groups : [ "list","indent" ]
         }, {
-            name: "insert"      //Toolbar group containing Authorial Note button
+            name: "ref"      //Toolbar group containing Authorial Note button
+        },'/', {
+            name : "align"
         }, {
-            name : "tools"     //Toolbar group containing show blocks
+            name: "insert"
+        }, {
+            name : "tools"    //Toolbar group containing show blocks
         }, {
             name : "mode"       //Toolbar group containing Source button
         } ]

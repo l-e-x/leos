@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,6 @@ package eu.europa.ec.leos.services.content.processor;
 
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import org.apache.commons.lang3.Validate;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -43,7 +42,7 @@ class AttachmentProcessorImpl implements AttachmentProcessor {
                     .append("</attachments>").toString();
             updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "bill", attachmentsTag);
         } else {
-            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "attachments", createAttachmentTag(href, ""));
+            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "attachments", createAttachmentTag(href, showAs));
         }
         return xmlContentProcessor.doXMLPostProcessing(updatedContent);
     }
@@ -79,5 +78,22 @@ class AttachmentProcessorImpl implements AttachmentProcessor {
 
     private String createAttachmentTag(String href, String showAs) {
         return String.format("<attachment><documentRef href=\"%s\" showAs=\"%s\"/></attachment>", href, showAs);
+    }
+
+    private String createDocumentRefTag(String guid, String href, String showAs) {
+        return String.format("<documentRef GUID=\"%s\" href=\"%s\" showAs=\"%s\"/>", guid, href, showAs);
+    }
+
+    @Override
+    public byte[] updateAttachmentsInBill(byte[] xmlContent, HashMap<String, String> attachmentsElements) {
+
+        for (String elementRef : attachmentsElements.keySet()) {
+            String elementId = xmlContentProcessor.getElementIdByPath(xmlContent,
+                    String.format("//attachments/attachment/documentRef[@href=\"%s\"]", elementRef));
+            String updatedElement = createDocumentRefTag(elementId, elementRef, attachmentsElements.get(elementRef));
+            xmlContent = xmlContentProcessor.replaceElementByTagNameAndId(xmlContent, updatedElement, "documentRef", elementId);
+        }
+
+        return xmlContent;
     }
 }

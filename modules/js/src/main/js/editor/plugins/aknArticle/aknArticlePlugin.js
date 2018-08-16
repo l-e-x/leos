@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,8 +17,8 @@ define(function aknArticlePluginModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
-    var aknArticleNumberWidget = require("./aknArticleNumberWidget");
-    var aknArticleHeadingWidget = require("./aknArticleHeadingWidget");
+    var aknArticleNumberWidget = require("plugins/aknArticleWidget/aknArticleNumberWidget");
+    var aknArticleHeadingWidget = require("plugins/aknArticleWidget/aknArticleHeadingWidget");
 
     var pluginName = "aknArticle";
 
@@ -57,6 +57,9 @@ define(function aknArticlePluginModule(require) {
             akn : "GUID",
             html : "id"
         }, {
+            akn : "leos:origin",
+            html : "data-origin"
+        }, {
             akn : "leos:editable",
             html : "data-akn-attr-editable"
         }, {
@@ -74,6 +77,9 @@ define(function aknArticlePluginModule(require) {
                 akn : "leos:editable",
                 html : "contenteditable=false"
             }, {
+                akn : "leos:origin",
+                html : "data-num-origin"
+            }, {
                 akn : "GUID",
                 html : "data-akn-num-id"
             } ],
@@ -86,6 +92,11 @@ define(function aknArticlePluginModule(require) {
             html : "article/h2",
             attr : [ {
                 html : "class=akn-article-heading"
+            },{ 
+                html : "data-akn-name=aknHeading"
+            }, {
+                akn : "leos:origin",
+                html : "data-heading-origin"
             }, {
                 akn : "leos:editable",
                 html : "contenteditable"
@@ -103,6 +114,9 @@ define(function aknArticlePluginModule(require) {
             attr : [ {
                 akn : "GUID",
                 html : "id"
+            }, {
+                akn : "leos:origin",
+                html : "data-origin"
             } ]
         } ]
     };

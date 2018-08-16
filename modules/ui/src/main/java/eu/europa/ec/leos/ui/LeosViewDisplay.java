@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,13 +17,15 @@ import com.vaadin.navigator.View;
 import com.vaadin.navigator.ViewDisplay;
 import com.vaadin.spring.annotation.SpringViewDisplay;
 import com.vaadin.ui.Component;
-import com.vaadin.v7.ui.VerticalLayout;
+import com.vaadin.ui.VerticalLayout;
 
 @SpringViewDisplay
 class LeosViewDisplay extends VerticalLayout implements ViewDisplay {
 
     LeosViewDisplay(){
         addStyleName("leos-body");
+        setMargin(false);
+        setSpacing(false);
         setSizeFull();
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,14 +24,16 @@ public class EditElementResponseEvent {
     private final String docType;
     private final User user;
     private final LeosAuthority[] roles;
+    private final String instanceType;
 
-    public EditElementResponseEvent(String elementId, String elementTagName, String elementFragment, String docType, User user, LeosAuthority[] authorities) {
+    public EditElementResponseEvent(String elementId, String elementTagName, String elementFragment, String docType, User user, LeosAuthority[] authorities, String instanceType) {
         this.elementId = elementId;
         this.elementTagName = elementTagName;
         this.elementFragment = elementFragment;
         this.docType = docType;
         this.user = user;
         this.roles = authorities;
+        this.instanceType = instanceType;
     }
 
     public String getElementId() {
@@ -56,5 +58,9 @@ public class EditElementResponseEvent {
 
     public LeosAuthority[] getRoles() {
         return roles;
+    }
+
+    public String getInstanceType() {
+        return instanceType;
     }
 }

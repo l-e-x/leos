@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,4 +44,17 @@ public interface ElementProcessor<T extends XmlDocument> {
      */
     @PreAuthorize("hasPermission(#document, 'CAN_UPDATE')")
     byte[] deleteElement(T document, String elementId, String elementType);
+
+    /**
+     * searches the {@param origText} in the element {@param elementId} and replace it with the {@param newText}.
+     * @param byteXmlContent
+     * @param origText
+     * @param elementId
+     * @param startOffset
+     * @param endOffset
+     * @param newText
+     * @return: On success returns updated content. On failure throws exception.
+     */
+    @PreAuthorize("hasPermission(#document, 'CAN_MERGE_SUGGESTION')")
+    byte[] replaceTextInElement(T document, String origText, String newText, String elementId, int startOffset, int endOffset);
 }

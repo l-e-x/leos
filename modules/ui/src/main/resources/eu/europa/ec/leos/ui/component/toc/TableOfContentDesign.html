@@ -1,0 +1,16 @@
+<!doctype html>
+<html>
+<head></head>
+<body>
+    <vaadin-vertical-layout size-full :expand="1.0" spacing="false" margin="false">
+        <vaadin-horizontal-layout style-name="leos-viewdoc-tocbar" width="100%" spacing>
+            <vaadin-label _id="tocLabel" :middle :left></vaadin-label>
+            <vaadin-button _id="tocExpandCollapseButton" style-name="link leos-toolbar-button" :middle :left></vaadin-button>
+            <vaadin-button _id="tocEditButton" style-name="link leos-toolbar-button" :middle :left></vaadin-button>
+            <vaadin-label _id="spacerLabel" :expand="1.0" :middle :left></vaadin-label>
+            <vaadin-button _id="tocRefreshButton" style-name="link leos-toolbar-button" icon="fonticon://Vaadin-Icons/e790" :middle :left></vaadin-button>
+        </vaadin-horizontal-layout>
+        <vaadin-tree-grid _id="tocTree" style-name="leos-toc-tree" size-full :expand="1.0"></vaadin-tree-grid>
+    </vaadin-vertical-layout>
+</body>
+</html>

@@ -1,5 +1,5 @@
 //
-// Copyright 2017 European Commission
+// Copyright 2018 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -14,13 +14,17 @@
 
 //------------------------------- XML Styles --------------------------------//
 %xmlParagraph {
-    blockContainer {
-       & aknP {
-            display: block;
-       }
-       & > aknP {
-            @extend %paddedText;
-       } 
+    division {
+        & > content {
+           akpP, p  //To handle other cases like division/content/table etc.
+           {            
+                display: block;
+           }
+           > aknP, > p {
+                display: block;
+                @extend %paddedText;
+           } 
+        }
     }
 }
 
@@ -33,7 +37,7 @@
 
 //------------------------------- Showblock Styles --------------------------//
 %showblockParagraph {
-    div[data-akn-name="blockContainer"] > p[data-akn-name="aknParagraph"] { // No showblocks for tables' cells content
+    div[data-akn-name="division"] > p[data-akn-name="aknParagraph"] { // No showblocks for tables' cells content
         @include blockOutline("PARAGRAPH");
     }
 }

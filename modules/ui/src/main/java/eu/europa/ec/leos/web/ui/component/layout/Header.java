@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,6 +26,7 @@ import com.vaadin.ui.themes.ValoTheme;
 import com.vaadin.v7.shared.ui.label.ContentMode;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.ListSelect;
+import eu.europa.ec.leos.domain.common.InstanceContext;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
@@ -59,12 +60,15 @@ public class Header extends CustomLayout {
     private MessageHelper messageHelper;
     private EventBus eventBus;
     private SecurityContext securityContext;
+    private InstanceContext instanceContext;
 
-    public Header(final LanguageHelper langHelper, final MessageHelper msgHelper, final EventBus eventBus, final SecurityContext securityContext) {
+
+    public Header(final LanguageHelper langHelper, final MessageHelper msgHelper, final EventBus eventBus, final SecurityContext securityContext, final InstanceContext instanceContext) {
         this.langHelper = langHelper;
         this.messageHelper = msgHelper;
         this.eventBus = eventBus;
         this.securityContext = securityContext;
+        this.instanceContext = instanceContext;
         LOG.trace("Initializing header...");
         initLayout();
     }
@@ -94,7 +98,11 @@ public class Header extends CustomLayout {
 	
     private @Nonnull Component buildLogo() {
         // logo image
-        return new Image(null, LeosTheme.LEOS_HEADER_LOGO_RESOURCE_NEW);
+        if(instanceContext.isCouncil()) {
+            return new Image(null, LeosTheme.LEOS_HEADER_LOGO_RESOURCE_COUNCIL);
+        } else {
+            return new Image(null, LeosTheme.LEOS_HEADER_LOGO_RESOURCE_NEW);
+        }
     }
 
     private @Nonnull Component buildLanguageSelector() {

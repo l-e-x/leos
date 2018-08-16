@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,10 +17,10 @@ import com.google.common.base.Stopwatch;
 import eu.europa.ec.leos.domain.document.Content;
 import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.services.support.xml.freemarker.XmlNodeModelHandler;
 import freemarker.ext.dom.NodeModel;
-import freemarker.template.Configuration;
-import freemarker.template.Template;
+import freemarker.template.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +30,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -40,16 +39,7 @@ public class TransformationServiceImpl implements TransformationService {
     private static final Logger LOG = LoggerFactory.getLogger(TransformationServiceImpl.class);
     
     @Value("${leos.freemarker.ftl.documentView}")
-    private String editableBillXHtmlTemplate;
-
-    @Value("${leos.freemarker.ftl.annexView}")
-    private String editableAnnexXHtmlTemplate;
-
-    @Value("${leos.freemarker.ftl.memorandumView}")
-    private String editableMemorandumXHtmlTemplate;
-
-    @Value("${leos.freemarker.ftl.readOnly}")
-    private String readOnlyHtmlTemplate;
+    private String editableXHtmlTemplate;
 
     @Value("${leos.freemarker.ftl.fragmentXmlWrapper}")
     private String nonEditableFragmentTemplate;
@@ -59,42 +49,45 @@ public class TransformationServiceImpl implements TransformationService {
 
     private Configuration freemarkerConfiguration;
 
+    private TemplateHashModel enumModels;
+
     @Autowired
-    public TransformationServiceImpl(Configuration freemarkerConfiguration) {
+    public TransformationServiceImpl(Configuration freemarkerConfiguration, TemplateHashModel enumModels){
         this.freemarkerConfiguration = freemarkerConfiguration;
+        this.enumModels = enumModels;
     }
     
     @Override
-    public String toEditableXml(final InputStream documentStream, String contextPath, LeosCategory category){
+    public String toEditableXml(final InputStream documentStream, String contextPath, LeosCategory category, List<LeosPermission> permissions) {
         String template;
         switch (category){
             case ANNEX:
-                template = editableAnnexXHtmlTemplate;
+                template = editableXHtmlTemplate;
                 break;
             case MEMORANDUM:
-                template = editableMemorandumXHtmlTemplate;
+                template = editableXHtmlTemplate;
                 break;
             case BILL:
-                template = editableBillXHtmlTemplate;
+                template = editableXHtmlTemplate;
                 break;
             default:
                 throw new UnsupportedOperationException("No transformation supported for this category");
         }
-        return transform(documentStream, template, contextPath);
+        return transform(documentStream, template, contextPath, permissions);
     }
 
     @Override
-    public String toXmlFragmentWrapper(InputStream documentStream, String contextPath) {
-        return transform(documentStream, nonEditableFragmentTemplate, contextPath);
+    public String toXmlFragmentWrapper(InputStream documentStream, String contextPath, List<LeosPermission> permissions) {
+        return transform(documentStream, nonEditableFragmentTemplate, contextPath, permissions);
     }
     
     @Override
-    public String toImportXml(InputStream documentStream, String contextPath) {
-        return transform(documentStream, importXHtmlTemplate, contextPath);
+    public String toImportXml(InputStream documentStream, String contextPath, List<LeosPermission> permissions) {
+        return transform(documentStream, importXHtmlTemplate, contextPath, permissions);
     }
     
     @Override
-    public String formatToHtml(XmlDocument versionDocument, String contextPath) {
+    public String formatToHtml(XmlDocument versionDocument, String contextPath, List<LeosPermission> permissions) {
         LOG.debug("formatToHtml service invoked for version id:{})", versionDocument.getId());
         
         try {
@@ -102,13 +95,21 @@ public class TransformationServiceImpl implements TransformationService {
             final Content content = versionDocument.getContent().getOrError(() -> "Version document content is required!");
             final byte[] contentBytes = content.getSource().getByteString().toByteArray();
             // 2. transform it
-            return transform(new ByteArrayInputStream(contentBytes), readOnlyHtmlTemplate, contextPath);
+            return transform(new ByteArrayInputStream(contentBytes), editableXHtmlTemplate, contextPath, permissions);
         } catch (Exception e) {
             throw new RuntimeException("Unable to format to HTML");
         }
     }
 
-    private String transform(InputStream documentStream, String templateName, String contextPath) {
+    /**
+     *  Transforms a documentStream using a freemarker template 
+     * @param documentStream
+     * @param templateName
+     * @param contextPath
+     * @param permissions list of actions (permissions) that a user can perform on the given document.
+     * @return
+     */
+    private String transform(InputStream documentStream, String templateName, String contextPath, List<LeosPermission> permissions) {
         LOG.trace("Transforming document using {} template...", templateName);
         Stopwatch stopwatch = Stopwatch.createStarted();
         try {
@@ -117,8 +118,10 @@ public class TransformationServiceImpl implements TransformationService {
 
             NodeModel nodeModel = XmlNodeModelHandler.parseXmlStream(documentStream);
 
-            Map headers =new HashMap<String, String>();
+            Map headers = new HashMap<String, Object>();
             headers.put("contextPath", contextPath);
+            headers.put("userPermissions", (permissions != null) ? permissions : Collections.emptyList());
+            headers.put("LeosPermission", enumModels.get(LeosPermission.class.getName()));
 
             Map root = new HashMap<String, Object>();
             root.put("xml_data", nodeModel);

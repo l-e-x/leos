@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,158 +18,162 @@ define(function aknOrderedListPluginModule(require) {
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
     var $ = require('jquery');
-    var cachedSequenceForFirstLevel;
-    var cachedSequenceForSecondLevel;
-    var cachedSequenceForThirdLevel;
-    var cachedSequenceForOtherLevel;
     var pluginName = "aknOrderedList";
     var leosHierarchicalElementTransformerStamp = require("plugins/leosHierarchicalElementTransformer/hierarchicalElementTransformer");
- 
-    var DATA_AKN_NUM = "data-akn-num";
+    var numberModule = require("plugins/leosNumber/listItemNumberModule");
+
+    var NUM_GROUP = "pointsNumbering";
+    var ORDER_LIST_ELEMENT = "ol";
 
     var pluginDefinition = {
-        init : function init(editor) {
+        lang: 'en',
+        init: function init(editor) {
+            numberModule.init();
+            editor.on("beforeAknIndentList", _resetDataNumOnIndent);
             editor.on("change", resetDataAknNameForOrderedList, null, null, 0);
             editor.on("change", resetNumbering, null, null, 1);
+            initializePointsNumberingMenuItem(editor, this.path);
         }
     };
 
     /*
-     * For given num param return roman number literal
+     * returns the Ordered List of the element
      */
-    function romanize(num) {
-        var digits = String(+num).split(""), key = [ "", "c", "cc", "ccc", "cd", "d", "dc", "dcc", "dccc", "cm", "", "x", "xx", "xxx", "xl", "l", "lx", "lxx",
-                "lxxx", "xc", "", "i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix" ], roman = "", i = 3;
-        while (i--) {
-            roman = (key[+digits.pop() + (i * 10)] || "") + roman;
-        }
-        return Array(+digits.join("") + 1).join("M") + roman;
+    function getOrderedList(element){
+        return element.getAscendant(ORDER_LIST_ELEMENT, true);
     }
 
     /*
-     * Returns the array containing literals for first level points
-     */
-    function generateSequenceForFirstLevel(sequenceLength) {
-        var initialPrefix = "";
-        var startOfAlfaNumerical = 97;
-        var endOfAlfaNumerical = 123;
-        var sequenceBase = endOfAlfaNumerical - startOfAlfaNumerical;
-        var wholeSequence = [];
-        for (var ii = 0; ii < sequenceLength; ii++) {
-            wholeSequence.push(getNextSequenceLiteral(ii));
-        }
+    * initialize commands, menu group and items to Points Numbering MenuItem
+    */
+    function initializePointsNumberingMenuItem(editor, path) {
+        //Adding Menu Groups
+        editor.addMenuGroup(NUM_GROUP);
 
-        function getNextSequenceLiteral(sequenceNumber) {
-            var currentSequenceBase = 0;
-            var sequence = [];
-            while (true) {
-                var currentLetter;
-                if (currentSequenceBase > 0) {
-                    var currentBaseCount = parseInt(sequenceNumber / (Math.pow(sequenceBase, currentSequenceBase)));
-                    if (currentBaseCount === 0) {
-                        break;
+        //Create Menu
+        editor.addMenuItems({
+            PointsNumbering: {
+                icon: path + "icons/pointsnumbering.png",
+                label: editor.lang.aknOrderedList.pointsnumbering,
+                group: NUM_GROUP,
+                order: 1,
+                getItems: function () {
+                    return {
+                        Alphabets: CKEDITOR.TRISTATE_OFF,
+                        Roman: CKEDITOR.TRISTATE_OFF,
+                        Arabic: CKEDITOR.TRISTATE_OFF,
+                        IndentDash: CKEDITOR.TRISTATE_OFF
                     }
-                    currentLetter = String.fromCharCode(currentBaseCount + startOfAlfaNumerical - 1);
                 }
+            }
+        });
 
-                if (currentSequenceBase === 0) {
-                    currentLetter = String.fromCharCode((sequenceNumber % sequenceBase) + startOfAlfaNumerical);
+        numberModule.getSequences().forEach(function (sequence, idx, arr) {
+                editor.addMenuItem(sequence.name, {
+                    label: editor.lang.aknOrderedList[sequence.type],
+                    group: NUM_GROUP,
+                    order: idx + 2,
+                    command: sequence.name
+                });
+
+                //Numbering commands
+                editor.addCommand(sequence.name, {
+                    exec: function (editor) {
+                        resetPointsNumbering(editor, sequence);
+                    }
+                });
+            });
+
+
+        // Listener
+        if (editor.contextMenu) {
+            editor.contextMenu.addListener(function (element, selection) {
+                if (isValidOrderedList(element)) {
+                    return {
+                        PointsNumbering: CKEDITOR.TRISTATE_OFF,
+                    };
                 }
-                currentSequenceBase++;
-                sequence.unshift(currentLetter);
-            }
-            sequence.push(")");
-            return sequence.join("");
+            });
         }
-        return wholeSequence;
     }
 
     /*
-     * Returns the array containing literals for second level points
-     */
-    function generateSequenceForSecondLevel(sequenceLength) {
-        var wholeSequence = [];
-        var arabicNum;
-        for (var ii = 0; ii < sequenceLength; ii++) {
-            arabicNum = "(" + (ii + 1) + ")";
-            wholeSequence.push(arabicNum);
-        }
-        return wholeSequence;
+  * checks if element is an ordered list
+  */
+    function isValidOrderedList(element) {
+        var orderList = getOrderedList(element);
+        return orderList.hasAttribute('data-akn-name');
     }
 
     /*
-     * Returns the array containing literals for third level points
-     */
-    function generateSequenceForThirdLevel(sequenceLength) {
-        var wholeSequence = [];
-        var romanNum;
-        for (var ii = 0; ii < sequenceLength; ii++) {
-            romanNum = "(" + romanize(ii + 1) + ")";
-            wholeSequence.push(romanNum);
-        }
-        return wholeSequence;
+    * Set numbering to style, selected from Points Numbering Menu Item
+    */
+    function resetPointsNumbering(editor, sequence) {
+        var orderedList = getOrderedList(editor.elementPath().block || editor.elementPath().blockLimit);
+        numberModule.updateNumbers([orderedList.$], sequence);
     }
 
-    /*
-     * Returns the array containing literals for other level points (bigger than 3)
-     */
-    function generateSequenceForOtherLevel(sequenceLength) {
-        var wholeSequence = [];
-        for (var ii = 0; ii < sequenceLength; ii++) {
-            wholeSequence.push("-");
+    //This is removing num and origin() on indent and outdent also
+    function _resetDataNumOnIndent(event) {
+        var editor = event.editor, range, node;
+        var selection = editor.getSelection(),
+            ranges = selection && selection.getRanges(),
+            iterator = ranges.createIterator();
+
+        while ((range = iterator.getNextRange())) {
+            if (range.startContainer) {
+                var startNode = range.startContainer.type !== CKEDITOR.NODE_TEXT && range.startContainer.getName() === "li"
+                    ? range.startContainer
+                    : range.startContainer.getAscendant('li');
+                _handleNode(startNode);
+            }
+            if (range.endContainer) {
+                var endNode = range.endContainer.type !== CKEDITOR.NODE_TEXT && range.endContainer.getName() === "li"
+                    ? range.endContainer
+                    : range.endContainer.getAscendant('li');
+                _handleNode(endNode);
+            }
+
+            var rangeWalker = new CKEDITOR.dom.walker(range);
+            while (node = rangeWalker.next()) {
+                _handleNode(node);
+            }
         }
-        return wholeSequence;
     }
 
-    /*
-     * Returns the array containing literals for given sequence length and nesting level of the points
-     */
-    function generateSequence(sequenceLength, nestingLevel) {
-        nestingLevel -= 1;
-        if (nestingLevel === 0) {
-            if (!cachedSequenceForFirstLevel || (cachedSequenceForFirstLevel && cachedSequenceForFirstLevel.length < sequenceLength)) {
-                cachedSequenceForFirstLevel = generateSequenceForFirstLevel(sequenceLength * 2);
+    var REGEX_ORIGIN = new RegExp("data-(\\w-?)*origin");
+    function _removeOrigin(node) {
+        var attrs = node instanceof CKEDITOR.dom.element
+            ? node.$.attributes
+            : node.attributes;
+        for (var idx = 0; idx < attrs.length; idx++) {
+            if (attrs[idx].name.match(REGEX_ORIGIN)) {
+                node.removeAttribute(attrs[idx].name);
             }
-            return cachedSequenceForFirstLevel;
-        } else if (nestingLevel === 1) {
-            if (!cachedSequenceForSecondLevel || (cachedSequenceForSecondLevel && cachedSequenceForSecondLevel.length < sequenceLength)) {
-                cachedSequenceForSecondLevel = generateSequenceForSecondLevel(sequenceLength * 2);
-            }
-            return cachedSequenceForSecondLevel
-        } else if (nestingLevel === 2) {
-            if (!cachedSequenceForThirdLevel || (cachedSequenceForThirdLevel && cachedSequenceForThirdLevel.length < sequenceLength)) {
-                cachedSequenceForThirdLevel = generateSequenceForThirdLevel(sequenceLength * 2);
-            }
-            return cachedSequenceForThirdLevel
         }
-        else {
-            if (!cachedSequenceForOtherLevel || (cachedSequenceForOtherLevel && cachedSequenceForOtherLevel.length < sequenceLength)) {
-                cachedSequenceForOtherLevel = generateSequenceForOtherLevel(sequenceLength * 2);
-            }
-            return cachedSequenceForOtherLevel
+    }
+
+    function _handleNode(node) {
+        if (!node || node.type !== CKEDITOR.NODE_ELEMENT){
+            return;
         }
+        node.removeAttribute('data-akn-num');
+        _removeOrigin(node);
+
+        node.getChildren().toArray().forEach(_handleNode);
     }
 
     /*
      * Resets the numbering of the points depending on nesting level. LEOS-1487: Current implementation simply goes through whole document and renumbers all
      * ordered list items. For above reason this could cause some performance issues if so this implementation should be reconsidered.
-     * 
+     *
      */
     function resetNumbering(event) {
         event.editor.fire('lockSnapshot');
         var jqEditor = $(event.editor.editable().$);
         var orderedLists = jqEditor.find("*[data-akn-name='aknOrderedList']");
-        for (var ii = 0; ii < orderedLists.length; ii++) {
-            var orderedList = orderedLists[ii];
-            var currentNestingLevel = getNestingLevelForOl(orderedList);
-            var listItems = orderedList.children;
-            var sequence = generateSequence(listItems.length, currentNestingLevel);
-            for (var jj = 0; jj < listItems.length; jj++) {
-                sequence && listItems[jj].setAttribute(DATA_AKN_NUM, sequence[jj]);
-            }
-        }
+        numberModule.updateNumbers(orderedLists);
         event.editor.fire('unlockSnapshot');
-
     }
 
     /*
@@ -179,7 +183,7 @@ define(function aknOrderedListPluginModule(require) {
         var nestingLevel = -1;
         var currentOl = new CKEDITOR.dom.node(olElement);
         while (currentOl) {
-            currentOl = currentOl.getAscendant('ol');
+            currentOl = currentOl.getAscendant(ORDER_LIST_ELEMENT);
             nestingLevel++;
         }
         return nestingLevel;
@@ -188,7 +192,7 @@ define(function aknOrderedListPluginModule(require) {
     function resetDataAknNameForOrderedList(event) {
         event.editor.fire('lockSnapshot');
         var jqEditor = $(event.editor.editable().$);
-        var orderedLists = jqEditor.find("ol");
+        var orderedLists = jqEditor.find(ORDER_LIST_ELEMENT);
         for (var ii = 0; ii < orderedLists.length; ii++) {
             var orderedList = orderedLists[ii];
             var currentNestingLevel = getNestingLevelForOl(orderedList);
@@ -217,6 +221,9 @@ define(function aknOrderedListPluginModule(require) {
                 akn : "GUID",
                 html : "id"
             }, {
+                akn : "leos:origin",
+                html : "data-origin"
+            }, {
                 html : "data-akn-name=aknOrderedList"
             } ]
         },
@@ -225,7 +232,7 @@ define(function aknOrderedListPluginModule(require) {
         rootElementsForTo : [ "ol", "li" ]
     });
 
-				var transformationConfig = leosHierarchicalElementTransformer.getTransformationConfig();
+	var transformationConfig = leosHierarchicalElementTransformer.getTransformationConfig();
 
     // return plugin module
     var pluginModule = {

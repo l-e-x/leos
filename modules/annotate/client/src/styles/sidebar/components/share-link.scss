@@ -1,0 +1,50 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+// form for sharing links
+
+.share-link-container {
+  font-size: $body1-font-size;
+  line-height: $body1-line-height;
+  margin-top: 1px;
+  white-space: normal;
+}
+
+.share-link {
+  color: $gray-light;
+}
+
+.share-link:hover {
+  width: 100%;
+  color: $gray-dark;
+}
+
+.share-link-icons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.share-link-icon {
+  color: $color-dove-gray;
+  display: inline-block;
+  font-size: 24px;
+  text-decoration: none;
+  margin-left: 5px;
+  margin-right: 5px;
+
+  &:hover {
+    color: $brand-color;
+  }
+}

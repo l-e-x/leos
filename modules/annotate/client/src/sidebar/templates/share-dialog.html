@@ -1,0 +1,55 @@
+<!--
+
+    Copyright 2018 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<div class="sheet">
+  <i class="close h-icon-close"
+     role="button"
+     title="Close"
+     ng-click="vm.onClose()"></i>
+  <div class="form-vertical">
+    <ul class="nav nav-tabs">
+      <li class="active"><a href="">Share</a></li>
+    </ul>
+    <div class="tab-content">
+      <p>Share the link below to show anyone these annotations and invite them to contribute their own.</p>
+      <p><input class="js-via form-input"
+          type="text"
+          ng-value="vm.viaPageLink"
+          readonly /></p>
+      <p class="share-link-icons">
+      <a href="https://twitter.com/intent/tweet?url={{vm.viaPageLink | urlEncode}}&hashtags=annotated"
+         target="_blank"
+         title="Tweet link"
+         class="share-link-icon h-icon-twitter"
+         ng-click="onShareClick('twitter')"></a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{vm.viaPageLink | urlEncode}}"
+         target="_blank"
+         title="Share on Facebook"
+         class="share-link-icon h-icon-facebook"
+         ng-click="onShareClick('facebook')"></a>
+      <a href="https://plus.google.com/share?url={{vm.viaPageLink | urlEncode}}"
+         target="_blank"
+         title="Post on Google Plus"
+         class="share-link-icon h-icon-google-plus"
+         ng-click="onShareClick('googlePlus')"></a>
+      <a href="mailto:?subject=Let's%20Annotate&amp;body={{vm.viaPageLink}}"
+         target="_blank"
+         title="Share via email"
+         class="share-link-icon h-icon-mail"
+         ng-click="onShareClick('email')"></a>
+      </p>
+    </div>
+  </div>
+</div>

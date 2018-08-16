@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="support/styles/bill.css"?>
 <akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos">
     <bill name="regulation" contains="originalVersion">
         <meta>
@@ -25,7 +26,9 @@
                 </FRBRManifestation>
             </identification>
             <proprietary source="~leos">
-                <leos:version>1.0.0</leos:version>
+                <leos:version>1.0.4</leos:version>
+                <leos:template>SJ-023</leos:template>
+                <leos:docTemplate>BL-023</leos:docTemplate>
             </proprietary>
         </meta>
         <coverPage GUID="coverpage">
@@ -72,14 +75,10 @@
                     <p GUID="cit_3__p">After transmission of the draft legislative act to the national Parliaments,</p>
                 </citation>
                 <citation GUID="cit_4">
-                    <p GUID="cit_4__p">Having regard to the opinion of the European Economic and Social Committee<authorialNote GUID="authorialnote_1" marker="1" placement="bottom">
-                        <p GUID="authorialNote_1__p">OJ C [...], [...], p. [...]</p>
-                    </authorialNote>,</p>
+                    <p GUID="cit_4__p">Having regard to the opinion of the European Economic and Social Committee<authorialNote GUID="authorialnote_1" marker="1" placement="bottom"><p GUID="authorialNote_1__p">OJ C [...], [...], p. [...]</p></authorialNote>,</p>
                 </citation>
                 <citation GUID="cit_5">
-                    <p GUID="cit_5__p">Having regard to the opinion of the Committee of the Regions<authorialNote GUID="authorialnote_2" marker="2" placement="bottom">
-                        <p GUID="authorialNote_2__p">OJ C [...], [...], p. [...]</p>
-                    </authorialNote>,</p>
+                    <p GUID="cit_5__p">Having regard to the opinion of the Committee of the Regions<authorialNote GUID="authorialnote_2" marker="2" placement="bottom"><p GUID="authorialNote_2__p">OJ C [...], [...], p. [...]</p></authorialNote>,</p>
                 </citation>
                 <citation GUID="cit_6">
                     <p GUID="cit_6__p">Acting in accordance with the ordinary legislative procedure,</p>
@@ -102,7 +101,7 @@
         </preamble>
         <body GUID="body">
             <article GUID="art_1" leos:editable="true" leos:deletable="true">
-                <num GUID="art_1__num">Article 1</num>
+                <num GUID="art_1__num" leos:editable="false">Article 1</num>
                 <heading GUID="art_1__heading">Scope</heading>
                 <paragraph GUID="art_1__para_1">
                     <num GUID="art_1__para_1__num">1.</num>
@@ -111,8 +110,8 @@
                     </content>
                 </paragraph>
             </article>
-            <article GUID="art_2" leos:editable="true" leos:deletable="false">
-                <num GUID="art_2__num">Article 2</num>
+            <article GUID="art_2" leos:editable="true" leos:deletable="true">
+                <num GUID="art_2__num" leos:editable="false">Article 2</num>
                 <heading GUID="art_2__heading">Entry into force</heading>
                 <paragraph GUID="art_2__para_1">
                     <content GUID="art_2__para_1__content">

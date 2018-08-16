@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,8 +28,8 @@ public class UserJSON extends User {
 
     @JsonCreator
     public UserJSON(@JsonProperty("login") String login, @JsonProperty("perId") Long perId, @JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("dg") String dg, @JsonProperty("email") String email, @JsonProperty("roles") List<LeosAuthority> authorities) {
-        super(perId, login,  lastName + " " + firstName, dg, email);
+            @JsonProperty("entity") String entity, @JsonProperty("email") String email, @JsonProperty("roles") List<LeosAuthority> authorities) {
+        super(perId, login,  lastName + " " + firstName, entity, email);
 
         this.lastName = lastName;
         this.firstName = firstName;

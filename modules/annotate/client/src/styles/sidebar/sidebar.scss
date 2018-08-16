@@ -1,0 +1,159 @@
+//
+// Copyright 2018 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$base-font-size: 12px;
+$base-line-height: 20px;
+
+@import '../variables';
+@import '../reset';
+
+@import './elements';
+@import './common';
+
+// Components
+// ----------
+@import './components/annotation';
+@import './components/annotation-share-dialog';
+@import './components/annotation-thread';
+@import './components/dropdown-menu-btn';
+@import './components/excerpt';
+@import './components/group-list';
+@import './components/help-panel';
+@import './components/loggedout-message';
+@import './components/login-control';
+@import './components/markdown';
+@import './components/moderation-banner';
+@import './components/new-note';
+@import './components/primary-action-btn';
+@import './components/publish-annotation-btn';
+@import './components/search-status-bar';
+@import './components/selection-tabs';
+@import './components/share-link';
+@import './components/sidebar-tutorial';
+@import './components/simple-search';
+@import './components/spinner';
+@import './components/tags-input';
+@import './components/thread-list';
+@import './components/tooltip';
+@import './components/top-bar';
+
+@import './../../../leos/styles/sidebar/leos-sidebar';  //LEOS Change: style customization
+
+// Top-level styles
+// ----------------
+html, body {
+  height: 100%;
+}
+
+body {
+  @include grey-background;
+
+  font-family: $sans-font-family;
+  font-weight: normal;
+  -webkit-overflow-scrolling: touch;
+}
+
+hypothesis-app {
+  display: block;
+  height: 100%;
+}
+
+.app-content-wrapper {
+  $sidebar-h-padding: 9px;
+
+  @include grey-background;
+
+  min-height: 100%;
+  height: 100%;
+  overflow: scroll;
+  -webkit-overflow-scrolling: touch;
+  padding: $sidebar-h-padding;
+  padding-top: $sidebar-h-padding + $top-bar-height;
+
+  @include respond-to(tablets desktops) {
+    padding-bottom: 4rem;
+  }
+}
+
+#{nest("hgroup", "#{headings()}")} {
+  margin: 0;
+}
+
+.content {
+  margin-left: auto;
+  margin-right: auto;
+
+  @include respond-to(tablets desktops) {
+    margin: auto;
+    max-width: $break-tablet;
+    padding-left: 4rem;
+    padding-right: 4rem;
+  }
+}
+
+// Elements in root template (viewer.html)
+// ---------------------------------------
+
+.sheet {
+  border: solid 1px $gray-lighter;
+  border-radius: 2px;
+  font-family: $sans-font-family;
+  font-weight: 300;
+  margin-bottom: .72em;
+  padding: 1em;
+  position: relative;
+  background-color: $body-background;
+
+  .nav-tabs {
+    border: 1px none $gray-lighter;
+    border-bottom-style: solid;
+    padding: 0 0 1.1em;
+    li a { padding-bottom: .231em }
+  }
+
+  .close {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+  }
+}
+
+.sheet--is-theme-clean {
+  padding-left: 30px;
+  padding-bottom: 30px;
+  margin-bottom: 20px;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+.annotation-unavailable-message {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid $gray-lighter;
+  padding-top: 30px;
+  padding-bottom: 30px;
+  border-radius: 3px;
+  align-items: center;
+
+  &__label {
+    text-align: center;
+  }
+
+  &__icon {
+    background-image: url(../images/icons/lock.svg);
+    background-repeat: no-repeat;
+    width: 56px;
+    height: 48px;
+  }
+}

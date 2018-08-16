@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,11 +14,13 @@
 package eu.europa.ec.leos.web.ui.window;
 
 import com.google.common.eventbus.EventBus;
+import com.vaadin.data.Binder;
 import com.vaadin.ui.Button;
 import com.vaadin.ui.TextArea;
 import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.web.event.view.document.SaveMajorVersionEvent;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +31,7 @@ public class MajorVersionWindow extends AbstractWindow {
     private static final Logger LOG = LoggerFactory.getLogger(MajorVersionWindow.class);
     
     private TextArea commentArea;
+    Binder<CommentVO> commentsBinder;
     
     public MajorVersionWindow(MessageHelper messageHelper, EventBus eventBus) {
         super(messageHelper, eventBus);
@@ -56,6 +59,16 @@ public class MajorVersionWindow extends AbstractWindow {
         commentArea =  new TextArea(messageHelper.getMessage("document.major.version.comment.caption"));
         commentArea.setRows(5);
         commentArea.setWidth("400px");
+        commentArea.setRequiredIndicatorVisible(true);
+        
+        commentsBinder = new Binder<>();
+        commentsBinder.forField(commentArea).asRequired(messageHelper.getMessage("document.major.version.validation.error"))
+        .withValidator(val -> !StringUtils.isBlank(val), messageHelper.getMessage("document.major.version.validation.empty.space.error"))
+        .bind(CommentVO::getComment, CommentVO::setComment);
+        
+        CommentVO commentsVO = new CommentVO(commentArea.getValue());
+        commentsBinder.setBean(commentsVO);
+        
         windowLayout.addComponent(commentArea);
     }
 
@@ -64,10 +77,29 @@ public class MajorVersionWindow extends AbstractWindow {
         Button saveButton = new Button(messageHelper.getMessage("document.major.version.button.save"));
         saveButton.addStyleName("primary");
         saveButton.addClickListener(event -> {
-            LOG.debug("Saved as Major Version with Comments - " + commentArea.getValue());
-            eventBus.post(new SaveMajorVersionEvent(commentArea.getValue(), true));
-            close();
+            if (commentsBinder.validate().isOk()) {
+                String savedComment = commentsBinder.getBean().getComment();
+                LOG.debug("Saved as Major Version with Comments - {}", savedComment.trim());
+                eventBus.post(new SaveMajorVersionEvent(savedComment.trim(), true));
+                close();
+            }
         });
         return saveButton;
+    }
+    
+    class CommentVO {
+        private String comment;
+
+        public CommentVO(String comment) {
+            this.comment = comment;
+        }
+
+        public String getComment() {
+            return comment;
+        }
+
+        public void setComment(String comment) {
+            this.comment = comment;
+        }
     }
 }

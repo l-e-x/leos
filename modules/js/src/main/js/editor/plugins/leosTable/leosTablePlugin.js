@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -11,10 +11,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-/**
- * @fileOverview Handles the tables. It uses the transformer 'leosTableTransformer' more information could be found here 
- * https://webgate.ec.europa.eu/CITnet/confluence/display/LEOS/Annex+Mappings  
- */
 ; // jshint ignore:line
 define(function leosTablePluginModule(require) {
     'use strict';
@@ -22,8 +18,25 @@ define(function leosTablePluginModule(require) {
     // load module dependencies
     var pluginTools = require('plugins/pluginTools');
     var leosTableTransformerStamp = require('plugins/leosTableTransformer/leosTableTransformer');
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
+    var leosCommandStateHandler = require("plugins/leosCommandStateHandler/leosCommandStateHandler");
+    var $ = require('jquery');
 
     var pluginName = 'leosTable';
+    var ENTER_KEY = 13;
+    var SHIFT_ENTER = CKEDITOR.SHIFT + ENTER_KEY;
+    var HTML_CAPTION = "caption";
+    var HTML_TABLE = "table";
+    var changeStateElements = {
+        articleHeading : {
+            elementName: 'h2',
+            selector: '[data-akn-name=aknHeading]'
+        },
+        caption: {
+            elementName: 'caption',
+            selector: null
+        }
+    };
 
     var pluginDefinition = {
         init : function init(editor) {
@@ -46,9 +59,53 @@ define(function leosTablePluginModule(require) {
                 ck.editor.removeMenuItem('tablecell_delete'); 
                 ck.editor.removeMenuItem('tablecell_properties'); 
             });
+            editor.on('selectionChange', _onSelectionChange);
+
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : ENTER_KEY,
+                action : _onEnterKey
+            });
+    
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : SHIFT_ENTER,
+                action : _onShiftEnterKey
+            });
         }
     };
 
+    function _onSelectionChange(event) {
+        leosCommandStateHandler.changeCommandState(event, 'table', changeStateElements);
+    }
+    
+    function _onEnterKey(context) {
+        var selection = context.event.editor.getSelection();
+        if (!selection) return;
+        if (selection.getType() !== CKEDITOR.SELECTION_NONE) {
+            var startElement = leosKeyHandler.getSelectedElement(selection);
+            var currentElement = startElement.$;
+            var elementName = currentElement.nodeName.toLowerCase();
+            if (elementName === HTML_CAPTION) {
+                context.event.cancel();
+            }
+        }
+    }
+    
+    function _onShiftEnterKey(context) {
+        var selection = context.event.editor.getSelection();
+        if (!selection) return;
+        if (selection.getType() !== CKEDITOR.SELECTION_NONE) {
+            var startElement = leosKeyHandler.getSelectedElement(selection);
+            var currentElement = startElement.$;
+            if ($(currentElement).parents(HTML_TABLE).length) {
+                context.event.cancel();
+            }
+        }
+    }
+    
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
     var leosTableTransformer = leosTableTransformerStamp({
@@ -58,6 +115,9 @@ define(function leosTablePluginModule(require) {
             attr : [ {
                 akn : 'GUID',
                 html : 'id',
+            }, {
+                akn : "leos:origin",
+                html : "data-origin"
             }, {
                 akn : 'border',
                 html : 'border',
@@ -82,6 +142,9 @@ define(function leosTablePluginModule(require) {
                 attr : [{
                     akn : 'GUID',
                     html : 'id',
+                },{
+                    akn : "leos:origin",
+                    html : "data-origin"
                 }],
                 sub: {
                     akn : {
@@ -104,6 +167,9 @@ define(function leosTablePluginModule(require) {
                     },{
                         akn : 'GUID',
                         html : 'id',
+                    },{
+                        akn : "leos:origin",
+                        html : "data-origin"
                     }]
                 }
             }

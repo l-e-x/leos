@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -56,7 +56,7 @@ interface PackageRepository {
      * @param type the type class of the documents.
      * @return the list of found documents or empty.
      */
-    fun <D : LeosDocument> findDocumentsByPackagePath(path: String, type: Class<out D>): List<D>
+    fun <D : LeosDocument> findDocumentsByPackagePath(path: String, type: Class<out D>, fetchContent: Boolean): List<D>
 
     /**
      * Finds documents with the specified characteristics.

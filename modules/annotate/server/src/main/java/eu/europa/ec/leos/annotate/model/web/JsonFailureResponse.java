@@ -1,0 +1,80 @@
+/*
+ * Copyright 2018 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+package eu.europa.ec.leos.annotate.model.web;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.Objects;
+
+@JsonIgnoreProperties(ignoreUnknown = true) // required to avoid deserialisation failures for constant field 'status'
+public class JsonFailureResponse {
+
+    /**
+     * Class representing the simple structure transmitted as response in case of failures 
+     */
+
+    private static final String status = "failure";
+
+    private String reason;
+
+    // -------------------------------------
+    // Constructors
+    // -------------------------------------
+
+    // default constructor required for deserialisation
+    public JsonFailureResponse() {
+    }
+
+    public JsonFailureResponse(String reason) {
+
+        this.reason = reason;
+    }
+
+    // -------------------------------------
+    // Getters & setters
+    // -------------------------------------
+
+    public String getReason() {
+        return reason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(status, reason);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonFailureResponse other = (JsonFailureResponse) obj;
+        return Objects.equals(this.reason, other.reason); // static field left out
+    }
+}

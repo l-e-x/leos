@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -39,14 +39,16 @@ class CollaboratorEditor {
 
     private GridWithEditorListener collaboratorGrid;
     private UserSearchComponent userSearchComponent;
-    private TextField dgEditor;
+    private TextField entityEditor;
     private MessageHelper messageHelper;
     private EventBus eventBus;
+    private String documentURL;
 
-    CollaboratorEditor(GridWithEditorListener collaboratorGrid, MessageHelper messageHelper, EventBus eventBus) {
+    CollaboratorEditor(GridWithEditorListener collaboratorGrid, MessageHelper messageHelper, EventBus eventBus, String documentURL) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
         this.collaboratorGrid = collaboratorGrid;
+        this.documentURL = documentURL;
         initGridEditor();
     }
 
@@ -54,7 +56,7 @@ class CollaboratorEditor {
         collaboratorGrid.getColumn(COLUMN.NAME.getKey()).setEditorField(getUserEditor()).setEditable(true);
         // CustomField is Combobox. which contains role value
         collaboratorGrid.getColumn(COLUMN.AUTHORITY.getKey()).setEditorField(new ComponentCustomField()).setEditable(true);
-        collaboratorGrid.getColumn(COLUMN.DG.getKey()).setEditorField(getDgEditor()).setEditable(true);
+        collaboratorGrid.getColumn(COLUMN.ENTITY.getKey()).setEditorField(getEntityEditor()).setEditable(true);
         collaboratorGrid.getColumn(COLUMN.ACTION.getKey()).setEditable(false);
 
         // setting min space text as Vaadin implementation doesnt allow setting html here. So will generate icons in css
@@ -74,22 +76,22 @@ class CollaboratorEditor {
     }
 
     //This field is used only for displaying value. This should be not editable.
-    private TextField getDgEditor() {
-        dgEditor = new TextField();
-        dgEditor.setNullRepresentation("-");
-        dgEditor.setEnabled(false);
-        dgEditor.setValidationVisible(false);
-        return dgEditor;
+    private TextField getEntityEditor() {
+        entityEditor = new TextField();
+        entityEditor.setNullRepresentation("-");
+        entityEditor.setEnabled(false);
+        entityEditor.setValidationVisible(false);
+        return entityEditor;
     }
 
     private UserSearchComponent getUserEditor() {
         userSearchComponent = new UserSearchComponent(messageHelper, eventBus);
-        userSearchComponent.addValueChangeListener(event -> updateDgEditor((UserVO) event.getProperty().getValue()));
+        userSearchComponent.addValueChangeListener(event -> updateEntityEditor((UserVO) event.getProperty().getValue()));
         return userSearchComponent;
     }
 
-    private void updateDgEditor(UserVO selectedUser) {
-        dgEditor.setValue((selectedUser == null) ? null : selectedUser.getDg());
+    private void updateEntityEditor(UserVO selectedUser) {
+        entityEditor.setValue((selectedUser == null) ? null : selectedUser.getEntity());
     }
 
     private List<UserVO> getExistingUsers() {
@@ -114,7 +116,7 @@ class CollaboratorEditor {
                 ComboBox customEditorField = (ComboBox) commitEvent.getFieldBinder().getField(COLUMN.AUTHORITY.getKey()).getValue();
                 LeosAuthority leosAuthority = (LeosAuthority) customEditorField.getValue();
                 CollaboratorVO collaborator = new CollaboratorVO(user, leosAuthority);// temp object is not right object to use as it contains dummy values
-                eventBus.post(new AddCollaboratorRequest(collaborator));
+                eventBus.post(new AddCollaboratorRequest(collaborator, documentURL));
                 collaboratorGrid.getContainerDataSource().addItemAt(0, collaborator);// FIXME: this should be done when save is done
             } finally {
                 userSearchComponent.setValidationVisible(false);
@@ -127,7 +129,7 @@ class CollaboratorEditor {
         public void editorOpened(Grid.EditorOpenEvent e) {
             LOG.trace("Collaborator editor opened");
             userSearchComponent.setExistingUsers(getExistingUsers());
-            dgEditor.setEnabled(false);
+            entityEditor.setEnabled(false);
             userSearchComponent.setValidationVisible(false); // validation is done only at commit time. Else validate fire every time a value change is detected.
             userSearchComponent.focus();
         }

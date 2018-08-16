@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,13 +13,15 @@
  */
 package eu.europa.ec.leos.ui.wizard.document;
 
+import com.vaadin.data.Binder;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.FormLayout;
-import com.vaadin.v7.shared.ui.label.ContentMode;
+import com.vaadin.ui.Label;
 import com.vaadin.v7.ui.CheckBox;
 import com.vaadin.v7.ui.HorizontalLayout;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.TextField;
+import com.vaadin.ui.TextField;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.vo.MetadataVO;
 import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
 import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
@@ -31,15 +33,16 @@ class MetadataInputForm extends FormLayout {
 
     private static final String EMPTY_TEMPLATE = "&nbsp;";
 
-    private WizardData wizardData;
+    private final DocumentVO document;
     private MessageHelper messageHelper;
     private LanguageHelper languageHelper;
 
     private TextField purposeField;
     private Label templateLabel;
+    private Binder<MetadataVO> formBinder = new Binder<>();
 
-    MetadataInputForm(WizardData wizardData, MessageHelper messageHelper, LanguageHelper languageHelper) {
-        this.wizardData = wizardData;
+    MetadataInputForm(final DocumentVO document, MessageHelper messageHelper, LanguageHelper languageHelper) {
+        this.document = document;
         this.messageHelper = messageHelper;
         this.languageHelper = languageHelper;
         setSizeFull();
@@ -60,7 +63,7 @@ class MetadataInputForm extends FormLayout {
     }
 
     private Component buildTemplate() {
-        templateLabel = new Label(EMPTY_TEMPLATE, ContentMode.HTML);
+        templateLabel = new Label(EMPTY_TEMPLATE);
         templateLabel.setCaption(messageHelper.getMessage("wizard.document.create.metadata.template.caption"));
         templateLabel.setSizeUndefined();
         templateLabel.setWidth(100, Unit.PERCENTAGE);
@@ -68,17 +71,14 @@ class MetadataInputForm extends FormLayout {
     }
 
     private Component buildPurpose() {
-        purposeField = new TextField(messageHelper.getMessage("wizard.document.create.metadata.purpose.caption"));
-        purposeField.addValueChangeListener(event -> wizardData.purpose = (String) event.getProperty().getValue());
-        purposeField.setValue(messageHelper.getMessage("wizard.document.create.metadata.purpose.default"));
+        purposeField = new  TextField(messageHelper.getMessage("wizard.document.create.metadata.purpose.caption"));
         purposeField.setWidth(100, Unit.PERCENTAGE);
-        purposeField.setRequired(true);
-        purposeField.setRequiredError(messageHelper.getMessage("wizard.document.create.metadata.purpose.error"));
+        formBinder.forField(purposeField).asRequired(messageHelper.getMessage("wizard.document.create.metadata.purpose.error")).bind( MetadataVO::getDocPurpose, MetadataVO::setDocPurpose);
         return purposeField;
     }
 
     private Component buildLanguage() {
-        String languageCode = Objects.toString(wizardData.language, messageHelper.getMessage("wizard.document.create.metadata.language.default"));
+        String languageCode = Objects.toString(document.getMetadata().getLanguage(), messageHelper.getMessage("wizard.document.create.metadata.language.default"));
         TextField textField = new TextField(messageHelper.getMessage("wizard.document.create.metadata.language.caption"));
         textField.setValue(languageHelper.getLanguageDescription(languageCode));
         textField.setData(languageCode);
@@ -145,12 +145,13 @@ class MetadataInputForm extends FormLayout {
     }
 
     boolean isValid() {
-        return purposeField.isValid();
+        return !purposeField.isEmpty();
     }
 
     @Override
     public void attach() {
-        templateLabel.setValue(wizardData.name);
+        formBinder.setBean(document.getMetadata());
+        templateLabel.setValue(document.getMetadata().getTemplateName());
         super.attach();
     }
 }

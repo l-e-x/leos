@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 European Commission
+ * Copyright 2018 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -31,7 +31,7 @@ public class AuthenticatedUser extends User implements UserDetails {
     private Set<GrantedAuthority> authorities;
 
     public AuthenticatedUser(User user) {
-        super(user.getId(), user.getLogin(), user.getName(), user.getDg(), user.getEmail());
+        super(user.getId(), user.getLogin(), user.getName(), user.getEntity(), user.getEmail());
     }
 
     @Override

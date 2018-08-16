@@ -37,6 +37,7 @@ $v-gradient: false;
 
 @import "../valo/valo";
 
+$v-included-components: remove($v-included-components, treegrid);
 $v-included-components: remove($v-included-components, button);
 $v-included-components: remove($v-included-components, datafield);
 $v-included-components: remove($v-included-components, dragwrapper);
@@ -46,6 +47,7 @@ $v-included-components: remove($v-included-components, richtextarea);
 $v-included-components: remove($v-included-components, twincolselect);
 $v-included-components: remove($v-included-components, upload);
 
+@import "scss/extension/_treegrid-ext";
 @import "scss/extension/_optiongroup-ext";
 @import "scss/extension/_button-ext";
 @import "scss/extension/_menu-ext";
@@ -60,5 +62,16 @@ $v-included-components: remove($v-included-components, upload);
     $v-border: 1px solid $MAIN_BLUE;
     @include leos-button-ext();
     @include leos-menu-ext();
+    
+    $v-grid-row-height: 21px;
+    $v-line-height:$v-grid-row-height;
+    $v-grid-row-stripe-background-color:$WHITE;
+    $v-grid-row-selected-background-color:$LIGHT_BLUE;
+    $v-grid-border: none;
+    $v-grid-cell-horizontal-border:$v-grid-border;
+    
+    @include leos-treegrid-ext();
+    
+    
 }
 
