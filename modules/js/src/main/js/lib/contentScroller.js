@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,12 +17,13 @@ define(function contentScrollerModule(require) {
 
     var $ = require("jquery");
 
-    function _scrollTo(element, additionalAction) {
+    function _scrollTo(element, target, additionalAction) {
         if (typeof element == 'string') {//if ID is passed get element
             element = document.getElementById(element);
         }
-
-        var $scrollPane = $('.leos-doc-content');
+        
+        var $scrollPane = target != null ? $(target) : $('.leos-doc-content');
+        
         if (element) {
             $scrollPane.animate(
                 {scrollTop: _calculateScrollTopPosition(element, $scrollPane)},

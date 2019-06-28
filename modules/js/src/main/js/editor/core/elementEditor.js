@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -29,10 +29,17 @@ define(function elementEditorModule(require) {
         citations_bill: "inlineAknCitations",
         recitals_bill: "inlineAknRecitals",
         article_bill: "inlineAknArticle",
+        article_bill_council: "inlineAknArticleMandate",
         division_annex: "inlineAknAnnexDivision",
         blockcontainer_memorandum: "inlineAknEMBlockContainer",
-        
-        article_bill_council: "inlineAknArticleMandate",
+        citation_bill: "inlineAknCitation",
+        citation_bill_council: "inlineAknCitationMandate",
+        recital_bill: "inlineAknRecital",
+        recital_bill_council: "inlineAknRecitalMandate",
+        paragraph_bill_council: "inlineAknParagraphMandate",
+        subparagraph_bill_council: "inlineAknSubParagraphMandate",
+        point_bill_council: "inlineAknPointMandate",
+        alinea_bill_council: "inlineAknAlineaMandate"
     };
 
     function _setupElementEditor(connector) {
@@ -45,9 +52,10 @@ define(function elementEditorModule(require) {
         connector.receiveElement = _receiveElement;
         connector.receiveToc = _receiveToc;
         connector.receiveRefLabel = _receiveRefLabel;
+        connector.closeElement = _closeElement;
     }
 
-    function _editElement(elementId, elementType, elementFragment, docType, instanceType) {
+    function _editElement(elementId, elementType, elementFragment, docType, instanceType, alternatives) {
         log.debug("Initializing element editor...");
         let connector = this;
 
@@ -67,7 +75,7 @@ define(function elementEditorModule(require) {
         if (profileId) {
             // load the specific profile and initialize the editor
             require(["profiles/" + profileId],
-                _initEditor.bind(undefined, connector, elementId, elementType, elementFragment, placeholder, docType, instanceType));
+                _initEditor.bind(undefined, connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives));
         } else {
             throw new Error("Unknown element editor profile!");
         }
@@ -81,11 +89,11 @@ define(function elementEditorModule(require) {
         return PROFILES_CFG[propertyNameWithInstance] ? PROFILES_CFG[propertyNameWithInstance] : PROFILES_CFG[propertyName];
     }
     
-    function _initEditor(connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, profile) {
+    function _initEditor(connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives, profile ) {
         log.debug("Initializing element editor with %s profile...", profile.name);
         // retrieve the current user
         var user = connector.getState().user;
-        user['roles'] = connector.getState().roles;
+        user['permissions'] = connector.getState().permissions;
 
         if (connector.editorChannel) {
             connector.editorChannel.publish('editor.open', {elementId: elementId});
@@ -96,7 +104,7 @@ define(function elementEditorModule(require) {
         // clear HTML content because fresh XML will be loaded
         placeholder.innerHTML = null;
 
-        var config = _getConfig(user, profile.config);
+        var config = _getConfig(connector, user, profile.config);
 
         // create editor instance
         var editor = CKEDITOR.inline(placeholder, config);
@@ -107,14 +115,21 @@ define(function elementEditorModule(require) {
                 profile: profile,
                 type: docType,
                 instanceType: instanceType,
-                user: user
+                user: user,
+                implicitSaveEnabled: connector.getState().isImplicitSaveEnabled,
+                elementType: elementType,
+                isSpellCheckerEnabled: connector.getState().isSpellCheckerEnabled,
+                spellCheckerServiceUrl: connector.getState().spellCheckerServiceUrl,
+                spellCheckerSourceUrl: connector.getState().spellCheckerSourceUrl,
+                alternatives: alternatives
             };
             // register editor event callbacks
-            editor.on("close", _destroyEditor.bind(undefined, connector, elementId));
+            editor.on("close", _destroyEditor.bind(undefined, connector, elementId, elementType));
             editor.on("save", _saveElement.bind(undefined, connector, elementId, elementType));
             editor.on("requestElement", _requestElement.bind(undefined, connector));
             editor.on("requestToc", _requestToc.bind(undefined, connector));
             editor.on("requestRefLabel", _requestRefLabel.bind(undefined, connector));
+            editor.on("merge", _mergeElement.bind(undefined, connector, elementId, elementType));
 
             // load XML fragment in editor
             var options = {
@@ -145,7 +160,7 @@ define(function elementEditorModule(require) {
     }
 
     function _getEditableAreaHeight(elementId) {
-        return document.getElementById(elementId).clientHeight;
+        return document.getElementById(elementId) != null ? document.getElementById(elementId).clientHeight : 0;
     }
 
     function _getEditorPlaceholder(rootElement, elementId) {
@@ -181,19 +196,24 @@ define(function elementEditorModule(require) {
         }
     }
 
-    function _getConfig(user, defaultConfig) {
+    function _getConfig(connector, user, defaultConfig) {
         // clone the profile configuration for this editor instance
         var config = _.cloneDeep(defaultConfig);
 
-        if (user.roles && user.roles.includes("SUPPORT")) {
+        if (user.permissions && user.permissions.includes("CAN_SEE_SOURCE")) {
             config.extraPlugins = [config.extraPlugins, "sourcedialog"].join();
         } else {
             config.removePlugins = [config.removePlugins, "sourcedialog"].join();
         }
+
+        if (connector.getState().isSpellCheckerEnabled) {
+            config.extraPlugins = [config.extraPlugins, "scayt"].join();
+        }
+
         return config;
     }
 
-    function _destroyEditor(connector, elementId, event) {
+    function _destroyEditor(connector, elementId, elementType, event) {
         log.debug("Destroying element editor...");
         var editor = event.editor;
         // set read-only to prevent changes
@@ -206,7 +226,8 @@ define(function elementEditorModule(require) {
 
         // release the element being edited
         var data = {
-            elementId: elementId
+            elementId: elementId,
+            elementType: elementType
         };
         connector.releaseElement(data);
         // destroy editor instance, without updating DOM
@@ -223,32 +244,38 @@ define(function elementEditorModule(require) {
     function _saveElement(connector, elementId, elementType, event) {
         log.debug("Saving element...");
         var editor = event.editor;
-        // set read-only to prevent changes
-        editor.setReadOnly(true);
-        // save the element being edited
-        var data = {
-            elementId: elementId,
-            elementType: elementType,
-            elementFragment: event.data.data
-        };
-        connector.saveElement(data);
+        // LEOS-3418 : to save modification in the Alternatives clause.
+        if (!editor.readOnly||editor.config.isClause) {
+        	// set read-only to prevent changes
+        	editor.setReadOnly(true);
+        	// save the element being edited
+        	var data = {
+        			elementId: elementId,
+        			elementType: elementType,
+        			elementFragment: event.data.data,
+        			isSaveAndClose: event.data.isSaveAndClose ? true : false
+        	};
+        	connector.saveElement(data);
+        }
     }
 
     function _refreshElement(elementId, elementType, elementFragment) {
         log.debug("Refreshing element editor...");
         var editor = CKEDITOR.currentInstance;
         // set editable to allow changes
-        editor.setReadOnly(false);
-        // reload XML fragment in editor
-        var options = {
-            callback: function() {
-                var editor = this;
-                editor.fire("receiveData", elementFragment);
-                // reset dirty state as for unchanged content
-                editor.resetDirty();
-            }
-        };
-        editor.setData(elementFragment, options);
+        if(editor){
+            editor.setReadOnly(false);
+            // reload XML fragment in editor
+            var options = {
+                callback: function() {
+                    var editor = this;
+                    editor.fire("receiveData", elementFragment);
+                    // reset dirty state as for unchanged content
+                    editor.resetDirty();
+                }
+            };
+            editor.setData(elementFragment, options);
+        }
     }
 
     function _requestElement(connector, event) {
@@ -296,6 +323,18 @@ define(function elementEditorModule(require) {
         editor.fire("receiveRefLabel", references);
     }
 
+    function _closeElement() {
+        log.debug("Requesting close element...");
+        for (var name in CKEDITOR.instances) {
+        	if (CKEDITOR.instances.hasOwnProperty(name)) {
+        		var editor = CKEDITOR.instances[name];
+        		if (editor) {
+        			editor.fire("close");
+        		}
+        	}
+        }
+    }
+
     function _teardownElementEditor(connector) {
         log.debug("Tearing down element editor...");
         // destroy any editor instances remaining
@@ -309,6 +348,17 @@ define(function elementEditorModule(require) {
                 }
             }
         }
+    }
+
+    function _mergeElement(connector, elementId, elementType, event) {
+        log.debug("Merging element...");
+        var editor = event.editor;
+        var data = {
+        	elementId: elementId,
+        	elementType: elementType,
+        	elementFragment: event.data.data
+        };
+        connector.mergeElement(data);
     }
 
     return {

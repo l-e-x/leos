@@ -1,0 +1,13 @@
+                            ADD MILESTONE - HOWTO
+--------------------------------------------------------------------------------
+
+1.  In the proposal view, on bottom-right, milestone panel appears for document author
+    and admin/supports users.
+
+2.  To add a milestone click on '+' icon and 'Add a milestone' pop-up will appear.  
+
+3.  From the combo-box select a title for the milestone or select 'Other' option to add some free text title.
+
+4.  Click on 'Create milestone' button. After a few minutes milestone will be added.
+
+5.  A major version was created for legal text and annexes documents.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,9 @@ package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.helper.TestHelper;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -49,33 +51,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class GetGroupsTest {
 
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "r";
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -88,7 +69,7 @@ public class GetGroupsTest {
 
     @Autowired
     private UserGroupRepository userGroupRepos;
-    
+
     @Autowired
     private TokenRepository tokenRepos;
 
@@ -96,6 +77,26 @@ public class GetGroupsTest {
     private WebApplicationContext wac;
 
     private MockMvc mockMvc;
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
 
     // -------------------------------------
     // Tests
@@ -105,50 +106,51 @@ public class GetGroupsTest {
      * successfully retrieve the user's groups, expected HTTP 200 and the group data
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetGroupsOk() throws Exception {
 
-        final String login = "demo", authority = "myauthority";
+        final String login = "demo";
+        final String authority = "myauthority";
 
         // preparation: save a user and assign it to the default group
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
-        
-        UserGroup membershipDefault = new UserGroup(theUser.getId(), defaultGroup.getId());
+        tokenRepos.save(new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
+
+        final UserGroup membershipDefault = new UserGroup(theUser.getId(), defaultGroup.getId());
         userGroupRepos.save(membershipDefault);
 
         // create a second private group and assign user to it
-        Group privateGroup = new Group("id", "private group", "description", false);
+        final Group privateGroup = new Group("id", "private group", "description", false);
         groupRepos.save(privateGroup);
         userGroupRepos.save(new UserGroup(theUser.getId(), privateGroup.getId()));
 
         // send group retrieval request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected groups were returned
-        List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
+        final List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(2, jsResponse.size());
 
         // verify
-        JsonGroupWithDetails extractedDefaultGroup = jsResponse.stream().filter(group -> group.getId().equals(TestDbHelper.DEFAULT_GROUP_INTERNALNAME))
+        final JsonGroupWithDetails extractedDefaultGroup = jsResponse.stream().filter(group -> group.getId().equals(TestDbHelper.DEFAULT_GROUP_INTERNALNAME))
                 .findAny().get();
         Assert.assertNotNull(extractedDefaultGroup);
         Assert.assertEquals("open", extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
 
-        JsonGroupWithDetails extractedAnotherGroup = jsResponse.stream().filter(group -> group.getId().equals(privateGroup.getName())).findAny().get();
+        final JsonGroupWithDetails extractedAnotherGroup = jsResponse.stream().filter(group -> group.getId().equals(privateGroup.getName())).findAny().get();
         Assert.assertNotNull(extractedAnotherGroup);
         Assert.assertEquals("private", extractedAnotherGroup.getType());
         Assert.assertFalse(extractedAnotherGroup.isPublic());
@@ -159,64 +161,66 @@ public class GetGroupsTest {
      * retrieve empty list for a user not belonging to any groups, expected HTTP 200 and empty list/array
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetGroupsEmpty() throws Exception {
 
-        final String login = "login", authority = "myauthority";
+        final String login = "login";
+        final String authority = "myauthority";
 
         // preparation: create a user, but don't assign it to any group -> we should not receive any groups
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
+        tokenRepos.save(new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
 
         // send group retrieval request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         Assert.assertEquals("[]", responseString); // empty array received
     }
-    
+
     /**
      * retrieve default group when not being authenticated, expected HTTP 200
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetGroupsNotAuthenticated() throws Exception {
 
         final String authority = "myauthority";
 
         // send group retrieval request - without authorization header
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected groups were returned: default group (only)
-        List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
+        final List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(1, jsResponse.size());
 
         // verify
-        JsonGroupWithDetails extractedDefaultGroup = jsResponse.stream().filter(group -> group.getId().equals(TestDbHelper.DEFAULT_GROUP_INTERNALNAME))
+        final JsonGroupWithDetails extractedDefaultGroup = jsResponse.stream().filter(group -> group.getId().equals(TestDbHelper.DEFAULT_GROUP_INTERNALNAME))
                 .findAny().get();
         Assert.assertNotNull(extractedDefaultGroup);
         Assert.assertEquals("open", extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
     }
-    
+
     // note: the groups API should hardly run into exceptions - therefore, this scenario is tested using mock services, see respective test cases
 }

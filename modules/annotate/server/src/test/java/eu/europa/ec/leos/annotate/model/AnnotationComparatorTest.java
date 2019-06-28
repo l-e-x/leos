@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -31,9 +31,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 /**
  * Class testing correct sorting of our custom comparator using random data
@@ -57,7 +58,7 @@ public class AnnotationComparatorTest {
             ann.setCreated(getRandomDateTime());
             ann.setUpdated(getRandomDateTime());
 
-            LocalDateTime dummyDate = getRandomDateTime();
+            final LocalDateTime dummyDate = getRandomDateTime();
             ann.setShared(dummyDate.getSecond() % 2 == 0);
 
             annotationList.add(ann);
@@ -116,13 +117,13 @@ public class AnnotationComparatorTest {
         for (int i = 0; i < annotationList.size() - 1; i++) {
 
             // we have to find the entry before which all items are unshared and after which all items are shared
-            if (!nowAllShared) {
+            if (nowAllShared) {
+                Assert.assertTrue(annotationList.get(i).isShared());
+            } else {
                 Assert.assertFalse(annotationList.get(i).isShared());
                 if (annotationList.get(i + 1).isShared()) {
                     nowAllShared = true;
                 }
-            } else {
-                Assert.assertTrue(annotationList.get(i).isShared());
             }
         }
     }
@@ -136,13 +137,13 @@ public class AnnotationComparatorTest {
         for (int i = 0; i < annotationList.size() - 1; i++) {
 
             // we have to find the entry before which all items are shared and after which all items are unshared
-            if (!nowAllShared) {
-                Assert.assertFalse(annotationList.get(i).isShared());
-            } else {
+            if (nowAllShared) {
                 Assert.assertTrue(annotationList.get(i).isShared());
                 if (!annotationList.get(i + 1).isShared()) {
                     nowAllShared = false;
                 }
+            } else {
+                Assert.assertFalse(annotationList.get(i).isShared());
             }
         }
     }
@@ -159,21 +160,21 @@ public class AnnotationComparatorTest {
     // Help functions
     // -------------------------------------
     private LocalDateTime getRandomDateTime() throws ParseException {
-        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        long offset = sdf.parse("2010-01-01T00:00:00Z").getTime();
-        long end = sdf.parse("2013-01-01T00:00:00Z").getTime();
-        long diff = end - offset + 1;
-        Date randomDate = new Date(offset + (long) (Math.random() * diff));
+        final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
+        final long offset = sdf.parse("2010-01-01T00:00:00Z").getTime();
+        final long end = sdf.parse("2013-01-01T00:00:00Z").getTime();
+        final long diff = end - offset + 1;
+        final Date randomDate = new Date(offset + (long) (Math.random() * diff));
         return LocalDateTime.ofInstant(randomDate.toInstant(), ZoneId.systemDefault());
     }
 
     // helper function for uncomfortable Java Date comparison
-    private void assertDatesAscending(LocalDateTime older, LocalDateTime newer) {
+    private void assertDatesAscending(final LocalDateTime older, final LocalDateTime newer) {
         Assert.assertTrue(older.isBefore(newer));
     }
 
     // helper function for uncomfortable Java Date comparison
-    private void assertDatesDescending(LocalDateTime older, LocalDateTime newer) {
+    private void assertDatesDescending(final LocalDateTime older, final LocalDateTime newer) {
         Assert.assertTrue(older.isAfter(newer));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,13 +13,21 @@
  */
 package eu.europa.ec.leos.integration;
 
+import io.atlassian.fugue.Pair;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import javax.xml.bind.JAXBException;
 
 public interface ToolBoxService {
-    public String createJob(File legisWritePackage, String zipPackageName, String mailAddress) throws NullPointerException, IllegalArgumentException, IOException, JAXBException;
 
-    public String getJobResult(String jobId) throws Exception;
+    Pair<byte[], byte[]> getZipFilesFromLegDocumentJobResult(String jobId) throws IOException;
+
+    String createJob(Map<String, File> packages) throws IOException, JAXBException;
+
+    String createJobWithCallback(String proposalId, Map<String, File> packages) throws IOException, JAXBException;
+
+    String createJobWithEmail(String proposalId, Map<String, File> packages, String destinationEmail) throws IOException, JAXBException;
+
 }

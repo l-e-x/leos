@@ -1,0 +1,122 @@
+@import "changePane";
+
+@mixin actionsMenuBar {
+
+    .leos-actions-menu {
+        background: $MAIN_BLUE;
+        color: $WHITE;
+        box-shadow: none;
+        
+        .v-menubar-separator {
+            display: block;
+            margin: 1px 0;
+            height: 0;
+            overflow: hidden;
+            border-bottom: 1px solid $WHITE;
+        }
+
+        .v-menubar-submenu-indicator {
+            &+.v-menubar-menuitem-caption {
+                &:after {
+                    display: none;
+                }
+            }
+        }
+    }
+
+    .leos-actions-sub-menu-item {
+        background: $WHITE;
+        color: $DARK_SLATE_GREY;
+        padding: 5px 0px;
+    }
+
+    .leos-actions-custom-separator {
+        font-size: 10px;
+        font-weight: bold;
+        text-align:center;
+        padding-left: 0px !important;
+        padding-right: 0px !important;
+        position: relative;
+        z-index: 1;
+        background-color: white;
+        color: $BLACK;
+
+        &:active {
+            font-size: 10px;
+            font-weight: bold;
+            text-align:center;
+            padding-left: 0px !important;
+            padding-right: 0px !important;
+            position: relative;
+            z-index: 1;
+            background-color: white;
+            color: $BLACK;
+
+            &:before {
+                background-color: $WHITE;
+                border: $WHITE;
+                opacity: 1;
+                border-top: 1px solid $DARK_GREY;
+                content: "";
+                margin: 0 auto;
+                position: absolute;
+                top: 50%;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                width: 97%;
+                z-index: -1;
+            }
+        }
+
+        &:focus {
+            outline-color: $WHITE;
+        }
+
+        .v-menubar-menuitem-selected {
+            color: $WHITE;
+        }
+
+        &:before {
+            background-color: $WHITE;
+            border: $WHITE;
+            opacity: 1;
+            border-top: 1px solid $DARK_GREY;
+            content: "";
+            margin: 0 auto;
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 97%;
+            z-index: -1;
+        }
+
+        .v-menubar-menuitem-caption {
+            background: $WHITE;
+            padding: 0 5px;
+        }
+    }
+
+    .v-menubar-submenu-leos-actions-menu {
+        width: 240px;
+        -webkit-box-shadow: 5px 5px 9px 0px $DARK_GREY;
+        -moz-box-shadow: 5px 5px 9px 0px $DARK_GREY;
+        box-shadow: 5px 5px 9px 0px $DARK_GREY;
+    }
+
+    .leos-actions-menu-selector {
+        padding-right: 5px;
+        height: 25px;
+        margin-top: -1px;
+    }
+
+    .leos-actions-sub-menu-item.v-menubar-menuitem-checked {
+        padding-left: 6px;
+    }
+
+    .leos-actions-sub-menu-item.v-menubar-menuitem-unchecked {
+        padding-left: 6px;
+    }
+}

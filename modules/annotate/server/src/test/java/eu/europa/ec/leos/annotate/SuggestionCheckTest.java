@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
 import eu.europa.ec.leos.annotate.model.entity.Tag;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class SuggestionCheckTest {
 
@@ -53,8 +54,8 @@ public class SuggestionCheckTest {
     public void testSuggestionIsRecognized() {
 
         // create the annotation
-        Annotation annot = new Annotation();
-        annot.setTags(tagsService.getTagList(Arrays.asList("suggestion"), annot));
+        final Annotation annot = new Annotation();
+        annot.setTags(tagsService.getTagList(Arrays.asList(Annotation.ANNOTATION_SUGGESTION), annot));
 
         // verify annotation is considered being a suggestion
         Assert.assertTrue(annotService.isSuggestion(annot));
@@ -67,8 +68,8 @@ public class SuggestionCheckTest {
     public void testCommentIsNotRecognizedAsSuggestion() {
 
         // create the annotation
-        Annotation annot = new Annotation();
-        annot.setTags(tagsService.getTagList(Arrays.asList("comment"), annot));
+        final Annotation annot = new Annotation();
+        annot.setTags(tagsService.getTagList(Arrays.asList(Annotation.ANNOTATION_COMMENT), annot));
 
         // verify annotation is not considered as a suggestion
         Assert.assertFalse(annotService.isSuggestion(annot));
@@ -81,8 +82,8 @@ public class SuggestionCheckTest {
     public void testHighlightIsNotRecognizedAsSuggestion() {
 
         // create the annotation
-        Annotation annot = new Annotation();
-        annot.setTags(tagsService.getTagList(Arrays.asList("highlight"), annot));
+        final Annotation annot = new Annotation();
+        annot.setTags(tagsService.getTagList(Arrays.asList(Annotation.ANNOTATION_HIGHLIGHT), annot));
 
         // verify annotation is not considered as a suggestion
         Assert.assertFalse(annotService.isSuggestion(annot));
@@ -95,7 +96,7 @@ public class SuggestionCheckTest {
     public void testAnnotationWithoutTagsIsNotRecognizedAsSuggestion() {
 
         // create the annotation
-        Annotation annot = new Annotation();
+        final Annotation annot = new Annotation();
         annot.setTags(null);
 
         // verify annotation is not considered as a suggestion
@@ -109,16 +110,11 @@ public class SuggestionCheckTest {
     /**
      * test that an undefined annotation is not recognized as a suggestion (exception)
      */
-    @Test
-    @SuppressFBWarnings(value = "DE_MIGHT_IGNORE", justification = "Intended for test")
+    @Test(expected = IllegalArgumentException.class)
+    @SuppressFBWarnings(value = SpotBugsAnnotations.ExceptionIgnored, justification = SpotBugsAnnotations.ExceptionIgnored)
     public void testUndefinedAnnotationIsNotRecognizedAsSuggestion() {
 
-        try {
-            // should throw an exception
-            annotService.isSuggestion(null);
-            Assert.fail("Expected exception for checking on undefined Annotation not thrown!");
-        } catch (Exception e) {
-            // ok
-        }
+        // should throw an exception
+        annotService.isSuggestion(null);
     }
 }

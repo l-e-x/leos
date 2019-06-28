@@ -40,4 +40,14 @@
     -->
     <!-- <set-configuration-property name="devModeRedirectEnabled" value="true" /> -->
 
+
+    <inherits name="com.vaadin.addon.onoffswitch.WidgetSet" />
+
+    <inherits name="de.datenhahn.vaadin.componentrenderer.ComponentRendererWidgetSet" />
+
+    <inherits name="org.vaadin.teemusa.gridextensions.GridExtensionPackWidgetSet" />
+
+    <inherits name="com.vaadin.v7.Vaadin7WidgetSet" />
+
+    <inherits name="org.vaadin.anna.dndscroll.WidgetSet" />
 </module>

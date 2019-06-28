@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,9 +15,9 @@ package eu.europa.ec.leos.services.store;
 
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.StaxDriver;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosDocument.ConfigDocument;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.document.ConfigDocument;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.repository.store.ConfigurationRepository;
 import eu.europa.ec.leos.services.support.converter.DescriptionMapConverter;
 import eu.europa.ec.leos.services.support.converter.LanguageMapConverter;
@@ -119,5 +119,25 @@ class TemplateServiceImpl implements TemplateService {
             }
         }
         return templateName;
+    }
+
+    @Override
+    public CatalogItem getTemplateItem(String name) throws IOException {
+        return getTemplateItem(getTemplatesCatalog(), name);
+    }
+
+    private CatalogItem getTemplateItem(List<CatalogItem> catalogItems, String name) {
+        CatalogItem templateItem = null;
+        for (CatalogItem item : catalogItems) {
+            if (item.getId().contains(name)) {
+                return item;
+            } else {
+                templateItem = getTemplateItem(item.getItems(), name);
+                if (templateItem != null) {
+                    return templateItem;
+                }
+            }
+        }
+        return templateItem;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.user.JsonGroupWithDetails;
@@ -29,6 +30,10 @@ public interface GroupService {
     // creating a new group
     Group createGroup(String entity, boolean isPublic) throws GroupAlreadyExistingException;
 
+    String getDefaultGroupName();
+    
+    Group findDefaultGroup();
+    
     /**
      * group assignments
      */
@@ -45,12 +50,15 @@ public interface GroupService {
     // retrieve all groups in which a user is member
     List<Group> getGroupsOfUser(User user);
 
+    // return all IDs of the groups that the user belongs to
+    List<Long> getGroupIdsOfUser(User user);
+    
     // return all IDs of the users belonging to a given group
     List<Long> getUserIdsOfGroup(Group group);
 
     List<Long> getUserIdsOfGroup(String groupName);
 
     // returns the groups associated as a user, in send-ready JSON objects
-    List<JsonGroupWithDetails> getUserGroupsAsJson(User user);
+    List<JsonGroupWithDetails> getUserGroupsAsJson(UserInformation userinfo);
 
 }

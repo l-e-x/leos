@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -202,7 +202,7 @@ define(function testTransformerModule(require) {
                                         describe(
                                                 "Test mixture of:  akn paragraph, akn alinea, akn authorial note, akn ordered list, akn unordered list, akn html bold, akn html italic and akn html anchor .",
                                                 function() {
-                                                    var aknFragmentInHtml = '<paragraph GUID="art_n1__para_1"><num>1.</num><subparagraph><content><mp>Member States<i><b> shall bring i</b></i>nto force the laws...</mp></content></subparagraph><subparagraph><content><mp>When Member States adopt those provisions...</mp></content></subparagraph><list><point><num>(a)</num><alinea><content><mp>fdasfdsafsdafdsafsdafds</mp></content></alinea><list><point><num>(a)</num><content><mp>fdsafsdafdsa</mp></content></point></list></point></list></paragraph>';
+                                                    var aknFragmentInHtml = '<paragraph xml:id="art_n1__para_1"><num>1.</num><subparagraph><content><mp>Member States<i><b> shall bring i</b></i>nto force the laws...</mp></content></subparagraph><subparagraph><content><mp>When Member States adopt those provisions...</mp></content></subparagraph><list><point><num>(a)</num><alinea><content><mp>fdasfdsafsdafdsafsdafds</mp></content></alinea><list><point><num>(a)</num><content><mp>fdsafsdafdsa</mp></content></point></list></point></list></paragraph>';
                                                     var htmlFragmentInHtml = '<li id="art_n1__para_1" data-akn-name="aknNumberedParagraph" data-akn-num="1."><p>Member States<em><strong> shall bring i</strong></em>nto force the laws...</p><p>When Member States adopt those provisions...</p><ol data-akn-name="aknOrderedList"><li data-akn-num="(a)"><p>fdasfdsafsdafdsafsdafds</p><ol data-akn-name="aknOrderedList"><li data-akn-num="(a)">fdsafsdafdsa</li></ol></li></ol></li>';
                                                     describe("Expects to transform mix of elements back and forth correctly.", function() {
                                                         expectFragmentToBeTransformedCorrectly(aknFragmentInHtml, htmlFragmentInHtml, allConfigs);

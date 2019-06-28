@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,7 +26,7 @@ import java.util.UUID;
 public class UUIDGeneratorServiceImpl implements UUIDGeneratorService {
 
     // based on implementation found at https://stackoverflow.com/questions/772802/storing-uuid-as-base64-string/18057117#18057117
-    private static Base64 BASE64 = new Base64(true);
+    private static Base64 base64 = new Base64(true);
 
     /**
      * generation of a new URL-safe UUID
@@ -34,9 +34,9 @@ public class UUIDGeneratorServiceImpl implements UUIDGeneratorService {
     @Override
     public String generateUrlSafeUUID() {
 
-        UUID uuid = UUID.randomUUID();
-        byte[] uuidArray = toByteArray(uuid);
-        byte[] encodedArray = BASE64.encode(uuidArray);// UUID becomes URL safe
+        final UUID uuid = UUID.randomUUID();
+        final byte[] uuidArray = toByteArray(uuid);
+        final byte[] encodedArray = base64.encode(uuidArray); // UUID becomes URL safe
 
         String returnValue = new String(encodedArray, Charset.forName("UTF-8"));
         if (returnValue.endsWith("\r\n")) {
@@ -46,12 +46,12 @@ public class UUIDGeneratorServiceImpl implements UUIDGeneratorService {
         return returnValue;
     }
 
-    private static byte[] toByteArray(UUID uuid) {
+    private static byte[] toByteArray(final UUID uuid) {
 
-        byte[] byteArray = new byte[(Long.SIZE / Byte.SIZE) * 2];
-        ByteBuffer buffer = ByteBuffer.wrap(byteArray);
+        final byte[] byteArray = new byte[(Long.SIZE / Byte.SIZE) * 2];
+        final ByteBuffer buffer = ByteBuffer.wrap(byteArray);
 
-        LongBuffer longBuffer = buffer.asLongBuffer();
+        final LongBuffer longBuffer = buffer.asLongBuffer();
         longBuffer.put(new long[]{uuid.getMostSignificantBits(), uuid.getLeastSignificantBits()});
 
         return byteArray;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,8 +18,10 @@ define(function aknRecitalPluginModule(require) {
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
     var numberModule = require("plugins/leosNumber/recitalNumberModule");
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
 
     var pluginName = "aknRecital";
+    var ENTER_KEY = 13;
 
     var pluginDefinition = {
         init: function init(editor) {
@@ -32,9 +34,19 @@ define(function aknRecitalPluginModule(require) {
                 }
                 event.editor.fire( 'unlockSnapshot' );
             });
+
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : ENTER_KEY,
+                action : _onEnterKey
+            });
         }
     };
 
+    function _onEnterKey(context) {
+        context.event.cancel();
+    }
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
@@ -44,26 +56,20 @@ define(function aknRecitalPluginModule(require) {
         akn: RECITAL_NAME,
         html: "p",
         attr: [{
-            akn: "GUID",
+            akn: "xml:id",
             html: "id"
         }, {
             akn: "leos:editable",
-            html: "contenteditable"
+            html: "data-akn-attr-editable"
         }, {
             html: ["data-akn-name", RECITAL_NAME].join("=")
-        }, {
-            akn: "leos:origin",
-            html: "data-origin"
         }],
         sub: [{
             akn: "num",
             html: "p",
             attr: [{
-                akn: "GUID",
+                akn: "xml:id",
                 html: "data-akn-num-id"
-            }, {
-                akn: "leos:origin",
-                html: "data-num-origin"
             }],
             sub: {
                 akn: "text",
@@ -73,7 +79,7 @@ define(function aknRecitalPluginModule(require) {
             akn: "mp",
             html: "p",
             attr: [{
-                akn: "GUID",
+                akn: "xml:id",
                 html: "data-akn-mp-id"
             }, {
                 akn: "leos:origin",

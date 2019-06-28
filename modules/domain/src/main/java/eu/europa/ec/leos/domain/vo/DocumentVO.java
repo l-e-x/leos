@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,14 +13,16 @@
  */
 package eu.europa.ec.leos.domain.vo;
 
-import java.util.*;
-
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.*;
+import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
+import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
+import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
 import eu.europa.ec.leos.domain.common.ActType;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.domain.common.ProcedureType;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument;
-import eu.europa.ec.leos.domain.document.LeosMetadata;
+
+import java.util.*;
 
 public class DocumentVO {
     private String id;
@@ -34,15 +36,17 @@ public class DocumentVO {
     private int docNumber;// optional
     private byte[] source;
     private boolean uploaded;
+    private String versionSeriesId;
 
     private LeosCategory documentType;
     private ProcedureType procedureType;
     private ActType actType;
     private List<DocumentVO> childDocuments = new ArrayList<>();
-    private Map<String, LeosAuthority> collaborators = new HashMap<>();
+    private Map<String, String> collaborators = new HashMap<>();
     private MetadataVO metadata = new MetadataVO();
 
-    public DocumentVO(LeosDocument.XmlDocument xmlDocument) {
+
+    public DocumentVO(XmlDocument xmlDocument) {
         if (xmlDocument != null) {
             this.id = xmlDocument.getId();
             this.createdBy = xmlDocument.getCreatedBy();
@@ -69,10 +73,10 @@ public class DocumentVO {
         this.updatedOn = updatedOn;
     }
 
-    private void populateMetadataValues(LeosDocument.XmlDocument xmlDocument) {
+    private void populateMetadataValues(XmlDocument xmlDocument) {
         switch (xmlDocument.getCategory()) {
             case BILL:
-                LeosMetadata.BillMetadata metadataB = ((LeosDocument.XmlDocument.Bill) xmlDocument).getMetadata().getOrError(() -> "Bill metadata is required");
+                BillMetadata metadataB = ((Bill) xmlDocument).getMetadata().getOrError(() -> "Bill metadata is required");
                 this.template = metadataB.getTemplate();
                 this.language = metadataB.getLanguage();
                 this.getMetadata().setDocPurpose(metadataB.getPurpose());
@@ -82,7 +86,7 @@ public class DocumentVO {
                 
                 break;
             case ANNEX:
-                LeosMetadata.AnnexMetadata metadataA = ((LeosDocument.XmlDocument.Annex) xmlDocument).getMetadata()
+                AnnexMetadata metadataA = ((Annex) xmlDocument).getMetadata()
                         .getOrError(() -> "Annex metadata is required");
                 this.template = metadataA.getTemplate();
                 this.language = metadataA.getLanguage();
@@ -101,13 +105,13 @@ public class DocumentVO {
                 
                 break;
             case PROPOSAL:
-                LeosMetadata.ProposalMetadata metadataP = ((LeosDocument.XmlDocument.Proposal) xmlDocument).getMetadata()
+                ProposalMetadata metadataP = ((Proposal) xmlDocument).getMetadata()
                         .getOrError(() -> "Proposal metadata is required");
                 this.template = metadataP.getTemplate();
                 this.language = metadataP.getLanguage();
                 break;
             case MEMORANDUM:
-                LeosMetadata.MemorandumMetadata metadataM = ((LeosDocument.XmlDocument.Memorandum) xmlDocument).getMetadata()
+                MemorandumMetadata metadataM = ((Memorandum) xmlDocument).getMetadata()
                         .getOrError(() -> "Memorandum metadata is required");
                 this.template = metadataM.getTemplate();
                 this.language = metadataM.getLanguage();
@@ -260,19 +264,19 @@ public class DocumentVO {
         this.actType = actType;
     }
 
-    public void addCollaborators(Map<String, LeosAuthority> collaborators) {
+    public void addCollaborators(Map<String, String> collaborators) {
         this.collaborators.putAll(collaborators);
     }
 
-    public void addCollaborator(String userLogin, LeosAuthority authority) {
+    public void addCollaborator(String userLogin, String authority) {
         this.collaborators.put(userLogin, authority);
     }
 
-    public Map<String, LeosAuthority> getCollaborators() {
+    public Map<String, String> getCollaborators() {
         return collaborators;
     }
 
-    public void setCollaborators(Map<String, LeosAuthority> collaborators) {
+    public void setCollaborators(Map<String, String> collaborators) {
         this.collaborators = collaborators;
     }
 
@@ -297,6 +301,14 @@ public class DocumentVO {
         return documents;
     }
 
+    public String getVersionSeriesId() {
+        return versionSeriesId;
+    }
+
+    public void setVersionSeriesId(String versionSeriesId) {
+        this.versionSeriesId = versionSeriesId;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

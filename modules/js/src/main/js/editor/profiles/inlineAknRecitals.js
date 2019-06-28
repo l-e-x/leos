@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,7 +12,7 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 ; // jshint ignore:line
-define(function aknCitationsProfileModule(require) {
+define(function aknRecitalsProfileModule(require) {
     "use strict";
     
     // require profile dependencies, if needed
@@ -46,7 +46,8 @@ define(function aknCitationsProfileModule(require) {
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
     plugins.push(require("plugins/leosManualRenumbering/leosManualRenumberingPlugin"));
     plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
-    
+    plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+
     var pluginNames=[];
     var specificConfig={};
     $.each(plugins, function( index, value ) {
@@ -59,9 +60,6 @@ define(function aknCitationsProfileModule(require) {
     var extraPlugins = pluginNames.concat(externalPluginsNames).join(",");
     var transformationConfigResolver = transformationConfigManager.getTransformationConfigResolverForPlugins(pluginNames);
     var leosPasteFilter = pluginTools.createFilterList(transformationConfigResolver);
-    var leosEditorCss = pluginTools.toUrl("css/leosEditor.css");
-    
-    var customContentsCss = [leosEditorCss];
     
     var profileName = "AKN Recitals";
 
@@ -76,16 +74,14 @@ define(function aknCitationsProfileModule(require) {
                  "clipboard,undo,pastefromword,basicstyles,enterkey," +
                  "specialchar,button,dialog,dialogui,contextmenu,menubutton,widget",
         // comma-separated list of toolbar button names that must not be rendered
-        removeButtons: "Underline,Strike,TextColor,PasteFromWord",
+        removeButtons: "Bold,Underline,Strike,TextColor,PasteFromWord",
         // comma-separated list of additional plugins to be loaded
         extraPlugins: extraPlugins,
         // disable Advanced Content Filter (allow all content)
         allowedContent: true,
         //only allow elements configured in transformer
         pasteFilter:leosPasteFilter,
-        defaultPasteElement:'recital/mp/text',
-        //custom style sheet
-        contentsCss: customContentsCss,
+        defaultPasteElement:'text',
         // height of the editing area
         height : 522,
         //show toolbar on startup
@@ -94,6 +90,10 @@ define(function aknCitationsProfileModule(require) {
         disableNativeSpellChecker: false,
         // LEOS-2887 removing tooltip title 
         title: false,
+        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in recital
+        blockedKeystrokes: [
+            CKEDITOR.CTRL + 65 //CTRL +A
+        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
@@ -105,7 +105,7 @@ define(function aknCitationsProfileModule(require) {
             groups : [ "clipboard", "undo" ]
         }, {
             name : "editing",
-            groups : ["selection" ]
+            groups : [ "selection", "spellchecker" ]
         }, {
             name : "forms"
         }, {

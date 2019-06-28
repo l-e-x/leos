@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,30 +14,22 @@
 package eu.europa.ec.leos.ui.view;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
-import eu.europa.ec.leos.domain.document.LeosDocument;
-import eu.europa.ec.leos.security.SecurityContext;
-import eu.europa.ec.leos.services.compare.ContentComparatorService;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
-import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.web.event.view.document.DocumentUpdatedEvent;
 import eu.europa.ec.leos.web.event.view.document.MergeSuggestionRequest;
 import eu.europa.ec.leos.web.event.view.document.MergeSuggestionResponse;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
-import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import org.apache.jena.ext.com.google.common.base.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.function.BiFunction;
-
 @Component
 @Scope("prototype")
-public class CommonDelegate<T extends LeosDocument.XmlDocument> {
+public class CommonDelegate<T extends XmlDocument> {
 
     private static final Logger LOG = LoggerFactory.getLogger(CommonDelegate.class);
     private EventBus eventBus;

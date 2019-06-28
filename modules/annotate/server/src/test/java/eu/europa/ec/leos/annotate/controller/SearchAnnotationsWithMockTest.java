@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,17 +15,21 @@ package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.controllers.AnnotationApiController;
-import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
-import eu.europa.ec.leos.annotate.helper.TestData;
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.AnnotationSearchOptions;
+import eu.europa.ec.leos.annotate.helper.*;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.search.AnnotationSearchOptions;
+import eu.europa.ec.leos.annotate.model.search.AnnotationSearchResult;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
-import eu.europa.ec.leos.annotate.repository.*;
+import eu.europa.ec.leos.annotate.repository.GroupRepository;
+import eu.europa.ec.leos.annotate.repository.TokenRepository;
+import eu.europa.ec.leos.annotate.repository.UserGroupRepository;
+import eu.europa.ec.leos.annotate.repository.UserRepository;
+import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationServiceImpl;
+import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,11 +54,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class SearchAnnotationsWithMockTest {
@@ -62,37 +65,6 @@ public class SearchAnnotationsWithMockTest {
     /**
      * Test search for annotations - internal search method throws an error
      */
-    private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "refreshtoken";
-
-    private User theUser;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-        TestDbHelper.cleanupRepositories(this);
-
-        Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        theUser = new User("demo");
-        userRepos.save(theUser);
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now(), REFRESH_TOKEN, LocalDateTime.now()));
-
-        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(annotController);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        authService.setAuthenticatedUser(null);
-    }
-
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -103,10 +75,14 @@ public class SearchAnnotationsWithMockTest {
 
     // ... but we also need a working real service - create an implementation instance directly
     @Autowired
-    private AnnotationServiceImpl realUserService;
+    private AnnotationServiceImpl realAnnotService;
 
+    // the ConversionService also needs mocking
     @Mock
-    private AuthenticationService authService;
+    private AnnotationConversionService conversionService;
+    
+    @Mock
+    private AuthenticatedUserStore authUser;
 
     @Autowired
     private GroupRepository groupRepos;
@@ -125,6 +101,39 @@ public class SearchAnnotationsWithMockTest {
 
     private MockMvc mockMvc;
 
+    private static final String ACCESS_TOKEN = "demoaccesstoken";
+    private static final String REFRESH_TOKEN = "refreshtoken";
+
+    private Token userToken;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+        TestDbHelper.cleanupRepositories(this);
+
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final User theUser = new User("demo");
+        userRepos.save(theUser);
+        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+        userToken = new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now(), REFRESH_TOKEN, LocalDateTime.now());
+        tokenRepos.save(userToken);
+
+        final StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(annotController);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        authUser.clear();
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -133,38 +142,40 @@ public class SearchAnnotationsWithMockTest {
      * try searching for annotations, but service internally throws exception
      * expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testSearchAnnotations_WithExceptionInternally() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be accepted later on
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_SUGGESTION));
+
+        final UserInformation userInfo = new UserInformation(userToken);
 
         // make the AnnotationService mock simply throw any exception - but work correctly during creation by using a real AnnotationService
-        Mockito.when(authService.getAuthenticatedUser()).thenReturn(theUser);
-        Mockito.when(annotService.createAnnotation(jsAnnot, login)).thenReturn(realUserService.createAnnotation(jsAnnot, login));
-        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.anyString())).thenThrow(new RuntimeException());
+        Mockito.when(authUser.getUserInfo()).thenReturn(userInfo);
+        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.any(UserInformation.class)))
+                .thenThrow(new RuntimeException());
 
-        annotService.createAnnotation(jsAnnot, login);
+        realAnnotService.createAnnotation(jsAnnot, userInfo);
 
         // send acceptance request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/search?_separate_replies=false&sort=created&order=asc&uri=" + jsAnnot.getUri().toString() + "&url=" + jsAnnot.getUri().toString() +
                         "&group=__world__")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
-        ResultActions result = this.mockMvc.perform(builder);
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // error must have been set
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
     }
@@ -173,28 +184,30 @@ public class SearchAnnotationsWithMockTest {
      * try searching for annotations, but service internally returns no result
      * expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testSearchAnnotations_WithEmptyResultInternally() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be accepted later on
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_SUGGESTION));
+
+        final UserInformation userInfo = new UserInformation(userToken);
 
         // make the AnnotationService mock simply throw any exception - but work correctly during creation by using a real AnnotationService
-        Mockito.when(authService.getAuthenticatedUser()).thenReturn(theUser);
-        Mockito.when(annotService.createAnnotation(jsAnnot, login)).thenReturn(realUserService.createAnnotation(jsAnnot, login));
-        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.anyString())).thenReturn(new ArrayList<Annotation>());
+        Mockito.when(authUser.getUserInfo()).thenReturn(userInfo);
+        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.any(UserInformation.class)))
+                .thenReturn(new AnnotationSearchResult());
 
-        annotService.createAnnotation(jsAnnot, login);
+        realAnnotService.createAnnotation(jsAnnot, userInfo);
 
         // send acceptance request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/search?_separate_replies=false&sort=created&order=asc&uri=" + jsAnnot.getUri().toString() + "&url=&group=__world__")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
-        ResultActions result = this.mockMvc.perform(builder);
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
@@ -206,28 +219,33 @@ public class SearchAnnotationsWithMockTest {
      * try searching for annotations, but service internally returns no result (2 - different way)
      * expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testSearchAnnotations_WithEmptyResultInternally2() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be accepted later on
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_SUGGESTION));
+
+        final UserInformation userInfo = new UserInformation(userToken);
 
         // make the AnnotationService mock simply throw any exception - but work correctly during creation by using a real AnnotationService
-        Mockito.when(authService.getAuthenticatedUser()).thenReturn(theUser);
-        Mockito.when(annotService.createAnnotation(jsAnnot, login)).thenReturn(realUserService.createAnnotation(jsAnnot, login));
-        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.anyString())).thenReturn(null);
+        Mockito.when(authUser.getUserInfo()).thenReturn(userInfo);
+        Mockito.when(annotService.searchAnnotations(Mockito.any(AnnotationSearchOptions.class), Mockito.any(UserInformation.class))).thenReturn(null);
 
-        annotService.createAnnotation(jsAnnot, login);
+        realAnnotService.createAnnotation(jsAnnot, userInfo);
 
+        Mockito.when(conversionService.convertToJsonSearchResult(
+                Mockito.any(AnnotationSearchResult.class), Mockito.anyListOf(Annotation.class), 
+                Mockito.any(AnnotationSearchOptions.class), 
+                Mockito.any(UserInformation.class))).thenReturn(null);
         // send acceptance request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/search?_separate_replies=false&sort=created&order=asc&uri=" + jsAnnot.getUri().toString() + "&url=&group=__world__")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
-        ResultActions result = this.mockMvc.perform(builder);
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());

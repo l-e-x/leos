@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,10 +21,13 @@ public class SaveElementRequestEvent {
 
     private String elementContent;
 
-    public SaveElementRequestEvent(String elementId,String elementTagName, String elementContent) {
+    private Boolean isSaveAndClose;
+    
+    public SaveElementRequestEvent(String elementId,String elementTagName, String elementContent, Boolean isSaveAndClose) {
         this.elementId = elementId;
         this.elementTagName = elementTagName;
         this.elementContent = elementContent;
+        this.isSaveAndClose = isSaveAndClose;
     }
 
     public String getElementId() {
@@ -37,5 +40,9 @@ public class SaveElementRequestEvent {
 
     public String getElementContent() {
         return elementContent;
+    }
+
+    public Boolean isSaveAndClose() {
+        return isSaveAndClose;
     }
 }

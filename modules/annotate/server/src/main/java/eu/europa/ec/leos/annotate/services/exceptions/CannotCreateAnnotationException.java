@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,7 +21,11 @@ public class CannotCreateAnnotationException extends Exception {
 
     private static final long serialVersionUID = -3518138133707288218L;
 
-    public CannotCreateAnnotationException(Throwable e) {
-        super("The annotation could not be created", e);
+    public CannotCreateAnnotationException(final Throwable exc) {
+        super("The annotation could not be created", exc);
+    }
+    
+    public CannotCreateAnnotationException(final String message) {
+        super(message);
     }
 }

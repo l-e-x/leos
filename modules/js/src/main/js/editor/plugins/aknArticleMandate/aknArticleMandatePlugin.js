@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -30,7 +30,7 @@ define(function aknArticleMandatePluginModule(require) {
 
         init : function init(editor) {
             editor.on("toHtml", removeInitialSnapshot, null, null, 100);
-            editor.on("receiveData", _setNumEditables);
+            //editor.on("receiveData", _setNumEditables);
             
             editor.widgets.add(aknArticleNumberWidget.name, aknArticleNumberWidget.definition);
             editor.addContentsCss(pluginTools.getResourceUrl(pluginName, aknArticleNumberWidget.css));
@@ -51,6 +51,7 @@ define(function aknArticleMandatePluginModule(require) {
         }
     }
     
+    //TODO not used for now. it will be used in case we want to edit numbering under certain conditions
     function _setNumEditables(evt) {
         var editor = evt.editor;
         var elementFragment = evt.data;
@@ -72,7 +73,7 @@ define(function aknArticleMandatePluginModule(require) {
         akn : 'article',
         html : 'article',
         attr : [ {
-            akn : "GUID",
+            akn : "xml:id",
             html : "id"
         }, {
             akn : "leos:origin",
@@ -83,6 +84,27 @@ define(function aknArticleMandatePluginModule(require) {
         }, {
             akn : "leos:deletable",
             html : "data-akn-attr-deletable"
+        }, {
+            akn : "leos:softaction",
+            html : "data-akn-attr-softaction"
+        }, {
+            akn : "leos:softactionroot",
+            html : "data-akn-attr-softactionroot"
+        }, {
+            akn : "leos:softuser",
+            html : "data-akn-attr-softuser"
+        }, {
+            akn : "leos:softdate",
+            html : "data-akn-attr-softdate"
+        }, {
+            akn : "leos:softmove_to",
+            html : "data-akn-attr-softmove_to"
+        }, {
+            akn : "leos:softmove_from",
+            html : "data-akn-attr-softmove_from"
+        }, {
+            akn : "leos:softmove_label",
+            html : "data-akn-attr-softmove_label"
         }, {
             html : "data-akn-name=article"
         } ],
@@ -98,7 +120,7 @@ define(function aknArticleMandatePluginModule(require) {
                 akn : "leos:origin",
                 html : "data-num-origin"
             }, {
-                akn : "GUID",
+                akn : "xml:id",
                 html : "data-akn-num-id"
             } ],
             sub : {
@@ -119,7 +141,7 @@ define(function aknArticleMandatePluginModule(require) {
                 akn : "leos:origin",
                 html : "data-heading-origin"
             }, {
-                akn : "GUID",
+                akn : "xml:id",
                 html : "data-akn-heading-id"
             } ],
             sub : {
@@ -130,7 +152,7 @@ define(function aknArticleMandatePluginModule(require) {
             akn : "article",
             html : "article/ol",
             attr : [ {
-                akn : "GUID",
+                akn : "xml:id",
                 html : "id"
             }, {
                 akn : "leos:origin",

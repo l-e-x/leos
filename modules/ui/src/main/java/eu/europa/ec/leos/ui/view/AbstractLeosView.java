@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -82,9 +82,9 @@ public abstract class AbstractLeosView<T extends Component> extends CustomCompon
         }
     }
 
-    private WrappedSession getWrappedSession() {
+    private WrappedSession getWrappedSession(boolean allowSessionCreation) {
         VaadinRequest request = VaadinService.getCurrentRequest();
-        return (request != null) ? request.getWrappedSession() : null;
+        return (request != null) ? request.getWrappedSession(allowSessionCreation) : null;
     }
 
     private void setSessionParameter(String parameterString){
@@ -97,17 +97,19 @@ public abstract class AbstractLeosView<T extends Component> extends CustomCompon
             LOG.debug("Incorrect number of parameters for {} view:{}", getViewId(), parameters);
         }
 
-        WrappedSession session = getWrappedSession();
-        for (int index =0; index < parameters.length && index < parametersKeys.length; index++) {
-            session.setAttribute(parametersKeys[index], parameters[index]);
+        WrappedSession session = getWrappedSession(true);
+        if (session != null) {
+            for (int index = 0; index < parameters.length && index < parametersKeys.length; index++) {
+                session.setAttribute((presenter != null ? presenter.getId() + "." : "") + parametersKeys[index], parameters[index]);
+            }
         }
     }
 
     private void removeSessionParameters(){
-        WrappedSession session = getWrappedSession();
+        WrappedSession session = getWrappedSession(false);
         if (session != null) {
             for (String key : getParameterKeys()) {
-                session.removeAttribute(key);
+                session.removeAttribute((presenter != null ? presenter.getId() + "." : "") + key);
             }
         }
     }

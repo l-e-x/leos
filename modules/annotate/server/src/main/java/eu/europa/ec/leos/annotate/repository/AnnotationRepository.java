@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,9 +13,8 @@
  */
 package eu.europa.ec.leos.annotate.repository;
 
-import java.util.List;
-
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -25,36 +24,26 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * the repository for all {@link Annotation} objects
  * 
  * note: we use a {@link PagingAndSortingRepository} here, which is an extension of {@link CrudRepository}
  *       in particular, it allows to apply sorting and paging easily by passing a {@link Pageable}
  */
-@Repository
+@Repository("annotationRepos")
 public interface AnnotationRepository extends PagingAndSortingRepository<Annotation, String>, AnnotationRepositoryCustom, JpaSpecificationExecutor<Annotation> {
 
     /**
-     * find an annotation based on its ID
+     * find an annotation with a given ID and having a specific status
      * 
-     * @param id the annotation's ID
+     * @param annotId the annotation's ID
+     * @param status the desired {@link AnnotationStatus} of the annotation
      * 
      * @return found Annotation, or {@literal null}
      */
-    Annotation findById(String id);
-
-    /**
-     * check if there is an annotation referring to a given document ID
-     * 
-     * @param documentId the ID of the document
-     * 
-     * @return {@literal true} if at least one annotation to the document is present
-     * 
-     * NOTE: there was a bug (see https://jira.spring.io/browse/DATAJPA-851) in the existsBy feature 
-     *       before spring-data-jpa 1.11, breaking this generic search functionality
-     *       with our current spring-data-jpa version 1.11.9 (part of spring-boot-starter-data-jpa 1.5.9), it works...
-     */
-    boolean existsByDocumentId(long documentId);
+    Annotation findByIdAndStatus(String annotId, AnnotationStatus status);
 
     /**
      * delete all annotations from the database
@@ -73,11 +62,22 @@ public interface AnnotationRepository extends PagingAndSortingRepository<Annotat
     void customDeleteAll();
 
     /**
-     * count all items having a root annotation id set (i.e. replies)
+     * count all items having a given metadata Id
      * 
-     * @return number of found annotations
+     * @param metadataId the ID of the metadata set assigned to annotations
+     * @return number of annotations assigned to given metadata set
      */
-    long countByRootAnnotationIdNotNull();
+    long countByMetadataId(long metadataId);
+
+    /**
+     * find all annotations having one of given metadata Ids and a certain status
+     * 
+     * @param metadataIds the IDs of the associated metadata
+     * @param status the desired {@link AnnotationStatus} of the annotation
+     * 
+     * @return found annotations
+     */
+    List<Annotation> findByMetadataIdIsInAndStatus(List<Long> metadataIds, AnnotationStatus status);
 
     /**
      * keep the following signatures commented out here to remind what is easily possible using Spring Data framework
@@ -89,10 +89,11 @@ public interface AnnotationRepository extends PagingAndSortingRepository<Annotat
      *  search for annotation replies to a given set of annotations
      *  
      * @param annotationIds the ID of the annotations whose replies are wanted
+     * @param status        the status that the annotations should have
      * @param page          {@link Pageable} implementation that allows specifying sorting, ordering, and amount of results wanted
      *                      (required here as we have to provide the replies with the same sorting as their parent annotations)
      * 
      * @return              list of annotation objects meeting criteria
      */
-    List<Annotation> findByRootAnnotationIdIsIn(List<String> annotationIds, Pageable page);
+    List<Annotation> findByRootAnnotationIdIsInAndStatus(List<String> annotationIds, AnnotationStatus status, Pageable page);
 }

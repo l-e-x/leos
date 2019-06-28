@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,10 @@
 package eu.europa.ec.leos.vo.toctype;
 
 public interface TocItemType {
+    
+    final String NUM_HEADING_SEPARATOR = " - ";
+    
+    final String CONTENT_SEPARATOR = " ";
 
     boolean isRoot();
 
@@ -33,7 +37,19 @@ public interface TocItemType {
     
     String getNumHeadingSeparator();
     
+    String getContentSeparator();
+    
     boolean hasItemDescription();
     
     boolean isNumberEditable();
+    
+    boolean isContentDisplayed();
+    
+    boolean isDeletable();
+    
+    boolean hasNumWithType();
+
+    boolean isExpandedByDefault();
+    
+    boolean isSameParentAsChild();
 }

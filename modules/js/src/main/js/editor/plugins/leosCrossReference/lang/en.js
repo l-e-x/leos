@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,7 @@ CKEDITOR.plugins.setLang( 'leosCrossReference', 'en', {
    refChanged : 'Attention! Existing reference will change',
    refElementRequired : 'Please select at least one element from the tree in order to create a reference',
    supportedElementsMessage : 'Internal reference is allowed only for supported element(s)',
+   movedOrDeletedElementsMessage : 'Internal reference is not allowed on moved/deleted element(s)',
    selectionNotAllowed : 'Only siblings can be selected of same type',
    existingRef : 'Existing reference: ',
    brokenRef : 'Existing reference is invalid. Please update the reference'

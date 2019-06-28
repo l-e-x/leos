@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -43,6 +44,7 @@ public class Token {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "tokensSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     // user ID column, filled by hibernate
@@ -54,6 +56,10 @@ public class Token {
     @JoinColumn(name = "USER_ID")
     private User user;
 
+    // authority for which the user's token is issued
+    @Column(name = "AUTHORITY", nullable = false)
+    private String authority;
+    
     // access token granted to the user
     @Column(name = "ACCESS_TOKEN", nullable = false, unique = true)
     private String accessToken;
@@ -64,6 +70,7 @@ public class Token {
 
     // the access token's TTL in seconds - property contained here for easier access to this value
     @Transient
+    @SuppressWarnings("PMD.LongVariable")
     private int accessTokenLifetimeSeconds;
 
     // refresh token granted to the user
@@ -76,6 +83,7 @@ public class Token {
 
     // the refresh token's TTL in seconds - property contained here for easier access to this value
     @Transient
+    @SuppressWarnings("PMD.LongVariable")
     private int refreshTokenLifetimeSeconds;
 
     // -----------------------------------------------------------
@@ -86,10 +94,13 @@ public class Token {
         // parameterless constructor required by JPA
     }
 
-    public Token(User user, String accessToken, LocalDateTime accessTokenExpiration, String refreshToken, LocalDateTime refreshTokenExpiration) {
+    public Token(final User user, final String authority, 
+            final String accessToken, final LocalDateTime accessTokenExpiration, 
+            final String refreshToken, final LocalDateTime refreshTokenExpiration) {
 
         this.user = user;
         this.userId = user.getId();
+        this.authority = authority;
         this.accessToken = accessToken;
         this.accessTokenExpires = accessTokenExpiration;
         this.refreshToken = refreshToken;
@@ -100,14 +111,14 @@ public class Token {
     // Useful getters & setters (exceeding POJO)
     // -----------------------------------------------------------
 
-    public void setAccessToken(String accessToken, int lifetimeSeconds) {
+    public void setAccessToken(final String accessToken, final int lifetimeSeconds) {
         setAccessToken(accessToken);
         setAccessTokenLifetimeSeconds(lifetimeSeconds);
 
         setAccessTokenExpires(LocalDateTime.now().plusSeconds(lifetimeSeconds));
     }
 
-    public void setRefreshToken(String refreshToken, int lifetimeSeconds) {
+    public void setRefreshToken(final String refreshToken, final int lifetimeSeconds) {
         setRefreshToken(refreshToken);
         setRefreshTokenLifetimeSeconds(lifetimeSeconds);
 
@@ -129,15 +140,15 @@ public class Token {
         return id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setId(final long newId) {
+        this.id = newId;
     }
 
     public long getUserId() {
         return userId;
     }
 
-    public void setUserId(long userId) {
+    public void setUserId(final long userId) {
         this.userId = userId;
     }
 
@@ -145,15 +156,23 @@ public class Token {
         return user;
     }
 
-    public void setUser(User user) {
+    public void setUser(final User user) {
         this.user = user;
     }
 
+    public String getAuthority() {
+        return authority;
+    }
+    
+    public void setAuthority(final String auth) {
+        this.authority = auth;
+    }
+    
     public String getAccessToken() {
         return accessToken;
     }
 
-    public void setAccessToken(String accessToken) {
+    public void setAccessToken(final String accessToken) {
         this.accessToken = accessToken;
     }
 
@@ -161,7 +180,7 @@ public class Token {
         return accessTokenExpires;
     }
 
-    public void setAccessTokenExpires(LocalDateTime accessTokenExpires) {
+    public void setAccessTokenExpires(final LocalDateTime accessTokenExpires) {
         this.accessTokenExpires = accessTokenExpires;
     }
 
@@ -169,7 +188,7 @@ public class Token {
         return refreshToken;
     }
 
-    public void setRefreshToken(String refreshToken) {
+    public void setRefreshToken(final String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
@@ -177,7 +196,7 @@ public class Token {
         return refreshTokenExpires;
     }
 
-    public void setRefreshTokenExpires(LocalDateTime refreshTokenExpires) {
+    public void setRefreshTokenExpires(final LocalDateTime refreshTokenExpires) {
         this.refreshTokenExpires = refreshTokenExpires;
     }
 
@@ -185,7 +204,7 @@ public class Token {
         return accessTokenLifetimeSeconds;
     }
 
-    public void setAccessTokenLifetimeSeconds(int ttl) {
+    public void setAccessTokenLifetimeSeconds(final int ttl) {
         this.accessTokenLifetimeSeconds = ttl;
     }
 
@@ -193,7 +212,7 @@ public class Token {
         return refreshTokenLifetimeSeconds;
     }
 
-    public void setRefreshTokenLifetimeSeconds(int ttl) {
+    public void setRefreshTokenLifetimeSeconds(final int ttl) {
         this.refreshTokenLifetimeSeconds = ttl;
     }
 
@@ -201,13 +220,15 @@ public class Token {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(id, userId, user, accessToken, accessTokenExpires, refreshToken, refreshTokenExpires);
+        return Objects.hash(id, userId, user, authority, accessToken, accessTokenExpires, refreshToken, refreshTokenExpires);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) { 
 
         if (this == obj) {
             return true;
@@ -218,6 +239,7 @@ public class Token {
         final Token other = (Token) obj;
         return Objects.equals(this.id, other.id) &&
                 Objects.equals(this.userId, other.userId) &&
+                Objects.equals(this.authority, other.authority) &&
                 Objects.equals(this.user, other.user) &&
                 Objects.equals(this.accessToken, other.accessToken) &&
                 Objects.equals(this.accessTokenExpires, other.accessTokenExpires) &&

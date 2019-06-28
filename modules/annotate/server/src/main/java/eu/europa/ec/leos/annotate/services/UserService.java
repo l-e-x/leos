@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate.services;
 
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserProfile;
 import eu.europa.ec.leos.annotate.services.exceptions.DefaultGroupNotFoundException;
@@ -30,20 +31,21 @@ public interface UserService {
     User createUserIfNotExists(String userLogin) throws UserAlreadyExistingException, DefaultGroupNotFoundException;
 
     // add a user to a group based on his associated entity
-    boolean addUserToEntityGroup(User user, UserDetails userDetails);
+    boolean addUserToEntityGroup(UserInformation userInfo);
 
     // conversions
     String getUserIdFromHypothesisUserAccount(String jsonUser);
 
-    String getHypothesisUserAccountFromUserId(String userId);
+    String getHypothesisUserAccountFromUserName(String userId);
 
-    String getHypothesisUserAccountFromUser(User user);
+    String getHypothesisUserAccountFromUser(User user, String authority);
+    String getHypothesisUserAccountFromUserId(long userId, String authority);
 
     // searching for user profile based on login
     User findByLogin(String login);
 
     // retrieval of user profile and update of user preferences
-    JsonUserProfile getUserProfile(String login, String authority) throws UserNotFoundException;
+    JsonUserProfile getUserProfile(UserInformation userInfo) throws UserNotFoundException;
 
     User updateSidebarTutorialVisible(String userLogin, boolean visible) throws UserNotFoundException;
 

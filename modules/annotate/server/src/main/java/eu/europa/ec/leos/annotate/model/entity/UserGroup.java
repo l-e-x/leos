@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,8 @@
 package eu.europa.ec.leos.annotate.model.entity;
 
 import javax.persistence.*;
+
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 import java.io.Serializable;
@@ -42,6 +44,7 @@ public class UserGroup implements Serializable {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "usersGroupsSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     @Column(name = "USER_ID", nullable = false)
@@ -55,9 +58,10 @@ public class UserGroup implements Serializable {
     // -----------------------------------------------------------
 
     public UserGroup() {
+        // default constructor required by JPA
     }
 
-    public UserGroup(long userId, long groupId) {
+    public UserGroup(final long userId, final long groupId) {
         this.userId = userId;
         this.groupId = groupId;
     }
@@ -70,15 +74,15 @@ public class UserGroup implements Serializable {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(final Long newId) {
+        this.id = newId;
     }
 
     public long getUserId() {
         return userId;
     }
 
-    public void setUserId(long userId) {
+    public void setUserId(final long userId) {
         this.userId = userId;
     }
 
@@ -86,7 +90,7 @@ public class UserGroup implements Serializable {
         return groupId;
     }
 
-    public void setGroupId(long groupId) {
+    public void setGroupId(final long groupId) {
         this.groupId = groupId;
     }
 
@@ -94,13 +98,15 @@ public class UserGroup implements Serializable {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, groupId, userId);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
 
         if (this == obj) {
             return true;

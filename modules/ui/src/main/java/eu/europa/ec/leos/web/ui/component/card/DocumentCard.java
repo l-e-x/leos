@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,11 +21,11 @@ import com.vaadin.ui.declarative.Design;
 import com.vaadin.v7.data.Item;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.web.event.view.proposal.DisplayProposalEvent;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.ui.event.view.collection.DisplayCollectionEvent;
 import eu.europa.ec.leos.web.event.view.repository.SelectDocumentEvent;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.converter.LangCodeToDescriptionConverter;
 import eu.europa.ec.leos.web.ui.converter.UserLoginDisplayConverter;
@@ -101,7 +101,7 @@ public class DocumentCard extends VerticalLayout implements Card{
         proposalButton.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent event) {
-                eventBus.post(new DisplayProposalEvent((String) itemDataSource.getItemProperty(KEY).getValue(),
+                eventBus.post(new DisplayCollectionEvent((String) itemDataSource.getItemProperty(KEY).getValue(),
                         (LeosCategory) itemDataSource.getItemProperty("documentType").getValue()));
             }
         });

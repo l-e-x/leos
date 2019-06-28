@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotStoreTokenException;
 import eu.europa.ec.leos.annotate.services.impl.AuthenticationServiceImpl;
@@ -30,7 +31,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class AuthenticationServiceWithMockedUuidServiceTest {
@@ -71,7 +72,7 @@ public class AuthenticationServiceWithMockedUuidServiceTest {
             .thenReturn("refresh");  // second is ok
 
         try {
-            authService.generateAndSaveTokensForUser(new User("someuser"));
+            authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
             Assert.fail("Expected exception from AuthenticationService not received");
         } catch(CannotStoreTokenException cste) {
             // OK
@@ -91,7 +92,7 @@ public class AuthenticationServiceWithMockedUuidServiceTest {
             .thenReturn("");  // second provides invalid access token
 
         try {
-            authService.generateAndSaveTokensForUser(new User("someuser"));
+            authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
             Assert.fail("Expected exception from AuthenticationService not received");
         } catch(CannotStoreTokenException cste) {
             // OK

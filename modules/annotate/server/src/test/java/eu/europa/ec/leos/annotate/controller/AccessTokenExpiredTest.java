@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,9 @@ package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.helper.TestHelper;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -52,7 +54,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class AccessTokenExpiredTest {
@@ -61,28 +63,6 @@ public class AccessTokenExpiredTest {
      * Test that request using expired token is refused - run test using a profile update request
      */
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "veryRefreshing";
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -104,6 +84,28 @@ public class AccessTokenExpiredTest {
 
     private MockMvc mockMvc;
 
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -112,41 +114,43 @@ public class AccessTokenExpiredTest {
      * sending a request (for user profile update) using an expired access token, expected HTTP 401 and failure response
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testExpiredAccessTokenIsRefused() throws Exception {
 
         final String login = "demo";
 
         // preparation: save a user and assign it to a group
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().minusMinutes(1), REFRESH_TOKEN, LocalDateTime.now())); // access token expired
+        tokenRepos.save(new Token(theUser, "auth",
+                ACCESS_TOKEN, LocalDateTime.now().minusMinutes(1), // access token expired
+                REFRESH_TOKEN, LocalDateTime.now()));
 
-        UserGroup membership = new UserGroup();
+        final UserGroup membership = new UserGroup();
         membership.setUserId(theUser.getId());
         membership.setGroupId(defaultGroup.getId());
         userGroupRepos.save(membership);
 
-        JsonUserPreferences prefs = new JsonUserPreferences();
+        final JsonUserPreferences prefs = new JsonUserPreferences();
         prefs.setPreferences(new JsonUserShowSideBarPreference(false));
-        String serializedPreferenceUpdate = SerialisationHelper.serialize(prefs);
+        final String serializedPreferenceUpdate = SerialisationHelper.serialize(prefs);
 
         // send profile retrieval request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/profile")
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedPreferenceUpdate)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 401
         result.andExpect(MockMvcResultMatchers.status().isUnauthorized());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected annotation was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
 
         // invalid token response expected

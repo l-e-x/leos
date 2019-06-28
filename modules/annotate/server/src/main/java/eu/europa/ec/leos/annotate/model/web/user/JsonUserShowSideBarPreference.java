@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,6 +12,10 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 package eu.europa.ec.leos.annotate.model.web.user;
+
+import eu.europa.ec.leos.annotate.Generated;
+
+import java.util.Objects;
 
 /**
  * Class representing the user preferences that can be updated/retrieved
@@ -27,12 +31,13 @@ public class JsonUserShowSideBarPreference {
     // Constructor
     // -----------------------------------------------------------
     public JsonUserShowSideBarPreference() {
+        // default constructor required by JSON deserialisation
     }
 
-    public JsonUserShowSideBarPreference(boolean show) {
+    public JsonUserShowSideBarPreference(final boolean show) {
         this.show_sidebar_tutorial = show;
     }
-    
+
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
@@ -41,7 +46,30 @@ public class JsonUserShowSideBarPreference {
         return show_sidebar_tutorial;
     }
 
-    public void setShow_sidebar_tutorial(boolean show_sidebar_tutorial) {
+    public void setShow_sidebar_tutorial(final boolean show_sidebar_tutorial) {
         this.show_sidebar_tutorial = show_sidebar_tutorial;
+    }
+
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(show_sidebar_tutorial);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonUserShowSideBarPreference other = (JsonUserShowSideBarPreference) obj;
+        return Objects.equals(this.show_sidebar_tutorial, other.show_sidebar_tutorial);
     }
 }

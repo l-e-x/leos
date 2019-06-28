@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -33,9 +33,9 @@ public class AnnotationReplySearchSpec implements Specification<Annotation> {
     // Private variables
     // -------------------------------------
 
-    private List<String> annotationIds;
-    private long executingUserId;
-    private List<Long> userIdsOfThisGroup;
+    private final List<String> annotationIds;
+    private final long executingUserId;
+    private final List<Long> userIdsOfThisGroup;
 
     // -------------------------------------
     // Constructor
@@ -50,9 +50,9 @@ public class AnnotationReplySearchSpec implements Specification<Annotation> {
      *        the ID of the user running the search - influences what is visible to him
      * @param userIdsOfThisGroup
      *        the IDs of other users being member of the desired group
-     *        
      */
-    public AnnotationReplySearchSpec(List<String> annotationIds, long executingUserId, List<Long> userIdsOfThisGroup) {
+    public AnnotationReplySearchSpec(final List<String> annotationIds, final long executingUserId, 
+            final List<Long> userIdsOfThisGroup){
 
         this.annotationIds = annotationIds;
         this.executingUserId = executingUserId;
@@ -63,30 +63,32 @@ public class AnnotationReplySearchSpec implements Specification<Annotation> {
     // Search predicate
     // -------------------------------------
     @Override
-    public Predicate toPredicate(Root<Annotation> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+    public Predicate toPredicate(final Root<Annotation> root, final CriteriaQuery<?> query, final CriteriaBuilder critBuilder) {
 
-        List<Predicate> predicates = new ArrayList<>();
+        final List<Predicate> predicates = new ArrayList<>();
 
         // the rootAnnotationId must be one of our given values - this denotes that an annotation is a reply to any of our given annotations
         predicates.add(root.get("rootAnnotationId").in(this.annotationIds));
 
+        // note: we no longer filter on the statuses here; this will be done in a postprocessing step due to new interrelation with metadata
+
         // predicate stating whether the executing user has the permission to see an annotation reply
-        Predicate hasPermissionToSee = cb.or(
+        final Predicate hasPermissionToSee = critBuilder.or(
 
                 // first possibility: if the requesting user created the annotation, then he may see it without further restrictions
                 // aka: annot.getUser().getId().equals(executingUserId)
-                cb.equal(root.get("userId"), this.executingUserId),
+                critBuilder.equal(root.get("userId"), this.executingUserId),
 
                 // second possibility: annotation must be
                 // a) shared (aka: annot.isShared())
                 // and
                 // b) user must be member of the group in which the annotation was published
                 // aka: groupService.isUserMemberOfGroup(user, annot.getGroup())
-                cb.and(cb.isTrue(root.get("shared")),
+                critBuilder.and(critBuilder.isTrue(root.get("shared")),
                         root.get("userId").in(this.userIdsOfThisGroup)));
         predicates.add(hasPermissionToSee);
 
-        return cb.and(predicates.toArray(new Predicate[0]));
+        return critBuilder.and(predicates.toArray(new Predicate[0]));
     }
 
 }

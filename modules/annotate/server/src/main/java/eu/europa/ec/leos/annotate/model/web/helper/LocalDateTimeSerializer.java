@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -30,10 +30,10 @@ import java.time.format.DateTimeFormatter;
 public class LocalDateTimeSerializer extends JsonSerializer<LocalDateTime> {
 
     @Override
-    public void serialize(LocalDateTime dateTime, JsonGenerator jg,
-            SerializerProvider sp) throws IOException, JsonProcessingException {
+    public void serialize(final LocalDateTime dateTime, final JsonGenerator jsongen,
+            final SerializerProvider serialprov) throws IOException, JsonProcessingException {
         
-        Instant instant = dateTime.toInstant(ZoneOffset.UTC);
-        jg.writeString(DateTimeFormatter.ISO_INSTANT.format(instant));
+        final Instant instant = dateTime.toInstant(ZoneOffset.UTC);
+        jsongen.writeString(DateTimeFormatter.ISO_INSTANT.format(instant));
     }
 }

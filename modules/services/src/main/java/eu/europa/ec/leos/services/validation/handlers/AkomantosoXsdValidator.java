@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -76,6 +76,18 @@ public class AkomantosoXsdValidator implements Validator {
         } finally {
             LOG.trace("XSD loaded in {}ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }
+    }
+    
+    public boolean validate(byte[] xmlContent) {
+        javax.xml.validation.Validator validator = schema.newValidator();
+        StreamSource source = new StreamSource(new ByteArrayInputStream(xmlContent));
+        try {
+            validator.validate(source);
+        } catch (Exception e) {
+            LOG.error("Validation failed for the given bytes! Exception: ", e);
+            return false;
+        }
+        return true;
     }
 
     @Override

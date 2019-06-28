@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,12 +19,13 @@ import com.vaadin.v7.ui.ComboBox;
 import com.vaadin.v7.ui.Grid;
 import com.vaadin.v7.ui.TextField;
 import de.datenhahn.vaadin.componentrenderer.grid.editor.ComponentCustomField;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.user.User;
-import eu.europa.ec.leos.web.event.view.proposal.AddCollaboratorRequest;
+import eu.europa.ec.leos.permissions.Role;
+import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
+import eu.europa.ec.leos.ui.event.view.collection.AddCollaboratorRequest;
 import eu.europa.ec.leos.web.model.CollaboratorVO;
 import eu.europa.ec.leos.web.model.UserVO;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.collaborators.CollaboratorsComponent.COLUMN;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +44,14 @@ class CollaboratorEditor {
     private MessageHelper messageHelper;
     private EventBus eventBus;
     private String documentURL;
+    private LeosPermissionAuthorityMapHelper authorityMapHelper;
 
-    CollaboratorEditor(GridWithEditorListener collaboratorGrid, MessageHelper messageHelper, EventBus eventBus, String documentURL) {
+    CollaboratorEditor(GridWithEditorListener collaboratorGrid, MessageHelper messageHelper, EventBus eventBus, String documentURL, LeosPermissionAuthorityMapHelper authorityMapHelper) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
         this.collaboratorGrid = collaboratorGrid;
         this.documentURL = documentURL;
+        this.authorityMapHelper = authorityMapHelper;
         initGridEditor();
     }
 
@@ -70,7 +73,7 @@ class CollaboratorEditor {
     void addCollaborator() {
         //preEditOperations();
         // a random temp collaborator is generated which will be added and then edited in grid editor
-        CollaboratorVO tempObject = new CollaboratorVO(new UserVO(new User(0l, UUID.randomUUID().toString(), null, null, null)), LeosAuthority.CONTRIBUTOR);
+        CollaboratorVO tempObject = new CollaboratorVO(new UserVO(new User(0l, UUID.randomUUID().toString(), null, null, null,null)), authorityMapHelper.getCollaboratorRoles().get(0));
         collaboratorGrid.getContainerDataSource().addItemAt(0, tempObject); // Add at first position
         collaboratorGrid.editItem(tempObject);
     }
@@ -114,8 +117,8 @@ class CollaboratorEditor {
             try {
                 UserVO user = (UserVO) commitEvent.getFieldBinder().getField(COLUMN.NAME.getKey()).getValue();
                 ComboBox customEditorField = (ComboBox) commitEvent.getFieldBinder().getField(COLUMN.AUTHORITY.getKey()).getValue();
-                LeosAuthority leosAuthority = (LeosAuthority) customEditorField.getValue();
-                CollaboratorVO collaborator = new CollaboratorVO(user, leosAuthority);// temp object is not right object to use as it contains dummy values
+                Role role = (Role) customEditorField.getValue();
+                CollaboratorVO collaborator = new CollaboratorVO(user, role);// temp object is not right object to use as it contains dummy values
                 eventBus.post(new AddCollaboratorRequest(collaborator, documentURL));
                 collaboratorGrid.getContainerDataSource().addItemAt(0, collaborator);// FIXME: this should be done when save is done
             } finally {

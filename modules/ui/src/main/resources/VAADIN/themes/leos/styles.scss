@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,13 +24,15 @@
 @import "scss/component/window";
 @import "scss/component/versionSlider";
 @import "scss/component/searchAndReplace";
-@import "scss/component/proposalView";
+@import "scss/component/collectionView";
 @import "scss/component/memorandumView";
 @import "scss/component/annexView";
 @import "scss/component/timeLine";
 @import "scss/component/import";
 @import "scss/component/wizard";
+@import "scss/component/softAction";
 @import "scss/component/tableOfContent";
+@import "scss/component/actionsMenuBar";
 
 .leos {
     @include addons;
@@ -45,11 +47,12 @@
     @include window;
     @include versionSlider;
     @include searchAndReplace;
-    @include proposalView;
+    @include collectionView;
     @include memorandumView;
     @include annexView;
     @include timeLine;
     @include import;
     @include wizard;
     @include tableOfContent;
+    @include actionsMenuBar;
 }

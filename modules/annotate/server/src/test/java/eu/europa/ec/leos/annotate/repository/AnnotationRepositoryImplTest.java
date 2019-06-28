@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,7 +14,6 @@
 package eu.europa.ec.leos.annotate.repository;
 
 import eu.europa.ec.leos.annotate.repository.impl.AnnotationRepositoryImpl;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class AnnotationRepositoryImplTest {
@@ -39,14 +38,9 @@ public class AnnotationRepositoryImplTest {
     // Tests
     // -------------------------------------
 
-    @Test
+    @Test(expected = RuntimeException.class)
     public void testDeleteAllMustNotBeCalled() {
 
-        try {
-            annotRepos.deleteAll();
-            Assert.fail("DeleteAll on custom annotation repository implementation must throw exception!");
-        } catch (RuntimeException re) {
-            // OK
-        }
+        annotRepos.deleteAll();
     }
 }

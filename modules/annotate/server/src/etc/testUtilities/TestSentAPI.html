@@ -1,0 +1,186 @@
+<!--
+
+    Copyright 2019 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<html>
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/hmac-sha256.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/components/enc-base64-min.js"></script>
+    <script type="text/javascript" language="javascript">
+      var base_config = {
+          message: {
+            title: "Sending to other DGs",
+            confirmMessage: "Are you sure you want to send ?",
+            failureMessage: "Something wrong happened",
+            buttons: {
+              yes: "Yes"
+            }
+          },
+          metadata: {
+            ISCReference: "ISC/2016/642",
+            responseVersion: "1",
+            responseId: "id2",
+          },
+          parameters: {
+            group: "DIGIT",
+            uris: `["uri://LEOS/bill_cjnenu3uq000fzu16xoetml5e.xml"]`
+          },
+          client: "http://localhost:3001/annotate",
+          server: "http://localhost:9099/annotate",
+          clientId : "AnnotateIssuedClientId",
+          secret : "AnnotateIssuedSecret",
+          authority : "ISC",
+          userLogin : "demo" //use any user login present in UD-repo
+      };
+
+      function _getToken() {
+        // Defining our token parts
+        var header = {
+            "alg": "HS256",
+            "typ": "JWT"
+        };
+
+        var dateNow = Math.floor(Date.now() / 1000);
+
+        var data = {
+            "iss": `${base_config.clientId}`,
+            "sub":`acct:${base_config.userLogin}@${base_config.authority}`,
+            "aud": "intragate.development.ec.europa.eu",
+            "iat": dateNow ,
+            "nbf": dateNow -50,
+            "exp":dateNow + 600
+        };
+
+
+        function base64url(source) {
+            // Encode in classical base64
+            encodedSource = CryptoJS.enc.Base64.stringify(source);
+            // Remove padding equal characters
+            encodedSource = encodedSource.replace(/=+$/, '');
+            // Replace characters according to base64url specifications
+            encodedSource = encodedSource.replace(/\+/g, '-');
+            encodedSource = encodedSource.replace(/\//g, '_');
+            return encodedSource;
+        }
+
+        var encodedHeader = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(header)));
+        var encodedData = base64url(CryptoJS.enc.Utf8.parse(JSON.stringify(data)));
+        var signature = encodedHeader + "." + encodedData;
+        signature = CryptoJS.HmacSHA256(signature, base_config.secret);
+        signature = base64url(signature);
+
+        return `${encodedHeader}.${encodedData}.${signature}` ;
+      }
+
+      function _configureHostBridge(connector, win, doc) {
+          connector.hostBridge = connector.hostBridge || {};
+
+          var annotationContainerElt = doc;
+          if (annotationContainerElt) {
+              var dummySecurityResponse = function (connector) {
+                  console.log("dummy responseSecurityToken sent");
+                  connector.hostBridge.responseSecurityToken(_getToken());
+              };
+
+              connector.hostBridge.requestSecurityToken = function () {
+                  setTimeout(dummySecurityResponse,100, connector);
+              };
+
+              connector.hostBridge.callback = function (response) {
+                  console.log(response);
+              };
+
+              annotationContainerElt.hostBridge = connector.hostBridge;
+          }
+      }
+
+      function _addHostConfig(doc) {
+          var script = doc.createElement('script');
+          script.type = 'application/json';
+          script.className = 'js-hypothesis-config';
+          var webSocketUrl = base_config.server.replace('https','wss').replace('http','ws')+"/ws";
+
+          script.innerHTML = `{
+                  "message": {
+                    "title": "${base_config.message.title}",
+                    "confirmMessage": "${base_config.message.confirmMessage}",
+                    "failureMessage": "${base_config.message.failureMessage}",
+                    "buttons": {
+                      "yes": "${base_config.message.buttons.yes}"
+                    }
+                  },
+                  "client": "${base_config.client}",
+                  "metadata": {
+                    "ISCReference": "${base_config.metadata.ISCReference}",
+                    "responseVersion": "${base_config.metadata.responseVersion}",
+                    "responseId": "${base_config.metadata.responseId}"
+                  },
+                  "parameters": {
+                    "group": "${base_config.parameters.group}",
+                    "uris": ${base_config.parameters.uris}
+                  },
+                  "oauthClientId": "${base_config.clientId}",
+                  "services": [{
+                      "authority": "${base_config.authority}",
+                      "apiUrl": "${base_config.server}/api/",
+                      "websocketUrl":"${webSocketUrl}"
+                      }]
+                  }`;
+          doc.head.appendChild(script);
+      }
+
+      function _addScript(doc, url) {
+          var script = doc.createElement('script');
+          script.addEventListener('error', _onErrorLoad, false);
+          script.type = 'text/javascript';
+          script.src = url;
+          script.async = true;
+          doc.head.appendChild(script);
+
+          function _onErrorLoad(event) {
+              console.log('Error occurred while loading script ', event);
+          }
+      }
+
+      var doLoad = function(win, doc) {
+          var dummyConnector ={};
+          _addHostConfig(doc);
+          _configureHostBridge(dummyConnector, win, doc);
+          _addScript(doc, `${base_config.client+"/client/bootSentAPI.js"}`);
+      }
+      
+      var id = (new Date()).getTime();
+      var myWindow = window.open('_blank', id, "toolbar=0,scrollbars=0,location=0,statusbar=0,menubar=1,resizable=1,width=800,height=600");
+      var doc = document;
+      if (myWindow) {
+        myWindow.document.write("<html><head></head><body></body></html>");
+        doc = myWindow.document;
+      }
+      else
+        myWindow = window;
+      if ( window.addEventListener ) {  
+        window.addEventListener( "load", doLoad(myWindow, doc), false ); 
+      } 
+      else  
+      if ( window.attachEvent ) {  
+        window.attachEvent( "onload", doLoad(myWindow, doc) ); 
+      } else  
+      if ( window.onLoad ) { 
+        window.onload = doLoad(myWindow, doc); 
+      } 
+  </script>
+  </head>
+  <body>
+  </body>
+</html>

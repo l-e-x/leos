@@ -1,0 +1,172 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
+
+$LIGHT_GREY: #A7A7A7;
+
+%doubleCompareContentRemovedOriginal {
+  text-decoration: line-through;
+  color: $LIGHT_GREY;
+}
+
+%doubleCompareContentAddedOriginal {
+  font-weight: bold;
+  text-decoration: none;
+}
+
+%doubleCompareContentRemovedIntermediate {
+  @extend %doubleCompareContentRemovedOriginal;
+  font-weight: bold;
+}
+
+%doubleCompareContentAddedIntermediate {
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+%doubleCompareMovedFrom {
+  font-weight: normal;
+  text-decoration: none;
+}
+
+%doubleCompare {
+
+  .leos-double-compare-removed[leos\:softaction="del"],
+  .leos-double-compare-removed-original[leos\:softaction="del"],
+  .leos-double-compare-removed[leos\:softaction="move_to"],
+  .leos-double-compare-removed-original[leos\:softaction="move_to"] {
+    & {
+      *:not([leos\:origin="cn"]):not(span), num[leos\:origin="cn"] {
+        @extend %doubleCompareContentRemovedOriginal;
+      }
+    }
+  }
+
+  .leos-double-compare-removed-intermediate[leos\:softaction="del"],
+  .leos-double-compare-removed-intermediate[leos\:softaction="move_to"] {
+    & {
+      *:not([leos\:origin="cn"]):not(span), num[leos\:origin="cn"] {
+        @extend %doubleCompareContentRemovedIntermediate;
+      }
+    }
+  }
+
+  .leos-double-compare-removed[leos\:softaction="move_to"],
+  .leos-double-compare-removed-original[leos\:softaction="move_to"],
+  .leos-double-compare-removed-intermediate[leos\:softaction="move_to"]{
+    & {
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
+      }
+    }
+  }
+
+
+
+  .leos-double-compare-added[leos\:softaction="add"],
+  .leos-double-compare-added-original[leos\:softaction="add"] {
+    & {
+      *:not([leos\:origin="ec"]):not(span), num[leos\:origin="ec"] {
+        @extend %doubleCompareContentAddedOriginal;
+      }
+    }
+  }
+
+  .leos-double-compare-added-intermediate[leos\:softaction="add"] {
+    & {
+      *:not([leos\:origin="ec"]):not(span), num[leos\:origin="ec"] {
+        @extend %doubleCompareContentAddedIntermediate;
+      }
+    }
+  }
+
+  .leos-double-compare-added[leos\:softaction="move_from"],
+  .leos-double-compare-added-original[leos\:softaction="move_from"],
+  .leos-double-compare-added-intermediate[leos\:softaction="move_from"]{
+    & {
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
+      }
+    }
+  }
+
+  .leos-double-compare-added[leos\:softaction="move_from"],
+  .leos-double-compare-added-original[leos\:softaction="move_from"] {
+    & {
+      *:not([leos\:origin="cn"]):not(span):not(heading) {
+        @extend %doubleCompareMovedFrom;
+      }
+
+      num[leos\:origin="cn"] {
+        @extend %doubleCompareContentAddedOriginal;
+      }
+    }
+  }
+
+  .leos-double-compare-added-intermediate[leos\:softaction="move_from"] {
+    & {
+      *:not([leos\:origin="cn"]):not(span):not(heading) {
+        @extend %doubleCompareMovedFrom;
+      }
+
+      num[leos\:origin="cn"] {
+        @extend %doubleCompareContentAddedIntermediate;
+      }
+    }
+  }
+
+  span.leos-double-compare-removed-intermediate {
+    @extend %doubleCompareContentRemovedIntermediate;
+  }
+
+  span.leos-double-compare-added-intermediate {
+    @extend %doubleCompareContentAddedIntermediate;
+  }
+
+  span.leos-double-compare-removed, span.leos-double-compare-removed-original {
+    @extend %doubleCompareContentRemovedOriginal;
+  }
+
+  span.leos-double-compare-added, span.leos-double-compare-added-original {
+    @extend %doubleCompareContentAddedOriginal;
+  }
+
+  //--------------------------------Compare IMG-----------------------------------/
+
+  .leos-double-compare-added-original img, .leos-double-compare-added-intermediate img {
+    border: 3px solid !important;
+  }
+
+  .leos-double-compare-removed-original img, .leos-double-compare-removed-intermediate img {
+    border: 1px dotted !important;
+  }
+  //--------------------------------Compare TABLE-----------------------------------/
+
+  table, tr, td, th {
+    &.leos-double-compare-added-intermediate, &.leos-double-compare-added-original {
+      border: 3px solid;
+    }
+    &.leos-double-compare-removed-intermediate, &.leos-double-compare-removed-original {
+      border: 1px dotted;
+    }
+  }
+
+  .leos-double-compare-removed-intermediate table, .leos-double-compare-removed-original table {
+    border: 1px dotted;
+  }
+
+  .leos-double-compare-added-intermediate table, .leos-double-compare-added-original table {
+    border: 3px solid;
+  }
+}

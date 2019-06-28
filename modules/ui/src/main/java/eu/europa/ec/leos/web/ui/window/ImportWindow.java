@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,12 +22,12 @@ import com.vaadin.icons.VaadinIcons;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.*;
-import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.ui.extension.ImportElementExtension;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.model.DocType;
 import eu.europa.ec.leos.web.model.SearchCriteriaVO;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 
 import java.util.ArrayList;
 import java.util.Arrays;

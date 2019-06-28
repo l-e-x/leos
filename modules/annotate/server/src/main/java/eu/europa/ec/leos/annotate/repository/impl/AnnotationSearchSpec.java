@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.repository.impl;
 
+import eu.europa.ec.leos.annotate.model.MetadataIdsAndStatuses;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.criteria.CriteriaBuilder;
@@ -25,87 +28,122 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Search specification class for searching for Annotation objects (those not being replies!)
+ * Search specification class for all search models: search depending on user ID(s), metadata IDs, and annotation statuses
  */
 public class AnnotationSearchSpec implements Specification<Annotation> {
+
+    private static final Logger LOG = LoggerFactory.getLogger(AnnotationSearchSpec.class);
 
     // -------------------------------------
     // Private variables
     // -------------------------------------
 
-    private long executingUserId;
-    private Long optionalUserIdToFilter;
-    private long documentId;
-    private long groupId;
-    private List<Long> userIdsOfThisGroup;
+    private final long executingUserId;
+    private final Long optionalUserIdToFilter;
+    private final List<MetadataIdsAndStatuses> metadataIdsAndStatuses;
 
     // -------------------------------------
     // Constructor
     // -------------------------------------
-    
+
     /**
      * receives the following parameters:
      * 
      * @param executingUserId
      *        the ID of the user running the search - influences what is visible to him
-     * @param documentId
-     *        the ID of the document to which annotations belong to
-     * @param groupId
-     *        the ID group in which the user posted his annotations 
      * @param optionalUserIdToFilter
      *        optional user ID if only annotations of a specific user are wanted
-     * @param userIdsOfThisGroup
-     *        the IDs of other users being member of the desired group
+     * @param metadataAndStatus
+     *        list of IDs of associate metadata sets of the annotations (implicitly replaces groupId and documentId), combined with statuses wanted
      */
-    public AnnotationSearchSpec(long executingUserId, long documentId, long groupId, Long optionalUserIdToFilter, List<Long> userIdsOfThisGroup) {
+    public AnnotationSearchSpec(final long executingUserId, final Long optionalUserIdToFilter,
+            final List<MetadataIdsAndStatuses> metadataAndStatus) {
 
         this.executingUserId = executingUserId;
-        this.documentId = documentId;
-        this.groupId = groupId;
         this.optionalUserIdToFilter = optionalUserIdToFilter;
-        this.userIdsOfThisGroup = userIdsOfThisGroup;
+        this.metadataIdsAndStatuses = metadataAndStatus;
     }
 
     // -------------------------------------
     // Search predicate
     // -------------------------------------
     @Override
-    public Predicate toPredicate(Root<Annotation> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+    @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.OptimizableToArrayCall"})
+    public Predicate toPredicate(final Root<Annotation> root, final CriteriaQuery<?> query, final CriteriaBuilder critBuilder) {
 
-        List<Predicate> predicates = new ArrayList<>();
+        final List<Predicate> predicates = new ArrayList<>();
 
-        // filter for mandatory document and group IDs
-        predicates.add(cb.equal(root.get("documentId"), this.documentId));
-        predicates.add(cb.equal(root.get("groupId"), this.groupId));
+        // note: we do not filter for documentId and groupId any more since Metadata = Document x Group
+        // i.e. by filtering on metadata below, we implicitly filter by Document and Group
 
         // filter for a user ID, if requested
         if (this.optionalUserIdToFilter != null) {
-            predicates.add(cb.equal(root.get("userId"), this.optionalUserIdToFilter));
+            LOG.trace("filter userId={}", this.optionalUserIdToFilter);
+            predicates.add(critBuilder.equal(root.get("userId"), this.optionalUserIdToFilter));
         }
 
+        // filter for metadata and status
+        // we have a list of metadata x status pairs; they should all be OR-combined,
+        // i.e. (meta1 AND status1) OR (meta2 AND status2) OR ... (metaN AND statusN)
+        final List<Predicate> metadataStatusPreds = new ArrayList<Predicate>();
+        for (final MetadataIdsAndStatuses mias : this.metadataIdsAndStatuses) {
+
+            Predicate metaPred;
+            LOG.trace("filter metadataIds={}", mias.getMetadataIds().toString());
+            if (mias.getMetadataIds().size() > 1) {
+                metaPred = root.get("metadataId").in(mias.getMetadataIds());
+            } else {
+                // small fine-tuning of the internal generated query if there is only one element; becomes slightly more efficient this way
+                metaPred = critBuilder.equal(root.get("metadataId"), mias.getMetadataIds().get(0));
+            }
+
+            // the annotations must have a particular status (or one of a given list of possible statuses)
+            LOG.trace("filter status={}", mias.getStatuses().toString());
+            Predicate statusPred;
+            if (mias.getStatuses().size() > 1) {
+                statusPred = root.get("status").in(mias.getStatuses());
+            } else {
+                statusPred = critBuilder.equal(root.get("status"), mias.getStatuses().get(0));
+            }
+
+            metadataStatusPreds.add(critBuilder.and(metaPred, statusPred));
+        }
+        // combine all metadata/status items with OR, and add it to the global AND criteria list
+        predicates.add(critBuilder.or(metadataStatusPreds.toArray(new Predicate[0])));
+
         // the rootAnnotationId must be empty - this denotes that annotations are wanted only (i.e. no replies)
-        predicates.add(cb.isNull(root.get("rootAnnotationId")));
+        LOG.trace("filter rootAnnotationId is null");
+        predicates.add(critBuilder.isNull(root.get("rootAnnotationId")));
 
         // predicate stating whether the executing user has the permission to see an annotation
-        Predicate hasPermissionToSee = cb.or(
+        LOG.trace("filter userId={} OR shared", this.executingUserId);
+        final Predicate hasPermissionToSee = critBuilder.or(
 
                 // first possibility: if the requesting user created the annotation, then he may see it without further restrictions
                 // aka: annot.getUser().getId().equals(executingUserId)
-                cb.equal(root.get("userId"), this.executingUserId),
+                critBuilder.equal(root.get("userId"), this.executingUserId),
 
-                // second possibility: annotation must be
-                // a) shared (aka: annot.isShared())
-                // and
-                // b) user must be member of the group in which the annotation was published
-                // aka: groupService.isUserMemberOfGroup(user, annot.getGroup())
-                cb.and(cb.isTrue(root.get("shared")),
-                        root.get("userId").in(this.userIdsOfThisGroup)));
+                // second possibility: annotation must be shared (aka: annot.isShared())
+                // note: previously, we also checked if the user was member of the group in which the annotation was published
+                // (aka: groupService.isUserMemberOfGroup(user, annot.getGroup()))
+                // this check has been externalised, search is skipped if user is not member
+                critBuilder.isTrue(root.get("shared")));
         predicates.add(hasPermissionToSee);
 
-        return andTogether(predicates, cb);
+        return andTogether(predicates, critBuilder);
     }
 
-    private Predicate andTogether(List<Predicate> predicates, CriteriaBuilder cb) {
-        return cb.and(predicates.toArray(new Predicate[0]));
+    /**
+     * combines given individual predicates as AND predicates
+     * 
+     * @param predicates list of predicates to be combined
+     * @param critBuilder {@link CriteriaBuilder} doing the operation
+     * 
+     * @return combined {@link Predicate}
+     */
+    @SuppressWarnings("PMD.OptimizableToArrayCall")
+    private Predicate andTogether(final List<Predicate> predicates, final CriteriaBuilder critBuilder) {
+        return critBuilder.and(predicates.toArray(new Predicate[0]));
     }
+
 }

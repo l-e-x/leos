@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
-import java.util.HashMap;
+import eu.europa.ec.leos.annotate.Generated;
+import eu.europa.ec.leos.annotate.model.SimpleMetadata;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -25,7 +27,7 @@ public class JsonAnnotationDocument {
 
     private String title;
     private List<JsonAnnotationDocumentLink> link;
-    private HashMap<String, String> metadata;
+    private SimpleMetadata metadata;
 
     // -------------------------------------
     // Getters & setters
@@ -35,7 +37,7 @@ public class JsonAnnotationDocument {
         return title;
     }
 
-    public void setTitle(String title) {
+    public void setTitle(final String title) {
         this.title = title;
     }
 
@@ -43,15 +45,15 @@ public class JsonAnnotationDocument {
         return link;
     }
 
-    public void setLink(List<JsonAnnotationDocumentLink> link) {
+    public void setLink(final List<JsonAnnotationDocumentLink> link) {
         this.link = link;
     }
 
-    public HashMap<String, String> getMetadata() {
+    public SimpleMetadata getMetadata() {
         return metadata;
     }
 
-    public void setMetadata(HashMap<String, String> metadata) {
+    public void setMetadata(final SimpleMetadata metadata) {
         this.metadata = metadata;
     }
 
@@ -59,13 +61,15 @@ public class JsonAnnotationDocument {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(title, link);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

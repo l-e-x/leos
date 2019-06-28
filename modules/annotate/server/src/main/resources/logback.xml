@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -15,6 +15,8 @@
 
 -->
 <configuration debug="false" scan="true" scanPeriod="5 minutes">
+    
+    <property resource="anot.properties" />
     <!-- Ignore or print logback internal status messages on the console -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
 
@@ -23,7 +25,7 @@
         <resetJUL>true</resetJUL>
     </contextListener>
 
-    <contextName>Annotate</contextName>
+    <contextName>${anot.log.contextName}</contextName>
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -34,7 +36,7 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>./logs/annotate-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${anot.log.path}/${anot.log.filePrefix}-%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 15 days' worth of history -->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -47,7 +49,7 @@
     <appender name="ADMINLOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>./logs/annotate-admin-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${anot.log.path}/${anot.log.filePrefix}-admin-%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 15 days' worth of history -->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -57,11 +59,9 @@
         </encoder>
     </appender>
 
-    <logger name="eu.europa.ec.leos.annotate" level="@log.level@"/>
-
-    <!-- <logger name="org.hibernate" level="DEBUG" /> -->
+    <logger name="eu.europa.ec.leos.annotate" level="${anot.log.level}"/>
     
-    <root level="INFO">
+    <root level="${anot.stdout.log.level}">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>

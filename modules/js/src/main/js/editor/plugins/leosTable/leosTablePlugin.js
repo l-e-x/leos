@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -58,6 +58,7 @@ define(function leosTablePluginModule(require) {
                 ck.editor.removeMenuItem('tablecell_insertAfter'); 
                 ck.editor.removeMenuItem('tablecell_delete'); 
                 ck.editor.removeMenuItem('tablecell_properties'); 
+                ck.editor.getCommand('tableDelete').exec = _tableDelete.bind(undefined, ck.editor);
             });
             editor.on('selectionChange', _onSelectionChange);
 
@@ -76,7 +77,28 @@ define(function leosTablePluginModule(require) {
             });
         }
     };
-
+    
+    function _tableDelete(editor) { // This is a copy of ckeditor plugins/table/plugin.js 'tableDelete' exec command function and modified
+		var path = editor.elementPath(), // to avoid remove 'li' parent table element (check parent condition, 'li' element was added)
+		table = path.contains( 'table', 1 );
+		
+		if ( !table )
+			return;
+		
+		// If the table's parent has only one child remove it as well (unless it's a table cell, li element or the editable element)
+		//(https://dev.ckeditor.com/ticket/5416, https://dev.ckeditor.com/ticket/6289, https://dev.ckeditor.com/ticket/12110)
+		var parent = table.getParent(),
+			editable = editor.editable();
+		
+		if ( parent.getChildCount() == 1 && !parent.is( 'td', 'th' , 'li' ) && !parent.equals( editable ) )
+			table = parent;
+		
+		var range = editor.createRange();
+		range.moveToPosition( table, CKEDITOR.POSITION_BEFORE_START );
+		table.remove();
+		range.select();
+	}
+    
     function _onSelectionChange(event) {
         leosCommandStateHandler.changeCommandState(event, 'table', changeStateElements);
     }
@@ -113,7 +135,7 @@ define(function leosTablePluginModule(require) {
             akn : 'table',
             html : 'table',
             attr : [ {
-                akn : 'GUID',
+                akn : 'xml:id',
                 html : 'id',
             }, {
                 akn : "leos:origin",
@@ -140,7 +162,7 @@ define(function leosTablePluginModule(require) {
                 akn : 'tr',
                 html : 'tr',
                 attr : [{
-                    akn : 'GUID',
+                    akn : 'xml:id',
                     html : 'id',
                 },{
                     akn : "leos:origin",
@@ -165,7 +187,7 @@ define(function leosTablePluginModule(require) {
                         akn : 'style',
                         html : 'style',
                     },{
-                        akn : 'GUID',
+                        akn : 'xml:id',
                         html : 'id',
                     },{
                         akn : "leos:origin",

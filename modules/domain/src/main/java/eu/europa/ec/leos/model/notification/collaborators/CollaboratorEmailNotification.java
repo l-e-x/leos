@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,28 +13,26 @@
  */
 package eu.europa.ec.leos.model.notification.collaborators;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.notification.EmailNotification;
 import eu.europa.ec.leos.model.user.User;
 
 abstract public class CollaboratorEmailNotification implements EmailNotification {
     private List<String> recipients = new ArrayList();
-    private LeosAuthority leosAuthority;
+    private String leosAuthority;
     private String leosAuthorityName;
     private String link;
     private String documentId;
     private User recipient;
     private String title;
-    private String owners;
-    private String reviewers;
-    private String contributors;
     private String emailBody;
     private String emailSubject;
+    private String collaboratorPlural;
+    private Map<String, String> collaboratorsMap = new LinkedHashMap<>();
+    private Map<String, String> collaboratorNoteMap = new HashMap<>();
     
-    public CollaboratorEmailNotification(User recipient, LeosAuthority leosAuthority, String documentId, String link) {
+    public CollaboratorEmailNotification(User recipient, String leosAuthority, String documentId, String link) {
         this.documentId = documentId;
         this.link = link;
         this.leosAuthority = leosAuthority;
@@ -71,7 +69,7 @@ abstract public class CollaboratorEmailNotification implements EmailNotification
         return link;
     }
 
-    public LeosAuthority getLeosAuthority() {
+    public String getLeosAuthority() {
         return leosAuthority;
     }
 
@@ -90,30 +88,6 @@ abstract public class CollaboratorEmailNotification implements EmailNotification
     public void setTitle(String title) {
         this.title = title;
     }
-
-    public String getOwners() {
-        return owners;
-    }
-
-    public void setOwners(String owners) {
-        this.owners = owners;
-    }
-
-    public String getReviewers() {
-        return reviewers;
-    }
-
-    public void setReviewers(String reviewers) {
-        this.reviewers = reviewers;
-    }
-
-    public String getContributors() {
-        return contributors;
-    }
-
-    public void setContributors(String contributors) {
-        this.contributors = contributors;
-    }
     
     public void setEmailBody(String emailBody) {
         this.emailBody = emailBody;
@@ -121,6 +95,22 @@ abstract public class CollaboratorEmailNotification implements EmailNotification
     
     public void setEmailSubject(String emailSubject) {
         this.emailSubject = emailSubject;
+    }
+
+    public Map<String, String> getCollaboratorsMap() {
+        return collaboratorsMap;
+    }
+
+    public Map<String, String> getCollaboratorNoteMap() {
+        return collaboratorNoteMap;
+    }
+
+    public String getCollaboratorPlural() {
+        return collaboratorPlural;
+    }
+
+    public void setCollaboratorPlural(String collaboratorPlural) {
+        this.collaboratorPlural = collaboratorPlural;
     }
 
     abstract public String getEmailSubjectKey();

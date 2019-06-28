@@ -5,7 +5,12 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
                            http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
-    
+
+    <sec:http pattern="${leos.api.filter.processor.url}" entry-point-ref="restAuthenticationEntryPoint" create-session="stateless">
+        <sec:csrf disabled="true"/>
+        <sec:custom-filter after="PRE_AUTH_FILTER" ref="leosApiAuthenticationFilter"/>
+    </sec:http>
+
     <!-- Routing all requests to spring -->
     <sec:http use-expressions="true" entry-point-ref="http403EntryPoint">
         <sec:custom-filter after="PRE_AUTH_FILTER" ref="jeePreAuthenticatedFilter"/>
@@ -17,7 +22,19 @@
         </sec:headers>
     </sec:http>
 
-    <bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint"/>
+    <bean id="leosApiAuthenticationFilter" class="eu.europa.ec.leos.api.auth.LeosApiAuthenticationFilter">
+        <constructor-arg value="${leos.api.filter.processor.url}" />
+        <constructor-arg ref="tokenService" />
+        <property name="authenticationManager" ref="authenticationManager" />
+        <property name="authenticationSuccessHandler" ref="leosApiAuthSuccessHandler" />
+    </bean>
+
+    <bean id="tokenService" class="eu.europa.ec.leos.security.JwtTokenService"/>
+
+   <bean id="restAuthenticationEntryPoint" class="eu.europa.ec.leos.api.auth.RestAuthenticationEntryPoint"/>
+   <bean id="leosApiAuthSuccessHandler" class="eu.europa.ec.leos.api.auth.LeosApiAuthSuccessHandler"/>
+
+   <bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint"/>
     
     <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
         <property name="targetClass" value="org.springframework.security.core.context.SecurityContextHolder" />
@@ -32,8 +49,9 @@
     <!-- J2EE pre-authentication filter is applied on any request coming via DelegatingFilterProxy -->
     <bean id="jeePreAuthenticatedFilter" class="org.springframework.security.web.authentication.preauth.j2ee.J2eePreAuthenticatedProcessingFilter">
         <property name="authenticationManager" ref="authenticationManager"/>
-        <property name="continueFilterChainOnUnsuccessfulAuthentication" value="false"/>
+        <property name="continueFilterChainOnUnsuccessfulAuthentication" value="true"/>
         <property name="authenticationDetailsSource" ref="authenticationDetailsSource"/>
+        <property name="authenticationFailureHandler" ref="jeePreAuthFailureHandler"/>
     </bean>
 
     <!-- Get the web.xml roles and populate the matching roles in Authentication object-->
@@ -47,6 +65,7 @@
 
     <!-- preauthAuthProvider pulls authorities from the Authentication object and populate then in user details object-->
     <sec:authentication-manager alias="authenticationManager">
+        <sec:authentication-provider ref="leosApiAuthenticationProvider"/>
         <sec:authentication-provider ref="preauthAuthProvider"/>
     </sec:authentication-manager>
 
@@ -55,11 +74,19 @@
         <property name="preAuthenticatedUserDetailsService" ref="leosSecurityUserService"/>
     </bean>
 
-    <!-- Service to allow custom loading of user details and authorities -->
+     <!-- Service to allow custom loading of user details and authorities -->
     <bean id="leosSecurityUserService" class="eu.europa.ec.leos.security.LeosSecurityUserService">
         <constructor-arg>
             <bean class="eu.europa.ec.leos.integration.rest.UsersClientImpl"/>
         </constructor-arg>
+    </bean>
+
+    <bean id="leosApiAuthenticationProvider"
+          class="eu.europa.ec.leos.api.auth.LeosApiAuthenticationProvider">
+    </bean>
+
+    <bean id="jeePreAuthFailureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+        <property name="useForward" value="true"/>
     </bean>
 
     <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AUTHORIZATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
@@ -72,13 +99,5 @@
         <!--Override default role prefix set by RoleVoter -->
         <property name="defaultRolePrefix" value=""/>
     </bean>
-    
-    <!-- This bean will be injected to RoleHierarchyVoter to specify the role hierarchy rules-->
-    <bean id="roleHierarchy" class="org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl">
-        <property name="hierarchy">
-            <value>
-                ADMIN > SUPPORT
-            </value>
-        </property>
-    </bean>
+
 </beans>

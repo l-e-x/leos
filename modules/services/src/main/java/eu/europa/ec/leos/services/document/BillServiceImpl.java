@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,9 +15,9 @@ package eu.europa.ec.leos.services.document;
 
 import com.google.common.base.Stopwatch;
 import cool.graph.cuid.Cuid;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Bill;
-import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.repository.document.BillRepository;
 import eu.europa.ec.leos.repository.store.PackageRepository;
 import eu.europa.ec.leos.services.content.processor.AttachmentProcessor;
@@ -27,14 +27,10 @@ import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import eu.europa.ec.leos.services.validation.ValidationService;
-import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.LegalTextTocItemType;
-
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -43,21 +39,21 @@ import java.util.concurrent.TimeUnit;
 
 import static eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper.createValueMap;
 
-@Service
-public class BillServiceImpl implements BillService {
+public abstract class BillServiceImpl implements BillService {
 
     private static final Logger LOG = LoggerFactory.getLogger(BillServiceImpl.class);
     private static final String BILL_NAME_PREFIX = "bill_";
+    private static final String BILL_DOC_EXTENSION = ".xml";
 
-    private final BillRepository billRepository;
-    private final PackageRepository packageRepository;
-    private final XmlNodeProcessor xmlNodeProcessor;
-    private final XmlContentProcessor xmlContentProcessor;
-    private final XmlNodeConfigHelper xmlNodeConfigHelper;
-    private final AttachmentProcessor attachmentProcessor;
-    private final ValidationService validationService;
-    private final DocumentVOProvider documentVOProvider;
-    private final NumberProcessor numberingProcessor;
+    protected final BillRepository billRepository;
+    protected final PackageRepository packageRepository;
+    protected final XmlNodeProcessor xmlNodeProcessor;
+    protected final XmlContentProcessor xmlContentProcessor;
+    protected final XmlNodeConfigHelper xmlNodeConfigHelper;
+    protected final AttachmentProcessor attachmentProcessor;
+    protected final ValidationService validationService;
+    protected final DocumentVOProvider documentVOProvider;
+    protected final NumberProcessor numberingProcessor;
 
     BillServiceImpl(BillRepository billRepository, PackageRepository packageRepository,
                     XmlNodeProcessor xmlNodeProcessor, XmlContentProcessor xmlContentProcessor,
@@ -82,6 +78,15 @@ public class BillServiceImpl implements BillService {
         Bill bill = billRepository.createBill(templateId, path, name, metadata);
         byte[] updatedBytes = updateDataInXml((content==null)? getContent(bill) : content, metadata);
         return billRepository.updateBill(bill.getId(), metadata, updatedBytes, false, actionMsg);
+    }
+
+    @Override
+    public Bill createBillFromContent(String path, BillMetadata metadata, String actionMsg, byte[] content) {
+        LOG.trace("Creating Bill From Content... [path={}, metadata={}]",  path, metadata);
+        String name = generateBillName();
+        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
+        Bill bill = billRepository.createBillFromContent(path, name, metadata, content);
+        return billRepository.updateBill(bill.getId(), metadata, content, false, actionMsg);
     }
 
     @Override
@@ -120,18 +125,38 @@ public class BillServiceImpl implements BillService {
     }
 
     @Override
-    public Bill updateBill(Bill bill, BillMetadata updatedMetadata, String actionMsg) {
+    public Bill updateBill(Bill bill, BillMetadata updatedMetadata, boolean major, String comment) {
         LOG.trace("Updating Bill... [id={}, updatedMetadata={}]", bill.getId(), updatedMetadata);
         Stopwatch stopwatch = Stopwatch.createStarted();
         byte[] updatedBytes = updateDataInXml(getContent(bill), updatedMetadata); //FIXME: Do we need latest data again??
         
-        bill = billRepository.updateBill(bill.getId(), updatedMetadata, updatedBytes, false, actionMsg);
+        bill = billRepository.updateBill(bill.getId(), updatedMetadata, updatedBytes, major, comment);
         
         //call validation on document with updated content
         validationService.validateDocumentAsync(documentVOProvider.createDocumentVO(bill, updatedBytes));
         
         LOG.trace("Updated Bill ...({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return bill;
+    }
+
+    @Override
+    public Bill updateBill(String billId, BillMetadata updatedMetadata) {
+        LOG.trace("Updating Bill... [id={}, updatedMetadata={}]", billId, updatedMetadata);
+        return billRepository.updateBill(billId, updatedMetadata);
+    }
+
+    @Override
+    public Bill updateBillWithMilestoneComments(Bill bill, List<String> milestoneComments, boolean major, String comment){
+        LOG.trace("Updating Bill... [id={}, milestoneComments={}, major={}, comment={}]", bill.getId(), milestoneComments, major, comment);
+        final byte[] updatedBytes = getContent(bill);
+        bill = billRepository.updateMilestoneComments(bill.getId(), milestoneComments, updatedBytes, major, comment);
+        return bill;
+    }
+
+    @Override
+    public Bill updateBillWithMilestoneComments(String billId, List<String> milestoneComments){
+        LOG.trace("Updating Bill... [id={}, milestoneComments={}]", billId, milestoneComments);
+        return billRepository.updateMilestoneComments(billId, milestoneComments);
     }
 
     @Override
@@ -188,7 +213,7 @@ public class BillServiceImpl implements BillService {
         final Bill bill = findBill(id);
         final BillMetadata metadata = bill.getMetadata().getOrError(() -> "Bill metadata is required!");
         final Content content = bill.getContent().getOrError(() -> "Bill content is required!");
-        final byte[] contentBytes = content.getSource().getByteString().toByteArray();
+        final byte[] contentBytes = content.getSource().getBytes();
         return billRepository.updateBill(id, metadata, contentBytes, major, comment);
     }
 
@@ -197,29 +222,6 @@ public class BillServiceImpl implements BillService {
         LOG.trace("Finding Bill versions... [id={}]", id);
         //LEOS-2813 We have memory issues is we fetch the content of all versions.
         return billRepository.findBillVersions(id, false);
-    }
-
-    @Override
-    public List<TableOfContentItemVO> getTableOfContent(Bill bill) {
-        Validate.notNull(bill, "Bill is required");
-        return xmlContentProcessor.buildTableOfContent("bill", LegalTextTocItemType::getTocItemTypeFromName, getContent(bill));
-    }
-
-    @Override
-    public Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList, String actionMsg) {
-        Validate.notNull(bill, "Bill is required");
-        Validate.notNull(tocList, "Table of content list is required");
-        final BillMetadata metadata = bill.getMetadata().getOrError(() -> "Document metadata is required!");
-
-        byte[] newXmlContent;
-
-        newXmlContent = xmlContentProcessor.createDocumentContentWithNewTocList(LegalTextTocItemType::getTocItemTypeFromName, LegalTextTocItemType.BODY, tocList, getContent(bill));
-        // TODO validate bytearray for being valid xml/AKN content
-
-        newXmlContent = numberingProcessor.renumberArticles(newXmlContent, metadata.getLanguage());
-        newXmlContent = xmlContentProcessor.doXMLPostProcessing(newXmlContent);
-
-        return updateBill(bill, newXmlContent, actionMsg);
     }
 
     @Override
@@ -246,11 +248,11 @@ public class BillServiceImpl implements BillService {
     }
 
     private String generateBillName() {
-        return BILL_NAME_PREFIX + Cuid.createCuid();
+        return BILL_NAME_PREFIX + Cuid.createCuid() + BILL_DOC_EXTENSION;
     }
 
-    private byte[] getContent(Bill bill) {
+    protected byte[] getContent(Bill bill) {
         final Content content = bill.getContent().getOrError(() -> "Bill content is required!");
-        return content.getSource().getByteString().toByteArray();
+        return content.getSource().getBytes();
     }
 }

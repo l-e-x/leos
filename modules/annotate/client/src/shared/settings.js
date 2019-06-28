@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,18 +44,29 @@ function jsonConfigsFrom(document) {
   var config = {};
   var settingsElements =
     document.querySelectorAll('script.js-hypothesis-config');
-
-  for (var i=0; i < settingsElements.length; i++) {
-    var settings;
-    try {
-      settings = JSON.parse(settingsElements[i].textContent);
-    } catch (err) {
-      console.warn('Could not parse settings from js-hypothesis-config tags', err);
-      settings = {};
-    }
-    assign(config, settings);
+  
+  if (settingsElements.length) {
+	  for (var i=0; i < settingsElements.length; i++) {
+		  var settings;
+		  try {
+			  settings = JSON.parse(settingsElements[i].textContent);
+		  } catch (err) {
+			  console.warn('Could not parse settings from js-hypothesis-config tags', err);
+			  settings = {};
+		  }
+		  assign(config, settings);
+	  }
+  } else {
+	  // LEOS: For sidebar application the document is the iframe and then script.js-hypothesis-config
+	  // is not on it. In this case configuration is taken from documentURI.
+	  var url = new URL(document.documentURI);
+	  var searchParams = new URLSearchParams(url.search);
+	  if (searchParams.get('config') != null) {
+		  config = JSON.parse(searchParams.get('config'));
+		  assign(config, {'sidebarAppUrl' : document.baseURI + 'app.html'});
+	  }
   }
-
+  
   return config;
 }
 

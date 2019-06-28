@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,17 +13,41 @@
  */
 package eu.europa.ec.leos.ui.extension;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.JavaScript;
 import com.vaadin.ui.AbstractComponent;
+import eu.europa.ec.leos.web.event.view.document.CancelActionElementRequestEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 
 @JavaScript({"vaadin://../js/ui/extension/actionManagerConnector.js" + LeosCacheToken.TOKEN })
 public class ActionManagerExtension<T extends AbstractComponent> extends LeosJavaScriptExtension {
 
     private static final long serialVersionUID = 1L;
+    private EventBus eventBus;
 
-    public ActionManagerExtension(T target) {
+    public ActionManagerExtension(T target, String instanceType, EventBus eventBus) {
         super();
+        getState(false).instanceType = instanceType;
+        this.eventBus = eventBus;
         extend(target);
+    }
+
+    @Override
+    public void attach() {
+        super.attach();
+        eventBus.register(this);
+    }
+
+    @Override
+    public void detach() {
+        eventBus.unregister(this);
+        super.detach();
+    }
+
+    @Subscribe
+    public void cancelActionElement(CancelActionElementRequestEvent event) {
+    	LOG.trace("Cancel action element...");
+        callFunction("enableActions", event.getElementId());
     }
 }

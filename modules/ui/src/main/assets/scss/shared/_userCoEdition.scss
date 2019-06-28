@@ -1,0 +1,61 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
+
+$LIGHT_BLUE:#7bd2f6;
+$GREY_COLOUR:#707070;
+
+%elementUserCoEdition {
+
+    .leos-user-coedition {
+        position: absolute;
+        width: 20px;
+        margin-top: 8px;
+        user-select: none;
+        color: $HEADER_BLUE;
+        display: inline-block;
+        * {
+            font-weight: normal;
+        }
+    }
+
+    .leos-user-coedition-self-user {
+        color: $GREY_COLOUR;
+    }
+
+    .leos-user-coedition div {
+        position: absolute;
+        padding: 3px 7px;
+        width: auto;
+        white-space: nowrap;
+        font-size: 12px;
+        font-family: "Open Sans";
+        color: white;
+        background-color: rgba(51, 51, 51, 0.9);
+        -webkit-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+        display: none;
+        z-index: 999999;
+    }
+
+    .leos-user-coedition a {
+        color: white;
+        text-decoration: underline;
+    }
+
+    .leos-user-coedition a:hover {
+        color: $LIGHT_BLUE;
+    }
+
+}

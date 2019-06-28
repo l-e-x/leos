@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -38,9 +38,10 @@ define(function annotateExtensionModule(require) {
         //TODO modify the boots.js to have finer control over initialization and destruction on sidebar
         _addHostConfig(document, connector.getState().annotationContainer,
                                 connector.getState().authority,
-                                connector.getState().apiHost,
+                                connector.getState().anotHost,
+                                connector.getState().anotClient,
                                 connector.getState().oauthClientId);
-        _addScript(document, connector.getState().clientUrl);
+        _addScript(document, `${connector.getState().anotClient}/boot.js`);
 
         var annotationContainerElt = document.querySelector(connector.getState().annotationContainer);
         if (annotationContainerElt) {
@@ -55,6 +56,8 @@ define(function annotateExtensionModule(require) {
         connector.receiveUserPermissions = _receiveUserPermissions;
         connector.receiveSecurityToken = _receiveSecurityToken;
         connector.receiveMergeSuggestion = _receiveMergeSuggestion;
+        connector.receiveDocumentMetadata = _receiveDocumentMetadata;
+        connector.receiveSearchMetadata = _receiveSearchMetadata;
 
         connector.stateChangeHandler = _stateChangeHandler;
 
@@ -81,12 +84,22 @@ define(function annotateExtensionModule(require) {
                         //Running rules to get txt positioning in XML tag
                         rulesEngine.process(suggestionsRules, elementToProcess, selector, context);
                         //update offsets as per text positioning in XML.
-                        selector.endOffset = context.startOffset + (selector.endOffset - selector.startOffset); //len +sO
+                        selector.endOffset = context.startOffset + escapeXml(selector.origText).length; //len +sO
                         selector.startOffset = context.startOffset;
                         if (connector.requestMergeSuggestion) {
                             connector.requestMergeSuggestion(selector);
                         }
                     }
+                }
+            };
+            connector.hostBridge.requestDocumentMetadata = function () {
+                if (connector.requestDocumentMetadata) {
+                    connector.requestDocumentMetadata();
+                }
+            };
+            connector.hostBridge.requestSearchMetadata = function () {
+                if (connector.requestSearchMetadata) {
+                    connector.requestSearchMetadata();
                 }
             };
             annotationContainerElt.hostBridge = connector.hostBridge;
@@ -132,6 +145,22 @@ define(function annotateExtensionModule(require) {
         }
     }
 
+    function _receiveDocumentMetadata(metadata) {
+        var connector = this;
+        log.debug("Document Metadata received and being sent to annotate..!");
+        if (connector.hostBridge && connector.hostBridge.responseDocumentMetadata && typeof connector.hostBridge.responseDocumentMetadata === 'function') {
+            connector.hostBridge.responseDocumentMetadata(metadata)
+        }
+    }
+
+    function _receiveSearchMetadata(metadatasets) {
+        var connector = this;
+        log.debug("Search Metadata received and being sent to annotate..!");
+        if (connector.hostBridge && connector.hostBridge.responseSearchMetadata && typeof connector.hostBridge.responseSearchMetadata === 'function') {
+            connector.hostBridge.responseSearchMetadata(metadatasets)
+        }
+    }
+
     function _stateChangeHandler(state) {
         var connector = this;
         log.debug("State change event and being propagated to annotate..!");
@@ -163,23 +192,27 @@ define(function annotateExtensionModule(require) {
 
     /* this method creates the config which would be used by annotate client when it instantiate
      * below config will significantly modify the way client will behave*/
-    function _addHostConfig(doc, annotationContainer, authority, apiHost, oauthClientId) {
+    function _addHostConfig(doc, annotationContainer, authority, anotHost, anotClient, oauthClientId) {
         var script = doc.createElement('script');
         script.type = 'application/json';
         script.className = 'js-hypothesis-config';
-
+        var webSocketUrl = anotHost.replace('https','wss').replace('http','ws')+"/ws";
         script.innerHTML = `{
                                 "leosDocumentRootNode": "akomantoso",
                                 "annotationContainer": "${annotationContainer}",
                                 "ignoredTags": ["div"],
-                                "allowedSelectorTags": "a.ref2link-generated",
-                                "editableAttribute": "leos\:editable",
+                                "allowedSelectorTags": "a.ref2link-generated, span.leos-content-soft-new",
+                                "editableSelector": "[leos\\\\:editable=true],article,heading,recitals,citations",
                                 "notAllowedSuggestSelector": "num:not([leos\\\\:origin='cn']), guidance, heading:contains('Entry into force')",
+                                "displayMetadataCondition": {"ISCReference": "Consultation Reference", "responseVersion": "Response Version", "responseId": "Consulted Unit"},
                                 "oauthClientId": "${oauthClientId}",
+                                "assetRoot": "${anotClient}",
+                                "sidebarAppUrl": "${anotHost}/app.html",
                                 "services": [{
                                     "authority": "${authority}",
-                                    "apiUrl": "${apiHost}"
-                                }]
+                                    "apiUrl": "${anotHost}/api/",
+                                    "websocketUrl":"${webSocketUrl}"
+                                 }]
                             }`;
         doc.body.appendChild(script);
     }
@@ -205,19 +238,32 @@ define(function annotateExtensionModule(require) {
         }
     }
 
+    function escapeXml(text) {
+        return text.replace(/[<>&'"]/g, function (c) {
+            switch (c) {
+                case '<': return '&lt;';
+                case '>': return '&gt;';
+                case '&': return '&amp;';
+                case '\'': return '&apos;';
+                case '"': return '&quot;';
+            }
+        });
+    }
+
     //Rules
     var suggestionsRules = {
         text: {
             $: function (selector, context) {
-                let cleanedText = this.textContent.replace(/&nbsp;/g, " ");
-                context.startOffset += cleanedText.length;
+            	context.startOffset += escapeXml(this.textContent).length;
             }
         },
         element: {
             'authorialnote': function (selector, context) {  //authorialnote
-                let data = this.getAttribute("data-tooltip");
-                context.startOffset += data.length;
-                context.startOffset -= this.textContent.length;
+                context.startOffset += escapeXml(this.getAttribute("data-tooltip")).length;
+                context.startOffset -= escapeXml(this.textContent).length;
+            },
+            '.leos-content-soft-removed': function (selector, context) {
+            	context.startOffset -= escapeXml(this.textContent).length;
             }
         }
     };

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,8 @@
  */
 package eu.europa.ec.leos.model.user;
 
+import java.util.List;
+
 public class User {
 
     private Long id;
@@ -24,13 +26,16 @@ public class User {
     private String entity;
 
     private String email;
+    
+    private List<String> roles;
 
-    public User(Long id, String login, String name, String entity, String email) {
+	public User(Long id, String login, String name, String entity, String email,List<String> roles) {
         this.id = id;
         this.login = login;
         this.name = name;
         this.entity = entity;
         this.email = email;
+        this.roles = roles;
     }
 
     public Long getId() {
@@ -69,6 +74,13 @@ public class User {
     protected void setEntity(String entity) {
         this.entity = entity;
     }
+    public List<String> getRoles() {
+		return roles;
+	}
+
+	public void setRoles(List<String> roles) {
+		this.roles = roles;
+	}
 
     @Override
     public String toString() {

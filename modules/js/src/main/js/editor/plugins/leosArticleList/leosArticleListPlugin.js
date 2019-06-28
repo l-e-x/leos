@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -741,7 +741,7 @@ define(function leosArticleListPluginModule(require) {
         var frag = nextCursor.extractContents();
 
         cursor.trim( false, true );
-        var bm = cursor.createBookmark();
+        var bm = cursor.createBookmark2();
 
         // Kill original bogus;
         var currentPath = new CKEDITOR.dom.elementPath( cursor.startContainer ),
@@ -770,10 +770,17 @@ define(function leosArticleListPluginModule(require) {
 
         // Insert fragment at the range position.
         var nextNode = cursor.startContainer.getChild( cursor.startOffset );
-        if ( nextNode )
-            frag.insertBefore( nextNode );
-        else
-            cursor.startContainer.append( frag );
+        if (nextNode){
+            var pElement = new CKEDITOR.dom.element('p');
+            pElement.append(frag);
+            pElement.insertBefore(nextNode);
+            cursor.setStart(pElement, 0);
+            cursor.setEnd(pElement, 0);
+            cursor.select();
+            bm = cursor.createBookmark2();
+       } else {
+           cursor.startContainer.append( frag );
+       }
 
         // Move the sub list nested in the next list item.
         if ( nextLi ) {

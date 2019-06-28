@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,45 +20,23 @@ define(function leosAlternativesPluginModule(require) {
     var log = require("logger");
     var $ = require("jquery");
     var CKEDITOR = require("promise!ckEditor");
-
     var pluginName = "leosAlternatives";
-
-    //TODO Done for testing purpose
-    var optionLists = "[" +
-    "    {"+
-    "        \"name\": \"listOption1\"," +
-    "        \"list\": [{" +
-    "            \"index\": \"1\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be binding in its entirety and directly applicable in all Member States.</p></content></clause>\"" +
-    "        },{" +
-    "            \"index\": \"2\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be binding in its entirety and directly applicable in the Member States in accordance with the Treaties.</p></content></clause>\"" +
-    "        }]" +
-    "    }," +
-    "    {" +
-    "        \"name\": \"listOption2\"," +
-    "        \"list\": [{" +
-    "            \"index\": \"1\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be tested.</p></content></clause>\"" +
-    "        },{" +
-    "            \"index\": \"2\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be binding in its entirety and directly applicable in the tests.</p></content></clause>\"" +
-    "        },{" +
-    "            \"index\": \"3\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be binding in test.</p></content></clause>\"" +
-    "        },{" +
-    "            \"index\": \"4\"," +
-    "            \"content\": \"<clause GUID=\\\"clause_1\\\"><content GUID=\\\"clause_1__content\\\"><p GUID=\\\"clause_1__content__p\\\">This Regulation shall be binding in its test.</p></content></clause>\"" +
-    "        }]" +
-    "    }" +
-    "]";
-
+    var optionLists = "";
+    var dialogDefinition = require("./leosAlternativesDialog");
+    var dialogCommand;
+    
     var pluginDefinition = {
+        lang: 'en',
         init : function init(editor) {
             log.debug("Initializing Alternatives plugin...");
+
+            optionLists = editor.LEOS.alternatives;
             _displayLabelsAltButtons();
 
             editor.once("receiveData",_populateAlternativesToolbar);
+            
+            pluginTools.addDialog(dialogDefinition.dialogName, dialogDefinition.initializeDialog);
+            dialogCommand = editor.addCommand(dialogDefinition.dialogName, new CKEDITOR.dialogCommand(dialogDefinition.dialogName));
         }
     };
 
@@ -104,12 +82,19 @@ define(function leosAlternativesPluginModule(require) {
         }
         return optionList;
     }
-
+    
+    function _isPredefinedAlternative(editor, optionList) {
+        var element = editor.element.$.firstChild;
+        var presentDefaultValue = optionList.list.find(option => option.content == element.innerText);
+        return presentDefaultValue != undefined;
+    }
+    
     function _populateAlternativesToolbar(event) {
         var editor = event.editor;
         var currentConfig = _getCurrentAltConfigFromAttributes(editor);
-
         var optionList = _getAlternativesConfiguration(currentConfig.optionListName);
+        var cmd;
+        
         optionList.list.forEach(function(option) {
             editor.ui.addButton(pluginName + option.index, {
                 label: "Alternative " + option.index,
@@ -118,37 +103,48 @@ define(function leosAlternativesPluginModule(require) {
             });
             if (!editor.getCommand(pluginName + option.index)) {
                 var altCommand = editor.addCommand(pluginName + option.index, {
+                    // when click over one of the Alternative tabs
                     exec: function(editor) {
-                        _updateEditor(this, editor, optionList, option.index);
+                        var isPredefinedAlternative = _isPredefinedAlternative(editor, optionList);
+                        if(isPredefinedAlternative){
+                            _updateEditor(this, editor, optionList, option.index);
+                        } else {
+                            dialogCommand.exec();
+                            
+                            cmd = this;
+                            editor.on("confirmNewAlternative", function(event){
+                                _updateEditor(cmd, editor, optionList, option.index);
+                            });
+                        }
                     }
                 });
-                altCommand.readOnly = true;
             }
         });
+        
+        editor.on('key', function(event) {
+            _unselectButton(event.editor);
+        });
+        
         if (optionList.list.length > 0) {
             editor.fire("refreshToolbar");
-            if (!editor.readOnly) {
-                editor.setReadOnly();
-            }
+            var isPredefinedAlternative = _isPredefinedAlternative(editor, optionList);
             var cmd = editor.getCommand(pluginName + currentConfig.selectOptionIndex);
-            if (cmd) {
+            if (cmd && isPredefinedAlternative) {
                 cmd.setState(CKEDITOR.TRISTATE_ON);
             }
-            _initReadOnlyMode(editor);
         }
     }
-
-    function _initReadOnlyMode(editor) {
-        editor.getCommand("leosInlineCancelDialog").readOnly = true;    //To get Close dialog activated on readOnly mode
-        editor.getCommand("inlinecancel").readOnly = true;    //To get Close button activated on readOnly mode
-        editor.getCommand("inlinesave").readOnly = true;      //To get Save button activated on readOnly mode
-        editor.on("readOnly", _setReadOnly, null, null, 0);   //To keep readOnly mode while going to another browser tab
-    }
-
-    function _setReadOnly(event) {
-        if (!event.editor.readOnly) {
-            event.editor.setReadOnly();
-        }
+    
+    function _unselectButton(editor) {
+        var currentConfig = _getCurrentAltConfigFromAttributes(editor);
+        var optionList = _getAlternativesConfiguration(currentConfig.optionListName);
+        
+        optionList.list.forEach(function(option) {
+            var currentCmd = editor.getCommand(pluginName + option.index);
+            if (currentCmd) {
+                currentCmd.setState(CKEDITOR.TRISTATE_OFF);
+            }
+        });
     }
 
     function _updateEditor(cmd, editor, optionList, index) {
@@ -166,7 +162,9 @@ define(function leosAlternativesPluginModule(require) {
                 _updateButtonState(cmd, editor, optionList);
             }
         };
-        editor.setData(option.content.replace(/\n|\r/g, ""), options);
+        var actualTag = $(editor.getData());
+        $(actualTag).find("p").html(option.content.replace(/\n|\r/g));
+        editor.setData($(actualTag)[0].outerHTML, options);
     }
 
     function _updateRootEltAttributes(editor, currentConfig, index) {
@@ -195,13 +193,12 @@ define(function leosAlternativesPluginModule(require) {
     }
 
     function _getOptionLists() {
-        log.debug("Get List Of Options..");
         return optionLists;
     }
-
+    
     // return plugin module
     var pluginModule = {
-        name : pluginName,
+        name : pluginName
     };
 
     return pluginModule;

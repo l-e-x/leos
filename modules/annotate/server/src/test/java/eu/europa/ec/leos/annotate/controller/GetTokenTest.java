@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,7 @@ package eu.europa.ec.leos.annotate.controller;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.controllers.AuthApiController;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
 import eu.europa.ec.leos.annotate.model.entity.*;
@@ -53,34 +54,17 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class GetTokenTest {
 
     private final static String LOGIN1 = "demouser"; // note: choose a user name not contained in our dummy UD-repo!
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
-
+    private static final String TOKEN_URL = "/api/token?grant_type=jwt-bearer&assertion=";
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -114,6 +98,25 @@ public class GetTokenTest {
     @Value("${user.repository.url}")
     private String repositoryUrl;
 
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -125,47 +128,57 @@ public class GetTokenTest {
     public void testGetAccessTokenSuccessful() throws Exception {
 
         final String clientId = "clientId12";
+        final String authority = "authority";
 
         // set default group here to be SpotBugs-conformant
         defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         // register client
-        authClientRepos.save(new AuthClient("desc", "thesecret", clientId, "auth"));
+        authClientRepos.save(new AuthClient("descript", "thesecret", clientId, authority));
 
         // mock the RestTemplate and inject it into the UserService
-        RestTemplate restOperations = Mockito.mock(RestTemplate.class);
+        final RestTemplate restOperations = Mockito.mock(RestTemplate.class);
         userService.setRestTemplate(restOperations);
 
-        Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new ConcurrentHashMap<String, String>();
         params.put("userId", LOGIN1);
 
         // prepare Mockito to return the desired user details
-        UserDetails details = new UserDetails(LOGIN1, (long) 45, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(LOGIN1, (long) 45, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
         Mockito.when(restOperations.getForObject(repositoryUrl, UserDetails.class, params)).thenReturn(details);
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/token?grant_type=jwt-bearer&assertion=" + authService.createToken(LOGIN1, clientId));
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(TOKEN_URL + authService.createToken(LOGIN1, clientId));
 
         // create our own ApiController and hand over required (partly mocked) services
-        MockHttpServletResponse mockResp = new MockHttpServletResponse();
-        AuthApiController controller = new AuthApiController(userService, authService);
-        ResponseEntity<Object> result = controller.getToken(builder.buildRequest(this.wac.getServletContext()), mockResp);
+        final MockHttpServletResponse mockResp = new MockHttpServletResponse();
+        final AuthApiController controller = new AuthApiController(userService, authService);
+        final ResponseEntity<Object> result = controller.getToken(builder.buildRequest(this.wac.getServletContext()), mockResp);
 
         // expected: Http 200
         Assert.assertEquals(HttpStatus.OK, result.getStatusCode());
 
         // check that a JsonTokenResponse was returned
-        JsonTokenResponse jsResponse = (JsonTokenResponse) result.getBody();
+        final JsonTokenResponse jsResponse = (JsonTokenResponse) result.getBody();
         Assert.assertNotNull(jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getAccess_token()));
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getRefresh_token()));
+
+        // check that there is a token stored in the database, which is assigned to the user and authority given
+        final List<Token> allTokens = (List<Token>) tokenRepos.findAll();
+        Assert.assertNotNull(allTokens);
+        Assert.assertEquals(1, allTokens.size());
+
+        final Token theToken = allTokens.get(0);
+        Assert.assertEquals(LOGIN1, theToken.getUser().getLogin());
+        Assert.assertEquals(authority, theToken.getAuthority());
     }
 
     /**
      * try to authenticate using token, but user is not registered in UD-repo; expected HTTP 400 and failure notice
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetAccessToken_UserUnknownInUdRepo() throws Exception {
 
@@ -178,23 +191,23 @@ public class GetTokenTest {
         authClientRepos.save(new AuthClient("desc", "secret1234", clientId, "authority"));
 
         // create user in default group
-        User user = new User(LOGIN1);
+        final User user = new User(LOGIN1);
         userRepos.save(user);
         userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/token?grant_type=jwt-bearer&assertion=" + authService.createToken(LOGIN1, clientId));
-        ResultActions result = this.mockMvc.perform(builder);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(TOKEN_URL + authService.createToken(LOGIN1, clientId));
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getUnknownUserResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
@@ -204,48 +217,50 @@ public class GetTokenTest {
     /**
      * try to receive a refresh token; expected HTTP 200 and new tokens
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetRefreshTokenSuccessful() throws Exception {
 
         final String refreshToken = UUID.randomUUID().toString();
+        final String authority = "authority";
 
         // set default group here to be SpotBugs-conformant
         defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         // create user in default group
-        User user = new User(LOGIN1);
+        final User user = new User(LOGIN1);
         userRepos.save(user);
         userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
-        tokenRepos.save(new Token(user, "acc", LocalDateTime.now(), refreshToken, LocalDateTime.now().plusMinutes(2)));
+        tokenRepos.save(new Token(user, authority, "acc", LocalDateTime.now(), refreshToken, LocalDateTime.now().plusMinutes(2)));
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/token?grant_type=refresh_token&refresh_token=" + refreshToken);
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonTokenResponse jsResponse = SerialisationHelper.deserializeJsonTokenResponse(responseString);
+        final JsonTokenResponse jsResponse = SerialisationHelper.deserializeJsonTokenResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getAccess_token()));
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getRefresh_token()));
 
         // verify that the new tokens are saved for the user
-        Token foundToken = tokenRepos.findByRefreshToken(jsResponse.getRefresh_token());
+        final Token foundToken = tokenRepos.findByRefreshToken(jsResponse.getRefresh_token());
         Assert.assertEquals(jsResponse.getAccess_token(), foundToken.getAccessToken());
         Assert.assertEquals(user.getId().longValue(), foundToken.getUserId());
+        Assert.assertEquals(authority, foundToken.getAuthority()); // new refresh token is issued for the same authority
     }
 
     /**
      * try to receive a refresh token, but the token is not registered for any user; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetRefreshToken_RefreshTokenUnknown() throws Exception {
 
@@ -255,33 +270,33 @@ public class GetTokenTest {
         defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         // create user in default group, but do not save a refresh token for him
-        User user = new User(LOGIN1);
+        final User user = new User(LOGIN1);
         userRepos.save(user);
         userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/token?grant_type=refresh_token&refresh_token=" + refreshToken);
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getInvalidRefreshTokenResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError_description()));
     }
-    
+
     /**
      * try to receive a refresh token, but the token registered for the user is expired already; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetRefreshToken_RefreshTokenExpired() throws Exception {
 
@@ -291,26 +306,26 @@ public class GetTokenTest {
         defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         // create user in default group, and save a refresh token for him that is already expired
-        User user = new User(LOGIN1);
+        final User user = new User(LOGIN1);
         userRepos.save(user);
         userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
-        
-        tokenRepos.save(new Token(user, "acc", LocalDateTime.now(), refreshToken, 
-                LocalDateTime.now().minusMinutes(2))); // expired 
+
+        tokenRepos.save(new Token(user, "auth", "acc", LocalDateTime.now(), refreshToken,
+                LocalDateTime.now().minusMinutes(2))); // expired
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/token?grant_type=refresh_token&refresh_token=" + refreshToken);
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getRefreshTokenExpiredResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
@@ -320,23 +335,23 @@ public class GetTokenTest {
     /**
      * try a /token request, but using unsupported grant_type; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetToken_UnsupportedGrantType() throws Exception {
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/token?grant_type=somegrant");
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getUnsupportedGrantTypeResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
@@ -346,23 +361,22 @@ public class GetTokenTest {
     /**
      * try a /token request, but without specifying grant_type; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetToken_NoGrantType() throws Exception {
 
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/token");
-        ResultActions result = this.mockMvc.perform(builder);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/token");
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getInvalidRequestResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
@@ -372,7 +386,7 @@ public class GetTokenTest {
     /**
      * try a /token request, but JWT token cannot be decoded by any registered client; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetToken_UnknownClient() throws Exception {
 
@@ -380,32 +394,32 @@ public class GetTokenTest {
 
         // register client to create token, then unregister the client again
         authClientRepos.save(new AuthClient("desc", "thesecret", tempClientId, "auth"));
-        String tokenToUse = authService.createToken(LOGIN1, tempClientId);
+        final String tokenToUse = authService.createToken(LOGIN1, tempClientId);
         authClientRepos.deleteAll();
-        
+
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/token?grant_type=jwt-bearer&assertion=" + tokenToUse);
-        ResultActions result = this.mockMvc.perform(builder);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(TOKEN_URL + tokenToUse);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
-        Assert.assertNotNull(jsResponse); 
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getUnknownClientResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError_description()));
     }
-    
+
     /**
      * try a /token request, but JWT token is issued for an authority that the registered client may not authenticate; expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetToken_ClientNotAuthorizedForAuthority() throws Exception {
 
@@ -414,24 +428,24 @@ public class GetTokenTest {
         // register client to create token, then change the authorities that the registered client may authenticate
         AuthClient theClient = new AuthClient("desc", "thesecret", tempClientId, "auth");
         theClient = authClientRepos.save(theClient);
-        String tokenToUse = authService.createToken(LOGIN1, tempClientId);
+        final String tokenToUse = authService.createToken(LOGIN1, tempClientId);
 
         theClient.setAuthorities("anotherAuthority");
         authClientRepos.save(theClient);
-        
+
         // send token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/token?grant_type=jwt-bearer&assertion=" + tokenToUse);
-        ResultActions result = this.mockMvc.perform(builder);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(TOKEN_URL + tokenToUse);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that a JsonAuthenticationFailure was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getTokenInvalidForClientAuthorityResult(), jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getError()));

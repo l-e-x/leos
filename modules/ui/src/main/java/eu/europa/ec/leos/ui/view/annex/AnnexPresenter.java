@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,44 +16,51 @@ package eu.europa.ec.leos.ui.view.annex;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.server.VaadinServletService;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Annex;
-import eu.europa.ec.leos.domain.document.LeosMetadata.AnnexMetadata;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.event.DocumentUpdatedByCoEditorEvent;
+import eu.europa.ec.leos.model.event.UpdateUserInfoEvent;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.content.processor.AnnexProcessor;
+import eu.europa.ec.leos.services.content.processor.DocumentContentService;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
-import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.services.content.toc.TocRulesService;
 import eu.europa.ec.leos.services.document.AnnexService;
+import eu.europa.ec.leos.ui.event.CloseBrowserRequestEvent;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
+import eu.europa.ec.leos.ui.event.doubleCompare.DoubleCompareContentRequestEvent;
+import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataRequest;
+import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataResponse;
+import eu.europa.ec.leos.ui.event.metadata.SearchMetadataRequest;
+import eu.europa.ec.leos.ui.event.metadata.SearchMetadataResponse;
 import eu.europa.ec.leos.ui.event.toc.EditTocRequestEvent;
 import eu.europa.ec.leos.ui.event.toc.SaveTocRequestEvent;
+import eu.europa.ec.leos.ui.model.AnnotateMetadata;
+import eu.europa.ec.leos.ui.support.CoEditionHelper;
 import eu.europa.ec.leos.ui.view.AbstractLeosPresenter;
 import eu.europa.ec.leos.ui.view.ComparisonDelegate;
-import eu.europa.ec.leos.usecases.document.ProposalContext;
+import eu.europa.ec.leos.usecases.document.CollectionContext;
+import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent.Type;
-import eu.europa.ec.leos.web.event.component.ComparisonRequestEvent;
-import eu.europa.ec.leos.web.event.component.MarkedContentRequestEvent;
-import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
-import eu.europa.ec.leos.web.event.component.VersionListResponseEvent;
+import eu.europa.ec.leos.web.event.component.*;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
+import eu.europa.ec.leos.web.event.window.CloseTocEditorEvent;
 import eu.europa.ec.leos.web.event.window.ShowTimeLineWindowEvent;
-import eu.europa.ec.leos.web.model.CollaboratorVO;
-import eu.europa.ec.leos.web.model.UserVO;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.UuidHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import io.atlassian.fugue.Option;
@@ -65,9 +72,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Provider;
 import javax.servlet.http.HttpSession;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -81,15 +85,17 @@ class AnnexPresenter extends AbstractLeosPresenter {
     private final AnnexService annexService;
     private final ElementProcessor<Annex> elementProcessor;
     private final AnnexProcessor annexProcessor;
-    private final TransformationService transformationService;
+    private final DocumentContentService documentContentService;
     private final UrlBuilder urlBuilder;
     private final ComparisonDelegate<Annex> comparisonDelegate;
     private final UserHelper userHelper;
     private final MessageHelper messageHelper;
     private final TocRulesService tocRulesService;
-    private final Provider<ProposalContext> proposalContextProvider;
+    private final Provider<CollectionContext> proposalContextProvider;
+    private final CoEditionHelper coEditionHelper;
 
     private static final String ANNEX_BLOCK_TAG = "division";
+    private String strDocumentVersionSeriesId;
     private final static SimpleDateFormat dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
     
     @Autowired
@@ -97,37 +103,48 @@ class AnnexPresenter extends AbstractLeosPresenter {
             AnnexScreen annexScreen,
             AnnexService annexService,
             ElementProcessor<Annex> elementProcessor, AnnexProcessor annexProcessor,
-            TransformationService transformationService, UrlBuilder urlBuilder, 
+            DocumentContentService documentContentService, UrlBuilder urlBuilder,
             ComparisonDelegate<Annex> comparisonDelegate, UserHelper userHelper, 
-            MessageHelper messageHelper, TocRulesService tocRulesService, Provider<ProposalContext> proposalContextProvider) {
-        super(securityContext, httpSession, eventBus);
+            MessageHelper messageHelper, TocRulesService tocRulesService, 
+            Provider<CollectionContext> proposalContextProvider,
+            CoEditionHelper coEditionHelper, EventBus leosApplicationEventBus, UuidHelper uuidHelper) {
+        super(securityContext, httpSession, eventBus, leosApplicationEventBus, uuidHelper);
         LOG.trace("Initializing annex presenter...");
         this.annexScreen = annexScreen;
         this.annexService = annexService;
         this.elementProcessor = elementProcessor;
         this.annexProcessor = annexProcessor;
-        this.transformationService = transformationService;
+        this.documentContentService = documentContentService;
         this.urlBuilder = urlBuilder;
         this.comparisonDelegate = comparisonDelegate;
         this.userHelper = userHelper;
         this.messageHelper = messageHelper;
         this.tocRulesService = tocRulesService;
         this.proposalContextProvider = proposalContextProvider;
+        this.coEditionHelper = coEditionHelper;
     }
-
+    
     @Override
     public void enter() {
         super.enter();
         populateViewData();
     }
 
+    @Override
+    public void detach() {
+        super.detach();
+        coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
+    }
+    
     private String getDocumentId() {
-        return (String) httpSession.getAttribute(SessionAttribute.ANNEX_ID.name());
+        return (String) httpSession.getAttribute(id + "." + SessionAttribute.ANNEX_ID.name());
     }
 
     private Annex getDocument() {
         String documentId = getDocumentId();
-        return annexService.findAnnex(documentId);
+        Annex annex = annexService.findAnnex(documentId);
+        strDocumentVersionSeriesId = annex.getVersionSeriesId();
+        return annex;
     }
 
     private void populateViewData() {
@@ -142,6 +159,7 @@ class AnnexPresenter extends AbstractLeosPresenter {
             annexScreen.setToc(getTableOfContent(annex));
             DocumentVO annexVO = createAnnexVO(annex);
             annexScreen.setPermissions(annexVO);
+            annexScreen.updateUserCoEditionInfo(coEditionHelper.getCurrentEditInfo(annex.getVersionSeriesId()), id);
         }
         catch (Exception ex) {
             LOG.error("Error while processing document", ex);
@@ -167,34 +185,45 @@ class AnnexPresenter extends AbstractLeosPresenter {
         annexScreen.populateMarkedContent(markedContent);
     }
 
+    @Subscribe
+    void getDoubleCompareContent(DoubleCompareContentRequestEvent<Annex> event) {
+        String originalProposalVersionId = event.getOriginalProposal().getId();
+        String intermediateMajorVersionId = event.getIntermediateMajor().getId();
+        String currentVersionId = event.getCurrent().getId();
+        String resultContent = comparisonDelegate.doubleCompareHtmlContents(annexService.findAnnexVersion(originalProposalVersionId), 
+                annexService.findAnnexVersion(intermediateMajorVersionId), annexService.findAnnexVersion(currentVersionId), event.isEnabled());
+        annexScreen.populateDoubleComparisonContent(resultContent);
+    }
+    
     private String getEditableXml(Annex document) {
-        return transformationService.toEditableXml(
-                    new ByteArrayInputStream(getContent(document)),
-                    urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest()),  LeosCategory.ANNEX, securityContext.getPermissions(document));
+        return documentContentService.toEditableContent(document,
+                urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest()), securityContext);
     }
 
     private byte[] getContent(Annex annex) {
         final Content content = annex.getContent().getOrError(() -> "Annex content is required!");
-        return content.getSource().getByteString().toByteArray();
+        return content.getSource().getBytes();
     }
 
     @Subscribe
     void handleCloseScreenRequest(CloseScreenRequestEvent event) {
         LOG.trace("Handling close screen request...");
+        coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
         eventBus.post(new NavigationRequestEvent(Target.PREVIOUS));
     }
 
     @Subscribe
-    void refreshDocument(RefreshDocumentEvent event) throws IOException {
-        populateViewData();
-    }
-    
-    private String getUserLogin() {
-        return securityContext.getUser().getLogin();
+    void handleCloseBrowserRequest(CloseBrowserRequestEvent event) {
+        coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
     }
 
     @Subscribe
-    void deleteAnnexBlock(DeleteElementRequestEvent event) throws IOException {
+    void refreshDocument(RefreshDocumentEvent event) {
+        populateViewData();
+    }
+    
+    @Subscribe
+    void deleteAnnexBlock(DeleteElementRequestEvent event){
        String tagName = event.getElementTagName();
        if (ANNEX_BLOCK_TAG.equals(tagName)) { 
          Annex annex = getDocument();
@@ -206,12 +235,13 @@ class AnnexPresenter extends AbstractLeosPresenter {
              eventBus.post(new NotificationEvent(Type.INFO, "document.annex.block.deleted"));
              eventBus.post(new RefreshDocumentEvent());
              eventBus.post(new DocumentUpdatedEvent());
+             leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
          }
        }
     }
 
     @Subscribe
-    void insertAnnexBlock(InsertElementRequestEvent event) throws IOException {
+    void insertAnnexBlock(InsertElementRequestEvent event){
         String tagName = event.getElementTagName();
         if (ANNEX_BLOCK_TAG.equals(tagName)) {
           Annex annex = getDocument();
@@ -222,19 +252,28 @@ class AnnexPresenter extends AbstractLeosPresenter {
               eventBus.post(new NotificationEvent(Type.INFO, "document.annex.block.inserted"));
               eventBus.post(new RefreshDocumentEvent());
               eventBus.post(new DocumentUpdatedEvent());
+              leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
           }
        }
     }
 
     @Subscribe
-    void editAnnexBlock(EditElementRequestEvent event) throws IOException {
+    void CheckAnnexBlockCoEdition(CheckElementCoEditionEvent event) {
+        annexScreen.checkElementCoEdition(coEditionHelper.getCurrentEditInfo(strDocumentVersionSeriesId), user,
+                event.getElementId(), event.getElementTagName(), event.getAction(), event.getActionEvent());
+    }
+
+    @Subscribe
+    void editAnnexBlock(EditElementRequestEvent event){
         String elementId = event.getElementId();
         String elementTagName = event.getElementTagName();
+        
         LOG.trace("Handling edit element request... for {},id={}",elementTagName , elementId );
 
         try {
             Annex annex = getDocument();
             String element = elementProcessor.getElement(annex, elementTagName, elementId);
+            coEditionHelper.storeUserEditInfo(httpSession.getId(), id, user, strDocumentVersionSeriesId, elementId, InfoType.ELEMENT_INFO);
             annexScreen.showElementEditor(elementId, elementTagName, element);
         }
         catch (Exception ex){
@@ -244,7 +283,7 @@ class AnnexPresenter extends AbstractLeosPresenter {
     }
 
     @Subscribe
-    void saveElement(SaveElementRequestEvent event) throws IOException {
+    void saveElement(SaveElementRequestEvent event){
         String elementId = event.getElementId();
         String elementTagName = event.getElementTagName();
         LOG.trace("Handling save element request... for {},id={}",elementTagName , elementId );
@@ -252,6 +291,10 @@ class AnnexPresenter extends AbstractLeosPresenter {
         try {
             Annex annex = getDocument();
             byte[] updatedXmlContent = elementProcessor.updateElement(annex, event.getElementContent(), elementTagName, elementId);
+            if (updatedXmlContent == null) {
+                annexScreen.showAlertDialog("operation.element.not.performed");
+                return;
+            }
 
             annex = annexService.updateAnnex(annex, updatedXmlContent, false, messageHelper.getMessage("operation.annex.block.updated"));
 
@@ -261,6 +304,7 @@ class AnnexPresenter extends AbstractLeosPresenter {
                 eventBus.post(new DocumentUpdatedEvent());
                 eventBus.post(new NotificationEvent(Type.INFO, "document.annex.block.updated"));
                 annexScreen.scrollToMarkedChange(elementId);
+                leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
             }
         } catch (Exception ex) {
             LOG.error("Exception while save annex operation", ex);
@@ -269,7 +313,10 @@ class AnnexPresenter extends AbstractLeosPresenter {
     }
 
     @Subscribe
-    void closeAnnexBlock(CloseElementEditorEvent event) throws IOException {
+    void closeAnnexBlock(CloseElementEditorEvent event){
+        String elementId = event.getElementId();
+        coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, elementId, InfoType.ELEMENT_INFO);
+        LOG.debug("User edit information removed");
         eventBus.post(new RefreshDocumentEvent());
     }
 
@@ -277,6 +324,20 @@ class AnnexPresenter extends AbstractLeosPresenter {
     void showTimeLineWindow(ShowTimeLineWindowEvent event) {
         List documentVersions = annexService.findVersions(getDocumentId());
         annexScreen.showTimeLineWindow(documentVersions);
+    }
+
+    @Subscribe
+    void versionRestore(RestoreVersionRequestEvent event) {
+        String versionId = event.getVersionId();
+        Annex version = annexService.findAnnexVersion(versionId);
+        byte[] resultXmlContent = getContent(version);
+        annexService.updateAnnex(getDocument(), resultXmlContent, false, messageHelper.getMessage("operation.restore.version", version.getVersionLabel()));
+
+        List documentVersions = annexService.findVersions(getDocumentId());
+        annexScreen.updateTimeLineWindow(documentVersions);
+        eventBus.post(new RefreshDocumentEvent());
+        eventBus.post(new DocumentUpdatedEvent()); //Document might be updated.
+        leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
     }
 
     @Subscribe
@@ -295,27 +356,41 @@ class AnnexPresenter extends AbstractLeosPresenter {
 
     @Subscribe
     public void saveMajorVersion(SaveMajorVersionEvent event) {
-        annexService.createVersion(getDocumentId(), event.isMajor(), event.getComments());
+        final Annex annex = annexService.createVersion(getDocumentId(), event.isMajor(), event.getComments());
+        setAnnexDocumentId(annex.getId());
         eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "document.major.version.saved"));
         eventBus.post(new DocumentUpdatedEvent());
+        leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
         populateViewData();
+    }
+    
+    private void setAnnexDocumentId(String id) {
+        LOG.trace("Setting annex id in HTTP session... [id={}]", id);
+        httpSession.setAttribute(this.id + "." + SessionAttribute.ANNEX_ID.name(), id);
     }
 
     @Subscribe
     void editToc(EditTocRequestEvent event) {
-        Annex annex = getDocument();
-        annexScreen.showTocEditWindow(getTableOfContent(annex), tocRulesService.getDefaultTableOfContentRules());
+        coEditionHelper.storeUserEditInfo(httpSession.getId(), id, user, strDocumentVersionSeriesId, null, InfoType.TOC_INFO);
+        annexScreen.showTocEditWindow(getTableOfContent(getDocument()), tocRulesService.getDefaultTableOfContentRules());
     }
-
+    
     @Subscribe
-    void saveToc(SaveTocRequestEvent event) throws IOException {
+    void closeToc(CloseTocEditorEvent event) {
+        coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.TOC_INFO);
+        LOG.debug("User edit information removed");
+    }
+    
+    @Subscribe
+    void saveToc(SaveTocRequestEvent event) {
         Annex annex = getDocument();
-        annex = annexService.saveTableOfContent(annex, event.getTableOfContentItemVOs(), messageHelper.getMessage("operation.toc.updated"));
+        annex = annexService.saveTableOfContent(annex, event.getTableOfContentItemVOs(), messageHelper.getMessage("operation.toc.updated"), user);
 
         List<TableOfContentItemVO> tableOfContent = getTableOfContent(annex);
         annexScreen.setToc(tableOfContent);
         eventBus.post(new NotificationEvent(Type.INFO, "toc.edit.saved"));
         eventBus.post(new DocumentUpdatedEvent());
+        leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
     }
 
     @Subscribe
@@ -323,6 +398,21 @@ class AnnexPresenter extends AbstractLeosPresenter {
         Annex annex = getDocument();
         List<LeosPermission> userPermissions = securityContext.getPermissions(annex);
         annexScreen.sendUserPermissions(userPermissions);
+    }
+
+    @Subscribe
+    public void fetchSearchMetadata(SearchMetadataRequest event){
+        eventBus.post(new SearchMetadataResponse(Collections.emptyList()));
+    }
+
+    @Subscribe
+    public void fetchMetadata(DocumentMetadataRequest event){
+        AnnotateMetadata metadata = new AnnotateMetadata();
+        Annex annex = getDocument();
+        metadata.setVersion(annex.getVersionLabel());
+        metadata.setId(annex.getId());
+        metadata.setTitle(annex.getTitle());
+        eventBus.post(new DocumentMetadataResponse(metadata));
     }
 
     @Subscribe
@@ -337,6 +427,7 @@ class AnnexPresenter extends AbstractLeosPresenter {
         if (document != null) {
             eventBus.post(new RefreshDocumentEvent());
             eventBus.post(new DocumentUpdatedEvent());
+            leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
             eventBus.post(new MergeSuggestionResponse(messageHelper.getMessage("document.merge.suggestion.success"), MergeSuggestionResponse.Result.SUCCESS));
         }
         else {
@@ -375,19 +466,46 @@ class AnnexPresenter extends AbstractLeosPresenter {
         return annexVO;
     }
 
-    private Optional<CollaboratorVO> createCollaboratorVO(String login, LeosAuthority authority) {
+    /*private Optional<CollaboratorVO> createCollaboratorVO(String login, Role role) {
         try {
-            return Optional.of(new CollaboratorVO(new UserVO(userHelper.getUser(login)),authority));
+            return Optional.of(new CollaboratorVO(new UserVO(userHelper.getUser(login)),role));
         } catch (Exception e) {
-            LOG.error(String.format("Exception while creating collaborator VO:%s, %s",login, authority), e);
+            LOG.error(String.format("Exception while creating collaborator VO:%s, %s",login, role), e);
             return Optional.empty();
         }
-    }
+    }*/
 
     @Subscribe
     void updateProposalMetadata(DocumentUpdatedEvent event) {
-        ProposalContext context = proposalContextProvider.get();
+        CollectionContext context = proposalContextProvider.get();
         context.useChildDocument(getDocumentId());
+        context.useActionComment(messageHelper.getMessage("operation.metadata.updated"));
         context.executeUpdateProposalAsync();
+    }
+
+    @Subscribe
+    public void onInfoUpdate(UpdateUserInfoEvent updateUserInfoEvent) {
+        if(isCurrentInfoId(updateUserInfoEvent.getActionInfo().getInfo().getDocumentId())) {
+            if (!id.equals(updateUserInfoEvent.getActionInfo().getInfo().getPresenterId())) {
+                eventBus.post(new NotificationEvent(leosUI, "coedition.caption", "coedition.operation." + updateUserInfoEvent.getActionInfo().getOperation().getValue(),
+                        NotificationEvent.Type.TRAY, updateUserInfoEvent.getActionInfo().getInfo().getUserName()));
+            }
+            LOG.debug("Annex Presenter updated the edit info -" + updateUserInfoEvent.getActionInfo().getOperation().name());
+            annexScreen.updateUserCoEditionInfo(updateUserInfoEvent.getActionInfo().getCoEditionVos(), id);
+        }
+    }
+    
+    private boolean isCurrentInfoId(String versionSeriesId) {
+        return versionSeriesId.equals(strDocumentVersionSeriesId);
+    }
+    
+    @Subscribe
+    private void documentUpdatedByCoEditor(DocumentUpdatedByCoEditorEvent documentUpdatedByCoEditorEvent) {
+        if (isCurrentInfoId(documentUpdatedByCoEditorEvent.getDocumentId()) &&
+                !id.equals(documentUpdatedByCoEditorEvent.getPresenterId())) {
+            eventBus.post(new NotificationEvent(leosUI, "coedition.caption", "coedition.operation.update", NotificationEvent.Type.TRAY,
+                    documentUpdatedByCoEditorEvent.getUser().getName()));
+            annexScreen.displayDocumentUpdatedByCoEditorWarning();
+        }
     }
 }

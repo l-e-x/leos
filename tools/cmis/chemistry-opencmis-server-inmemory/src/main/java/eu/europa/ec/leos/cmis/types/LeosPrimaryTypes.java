@@ -55,6 +55,16 @@ final class LeosPrimaryTypes {
         return leosConfigDocType;
     }
 
+    static TypeDefinition createLeosLegType(TypeDefinition parentType, PropertyDefinition<?>... properties) {
+        MutableTypeDefinition leosLegDocType =
+                typeFactory.createChildTypeDefinition(parentType, "leos:leg");
+        leosLegDocType.setDisplayName("LEOS LEG Document");
+        leosLegDocType.setDescription("LEOS LEG Document Type");
+        leosLegDocType.setIsCreatable(true);
+        addProperties(leosLegDocType, properties);
+        return leosLegDocType;
+    }
+    
     private static void addProperties(MutableTypeDefinition typeDefinition, PropertyDefinition<?>[] properties) {
         for (PropertyDefinition<?> property : properties) {
             typeDefinition.addPropertyDefinition(property);

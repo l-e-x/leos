@@ -16,7 +16,7 @@
     <context:property-placeholder properties-ref="applicationProperties" ignore-unresolvable="true"/> <!-- TODO ..this should be false  due to other modules -->
 
     <!-- Application Properties -->
-    <util:properties id="applicationProperties" location="classpath:application_${leos.build.instance}.properties"/>
+    <util:properties id="applicationProperties" location="classpath:application_leos.properties"/>
 
     <!-- Application Language Tags (tags as specified by IETF BCP 47) -->
     <util:list id="applicationLanguageTags">
@@ -34,23 +34,20 @@
         <property name="fallbackToSystemLocale" value="false"/>
         <property name="basenames">
             <list>
-                <value>classpath:message_${leos.build.instance}</value>
+                <value>classpath:message_leos</value>
                 <value>classpath:messages/message</value>
             </list>
         </property>
     </bean>
 
     <!-- Event Bus -->
-    <bean id="leosEventBus" class="com.google.common.eventbus.EventBus" scope="vaadin-ui">
+    <bean id="eventBus" class="com.google.common.eventbus.EventBus" scope="vaadin-ui">
         <constructor-arg>
             <bean class="eu.europa.ec.leos.web.support.vaadin.LeosSubscriberExceptionHandler"/>
         </constructor-arg>
     </bean>
 
-    <!-- Instance Context -->
-    <bean id="instanceContext" class="eu.europa.ec.leos.domain.common.InstanceContext">
-        <constructor-arg type="java.lang.String" value="${leos.workflow}"/>
-    </bean>
+    <bean id="leosApplicationEventBus" class="com.google.common.eventbus.EventBus" />
 
     <!-- Integration Context -->
     <import resource="classpath:eu/europa/ec/leos/integrationContext.xml"/>

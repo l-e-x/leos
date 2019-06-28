@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.repository.TokenRepository;
@@ -36,32 +39,20 @@ import org.springframework.util.StringUtils;
 import javax.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
-import java.util.concurrent.atomic.AtomicReference;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class AuthenticationServiceTest {
 
     /**
      * These tests focus on token functionality
      */
 
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-
-    @Before
-    public void setUp() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
-
+    private static final String AUTH = "Authorization";
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -76,6 +67,20 @@ public class AuthenticationServiceTest {
     private TokenRepository tokenRepos;
 
     // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+
+    @Before
+    public void setUp() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    @After
+    public void tearDown() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
@@ -85,14 +90,15 @@ public class AuthenticationServiceTest {
     @Test
     public void testGetUserLogin_HttpServletRequest() throws Exception {
 
-        final String accessToken = "mytoken", userLogin = "demo3";
+        final String accessToken = "mytoken";
+        final String userLogin = "demo3";
 
-        User user = new User(userLogin);
+        final User user = new User(userLogin);
         userRepos.save(user);
-        tokenRepos.save(new Token(user, accessToken, LocalDateTime.now().plusMinutes(2), "r", LocalDateTime.now()));
+        tokenRepos.save(new Token(user, "authority", accessToken, LocalDateTime.now().plusMinutes(2), "r", LocalDateTime.now()));
 
-        MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
-        mockHttpRequest.addHeader("Authorization", "Bearer " + accessToken);
+        final MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
+        mockHttpRequest.addHeader(AUTH, "Bearer " + accessToken);
 
         Assert.assertEquals(userLogin, authService.getUserLogin(mockHttpRequest));
     }
@@ -100,26 +106,20 @@ public class AuthenticationServiceTest {
     /**
      * Test of getUserLogin method, of class AuthenticationServiceImpl: token is expired
      */
-    @Test
+    @Test(expected = AccessTokenExpiredException.class)
     public void testGetUserLogin_HttpServletRequest_TokenExpired() throws Exception {
 
-        final String accessToken = "mytoken", userLogin = "demo3";
+        final String accessToken = "mytoken";
+        final String userLogin = "demo3";
 
-        User user = new User(userLogin);
+        final User user = new User(userLogin);
         userRepos.save(user);
-        tokenRepos.save(new Token(user, accessToken, LocalDateTime.now().minusMinutes(2), "r", LocalDateTime.now()));
+        tokenRepos.save(new Token(user, "myauth", accessToken, LocalDateTime.now().minusMinutes(2), "r", LocalDateTime.now()));
 
-        MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
-        mockHttpRequest.addHeader("Authorization", "Bearer " + accessToken);
+        final MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
+        mockHttpRequest.addHeader(AUTH, "Bearer " + accessToken);
 
-        try {
-            authService.getUserLogin(mockHttpRequest);
-            Assert.fail("Expected exception not thrown");
-        } catch (AccessTokenExpiredException atee) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception - should be AccessTokenExpiredException");
-        }
+        authService.getUserLogin(mockHttpRequest);
     }
 
     /**
@@ -128,7 +128,19 @@ public class AuthenticationServiceTest {
     @Test
     public void testGetUserLogin_HttpServletRequest_WithoutAuthorizationHeader() throws Exception {
 
-        HttpServletRequest mockHttpRequest = new MockHttpServletRequest(); // no header!
+        final HttpServletRequest mockHttpRequest = new MockHttpServletRequest(); // no header!
+
+        Assert.assertNull(authService.getUserLogin(mockHttpRequest));
+    }
+
+    /**
+     * Test of getUserLogin method, of class AuthenticationServiceImpl: behavior when "Authorization" header is incomplete (token missing)
+     */
+    @Test
+    public void testGetUserLogin_HttpServletRequest_AuthorizationHeaderWithoutToken() throws Exception {
+
+        final MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
+        mockHttpRequest.addHeader(AUTH, "Bearer ");// header without token
 
         Assert.assertNull(authService.getUserLogin(mockHttpRequest));
     }
@@ -139,8 +151,8 @@ public class AuthenticationServiceTest {
     @Test
     public void testGetUserLogin_HttpServletRequest_AuthorizationHeaderUnexpected() throws Exception {
 
-        MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
-        mockHttpRequest.addHeader("Authorization", "nobearer mytoken"); // header doesn't start with "Bearer"
+        final MockHttpServletRequest mockHttpRequest = new MockHttpServletRequest();
+        mockHttpRequest.addHeader(AUTH, "nobearer mytoken"); // header doesn't start with "Bearer"
 
         Assert.assertNull(authService.getUserLogin(mockHttpRequest));
     }
@@ -151,27 +163,30 @@ public class AuthenticationServiceTest {
     @Test
     public void testTokensAreGenerated() throws CannotStoreTokenException {
 
-        User user = new User("login");
+        final String authority = "authority";
+
+        final User user = new User("login");
         userRepos.save(user);
 
         // check before: no tokens
         Assert.assertEquals(0, tokenRepos.findByUserId(user.getId()).size());
 
         // generate token
-        Token newTokens = authService.generateAndSaveTokensForUser(user);
+        final Token newTokens = authService.generateAndSaveTokensForUser(new UserInformation(user, authority));
         Assert.assertNotNull(newTokens);
 
-        // check: tokens should have been set
+        // check: tokens and authority should have been set
         Assert.assertFalse(StringUtils.isEmpty(newTokens.getAccessToken()));
         Assert.assertFalse(StringUtils.isEmpty(newTokens.getRefreshToken()));
         Assert.assertNotNull(newTokens.getAccessTokenExpires());
         Assert.assertNotNull(newTokens.getRefreshTokenExpires());
+        Assert.assertEquals(authority, newTokens.getAuthority());
 
         // check: token contained in DB
         Assert.assertEquals(1, tokenRepos.findByUserId(user.getId()).size());
 
         // call token generation again
-        authService.generateAndSaveTokensForUser(user);
+        authService.generateAndSaveTokensForUser(new UserInformation(user, authority));
 
         // check: another token contained in DB
         Assert.assertEquals(2, tokenRepos.findByUserId(user.getId()).size());
@@ -180,114 +195,120 @@ public class AuthenticationServiceTest {
     /**
      * Test that tokens are not generated when no user is given
      */
-    @Test
-    public void testTokensCannotBeGeneratedWithoutUser() {
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
+    @Test(expected = CannotStoreTokenException.class)
+    public void testTokensCannotBeGeneratedWithoutUser() throws Exception {
 
-        try {
-            authService.generateAndSaveTokensForUser(null);
-            Assert.fail("Token generation should throw an error since no user is given; did not.");
-        } catch (CannotStoreTokenException cste) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception " + e.getMessage());
-        }
+        final User user = null;
+        authService.generateAndSaveTokensForUser(new UserInformation(user, "theauthority"));
+    }
+
+    /**
+     * Test that tokens are not generated when no authority is given
+     */
+    @Test(expected = CannotStoreTokenException.class)
+    public void testTokensCannotBeGeneratedWithoutAuthority() throws Exception {
+
+        authService.generateAndSaveTokensForUser(new UserInformation(new User("unknownUser"), ""));
     }
 
     /**
      * Test that tokens are not saved when given user is not contained in database
      */
-    @Test
-    public void testTokensCannotBeGeneratedForUnknownUser() {
+    @Test(expected = CannotStoreTokenException.class)
+    public void testTokensCannotBeGeneratedForUnknownUser() throws Exception {
 
-        try {
-            authService.generateAndSaveTokensForUser(new User("unknownUser"));
-            Assert.fail("Token generation should throw an error since no user is given; did not.");
-        } catch (CannotStoreTokenException cste) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception " + e.getMessage());
-        }
+        authService.generateAndSaveTokensForUser(new UserInformation(new User("unknownUser"), "someauthority"));
     }
 
     // test that asking for user by invalid access token returns {@literal null}
     @Test
     public void testFindUserByAccessToken_Null() {
 
-        Assert.assertNull(authService.findUserByAccessToken("", new AtomicReference<Token>()));
+        Assert.assertNull(authService.findUserByAccessToken(""));
     }
 
     // test that asking for user by invalid refresh token returns {@literal null}
     @Test
     public void testFindUserByRefreshToken_Null() {
 
-        Assert.assertNull(authService.findUserByRefreshToken("", new AtomicReference<Token>()));
+        Assert.assertNull(authService.findUserByRefreshToken(""));
     }
 
-    // test that asking for user by unknown access token returns {@literal null}
+    // test that asking for user by unknown access token returns a {@literal null} token
     @Test
     public void testFindUserByAccessToken_UnknownToken() {
 
-        Assert.assertNull(authService.findUserByAccessToken("whateveraccesstoken", new AtomicReference<Token>()));
+        final UserInformation userInfo = authService.findUserByAccessToken("whateveraccesstoken");
+        Assert.assertNotNull(userInfo);
+        Assert.assertNull(userInfo.getCurrentToken());
+        Assert.assertNull(userInfo.getUser());
+        Assert.assertTrue(StringUtils.isEmpty(userInfo.getLogin()));
     }
 
     // test that asking for user by unknown refresh token returns {@literal null}
     @Test
     public void testFindUserByRefreshToken_UnknownToken() {
 
-        Assert.assertNull(authService.findUserByRefreshToken("whateverrefreshtoken", new AtomicReference<Token>()));
+        final UserInformation userInfo = authService.findUserByRefreshToken("whateverrefreshtoken");
+        Assert.assertNotNull(userInfo);
+        Assert.assertNull(userInfo.getCurrentToken());
+        Assert.assertNull(userInfo.getUser());
+        Assert.assertTrue(StringUtils.isEmpty(userInfo.getLogin()));
     }
 
-    // test that asking for user by expired access token returns {@literal null}
+    // test that asking for user by expired access token returns the expired token
     @Test
     public void testFindUserByAccessToken_ExpiredToken() {
 
         final String accessToken = "acc€$$";
 
-        User user = new User("me");
+        final User user = new User("me");
         userRepos.save(user);
-        tokenRepos.save(new Token(user, accessToken, LocalDateTime.now().minusMinutes(5), "r", LocalDateTime.now())); // token expired 5 minutes ago
+        tokenRepos.save(new Token(user, "anyauthority",
+                accessToken, LocalDateTime.now().minusMinutes(5), // token expired 5 minutes ago
+                "r", LocalDateTime.now()));
 
-        AtomicReference<Token> foundToken = new AtomicReference<Token>();
-        User foundUser = authService.findUserByAccessToken(accessToken, foundToken);
-        Assert.assertNull(foundUser);
-        Assert.assertNotNull(foundToken.get());
-        Assert.assertTrue(foundToken.get().isAccessTokenExpired());
+        final UserInformation foundUser = authService.findUserByAccessToken(accessToken);
+        Assert.assertNotNull(foundUser);
+        Assert.assertNotNull(foundUser.getCurrentToken());
+        Assert.assertTrue(foundUser.getCurrentToken().isAccessTokenExpired());
+        Assert.assertEquals("anyauthority", foundUser.getCurrentToken().getAuthority());
     }
 
-    // test that asking for user by expired refresh token returns {@literal null}
+    // test that asking for user by expired refresh token returns the expired token
     @Test
     public void testFindUserByRefreshToken_ExpiredToken() {
 
         final String refreshToken = "refre$h";
 
-        User user = new User("me");
+        final User user = new User("me");
         userRepos.save(user);
-        tokenRepos.save(new Token(user, "acc", LocalDateTime.now(), refreshToken, LocalDateTime.now().minusMinutes(5))); // token expired 5 minutes ago
+        tokenRepos.save(new Token(user, "otherauth", "acc", LocalDateTime.now(), refreshToken,
+                LocalDateTime.now().minusMinutes(5))); // token expired 5 minutes ago
 
-        AtomicReference<Token> foundToken = new AtomicReference<Token>();
-        User foundUser = authService.findUserByRefreshToken(refreshToken, foundToken);
-        Assert.assertNull(foundUser);
-        Assert.assertNotNull(foundToken.get());
-        Assert.assertTrue(foundToken.get().isRefreshTokenExpired());
+        final UserInformation foundUser = authService.findUserByRefreshToken(refreshToken);
+        Assert.assertNotNull(foundUser);
+        Assert.assertNotNull(foundUser.getCurrentToken());
+        Assert.assertTrue(foundUser.getCurrentToken().isRefreshTokenExpired());
     }
 
-    // test that successfully asking for user by access token returns {@link User}
+    // test that successfully asking for user by access token returns the correct {@link User}
     @Test
     public void testFindUserByAccessToken() {
 
         final String accessToken = "acc€$$";
 
-        User user = new User("me");
+        final User user = new User("me");
         userRepos.save(user);
-        tokenRepos.save(new Token(user, accessToken, LocalDateTime.now().plusMinutes(5), "r", LocalDateTime.now()));
+        tokenRepos.save(new Token(user, "secondauth", accessToken, LocalDateTime.now().plusMinutes(5), "r", LocalDateTime.now()));
 
-        AtomicReference<Token> foundToken = new AtomicReference<Token>();
-        User foundUser = authService.findUserByAccessToken(accessToken, foundToken);
+        final UserInformation foundUser = authService.findUserByAccessToken(accessToken);
         Assert.assertNotNull(foundUser);
-        Assert.assertEquals(user, foundUser);
-        Assert.assertNotNull(foundToken.get());
-        Assert.assertEquals(accessToken, foundToken.get().getAccessToken());
-        Assert.assertFalse(foundToken.get().isAccessTokenExpired());
+        Assert.assertEquals(user, foundUser.getUser());
+        Assert.assertNotNull(foundUser.getCurrentToken());
+        Assert.assertEquals(accessToken, foundUser.getCurrentToken().getAccessToken());
+        Assert.assertFalse(foundUser.getCurrentToken().isAccessTokenExpired());
     }
 
     // test that successfully asking for user by refresh token returns {@link User}
@@ -296,17 +317,16 @@ public class AuthenticationServiceTest {
 
         final String refreshToken = "r€fre$h";
 
-        User user = new User("me");
+        final User user = new User("me");
         userRepos.save(user);
-        tokenRepos.save(new Token(user, "access", LocalDateTime.now(), refreshToken, LocalDateTime.now().plusMinutes(5)));
+        tokenRepos.save(new Token(user, "thirdauth", "access", LocalDateTime.now(), refreshToken, LocalDateTime.now().plusMinutes(5)));
 
-        AtomicReference<Token> foundToken = new AtomicReference<Token>();
-        User foundUser = authService.findUserByRefreshToken(refreshToken, foundToken);
+        final UserInformation foundUser = authService.findUserByRefreshToken(refreshToken);
         Assert.assertNotNull(foundUser);
-        Assert.assertEquals(user, foundUser);
-        Assert.assertNotNull(foundToken);
-        Assert.assertEquals(refreshToken, foundToken.get().getRefreshToken());
-        Assert.assertFalse(foundToken.get().isRefreshTokenExpired());
+        Assert.assertEquals(user, foundUser.getUser());
+        Assert.assertNotNull(foundUser.getCurrentToken());
+        Assert.assertEquals(refreshToken, foundUser.getCurrentToken().getRefreshToken());
+        Assert.assertFalse(foundUser.getCurrentToken().isRefreshTokenExpired());
     }
 
     // test that cleaning tokens for invalid user does not work
@@ -320,8 +340,8 @@ public class AuthenticationServiceTest {
     @Test
     public void testCleaningExpiredTokensKeepsValidTokens() {
 
-        LocalDateTime expired = LocalDateTime.now().minusSeconds(30);
-        LocalDateTime notExpired = LocalDateTime.now().plusSeconds(30);
+        final LocalDateTime expired = LocalDateTime.now().minusSeconds(30);
+        final LocalDateTime notExpired = LocalDateTime.now().plusSeconds(30);
 
         // store tokens:
         // - access token expired, refresh token not expired
@@ -331,9 +351,9 @@ public class AuthenticationServiceTest {
         User user = new User("login");
         user = userRepos.save(user);
 
-        tokenRepos.save(new Token(user, "acc1", expired, "ref1", notExpired));
-        tokenRepos.save(new Token(user, "acc2", notExpired, "ref2", expired));
-        tokenRepos.save(new Token(user, "acc3", notExpired, "ref3", notExpired));
+        tokenRepos.save(new Token(user, "highestauth", "acc1", expired, "ref1", notExpired));
+        tokenRepos.save(new Token(user, "highestauth", "acc2", notExpired, "ref2", expired));
+        tokenRepos.save(new Token(user, "highestauth", "acc3", notExpired, "ref3", notExpired));
 
         // nothing to clean -> false expected
         Assert.assertFalse(authService.cleanupExpiredUserTokens(user));
@@ -343,7 +363,7 @@ public class AuthenticationServiceTest {
     @Test
     public void testCleaningExpiredTokensOfGivenUserOnly() {
 
-        LocalDateTime expired = LocalDateTime.now().minusSeconds(30);
+        final LocalDateTime expired = LocalDateTime.now().minusSeconds(30);
 
         // store tokens for three different users: access token expired, refresh token expired
         User user1 = new User("login1");
@@ -353,10 +373,10 @@ public class AuthenticationServiceTest {
         User user3 = new User("login3");
         user3 = userRepos.save(user3);
 
-        tokenRepos.save(new Token(user1, "acc1", expired, "ref1", expired));
-        tokenRepos.save(new Token(user2, "acc2", expired, "ref2", expired));
-        tokenRepos.save(new Token(user2, "acc22", expired, "ref22", expired)); // second user has two expired tokens
-        tokenRepos.save(new Token(user3, "acc3", expired, "ref3", expired));
+        tokenRepos.save(new Token(user1, "auth", "acc1", expired, "ref1", expired));
+        tokenRepos.save(new Token(user2, "auth", "acc2", expired, "ref2", expired));
+        tokenRepos.save(new Token(user2, "otherauth", "acc22", expired, "ref22", expired)); // second user has two expired tokens, from different authorities
+        tokenRepos.save(new Token(user3, "auth", "acc3", expired, "ref3", expired));
 
         // try cleaning for different users step by step, verify number of remaining tokens before and after
         Assert.assertEquals(4, tokenRepos.count());

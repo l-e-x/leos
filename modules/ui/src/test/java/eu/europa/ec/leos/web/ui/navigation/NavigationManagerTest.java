@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -153,9 +153,30 @@ public class NavigationManagerTest extends LeosTest {
         navigationManager.navigationRequest(new NavigationRequestEvent(Target.PREVIOUS)); // go back should take us to proposal view
 
         // verify
-        verify(navigator).navigateTo(Target.PROPOSAL.getViewId() + "/" + parameter1);
+        verify(navigator).navigateTo(Target.HOME.getViewId());
     }
 
+    @Test
+    public void test_NavigateToSameViewInStack_navigationRequest() {
+        // setup some random calls
+        String parameter1 = "param1";
+        String parameter2 = "param2";
+        String parameter3 = "param3";
+        navigationManager.navigationRequest(new NavigationRequestEvent(Target.HOME));
+        navigationManager.navigationRequest(new NavigationRequestEvent(Target.PROPOSAL,  parameter1));
+        navigationManager.navigationRequest(new NavigationRequestEvent(Target.LEGALTEXT,  parameter2));
+        navigationManager.navigationRequest(new NavigationRequestEvent(Target.PREVIOUS));
+
+        clearInvocations(navigator);        //testing the stateful scenario so clear is needed
+
+        // Actual call - navigating to same view with different parameter
+        navigationManager.navigationRequest(new NavigationRequestEvent(Target.PROPOSAL,  parameter3)); //current
+
+        // verify
+        verify(navigator).navigateTo(Target.PROPOSAL.getViewId() + "/" + parameter3);
+    }
+
+    
     @Test
     public void test_previousWithNoViewInStack_navigationRequest() { //should take to home
         // Actual call

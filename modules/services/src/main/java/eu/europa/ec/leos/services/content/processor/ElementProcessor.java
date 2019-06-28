@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,12 @@
  */
 package eu.europa.ec.leos.services.content.processor;
 
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.model.xml.Element;
 import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.List;
 
 public interface ElementProcessor<T extends XmlDocument> {
     /**
@@ -24,6 +28,26 @@ public interface ElementProcessor<T extends XmlDocument> {
      * @return the xml string representation of the element
      */
     String getElement(T document, String elementName, String elementId);
+
+    /**
+     * Retrieves first sibling after of the element from the given document
+     * @param document The document containing the article
+     * @param elementTagName The tag of element
+     * @param elementId The id of element
+     * @return information about the element (elementId, elementTagName and elementFragment)
+     */
+    Element getSiblingElement(T document, String elementName, String elementId);
+
+    /**
+     * Retrieves child specified of the element from the given document
+     * @param document The document containing the article
+     * @param elementName The tag of element
+     * @param elementId The id of element
+     * @param elementTags Tags to take into account to retrieve the child or empty for all tags
+     * @param position The position of child element to be retrieved
+     * @return information about the element (elementId, elementTagName and elementFragment)
+     */
+    Element getChildElement(T document, String elementName, String elementId, List<String> elementTags, int position);
 
     /**
      * Saves the new elemenContent of an existing element to the given document
@@ -36,6 +60,7 @@ public interface ElementProcessor<T extends XmlDocument> {
      */
     @PreAuthorize("hasPermission(#document, 'CAN_UPDATE')")
     byte[] updateElement(T document, String elementContent, String elementName, String elementId);
+
     /**
      * Deletes an element with the given id and saves the document.
      * @param document The document to update

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,7 +28,7 @@ var boot = require('./boot');
 var settings = require('../shared/settings').jsonConfigsFrom(document);
 
 boot(document, {
-  assetRoot: settings.assetRoot || '__ASSET_ROOT__',
+  assetRoot: settings.assetRoot || '',
   manifest: __MANIFEST__,
-  sidebarAppUrl: settings.sidebarAppUrl || '__SIDEBAR_APP_URL__',
+  sidebarAppUrl: settings.sidebarAppUrl || '',
 });

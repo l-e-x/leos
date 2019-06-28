@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +35,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class StaticApiTest {
@@ -58,7 +59,7 @@ public class StaticApiTest {
     @Before
     public void setupTests() {
 
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
         this.mockMvc = builder.build();
     }
 
@@ -69,19 +70,19 @@ public class StaticApiTest {
      * successfully retrieve the API root, expected HTTP 200 and the some data
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testApiRoot() throws Exception {
 
         // send API root request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/");
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/");
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that there is something
         Assert.assertNotNull(responseString);
@@ -95,19 +96,19 @@ public class StaticApiTest {
      * successfully retrieve the API links, expected HTTP 200 and the some data
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testApiLinks() throws Exception {
 
         // send API root request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/links");
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/links");
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that there is something
         Assert.assertNotNull(responseString);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,37 +13,33 @@
  */
 package eu.europa.ec.leos.services.converter;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.MetadataVO;
-import eu.europa.ec.leos.integration.utils.zip.ZipPackageUtil;
+import eu.europa.ec.leos.services.export.ZipPackageUtil;
 import eu.europa.ec.leos.services.store.TemplateService;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
-@Service
-class ProposalConverterServiceImpl implements ProposalConverterService {
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+public abstract class ProposalConverterServiceImpl implements ProposalConverterService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProposalConverterServiceImpl.class);
 
     private final XmlNodeProcessor xmlNodeProcessor;
     private final XmlNodeConfigHelper xmlNodeConfigHelper;
-    private final XmlContentProcessor xmlContentProcessor;
+    protected final XmlContentProcessor xmlContentProcessor;
     private final TemplateService templateService;
 
     private static final String ANNEX_FILE_PREFIX = "annex_";
@@ -51,6 +47,7 @@ class ProposalConverterServiceImpl implements ProposalConverterService {
     private static final String MEMORANDUM_FILE_PREFIX = "memorandum_";
     private static final String MEDIA_FILE_PREFIX = "media_";
     private static final String PROPOSAL_FILE = "main.xml";
+    private static final String XML_DOC_EXT = ".xml";
 
     private List<CatalogItem> templatesCatalog;
 
@@ -66,8 +63,20 @@ class ProposalConverterServiceImpl implements ProposalConverterService {
         this.templateService = templateService;
     }
 
-    @Override
-    public DocumentVO createProposalFromLegFile(File file, final DocumentVO proposal) {
+    /**
+     * Creates a DocumentVO for the leg file passed as parameter.
+     * After the computation the file will be deleted from the filesystem.
+     *
+     * The xml files inside the leg/zip file are mapped into array source[] of DocumentVO.
+     * When canModifySource is true, some tags are not included in the source[] field, otherwise when is false the
+     * array source contains the xml as it is in the zip/leg file.
+     *
+     * @param file leg file from where to create the DocumentVO.
+     * @param proposal DocumentVO with the data of the proposal. The same object will be enriched and returned by the method
+     * @param canModifySource true to exclude some xml tags into byte array source, false if you need to keep the original integrity of the document
+     * @return the enriched DocumentVO representing the proposal inside the leg file.
+     */
+    public DocumentVO createProposalFromLegFile(File file, final DocumentVO proposal, boolean canModifySource) {
         proposal.clean();
         proposal.setId(PROPOSAL_FILE);
         proposal.setCategory(LeosCategory.PROPOSAL);
@@ -78,13 +87,13 @@ class ProposalConverterServiceImpl implements ProposalConverterService {
             if (unzippedFiles.containsKey(PROPOSAL_FILE)) {
                 List<DocumentVO> propChildDocs = new ArrayList<>();
                 File proposalFile = (File) unzippedFiles.get(PROPOSAL_FILE);
-                updateSource(proposal, proposalFile);
+                updateSource(proposal, proposalFile, canModifySource);
                 updateMetadataVO(proposal);
                 List<DocumentVO> billChildDocs = new ArrayList<>();
                 DocumentVO billDoc = null;
                 for (String docName : unzippedFiles.keySet()) {
                     File docFile = (File) unzippedFiles.get(docName);
-                    DocumentVO doc = createDocument(docName, docFile);
+                    DocumentVO doc = createDocument(docName, docFile, canModifySource);
                     if (doc != null) {
                         if (doc.getCategory() == LeosCategory.ANNEX || doc.getCategory() == LeosCategory.MEDIA) {
                             billChildDocs.add(doc);
@@ -109,13 +118,13 @@ class ProposalConverterServiceImpl implements ProposalConverterService {
         return proposal;
     }
 
-    private DocumentVO createDocument(String docName, File docFile) {
+    private DocumentVO createDocument(String docName, File docFile, boolean canModifySource) {
         DocumentVO doc = null;
         LeosCategory category = identifyCategory(docName);
         if (category != null) {
             doc = new DocumentVO(category);
             doc.setId(docName);
-            updateSource(doc, docFile);
+            updateSource(doc, docFile, canModifySource);
             updateMetadataVO(doc);
         }
         return doc;
@@ -123,32 +132,21 @@ class ProposalConverterServiceImpl implements ProposalConverterService {
 
     private LeosCategory identifyCategory(String docName) {
         LeosCategory category = null;
-        if (docName.startsWith(ANNEX_FILE_PREFIX)) {
-            category = LeosCategory.ANNEX;
-        } else if (docName.startsWith(BILL_FILE_PREFIX)) {
-            category = LeosCategory.BILL;
-        } else if (docName.startsWith(MEMORANDUM_FILE_PREFIX)) {
-            category = LeosCategory.MEMORANDUM;
-        } else if (docName.startsWith(MEDIA_FILE_PREFIX)) {
-            category = LeosCategory.MEDIA;
+        if (docName.endsWith(XML_DOC_EXT)) {
+            if (docName.startsWith(ANNEX_FILE_PREFIX)) {
+                category = LeosCategory.ANNEX;
+            } else if (docName.startsWith(BILL_FILE_PREFIX)) {
+                category = LeosCategory.BILL;
+            } else if (docName.startsWith(MEMORANDUM_FILE_PREFIX)) {
+                category = LeosCategory.MEMORANDUM;
+            } else if (docName.startsWith(MEDIA_FILE_PREFIX)) {
+                category = LeosCategory.MEDIA;
+            }
         }
         return category;
     }
 
-    private void updateSource(final DocumentVO document, File documentFile) {
-        try {
-            byte[] xmlBytes = Files.readAllBytes(documentFile.toPath());
-            if (document.getCategory() == LeosCategory.BILL) {
-                // We have to remove the references to the annexes, we will add them when importing
-                xmlBytes = xmlContentProcessor.removeElements(xmlBytes, "//attachments", 0);
-            }
-            document.setSource(xmlBytes);
-        } catch (IOException e) {
-            LOG.error("Error updating the source of the document: {}", e);
-            // the post validation will take care to analyse wether the source is there or not
-            document.setSource(null);
-        }
-    }
+    protected abstract void updateSource(final DocumentVO document, File documentFile, boolean canModifySource);
 
     private void updateMetadataVO(final DocumentVO document) {
         if (document.getSource() != null) {

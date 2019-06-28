@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,7 @@ package eu.europa.ec.leos.web.support.user;
 
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.user.UserService;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +47,7 @@ public class UserHelper {
         if(user == null)
         {
             //If we don't find the user we return an instance of the user tagged as unavailable.
-            user = new User(RandomUtils.nextLong(), login, messageHelper.getMessage("proposal.caption.unavailable.user",login),"","");
+            user = new User(RandomUtils.nextLong(), login, messageHelper.getMessage("collection.caption.unavailable.user",login),"","",null);
         }
         return user;
     }

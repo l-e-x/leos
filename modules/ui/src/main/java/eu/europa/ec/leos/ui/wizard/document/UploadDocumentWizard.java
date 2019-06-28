@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,20 +13,18 @@
  */
 package eu.europa.ec.leos.ui.wizard.document;
 
-import java.util.List;
-
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
 import com.google.common.eventbus.EventBus;
-
-import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.ui.event.CreateDocumentRequestEvent;
 import eu.europa.ec.leos.ui.wizard.AbstractWizard;
 import eu.europa.ec.leos.ui.wizard.WizardStep;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Scope("prototype")

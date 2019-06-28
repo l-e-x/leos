@@ -1,0 +1,59 @@
+<!--
+
+    Copyright 2019 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<div dropdown="" class="publish-annotation-btn__btn" is-open="vm.showDropdown" keyboard-nav>
+  <dropdown-menu-btn
+    label="'Post to ' + vm.publishDestination()"
+    on-click="vm.onSave()"
+    on-toggle-dropdown="vm.showDropdown = !vm.showDropdown"
+    title="Publish this annotation to {{vm.publishDestination()}}"
+    dropdown-menu-label="Change annotation sharing setting"
+    is-disabled="!vm.canPost">
+  </dropdown-menu-btn>
+  <div class="publish-annotation-btn__dropdown-container">
+    <ul class="dropdown-menu pull-center group-list publish-annotation-btn__dropdown-menu" role="menu">
+      <li class="dropdown-menu__row" ng-click="vm.setPrivacy('shared')" ng-repeat="group in vm.getAllGroups()">
+        <div class="group-item" ng-click="vm.updateSelectedGroup({group: group})">
+          <div class="group-icon-container">
+            <i class="small" ng-class="'h-icon-' + vm.groupCategory(group)"></i>
+          </div>
+          <div class="group-details">
+            <div class="group-name-container">
+              <a href="" class="group-name-link" ng-bind="group.name"></a>
+            </div>
+          </div>
+        </div>
+      </li>
+      <li class="dropdown-menu__row" ng-click="vm.setPrivacy('private')" ng-show="vm.isAuthorityVisible()">
+        <div class="group-item">
+          <div class="group-icon-container">
+            <i class="small h-icon-lock"></i>
+          </div>
+          <div class="group-details">
+            <div class="group-name-container">
+              <a href="" class="group-name-link" ng-bind="vm.privateLabel"></a>
+            </div>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+<button class="publish-annotation-cancel-btn btn-clean"
+        ng-click="vm.onCancel()"
+        title="Cancel changes to this annotation"
+        >
+  <i class="h-icon-cancel-outline publish-annotation-cancel-btn__icon btn-icon"></i> Cancel
+</button>

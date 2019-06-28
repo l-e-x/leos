@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,7 @@
 
 var addAnalytics = require('./ga');
 var disableOpenerForExternalLinks = require('./util/disable-opener-for-external-links');
-var getApiUrl = require('./get-api-url');
+var apiUrls = require('./get-api-url');
 var serviceConfig = require('./service-config');
 var crossOriginRPC = require('./cross-origin-rpc.js');
 require('../shared/polyfills');
@@ -35,7 +35,8 @@ if (settings.raven) {
 var hostPageConfig = require('./host-config');
 Object.assign(settings, hostPageConfig(window));
 
-settings.apiUrl = getApiUrl(settings);
+settings.apiUrl = apiUrls.getApiUrl(settings);
+settings.websocketUrl = apiUrls.getWSApiUrl(settings);
 
 var isLeosDocument = settings.docType && (settings.docType == 'LeosDocument'); // LEOS Change
 
@@ -104,7 +105,7 @@ function configureRoutes($routeProvider) {
       resolve: resolve,
     });
   $routeProvider.otherwise({
-    template: isLeosDocument ? '<leos-sidebar-content search="vm.search" auth="vm.auth"></leos-sidebar-content>' : '<sidebar-content search="vm.search" auth="vm.auth"></sidebar-content>',  // LEOS Change
+    template: '<sidebar-content search="vm.search" auth="vm.auth"></sidebar-content>',
     reloadOnSearch: false,
     resolve: resolve,
   });
@@ -195,7 +196,7 @@ module.exports = angular.module('h', [
   .component('topBar', require('./components/top-bar'))
   .component('leosSuggestionButtons', require('../../leos/sidebar/components/leos-suggestion-buttons')) // LEOS Change
   .component('leosAnnotationHeader', require('../../leos/sidebar/components/leos-annotation-header')) // LEOS Change
-  .component('leosSidebarContent', require('../../leos/sidebar/components/leos-sidebar-content')) // LEOS Change
+  .component('leosPublishAnnotationBtn', require('../../leos/sidebar/components/leos-publish-annotation-btn')) // LEOS Change
 
   .directive('hAutofocus', require('./directive/h-autofocus'))
   .directive('hBranding', require('./directive/h-branding'))

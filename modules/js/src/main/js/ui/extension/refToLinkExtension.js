@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,7 +26,7 @@ define(function refToLinkExtensionModule(require) {
 
         // configure ref2Link
         $.fn.ref2link.options = {tooltipTrigger: 'notooltip'}; //Disabling the tooltip 
-        // $.fn.ref2link.setFilter('environment', ['SOLON-PRD', ...]);// enable sets of rules
+        $.fn.ref2link.setFilter('environments', ['EC-PRD']);// enable sets of rules
 
         log.debug("Registering refToLink extension unregistration listener...");
         connector.onUnregister = _connectorUnregistrationListener;
@@ -109,8 +109,11 @@ define(function refToLinkExtensionModule(require) {
                 }, false);
 
         //walk
+        var editedElement = el.querySelector('div.leos-placeholder'); // Skip text nodes inside CKEditor
         while (node = walker.nextNode()) {
-            result.push(node);
+            if ((editedElement == null) || ((editedElement != null) && (!editedElement.contains(node)))) {
+                result.push(node);
+            }
         }
         return result;
     }

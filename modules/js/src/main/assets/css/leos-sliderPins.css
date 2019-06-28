@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -11,15 +11,28 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-.pin-leos-marker-content-removed {
+.pin-leos-marker-content-removed, .pin-leos-double-compare-removed-original {
     background: #ff9999;
     border-top:1px solid red;
     border-bottom:1px solid red;;
     margin-left:9px;
     width:8px;
 }
-.pin-leos-marker-content-added{
+.pin-leos-marker-content-added, .pin-leos-double-compare-added-original {
     background: #99ff66;
+    border-top:1px solid #66cc00;
+    border-bottom:1px solid #66cc00;
+    width:9px;
+}
+.pin-leos-double-compare-removed-intermediate {
+    background: #800000;
+    border-top:1px solid red;
+    border-bottom:1px solid red;;
+    margin-left:9px;
+    width:8px;
+}
+.pin-leos-double-compare-added-intermediate {
+    background: #008040;
     border-top:1px solid #66cc00;
     border-bottom:1px solid #66cc00;
     width:9px;

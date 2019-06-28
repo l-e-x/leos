@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,32 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.Authorities;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
+import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.entity.Group;
+import eu.europa.ec.leos.annotate.model.entity.User;
+import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.model.web.user.JsonUserProfile;
+import eu.europa.ec.leos.annotate.repository.GroupRepository;
+import eu.europa.ec.leos.annotate.repository.UserGroupRepository;
+import eu.europa.ec.leos.annotate.repository.UserRepository;
+import eu.europa.ec.leos.annotate.services.exceptions.DefaultGroupNotFoundException;
+import eu.europa.ec.leos.annotate.services.exceptions.UserAlreadyExistingException;
+import eu.europa.ec.leos.annotate.services.exceptions.UserNotFoundException;
+import eu.europa.ec.leos.annotate.services.impl.GroupServiceImpl;
+import eu.europa.ec.leos.annotate.services.impl.UUIDGeneratorServiceImpl;
+import eu.europa.ec.leos.annotate.services.impl.UserServiceImpl;
+import org.apache.http.auth.InvalidCredentialsException;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,33 +46,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.UserDetails;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
-import eu.europa.ec.leos.annotate.model.web.user.JsonUserProfile;
-import eu.europa.ec.leos.annotate.repository.*;
-import eu.europa.ec.leos.annotate.services.UserService;
-import eu.europa.ec.leos.annotate.services.UserServiceWithTestFunctions;
-import eu.europa.ec.leos.annotate.services.exceptions.DefaultGroupNotFoundException;
-import eu.europa.ec.leos.annotate.services.exceptions.UserAlreadyExistingException;
-import eu.europa.ec.leos.annotate.services.exceptions.UserNotFoundException;
-import eu.europa.ec.leos.annotate.services.impl.UUIDGeneratorServiceImpl;
-import eu.europa.ec.leos.annotate.services.impl.UserServiceImpl;
-import org.apache.http.auth.InvalidCredentialsException;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
-
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
 // it should also be possible to run these tests with:
 // @ActiveProfiles("testUserService")
 // the associate test configuration scripts are still available; this should demonstrate that several different test scripts can be used, if needed
@@ -57,26 +64,6 @@ public class UserServiceTest {
     /**
      * NOTE: This test class demonstrates how to use a specific profile that does not use the default scripts for creation of the database 
      */
-
-    private static Logger LOG = LoggerFactory.getLogger(UserServiceTest.class);
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -92,6 +79,26 @@ public class UserServiceTest {
 
     @Autowired
     private UserGroupRepository userGroupRepos;
+
+    private static final Logger Log = LoggerFactory.getLogger(UserServiceTest.class);
+
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
 
     // -------------------------------------
     // Tests
@@ -118,7 +125,7 @@ public class UserServiceTest {
         try {
             newUser = userService.createUser(new User(userLogin));
         } catch (UserAlreadyExistingException | DefaultGroupNotFoundException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail("Unexpected exception when creating new user: " + e);
         }
 
         Assert.assertNotNull(newUser);
@@ -127,10 +134,10 @@ public class UserServiceTest {
         Assert.assertEquals(1, userGroupRepos.count());
 
         // retrieve group ID
-        Group theGroup = groupRepos.findByName("__world__");
+        final Group theGroup = groupRepos.findByName("__world__");
 
         // verify user has been added to default group
-        UserGroup userInGroup = userGroupRepos.findByUserIdAndGroupId(newUser.getId(), theGroup.getId());
+        final UserGroup userInGroup = userGroupRepos.findByUserIdAndGroupId(newUser.getId(), theGroup.getId());
         Assert.assertNotNull(userInGroup);
 
         // verify that user can be found using login
@@ -156,7 +163,7 @@ public class UserServiceTest {
         try {
             newUser = userService.createUser(userLogin);
         } catch (UserAlreadyExistingException | DefaultGroupNotFoundException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail("Unexpected exception received during user creation: " + e);
         }
         Assert.assertNotNull(newUser);
 
@@ -164,7 +171,7 @@ public class UserServiceTest {
             userService.createUser(userLogin);
             Assert.fail("Expected exception not thrown when trying to recreate existing user");
         } catch (UserAlreadyExistingException | DefaultGroupNotFoundException ex) {
-            LOG.info("Expected exception for duplicate user received.");
+            Log.info("Expected exception for duplicate user received.");
         }
 
         // user was not created, but exception was thrown instead due to duplicate user
@@ -187,7 +194,7 @@ public class UserServiceTest {
         } catch (UserAlreadyExistingException e) {
             Assert.fail("Unexpected exception received: " + e);
         } catch (DefaultGroupNotFoundException e) {
-            LOG.info("Expected exception about missing default group received");
+            Log.info("Expected exception about missing default group received");
         }
 
         Assert.assertNull(userRepos.findByLogin(userLogin));
@@ -195,20 +202,16 @@ public class UserServiceTest {
 
     /**
      * test that user creation throws an exception if required user name is missing
+     * @throws DefaultGroupNotFoundException 
+     * @throws UserAlreadyExistingException 
      */
-    @Test
-    public void testCreateUser_InvalidParameters() {
-        
-        try {
-            userService.createUserIfNotExists("");
-            Assert.fail("User creation should throw an error if user name is missing; did not!");
-        } catch (IllegalArgumentException ile) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception received: " + e);
-        }
+    @Test(expected = IllegalArgumentException.class)
+    public void testCreateUser_InvalidParameters() throws Exception {
+
+        userService.createUserIfNotExists("");
+        Assert.fail("User creation should throw an error if user name is missing; did not!");
     }
-    
+
     /**
      * test that a user is created if not existing, 
      * but don't throw exception or do anything if already existing
@@ -244,29 +247,49 @@ public class UserServiceTest {
     /**
      * test adding users to groups with invalid parameters 
      */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
+    @Test(expected = IllegalArgumentException.class)
+    public void testAssignUserToGroup_InvalidParameter1() {
+
+        userService.addUserToEntityGroup(null);
+    }
+
+    /**
+     * test adding users to groups with invalid parameters 
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
+    @Test(expected = IllegalArgumentException.class)
+    public void testAssignUserToGroup_InvalidParameter2() {
+
+        final UserDetails userDetails = null;
+
+        userService.addUserToEntityGroup(new UserInformation(null, userDetails)); // should throw IllegalArgumentException
+    }
+
+    /**
+     * test adding users to groups with invalid parameters 
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
+    @Test(expected = IllegalArgumentException.class)
+    public void testAssignUserToGroup_InvalidParameter3() {
+
+        final UserDetails userDetails = null;
+
+        final User dummyUser = new User("somelogin");
+        userService.addUserToEntityGroup(new UserInformation(dummyUser, userDetails)); // should throw IllegalArgumentException
+    }
+
+    /**
+     * test adding users to groups with invalid parameters 
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
     @Test
-    public void testAssignUserToGroup_InvalidParameters() {
+    public void testAssignUserToGroup_InvalidParameter4() {
 
-        try {
-            userService.addUserToEntityGroup(null, null);
-            Assert.fail("method should fail for invalid arguments - it did not");
-        } catch (IllegalArgumentException iae) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
-        }
+        final User dummyUser = new User("login2");
 
-        User dummyUser = new User("login");
-        try {
-            userService.addUserToEntityGroup(dummyUser, null);
-            Assert.fail("method should fail for invalid arguments - it did not");
-        } catch (IllegalArgumentException iae) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
-        }
-
-        Assert.assertFalse(userService.addUserToEntityGroup(dummyUser, new UserDetails("login", Long.valueOf(1), "first", "last", "", "", null)));
+        Assert.assertFalse(userService.addUserToEntityGroup(
+                new UserInformation(dummyUser, new UserDetails("login2", Long.valueOf(1), "first", "last", "", "", null))));
     }
 
     /**
@@ -275,12 +298,13 @@ public class UserServiceTest {
     @Test
     public void testAssignUserToGroup_createNewGroupAndAssign() {
 
-        final String login = "login", entity = "AGRI";
+        final String login = "alogin";
+        final String entity = "AGRI";
 
         // arrange
-        UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@b.eu", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@c.eu", null);
 
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
 
         // only default group defined before
@@ -288,12 +312,12 @@ public class UserServiceTest {
         Assert.assertEquals(0, userGroupRepos.count());
 
         // act
-        Assert.assertTrue(userService.addUserToEntityGroup(theUser, details));
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
 
         // verify
         // new group
         Assert.assertEquals(2, groupRepos.count());
-        Group createdGroup = groupRepos.findByName(entity);
+        final Group createdGroup = groupRepos.findByName(entity);
         Assert.assertNotNull(createdGroup);
 
         // user is member of group
@@ -307,15 +331,16 @@ public class UserServiceTest {
     @Test
     public void testAssignUserToGroup_groupExistsAlready() {
 
-        final String login = "login", entity = "AGRI";
+        final String login = "login";
+        final String entity = "AGRI";
 
         // arrange
-        UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@b.eu", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@b.eu", null);
 
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
 
-        Group newGroup = new Group(entity, true);
+        final Group newGroup = new Group(entity, true);
         groupRepos.save(newGroup);
 
         // groups defined before, but no memberships
@@ -323,7 +348,7 @@ public class UserServiceTest {
         Assert.assertEquals(0, userGroupRepos.count());
 
         // act
-        Assert.assertTrue(userService.addUserToEntityGroup(theUser, details));
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
 
         // verify
         Assert.assertEquals(2, groupRepos.count()); // no additional groups, existing was used
@@ -342,9 +367,9 @@ public class UserServiceTest {
         final String login = "login";
 
         // arrange
-        UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", "", "a@b.eu", null); // entity empty
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", "", "a@b.eu", null); // entity empty
 
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
 
         // only default group defined before
@@ -352,7 +377,7 @@ public class UserServiceTest {
         Assert.assertEquals(0, userGroupRepos.count());
 
         // act
-        Assert.assertFalse(userService.addUserToEntityGroup(theUser, details));
+        Assert.assertFalse(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
 
         // verify
         Assert.assertEquals(1, groupRepos.count()); // no additional group was created
@@ -365,24 +390,27 @@ public class UserServiceTest {
      * test randomized creation of user details and thus group memberships
      */
     @Test
+    @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.CyclomaticComplexity", 
+        "PMD.ModifiedCyclomaticComplexity", "PMD.NPathComplexity"})
     public void testAssignUserToGroup_randomized() {
 
-        final int numberOfUsers = 1000, numberOfEntities = 200;
+        final int numberOfUsers = 1000;
+        final int numberOfEntities = 200;
 
-        List<User> users = new ArrayList<User>();
-        List<UserDetails> details = new ArrayList<UserDetails>();
-        List<String> entities = new ArrayList<String>();
-        List<Integer> entityStats = new ArrayList<Integer>();
+        final List<User> users = new ArrayList<User>();
+        final List<UserDetails> details = new ArrayList<UserDetails>();
+        final List<String> entities = new ArrayList<String>();
+        final List<Integer> entityStats = new ArrayList<Integer>();
 
         // prepare user accounts
         for (int i = 0; i < numberOfUsers; i++) {
-            User user = new User("login" + String.valueOf(i));
+            final User user = new User("login" + i);
             userRepos.save(user);
             users.add(user);
         }
 
         // generate entities - use our UUID generator for simplicity
-        UUIDGeneratorService uuidService = new UUIDGeneratorServiceImpl();
+        final UUIDGeneratorService uuidService = new UUIDGeneratorServiceImpl();
         for (int i = 0; i < numberOfEntities; i++) {
             entities.add(uuidService.generateUrlSafeUUID().replaceAll("-", ""));
 
@@ -390,15 +418,15 @@ public class UserServiceTest {
             entityStats.add(Integer.valueOf(0));
         }
 
-        java.util.Random r = new java.util.Random();
+        final java.util.Random rand = new java.util.Random();
 
         // generate user details
         for (int i = 0; i < numberOfUsers; i++) {
 
-            UserDetails detail = new UserDetails(users.get(i).getLogin(), users.get(i).getId(), "firstname", "lastname", "", "a@b.eu", null);
-            int generatedValue = r.nextInt(100) + 1;
+            final UserDetails detail = new UserDetails(users.get(i).getLogin(), users.get(i).getId(), "firstname", "lastname", "", "a@b.eu", null);
+            final int generatedValue = rand.nextInt(100) + 1;
             if (generatedValue < 80) { // about 80% of users should have an entity assigned in our test
-                int entityToUse = r.nextInt(numberOfEntities);
+                final int entityToUse = rand.nextInt(numberOfEntities);
                 detail.setEntity(entities.get(entityToUse));
 
                 // increase statistics counter
@@ -412,8 +440,8 @@ public class UserServiceTest {
         for (int i = 0; i < numberOfUsers; i++) {
 
             // expected result depends on whether an entity is set
-            boolean addResult = userService.addUserToEntityGroup(users.get(i), details.get(i));
-            boolean expectedAddResult = !StringUtils.isEmpty(details.get(i).getEntity());
+            final boolean addResult = userService.addUserToEntityGroup(new UserInformation(users.get(i), details.get(i)));
+            final boolean expectedAddResult = !StringUtils.isEmpty(details.get(i).getEntity());
             Assert.assertEquals(expectedAddResult, addResult);
         }
 
@@ -434,12 +462,12 @@ public class UserServiceTest {
             if (entityStats.get(i) == 0) {
 
                 // the entity was not used - thus there shouldn't be a corresponding group in the database
-                Group groupNotToFind = groupRepos.findByName(entities.get(i));
+                final Group groupNotToFind = groupRepos.findByName(entities.get(i));
                 Assert.assertNull(groupNotToFind);
             } else {
                 // the entity was assigned in the randomized procedure above
                 // -> find the group in the database...
-                Group groupToFind = groupRepos.findByName(entities.get(i));
+                final Group groupToFind = groupRepos.findByName(entities.get(i));
 
                 // ... and count the number of users assigned to it - must correspond to the statistics
                 Assert.assertEquals(entityStats.get(i).intValue(), userGroupRepos.findByGroupId(groupToFind.getId()).size());
@@ -482,32 +510,19 @@ public class UserServiceTest {
         final String userId = "theuserId12";
         final String expectedHypoUsername = "acct:" + userId;
 
-        Assert.assertEquals(expectedHypoUsername, userService.getHypothesisUserAccountFromUserId(userId));
-
-        // test with empty input
-        Assert.assertEquals("", userService.getHypothesisUserAccountFromUserId(""));
+        Assert.assertEquals(expectedHypoUsername, userService.getHypothesisUserAccountFromUserName(userId));
     }
 
     /**
-     * test wrapping of user name to hypothesis user account by using user detail information coming from the external UD repo
-     * note: user details do not contain authority information
+     * test wrapping of user name to hypothesis user account - with empty user
      */
     @Test
-    public void testGetHypothesisUserAccountFromUserDetailsWithoutAuthority() {
+    public void testEmptyUsernameToHypoUserAccount() {
 
-        final String login = "thelogin";
-        final String DefaultAuthority = "defaultAuth";
-
-        User user = new User(login);
-        UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
-        myUserService.setDefaultAuthority(DefaultAuthority);
-
-        UserDetails details = new UserDetails(login, (long) 4712, "first", "last", "COMM", login + "@domain.eu", null);
-        myUserService.cacheUserDetails(login, details); // test function of extended interface
-
-        Assert.assertEquals("acct:" + login + "@" + DefaultAuthority, myUserService.getHypothesisUserAccountFromUser(user));
+        // test with empty input
+        Assert.assertEquals("", userService.getHypothesisUserAccountFromUserName(""));
     }
-
+    
     /**
      * test wrapping of user name to hypothesis user account by using user detail information coming from the external UD repo
      * note: user details DO contain authority information
@@ -518,14 +533,13 @@ public class UserServiceTest {
         final String login = "thelogin";
         final String MyAuthority = "thisismyauthori.ty";
 
-        User user = new User(login);
-        UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
+        final User user = new User(login);
+        final UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
 
-        UserDetails details = new UserDetails(login, (long) 4712, "first", "last", "COMM", login + "@domain.eu", null);
-        details.setAuthority(MyAuthority);
+        final UserDetails details = new UserDetails(login, (long) 4712, "first", "last", "COMM", login + "@domain.eu", null);
         myUserService.cacheUserDetails(login, details); // test function of extended interface
 
-        Assert.assertEquals("acct:" + login + "@" + MyAuthority, myUserService.getHypothesisUserAccountFromUser(user));
+        Assert.assertEquals("acct:" + login + "@" + MyAuthority, myUserService.getHypothesisUserAccountFromUser(user, MyAuthority));
     }
 
     /**
@@ -534,7 +548,7 @@ public class UserServiceTest {
     @Test
     public void testGetHypothesisUserAccountFromUser_UserNull() {
 
-        Assert.assertEquals("", userService.getHypothesisUserAccountFromUser(null));
+        Assert.assertEquals("", userService.getHypothesisUserAccountFromUser(null, null));
     }
 
     /**
@@ -545,48 +559,56 @@ public class UserServiceTest {
 
         final String login = "thelogin";
 
-        User user = new User(login);
-        UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
+        final User user = new User(login);
+        final UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
 
-        UserDetails details = new UserDetails("", (long) 4712, "first", "last", "COMM", login + "@domain.eu", null); // login left empty!
-        details.setAuthority(""); // authority left empty!
-        myUserService.cacheUserDetails(login, details); // test function of extended interface for filling cache
-
-        Assert.assertEquals("", myUserService.getHypothesisUserAccountFromUser(user));
+        Assert.assertEquals("", myUserService.getHypothesisUserAccountFromUser(user, ""));
+    }
+    
+    /**
+     * test retrieval of hypothesis account name returns empty string when user cannot be found
+     */
+    @Test
+    public void testGetHypothesisUserAccountFromUserId_UserUnknown() {
+        
+        // provide unknown database ID
+        Assert.assertEquals("", userService.getHypothesisUserAccountFromUserId(-3, ""));
+    }
+    
+    /**
+     * test retrieval of hypothesis account name based on user's database ID
+     */
+    @Test
+    public void testGetHypothesisUserAccountFromUserId() {
+        
+        final String login = "itsme";
+        final String authority = "someauthority";
+        final String expectedHypoUsername = "acct:" + login + "@" + authority;
+    
+        final User user = new User(login, true);
+        userRepos.save(user);
+        
+        Assert.assertEquals(expectedHypoUsername, userService.getHypothesisUserAccountFromUserId(user.getId(), authority));
     }
 
     /**
      * test that an exception is thrown when preferences are to be updated for an unknown user
      */
-    @Test
-    public void testUpdatePreferenceForUnknownUser() {
+    @Test(expected = UserNotFoundException.class)
+    public void testUpdatePreferenceForUnknownUser() throws UserNotFoundException {
 
-        try {
-            userService.updateSidebarTutorialVisible("unknown", true);
-            Assert.fail("Expected exception not received!");
-        } catch (UserNotFoundException e) {
-            // OK, expected
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception: " + e);
-        }
+        userService.updateSidebarTutorialVisible("unknown", true);// should throw UserNotFoundException
     }
 
     /**
      * test that an exception is thrown when preferences are to be updated for an invalid user
      */
-    @Test
-    public void testUpdatePreferenceForInvalidUser() {
+    @Test(expected = IllegalArgumentException.class)
+    public void testUpdatePreferenceForInvalidUser() throws UserNotFoundException {
 
-        try {
-            userService.updateSidebarTutorialVisible("", true);
-            Assert.fail("Expected exception not received!");
-        } catch (IllegalArgumentException e) {
-            // OK, expected
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception: " + e);
-        }
+        userService.updateSidebarTutorialVisible("", true); // should throw IllegalArgumentException
     }
-    
+
     /**
      * test that user preferences can be properly saved
      */
@@ -612,42 +634,112 @@ public class UserServiceTest {
     }
 
     /**
-     * test retrieval of user profile for known user
+     * test retrieval of user profile for known user of LEOS/EdiT
      */
     @Test
-    public void testGetUserProfileOfKnownUser() throws UserNotFoundException {
+    public void testGetUserProfileOfKnownLeosUser() throws UserNotFoundException {
 
         final String login = "demo";
+        final String authority = Authorities.EdiT;
 
-        User theUser = userRepos.save(new User(login));
+        final User theUser = userRepos.save(new User(login));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
 
-        JsonUserProfile profile = userService.getUserProfile(login, "authority");
+        // assign user to a second group
+        final Group otherGroup = new Group("otherGroup", true);
+        groupRepos.save(otherGroup);
+        userGroupRepos.save(new UserGroup(theUser.getId(), otherGroup.getId()));
+
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+        final JsonUserProfile profile = userService.getUserProfile(userInfo);
+
+        // verify
+        Assert.assertNotNull(profile);
+        Assert.assertTrue(profile.getUserid() != null && !profile.getUserid().isEmpty());
+        Assert.assertEquals(2, profile.getGroups().size());
+        Assert.assertEquals(defaultGroup.getName(), profile.getGroups().get(0).getId());
+        Assert.assertEquals(otherGroup.getName(), profile.getGroups().get(1).getId());
+
+        Assert.assertNotNull(profile.getFeatures());
+        Assert.assertNotNull(profile.getFlash());
+        Assert.assertNotNull(profile.getUser_info()); // user_info object is available, although its content might be null
+        Assert.assertEquals(authority, profile.getAuthority());
+    }
+
+    /**
+     * test retrieval of user profile for known user of ISC
+     * -> should not report the default group
+     */
+    @Test
+    public void testGetUserProfileOfKnownIscUser() throws UserNotFoundException {
+
+        final String login = "demo";
+        final String authority = Authorities.ISC;
+
+        final User theUser = userRepos.save(new User(login));
+        // user is member of the default group, but it shouldn't be reported!
+        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+
+        // assign user to a second group
+        final Group otherGroup = new Group("otherGroup", true);
+        groupRepos.save(otherGroup);
+        userGroupRepos.save(new UserGroup(theUser.getId(), otherGroup.getId()));
+
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+        final JsonUserProfile profile = userService.getUserProfile(userInfo);
 
         // verify
         Assert.assertNotNull(profile);
         Assert.assertTrue(profile.getUserid() != null && !profile.getUserid().isEmpty());
         Assert.assertEquals(1, profile.getGroups().size());
-        Assert.assertEquals(defaultGroup.getName(), profile.getGroups().get(0).getId());
+        Assert.assertEquals(otherGroup.getName(), profile.getGroups().get(0).getId());
 
         Assert.assertNotNull(profile.getFeatures());
         Assert.assertNotNull(profile.getFlash());
         Assert.assertNotNull(profile.getUser_info()); // user_info object is available, although its content might be null
+        Assert.assertEquals(authority, profile.getAuthority());
+    }
+
+    /**
+     * test retrieval of user profile without specifying user -> exception
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetUserProfileWithoutUser() throws Exception {
+
+        userService.getUserProfile(null); // should throw IllegalArgumentException
     }
 
     /**
      * test retrieval of user profile throws exception when user is not known
      */
-    @Test
-    public void testGetUserProfileOfUnknownUser() {
+    @Test(expected = UserNotFoundException.class)
+    public void testGetUserProfileOfUnknownUser() throws UserNotFoundException {
 
-        try {
-            userService.getUserProfile("unknownlogin", "authority");
-            Assert.fail("Expected exception about unknown user not received!");
-        } catch (UserNotFoundException unfe) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Unexpected exception received!");
-        }
+        userService.getUserProfile(new UserInformation("unknownlogin", "someauthority")); // should throw UserNotFoundException
+    }
+
+    /**
+     * test that no exception is thrown when UD-repo cannot be contacted (and display_name remains empty)
+     */
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testGetUserProfile_RestException() throws UserNotFoundException {
+
+        // mock the RestTemplate and inject it into the UserService
+        final RestTemplate restOperations = Mockito.mock(RestTemplate.class);
+        Mockito.when(restOperations.getForObject(Mockito.anyString(), Mockito.any(), Mockito.anyMap())).thenThrow(new RestClientException("error"));
+
+        // mock the GroupService also to cover other branches
+        final UserServiceWithTestFunctions userServiceExtended = new UserServiceImpl(restOperations);
+        final GroupService grpServ = Mockito.mock(GroupServiceImpl.class);
+        Mockito.when(grpServ.getGroupsOfUser(Mockito.any(User.class))).thenReturn(null);
+
+        userServiceExtended.setGroupService(grpServ);
+
+        final UserInformation userInfo = new UserInformation(new User("someuser"), "auth");
+
+        final JsonUserProfile prof = userServiceExtended.getUserProfile(userInfo);
+        Assert.assertNotNull(prof);// result received, no exception
+        Assert.assertNull(prof.getUser_info().getDisplay_name()); // but no display name
     }
 }

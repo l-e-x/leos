@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,7 +22,6 @@ import static org.mockito.Mockito.when;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.junit.Before;
@@ -73,10 +72,10 @@ public class UsersClientTest extends LeosTest{
 
         String searchKey = "smith";
         
-        List<LeosAuthority> authorities = new ArrayList<>(); 
+        List<String> roles = new ArrayList<>();
 
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, authorities);
-        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, entity, user2Mail, authorities);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, roles);
+        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, entity, user2Mail, roles);
 
         List<UserJSON> users = new ArrayList<UserJSON>();
         users.add(user1);
@@ -99,12 +98,12 @@ public class UsersClientTest extends LeosTest{
         assertEquals(result.get(0).getName(), user1LastName + " " + user1FirstName);
         assertEquals(result.get(0).getEntity(), entity);
         assertEquals(result.get(0).getId(), Long.valueOf(1));
-        assertEquals(((UserJSON) result.get(0)).getAuthorities(), authorities);
+        assertEquals(((UserJSON) result.get(0)).getRoles(), roles);
         assertEquals(result.get(1).getLogin(),user2Login);
         assertEquals(result.get(1).getName(), user2LastName + " " + user2FirstName);
         assertEquals(result.get(1).getEntity(), entity);
         assertEquals(result.get(1).getId(), Long.valueOf(0));
-        assertEquals(((UserJSON) result.get(1)).getAuthorities(), authorities);
+        assertEquals(((UserJSON) result.get(1)).getRoles(), roles);
     }
  
     @Test
@@ -118,9 +117,9 @@ public class UsersClientTest extends LeosTest{
 
         String userId = "smithj";
 
-        List<LeosAuthority> authorities = new ArrayList<>(); 
+        List<String> roles = new ArrayList<>();
         
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, authorities);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, roles);
 
         String uri = testServerUrl + "/users/{userId}";
 
@@ -136,6 +135,6 @@ public class UsersClientTest extends LeosTest{
         assertEquals(result.getId(), Long.valueOf(1));
         assertEquals(result.getName(), user1LastName + " " + user1FirstName);
         assertEquals(result.getEntity(), entity);
-        assertEquals(((UserJSON) result).getAuthorities(), authorities);
+        assertEquals(((UserJSON) result).getRoles(), roles);
     }
 }

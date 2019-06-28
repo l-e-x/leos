@@ -37,6 +37,9 @@ public class LeosInMemoryServiceFactory extends InMemoryServiceFactoryImpl {
         PROPS_KEY_MAPPING.put("template", "leos:template");
         PROPS_KEY_MAPPING.put("title", "leos:title");
         PROPS_KEY_MAPPING.put("collaborators", "leos:collaborators");
+        PROPS_KEY_MAPPING.put("milestoneComments", "leos:milestoneComments");
+        PROPS_KEY_MAPPING.put("initialCreatedBy", "leos:initialCreatedBy");
+        PROPS_KEY_MAPPING.put("initialCreationDate", "leos:initialCreationDate");
         // leos COMMON metadata properties
         PROPS_KEY_MAPPING.put("metadata.docTemplate", "metadata:docTemplate");
         PROPS_KEY_MAPPING.put("metadata.docStage", "metadata:docStage");
@@ -58,6 +61,8 @@ public class LeosInMemoryServiceFactory extends InMemoryServiceFactoryImpl {
         // only for non-String type properties
         PROPS_TYPE_MAPPING.put("annex:docIndex", BigInteger.class);
         PROPS_TYPE_MAPPING.put("leos:collaborators", List.class);
+        PROPS_TYPE_MAPPING.put("leos:milestoneComments", List.class);
+        PROPS_TYPE_MAPPING.put("leos:initialCreationDate", GregorianCalendar.class);
     }
 
     private static final String ENABLED = ".enabled";

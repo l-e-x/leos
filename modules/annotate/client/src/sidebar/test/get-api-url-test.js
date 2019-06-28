@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,7 @@
  */
 'use strict';
 
-var getApiUrl = require('../get-api-url');
+var apiUrls = require('../get-api-url');
 
 describe('sidebar.getApiUrl', function () {
   context('when there is a service object in settings', function () {
@@ -24,7 +24,7 @@ describe('sidebar.getApiUrl', function () {
           apiUrl: 'someOtherApiUrl',
         }],
       };
-      assert.equal(getApiUrl(settings), settings.services[0].apiUrl);
+      assert.equal(apiUrls.getApiUrl(settings), settings.services[0].apiUrl);
     });
   });
 
@@ -33,7 +33,7 @@ describe('sidebar.getApiUrl', function () {
       var settings = {
         apiUrl: 'someApiUrl',
       };
-      assert.equal(getApiUrl(settings), settings.apiUrl);
+      assert.equal(apiUrls.getApiUrl(settings), settings.apiUrl);
     });
   });
 
@@ -44,7 +44,7 @@ describe('sidebar.getApiUrl', function () {
         services: [{}],
       };
       assert.throws(
-        function() { getApiUrl(settings); },
+        function() { apiUrls.getApiUrl(settings); },
         Error,
         'Service should contain an apiUrl value');
     });

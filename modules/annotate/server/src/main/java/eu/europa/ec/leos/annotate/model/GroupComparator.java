@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -25,12 +25,12 @@ public class GroupComparator implements Comparator<Group>, Serializable {
 
     private static final long serialVersionUID = 454410401690111487L;
 
-    private String defaultGroupName;
+    private final String defaultGroupName;
 
     // -------------------------------------
     // Constructor
     // -------------------------------------
-    public GroupComparator(String defaultGroupName) {
+    public GroupComparator(final String defaultGroupName) {
         this.defaultGroupName = defaultGroupName;
     }
 
@@ -44,7 +44,7 @@ public class GroupComparator implements Comparator<Group>, Serializable {
      * within each block, ordering by displayname is applied
      */
     @Override
-    public int compare(Group first, Group second) {
+    public int compare(final Group first, final Group second) {
 
         // general reminder:
         // negative return value: first appears before second

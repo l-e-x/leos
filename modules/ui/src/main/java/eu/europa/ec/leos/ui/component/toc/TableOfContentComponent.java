@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,30 +17,48 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.DesignRoot;
 import com.vaadin.data.TreeData;
+import com.vaadin.data.ValueProvider;
 import com.vaadin.event.selection.SelectionEvent;
 import com.vaadin.event.selection.SelectionListener;
 import com.vaadin.icons.VaadinIcons;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.spring.annotation.SpringComponent;
-import com.vaadin.ui.*;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.DescriptionGenerator;
+import com.vaadin.ui.Grid;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.StyleGenerator;
+import com.vaadin.ui.TreeGrid;
+import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.declarative.Design;
 import com.vaadin.ui.renderers.HtmlRenderer;
-
+import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.support.TableOfContentHelper;
 import eu.europa.ec.leos.ui.event.StateChangeEvent;
 import eu.europa.ec.leos.ui.event.toc.EditTocRequestEvent;
+import eu.europa.ec.leos.vo.coedition.CoEditionVO;
+import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.ContentPane;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
+import static eu.europa.ec.leos.services.support.TableOfContentHelper.DEFAULT_CAPTION_MAX_SIZE;
 
 @SpringComponent
 @Scope("prototype")
@@ -49,31 +67,44 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
 
     private static final long serialVersionUID = -4752609567267410718L;
     private static final Logger LOG = LoggerFactory.getLogger(TableOfContentComponent.class);
+    public static SimpleDateFormat dataFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
     private MessageHelper messageHelper;
     private EventBus eventBus;
-    
     protected Label tocLabel;
     protected Button tocExpandCollapseButton;
     protected Button tocEditButton;
     protected Button tocRefreshButton;
     protected Label spacerLabel;
     
+    protected Label tocUserCoEdition;
+    
     protected TreeGrid<TableOfContentItemVO> tocTree;
+    
+    private User user;
 
     public enum TreeAction {
         EXPAND,
         COLLAPSE
     }
-    
+
+    private boolean coEditionSipEnabled;
+    private String coEditionSipDomain;
+
     @Autowired
-    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus) {
+    public TableOfContentComponent(final MessageHelper messageHelper, final EventBus eventBus, final SecurityContext securityContext, final ConfigurationHelper cfgHelper) {
         LOG.trace("Initializing table of content...");
         Validate.notNull(messageHelper, "MessageHelper must not be null!");
         this.messageHelper = messageHelper;
         Validate.notNull(eventBus, "EventBus must not be null!");
         this.eventBus = eventBus;
-        
+        Validate.notNull(securityContext, "SecurityContext must not be null!");
+        this.user = securityContext.getUser();
+        Validate.notNull(user, "User must not be null!");
+        Validate.notNull(cfgHelper, "cfgHelper must not be null!");
+        this.coEditionSipEnabled = Boolean.valueOf(cfgHelper.getProperty("leos.coedition.sip.enabled"));
+        this.coEditionSipDomain = cfgHelper.getProperty("leos.coedition.sip.domain");
+
         Design.read(this);
         buildToc();
     }
@@ -154,6 +185,17 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
         });
     }
 
+    private void expandDefaultTreeNodes(List<TableOfContentItemVO> items) {
+        items.forEach(item -> {
+            if(item.getType().isExpandedByDefault()){
+                tocTree.expand(item);
+                if (!item.getChildItems().isEmpty()) {
+                    expandDefaultTreeNodes(item.getChildItems());
+                }
+            }
+        });
+    }
+
     // Toc edit button
     private void tocEditButton() {
         tocEditButton.setVisible(true);
@@ -171,19 +213,61 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
             eventBus.post(new RefreshDocumentEvent());
         });
     }
+    
+    private ValueProvider<TableOfContentItemVO, String> getColumnHtml() {
+        return tableOfContentItemVO -> {
+            return getColumnItemHtml(tableOfContentItemVO);
+            };
+    }
 
+    private String getColumnItemHtml(TableOfContentItemVO tableOfContentItemVO) {
+        StringBuilder itemHtml = new StringBuilder(StringUtils.stripEnd(TableOfContentHelper.buildItemCaption(tableOfContentItemVO, DEFAULT_CAPTION_MAX_SIZE, messageHelper), null));
+        if (!tableOfContentItemVO.getCoEditionVos().isEmpty()) {
+            if (tableOfContentItemVO.getCoEditionVos().stream().anyMatch(x -> !x.getUserLoginName().equals(user.getLogin()))) {
+                itemHtml.insert(0, "<span class=\"leos-toc-user-coedition Vaadin-Icons\">&#xe80d</span>");
+            } else {
+                itemHtml.insert(0, "<span class=\"leos-toc-user-coedition leos-toc-user-coedition-self-user Vaadin-Icons\">&#xe80d</span>");
+            }
+        }
+        return itemHtml.toString();
+    }
+
+    private StyleGenerator<TableOfContentItemVO> getColumnStyle() {
+        return tableOfContentItemVO -> {
+                return TableOfContentHelper.getItemSoftStyle(tableOfContentItemVO);
+            };
+    }
+
+    private DescriptionGenerator<TableOfContentItemVO> getColumnDescription() {
+        return tableOfContentItemVO -> {
+                return getColumnItemDescription(tableOfContentItemVO);
+            };
+    }
+
+    private String getColumnItemDescription(TableOfContentItemVO tableOfContentItemVO) {
+        StringBuilder itemDescription = new StringBuilder();
+        for (CoEditionVO coEditionVO : tableOfContentItemVO.getCoEditionVos()) {
+            StringBuilder userDescription = new StringBuilder();
+            if (!coEditionVO.getUserLoginName().equals(user.getLogin())) {
+                userDescription.append("<a class=\"leos-toc-user-coedition-lync\" href=\"")
+                        .append(StringUtils.isEmpty(coEditionVO.getUserEmail()) ? "" : (coEditionSipEnabled ? new StringBuilder("sip:").append(coEditionVO.getUserEmail().replaceFirst("@.*", "@" + coEditionSipDomain)).toString()
+                                    : new StringBuilder("mailto:").append(coEditionVO.getUserEmail()).toString()))
+                        .append("\">").append(coEditionVO.getUserName()).append(" (").append(StringUtils.isEmpty(coEditionVO.getEntity()) ? "-" : coEditionVO.getEntity())
+                        .append(")</a>");
+            } else {
+                userDescription.append(coEditionVO.getUserName()).append(" (").append(StringUtils.isEmpty(coEditionVO.getEntity()) ? "-" : coEditionVO.getEntity()).append(")");
+            }
+            itemDescription.append(messageHelper.getMessage("coedition.tooltip.message", userDescription, dataFormat.format(new Date(coEditionVO.getEditionTime()))) + "<br>");
+        }
+        return itemDescription.toString();
+    }
+    
     // Build Table of Content tree
     private void buildTocTree() {
         tocTree.setSelectionMode(Grid.SelectionMode.SINGLE);
-        tocTree.addColumn(tableOfContentItemVO -> {
-            String iconHtml = "";
-            if(tableOfContentItemVO.areChildrenAllowed() ) {
-                iconHtml = VaadinIcons.FOLDER_O.getHtml();
-            }
-            return iconHtml + " " + TableOfContentItemConverter.buildItemCaption(tableOfContentItemVO,
-                    TableOfContentItemConverter.DEFAULT_CAPTION_MAX_SIZE, messageHelper);
-            }, new HtmlRenderer());
-        
+        tocTree.addColumn(getColumnHtml(), new HtmlRenderer());
+        tocTree.setStyleGenerator(getColumnStyle());
+        tocTree.setDescriptionGenerator(getColumnDescription(), ContentMode.HTML);
         tocTree.removeHeaderRow(tocTree.getDefaultHeaderRow());
 
         // handle tree node selections
@@ -206,7 +290,7 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
         TreeData<TableOfContentItemVO> tocData = tocTree.getTreeData();
         tocData.removeItem(null);//remove all old data
         tocData.addItems(newTocData.getRootItems(), TableOfContentItemVO::getChildItemsView);//add all new data
-        expandTree(tocTree.getTreeData().getRootItems()); //expand items recursively
+        expandDefaultTreeNodes(tocTree.getTreeData().getRootItems()); //expand default items recursively
         tocTree.getDataProvider().refreshAll();
     }
 
@@ -215,14 +299,11 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
     }
 
     @Override
-    public float getDefaultPaneWidth(int numberOfFeatures) {
-        float featureWidth=0f;
+    public float getDefaultPaneWidth(int numberOfFeatures, boolean tocPresent) {
+        final float featureWidth;
         switch(numberOfFeatures){
             case 1:
                 featureWidth=100f;
-                break;
-            case 2:
-                featureWidth=20f;
                 break;
             default:
                 featureWidth = 20f;
@@ -238,4 +319,68 @@ public class TableOfContentComponent extends VerticalLayout implements ContentPa
             tocRefreshButton.setEnabled(event.getState().isState());
         }
     }
+    
+    private void updateItemsUserCoEditionInfo(List<TableOfContentItemVO> tableOfContentItemVOList, List<CoEditionVO> coEditionVos, String presenterId) {
+        tableOfContentItemVOList.forEach(tableOfContentItemVO -> {
+            tableOfContentItemVO.removeAllUserCoEdition();
+            coEditionVos.stream()
+                    .filter((x) -> InfoType.ELEMENT_INFO.equals(x.getInfoType()) && x.getElementId().replace("__blockcontainer", "").equals(tableOfContentItemVO.getId()) &&
+                            !x.getPresenterId().equals(presenterId))
+                    .sorted(Comparator.comparing(CoEditionVO::getUserName).thenComparingLong(CoEditionVO::getEditionTime))
+                    .forEach(x -> {
+                        tableOfContentItemVO.addUserCoEdition(x);
+                    });
+            if (!tableOfContentItemVO.getChildItems().isEmpty()) {
+                updateItemsUserCoEditionInfo(tableOfContentItemVO.getChildItems(), coEditionVos, presenterId);
+            }
+        });
+    }
+    
+    private void updateTreeUserCoEditionInfo(List<CoEditionVO> coEditionVos, String presenterId) {
+        updateItemsUserCoEditionInfo(tocTree.getTreeData().getRootItems(), coEditionVos, presenterId);
+        tocTree.getDataProvider().refreshAll();
+    }
+    
+    private void updateToolbarUserCoEditionInfo(List<CoEditionVO> coEditionVos, String presenterId) {
+        tocUserCoEdition.setIcon(null);
+        tocUserCoEdition.setDescription("");
+        tocUserCoEdition.removeStyleName("leos-toolbar-user-coedition-self-user");
+        coEditionVos.stream()
+            .filter((x) -> InfoType.TOC_INFO.equals(x.getInfoType()) && !x.getPresenterId().equals(presenterId))
+            .sorted(Comparator.comparing(CoEditionVO::getUserName).thenComparingLong(CoEditionVO::getEditionTime))
+            .forEach(x -> {
+                StringBuilder userDescription = new StringBuilder();
+                if (!x.getUserLoginName().equals(user.getLogin())) {
+                    userDescription.append("<a class=\"leos-toc-user-coedition-lync\" href=\"")
+                            .append(StringUtils.isEmpty(x.getUserEmail()) ? "" : (coEditionSipEnabled ? new StringBuilder("sip:").append(x.getUserEmail().replaceFirst("@.*", "@" + coEditionSipDomain)).toString()
+                                    : new StringBuilder("mailto:").append(x.getUserEmail()).toString()))
+                            .append("\">").append(x.getUserName()).append(" (").append(StringUtils.isEmpty(x.getEntity()) ? "-" : x.getEntity())
+                            .append(")</a>");
+                } else {
+                    userDescription.append(x.getUserName()).append(" (").append(StringUtils.isEmpty(x.getEntity()) ? "-" : x.getEntity()).append(")");
+                }
+                tocUserCoEdition.setDescription(
+                        tocUserCoEdition.getDescription() +
+                            messageHelper.getMessage("coedition.tooltip.message", userDescription, dataFormat.format(new Date(x.getEditionTime()))) +
+                            "<br>",
+                            ContentMode.HTML);
+                });
+        if (!tocUserCoEdition.getDescription().isEmpty()) {
+            tocUserCoEdition.setIcon(VaadinIcons.USER);
+            if (!tocUserCoEdition.getDescription().contains("href=\"")) {
+                tocUserCoEdition.addStyleName("leos-toolbar-user-coedition-self-user");
+            }
+        }
+    }
+    
+    public void updateUserCoEditionInfo(List<CoEditionVO> coEditionVos, String presenterId) {
+        updateToolbarUserCoEditionInfo(coEditionVos, presenterId);
+        updateTreeUserCoEditionInfo(coEditionVos, presenterId);
+    }
+
+    @Override
+    public Class getChildClass() {
+        return null;
+    }
+    
 }

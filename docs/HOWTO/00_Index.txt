@@ -33,17 +33,17 @@
         - refer to RECITAL EDITION in Leos Editor HOWTO
     11c. Edit Articles
         - refer to ARTICLE EDITION in Leos Editor HOWTO
-    11d. Numbered paragraph
-        - refer to NUMBERED PARAGRAPH in Leos Editor HOWTO
-    11e. Sub Paragraph
-        - refer to SUB-PARAGRAPH in Leos Editor HOWTO
-    11f. Transform paragraph to point
-        - refer to TRANSFORM NUMBERED PARAGRAPH TO POINT AND VICE-VERSA in
-        Leos Editor HOWTO
-    11g. Insert References notes
-        - refer to REFERENCES NOTES in Leos Editor HOWTO
-    11h. Insert Cross-REFERENCES
-        - refer to CROSS-REFERENCE in Leos Editor HOWTO
+	11d. Numbered paragraph
+		- refer to NUMBERED PARAGRAPH in Leos Editor HOWTO
+	11e. Sub Paragraph
+		- refer to SUB-PARAGRAPH in Leos Editor HOWTO
+	11f. Transform paragraph to point
+		- refer to TRANSFORM NUMBERED PARAGRAPH TO POINT AND VICE-VERSA in
+		Leos Editor HOWTO
+	11g. Insert References notes
+		- refer to REFERENCES NOTES in Leos Editor HOWTO
+	11h. Insert Cross-REFERENCES
+		- refer to CROSS-REFERENCE in Leos Editor HOWTO
 	11i. Insert Comments
 		- refer to COMMENTS in Leos Editor HOWTO
 	11j. Insert Tables

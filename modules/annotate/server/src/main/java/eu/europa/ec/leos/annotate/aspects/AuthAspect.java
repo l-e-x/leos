@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,6 +16,7 @@ package eu.europa.ec.leos.annotate.aspects;
 import eu.europa.ec.leos.annotate.model.web.token.JsonAuthenticationFailure;
 import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.exceptions.AccessTokenExpiredException;
+import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 
 import javax.servlet.http.HttpServletRequest;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -42,11 +43,13 @@ public class AuthAspect {
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
-    private AuthenticationService authenticationService;
+    private final AuthenticationService authService;
+    private final AuthenticatedUserStore authUser;
 
     @Autowired
-    public AuthAspect(AuthenticationService authenticationService) {
-        this.authenticationService = authenticationService;
+    public AuthAspect(final AuthenticationService authService, final AuthenticatedUserStore authUser) {
+        this.authService = authService;
+        this.authUser = authUser;
     }
 
     // -------------------------------------
@@ -56,11 +59,13 @@ public class AuthAspect {
     // @Pointcut("execution(public org.springframework.http.ResponseEntity eu.europa.ec.leos.annotate.controllers.*.*(..))")
     @Pointcut("execution(* eu.europa.ec.leos.annotate.controllers.*.*(..))")
     public void allControllerMethods() {
+        // pointcut to indicate that all methods of the controllers package are included by default
     }
 
     // the NoAuthAnnotation is to be used if no authentication needs to be verified for a controller method
     @Pointcut("@annotation(eu.europa.ec.leos.annotate.aspects.NoAuthAnnotation)")
     public void hasNoAuthAnnotation() {
+        // pointcut to indicate the "no authentication required" annotation
     }
 
     /**
@@ -71,9 +76,9 @@ public class AuthAspect {
      * @return proceeds if authentication is passed, returns a {@link JsonFailureResponse} with HTTP 401 otherwise
      */
     @Around("allControllerMethods() && !hasNoAuthAnnotation() && args(request, ..)")
-    public Object authenticate(final ProceedingJoinPoint joinPoint, HttpServletRequest request) throws Throwable {
+    public Object authenticate(final ProceedingJoinPoint joinPoint, final HttpServletRequest request) throws Throwable {
         
-        if (request == null || authenticationService == null) {
+        if (request == null || authService == null) {
             LOG.error("Either the request was null or required authentication service; cannot continue...");
             return new ResponseEntity<Object>(1, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -81,7 +86,7 @@ public class AuthAspect {
         String login = null;
         
         try {
-            login = authenticationService.getUserLogin(request);
+            login = authService.getUserLogin(request);
         } catch (AccessTokenExpiredException atee) {
             // according to OAuth specification, section 5.2, "invalid_grant" is to be replied for expired tokens
             return new ResponseEntity<Object>(JsonAuthenticationFailure.getAccessTokenExpiredResult(), HttpStatus.UNAUTHORIZED);
@@ -91,6 +96,8 @@ public class AuthAspect {
             return new ResponseEntity<Object>(JsonAuthenticationFailure.getAuthenticationErrorResult(), HttpStatus.UNAUTHORIZED);
         }
 
-        return joinPoint.proceed();
+        final Object retVal = joinPoint.proceed();
+        authUser.clear(); // cleanup
+        return retVal;
     }
 }

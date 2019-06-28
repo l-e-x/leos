@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,25 +14,23 @@
 package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
-import eu.europa.ec.leos.annotate.helper.TestData;
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.Token;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.helper.*;
+import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
+import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonDeleteSuccessResponse;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -50,37 +48,13 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class DeleteAnnotationTest {
 
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "r8";
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = new User("demo");
-        userRepos.save(theUser);
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        authService.setAuthenticatedUser(null);
-    }
+    private User user;
 
     // -------------------------------------
     // Required services and repositories
@@ -90,10 +64,8 @@ public class DeleteAnnotationTest {
     private AnnotationService annotService;
 
     @Autowired
-    private AuthenticationService authService;
-
-    @Autowired
-    private AnnotationRepository annotRepos;
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
     private GroupRepository groupRepos;
@@ -103,6 +75,9 @@ public class DeleteAnnotationTest {
 
     @Autowired
     private UserGroupRepository userGroupRepos;
+    
+    @Autowired
+    private MetadataRepository metadataRepos;
 
     @Autowired
     private TokenRepository tokenRepos;
@@ -113,105 +88,178 @@ public class DeleteAnnotationTest {
     private MockMvc mockMvc;
 
     // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        user = new User("demo");
+        userRepos.save(user);
+        userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
+        tokenRepos.save(new Token(user, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
     /**
      * successfully delete an existing annotation, expected HTTP 200 and ID of the deleted annotation
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testDeleteAnnotationOk() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save an annotation that can be deleted later on
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, "AGRI"));
+        final String annotId = jsAnnot.getId();
+        Assert.assertEquals(AnnotationStatus.NORMAL, annotRepos.findById(annotId).getStatus()); // check: annotation is existing
 
         // send deletion request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonDeleteSuccessResponse jsResponse = SerialisationHelper.deserializeJsonDeleteSuccessResponse(responseString);
+        final JsonDeleteSuccessResponse jsResponse = SerialisationHelper.deserializeJsonDeleteSuccessResponse(responseString);
         Assert.assertNotNull(jsResponse);
-        Assert.assertEquals(id, jsResponse.getId());
+        Assert.assertEquals(annotId, jsResponse.getId());
 
-        // the annotation was deleted
-        Assert.assertEquals(0, annotRepos.count());
+        // the annotation was "deleted"
+        Assert.assertEquals(1, annotRepos.count());
+        TestHelper.assertHasStatus(annotRepos, annotId, AnnotationStatus.DELETED, user.getId());
     }
 
     /**
      * successfully delete an existing annotation of another user, expected HTTP 200
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testDeleteAnnotationOfAnotherUser() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo2";
+        final String authority = "ABC";
+        final String login = "demo2";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // create another user
-        User otherUser = new User(login);
+        final User otherUser = new User(login);
         userRepos.save(otherUser);
 
         // preparation: save an annotation (of another user than the logged-in user)
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
-
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, authority));
+        final String annotId = jsAnnot.getId();
+        Assert.assertEquals(AnnotationStatus.NORMAL, annotRepos.findById(annotId).getStatus()); // check: annotation is existing
+        
         // send deletion request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id)
-                .header("authorization", "Bearer " + ACCESS_TOKEN); // access token is saved for user "demo", which is not the annotation owner
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN); // access token is saved for user "demo", which is not the annotation owner
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 404
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonDeleteSuccessResponse jsResponse = SerialisationHelper.deserializeJsonDeleteSuccessResponse(responseString);
+        final JsonDeleteSuccessResponse jsResponse = SerialisationHelper.deserializeJsonDeleteSuccessResponse(responseString);
         Assert.assertNotNull(jsResponse);
-        Assert.assertEquals(id, jsResponse.getId());
+        Assert.assertEquals(annotId, jsResponse.getId());
 
         // the annotation was deleted
-        Assert.assertEquals(0, annotRepos.count());
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(AnnotationStatus.DELETED, annotRepos.findById(annotId).getStatus()); // check: annotation is flagged as being deleted
     }
 
     /**
      * failure deleting a non-existing annotation, expected HTTP 404 and failure response
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testDeleteAnnotationFailureNotFound() throws Exception {
 
         // send deletion request for non-existing ID
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + "theid")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + "theid")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 404
         result.andExpect(MockMvcResultMatchers.status().isNotFound());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // failure response is received
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
+    }
+    
+    /**
+     * try to delete an existing annotation with response status SENT as an ISC user
+     * expected HTTP 400 and error description
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testFailureDeleteSentAnnotationForIscUser() throws Exception {
+
+        final String hypothesisUserAccount = "acct:user@domain.eu";
+
+        // preparation: save an annotation that can be deleted later on
+        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, "AGRI"));
+        final String annotId = jsAnnot.getId();
+        Assert.assertEquals(AnnotationStatus.NORMAL, annotRepos.findById(annotId).getStatus()); // check: annotation is existing
+
+        // modify the response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(annotId).getMetadata();
+        savedMetadata.setResponseStatus(ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+        
+        // send deletion request
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 400
+        result.andExpect(MockMvcResultMatchers.status().isBadRequest());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // ID must have been set
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertTrue(!jsResponse.getReason().isEmpty());
+
+        // the annotation was not deleted
+        Assert.assertEquals(1, annotRepos.count());
+        TestHelper.assertHasStatus(annotRepos, annotId, AnnotationStatus.NORMAL, null);
     }
 }

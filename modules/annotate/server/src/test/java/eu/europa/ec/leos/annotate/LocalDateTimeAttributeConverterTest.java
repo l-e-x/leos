@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -25,7 +25,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class LocalDateTimeAttributeConverterTest {
@@ -41,26 +41,26 @@ public class LocalDateTimeAttributeConverterTest {
     @Test
     public void testNullToDatabase() {
 
-        LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
+        final LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
         Assert.assertNull(conv.convertToDatabaseColumn(null));
     }
 
     @Test
     public void testValueToDatabase() {
 
-        LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
-        LocalDateTime domain = LocalDateTime.of(2012, 5, 3, 12, 48, 25);
+        final LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
+        final LocalDateTime domain = LocalDateTime.of(2012, 5, 3, 12, 48, 25);
 
         final Timestamp expected = Timestamp.valueOf(domain);
 
-        Timestamp db = conv.convertToDatabaseColumn(domain);
-        Assert.assertEquals(expected, db);
+        final Timestamp dbValue = conv.convertToDatabaseColumn(domain);
+        Assert.assertEquals(expected, dbValue);
     }
 
     @Test
     public void testNullToDomain() {
 
-        LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
+        final LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
         Assert.assertNull(conv.convertToEntityAttribute(null));
     }
 
@@ -69,10 +69,10 @@ public class LocalDateTimeAttributeConverterTest {
 
         final LocalDateTime expected = LocalDateTime.of(2012, 5, 3, 12, 48, 25);
 
-        LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
-        final Timestamp db = Timestamp.valueOf(expected);
+        final LocalDateTimeAttributeConverter conv = new LocalDateTimeAttributeConverter();
+        final Timestamp dbValue = Timestamp.valueOf(expected);
 
-        LocalDateTime actual = conv.convertToEntityAttribute(db);
+        final LocalDateTime actual = conv.convertToEntityAttribute(dbValue);
         Assert.assertEquals(expected, actual);
     }
 }

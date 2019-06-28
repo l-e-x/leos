@@ -1,0 +1,83 @@
+//
+// Copyright 2019 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+$DARK_GREY: #808080;
+$LIGHT_GREY: #A7A7A7;
+$WHITE:#FFFFFF;
+%softRemoved {
+    text-decoration: line-through;
+    color: $LIGHT_GREY;
+}
+
+%softAdded {
+    font-weight: bold;
+}
+
+%leosSoftMoveLabel {
+    color: $WHITE !important;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-left: 2px;
+    margin-right: 2px;
+  	font-style: normal !important;
+    font-weight: normal !important;
+    font-family: "Times New Roman", Times, serif;
+ 	font-size: 15px !important;
+    border-radius: 4px;
+    text-decoration: none !important;
+    display: inline-block;
+}
+
+%softAction {
+
+    .leos-soft-move-label {
+        @extend %leosSoftMoveLabel;
+        background-color: $DARK_GREY;
+        cursor: pointer;
+        padding: 0 5px;
+    }
+
+    .leos-soft-move-title {
+        margin-left: 0;
+    }
+
+    .leos-transparent-soft-move-label {
+        @extend %leosSoftMoveLabel;
+        background-color: $WHITE;
+        visibility: hidden;
+    }
+
+    .leos-soft-removed *, .leos-soft-num-removed{
+        @extend %softRemoved;
+    }
+
+    .leos-soft-new *, .leos-soft-num-new{
+        @extend %softAdded;
+    }
+
+    .leos-soft-movedto * {
+        @extend %softRemoved;
+    }
+
+    .leos-soft-movedfrom span {
+        @extend %softAdded;
+    }
+    
+    .leos-toc-tree {
+    
+        .leos-soft-move-label {
+            display: inline;
+        }
+    }
+}

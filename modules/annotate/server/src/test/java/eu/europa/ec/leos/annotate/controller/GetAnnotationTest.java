@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,9 +14,9 @@
 package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
-import eu.europa.ec.leos.annotate.helper.TestData;
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.Authorities;
+import eu.europa.ec.leos.annotate.helper.*;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
@@ -25,7 +25,6 @@ import eu.europa.ec.leos.annotate.repository.GroupRepository;
 import eu.europa.ec.leos.annotate.repository.TokenRepository;
 import eu.europa.ec.leos.annotate.repository.UserRepository;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,37 +48,10 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class GetAnnotationTest {
-
-    private static final String ACCESS_TOKEN = "demoaccesstoken";
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = new User("demo");
-        userRepos.save(theUser);
-
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), "refr", LocalDateTime.now().plusMinutes(5)));
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        authService.setAuthenticatedUser(null);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -87,9 +59,6 @@ public class GetAnnotationTest {
 
     @Autowired
     private AnnotationService annotService;
-
-    @Autowired
-    private AuthenticationService authService;
 
     @Autowired
     private GroupRepository groupRepos;
@@ -105,6 +74,35 @@ public class GetAnnotationTest {
 
     private MockMvc mockMvc;
 
+    private static final String ACCESS_TOKEN = "demoaccesstoken";
+    private User user;
+    private Token userToken;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        TestDbHelper.insertDefaultGroup(groupRepos);
+
+        user = new User("demo");
+        userRepos.save(user);
+
+        userToken = new Token(user, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), "refr", LocalDateTime.now().plusMinutes(5));
+        tokenRepos.save(userToken);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -112,63 +110,102 @@ public class GetAnnotationTest {
     /**
      * successfully retrieve an existing annotation, expected HTTP 200 and the annotation data
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testGetAnnotationOk() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save an annotation that can be retrieved later on
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(userToken));
+        final String annotId = jsAnnot.getId();
 
         // send deletion request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/annotations/" + id)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/annotations/" + annotId)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected annotation was returned (compare IDs)
-        JsonAnnotation jsResponse = SerialisationHelper.deserializeJsonAnnotation(responseString);
+        final JsonAnnotation jsResponse = SerialisationHelper.deserializeJsonAnnotation(responseString);
         Assert.assertNotNull(jsResponse);
-        Assert.assertEquals(id, jsResponse.getId());
+        Assert.assertEquals(annotId, jsResponse.getId());
     }
 
     /**
-     * failure retrieving a non-existing annotation, expected HTTP 404 and failure response
+     * failure retrieving a private annotation of another user, expected HTTP 404 and failure response
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
-    public void testGetAnnotationFailureNotFound() throws Exception {
+    public void testGetAnnotationFailureNoPermission() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save an annotation
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId().substring(1); // get ID, but cut beginning
+        JsonAnnotation jsAnnot = TestData.getTestPrivateAnnotationObject(hypothesisUserAccount);
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.ISC));
 
+        // save another user, who will launch the request then
+        final User otherUser = new User("otherUser");
+        userRepos.save(otherUser);
+
+        final String otherUserAccessToken = "@cce$$";
+        final Token otherUserToken = new Token(otherUser, "auth", otherUserAccessToken, LocalDateTime.now().plusMinutes(5), "refr2", LocalDateTime.now().plusMinutes(5));
+        tokenRepos.save(otherUserToken);
+        
         // send deletion request for non-existing ID
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/annotations/" + jsAnnot.getId())
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + otherUserAccessToken);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 404
         result.andExpect(MockMvcResultMatchers.status().isNotFound());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // failure response is received
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertTrue(!jsResponse.getReason().isEmpty());
+    }
+    
+    /**
+     * failure retrieving a non-existing annotation, expected HTTP 404 and failure response
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testGetAnnotationFailureNotFound() throws Exception {
+
+        final String hypothesisUserAccount = "acct:user@domain.eu";
+
+        // preparation: save an annotation
+        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.ISC));
+        final String annotId = jsAnnot.getId().substring(1); // get ID, but cut beginning
+
+        // send retrieval request for non-existing ID
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/annotations/" + annotId)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 404
+        result.andExpect(MockMvcResultMatchers.status().isNotFound());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // failure response is received
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
     }

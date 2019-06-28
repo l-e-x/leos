@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,7 +17,8 @@
  * Here are the main customizations:
  *     - Changed the pluginName from "indentlist" to "leosArticleIndentlist"
  *     - Changed the commands name from indentlist, outdentlist to aknindentlist, aknoutdentlist
- *     - Added function "isFirstLevelList" to check if cursor is on the first level of the list 
+ *     - Added function "isFirstLevelList" to check if cursor is on the first level of the list
+ *     - Added function "_isListDepthMoreThanThreshold" to block the indent in case the list has reached the max level
  */
 
 ; // jshint ignore:line
@@ -28,6 +29,9 @@ define(function leosArticleIndentListPluginModule(require) {
     var CKEDITOR = require("promise!ckEditor");
     var LOG = require("logger");
     var pluginTools = require("plugins/pluginTools");
+    var leosPluginUtils = require("plugins/leosPluginUtils");
+    var ORDER_LIST_ELEMENT = "ol";
+    var HTML_POINT = "li";
 
     var pluginName = "leosArticleIndentlist";
 
@@ -106,25 +110,25 @@ define(function leosArticleIndentListPluginModule(require) {
                 this.jobs[this.isIndent ? 10 : 30] = {
                     refresh: this.isIndent ?
                         function(editor, path) {
-                            var list = this.getContext( path ),
-                                inFirstListItem = firstItemInPath( this.context, path, list );
-
-                            if ( !list || !this.isIndent || inFirstListItem )
+                            var list = this.getContext( path );
+                            var range = getSelectedRange(editor);
+                            if (!list
+                                || firstItemInPath( this.context, path, list )
+                                || _isListDepthMoreThanThreshold(getEnclosedLiElement(range.startContainer), getEnclosedLiElement(range.endContainer), leosPluginUtils.MAX_LIST_LEVEL) ) {
                                 return TRISTATE_DISABLED;
-
-                            return TRISTATE_OFF;
+                            } else {
+                                return TRISTATE_OFF;
+                            }
                         } : function(editor, path) {
                             var list = this.getContext(path);
-
                             // custom code to disable the outdent toolbar button for first level list items.
-                            var isFirstLevel = isFirstLevelList(editor, list);
-
-                            if (!list || this.isIndent || isFirstLevel)
+                            if (!list || isFirstLevelList(editor, list)) {
                                 return TRISTATE_DISABLED;
-
-                            return TRISTATE_OFF;
+                            } else {
+                                return TRISTATE_OFF;
+                            }
                         },
-                    
+
                     exec: CKEDITOR.tools.bind(aknindentList, this)
                 };
             }
@@ -150,8 +154,10 @@ define(function leosArticleIndentListPluginModule(require) {
             while (endContainer && !endContainer.getParent().equals(listNode))
                 endContainer = endContainer.getParent();
 
-            if (!startContainer || !endContainer)
+            if (!startContainer || !endContainer
+                || (that.isIndent && _isListDepthMoreThanThreshold(startContainer, endContainer, leosPluginUtils.MAX_LIST_LEVEL))){
                 return false;
+            }
 
             // Now we can iterate over the individual items on the same tree depth.
             var block = startContainer, itemsToMove = [], stopFlag = false;
@@ -192,7 +198,7 @@ define(function leosArticleIndentListPluginModule(require) {
                 // Make sure the newly created sublist get a brand-new element of the same type. (http://dev.ckeditor.com/ticket/5372)
                 if (indentOffset > 0) {
                     var listRoot = listArray[i].parent;
-                    
+
 					// Find previous list item which has the same indention offset as the new indention offset
 					// of current item to copy its root tag (so the proper list-style-type is used) (#842).
 					for ( var j = i - 1; j >= 0; j-- ) {
@@ -306,6 +312,84 @@ define(function leosArticleIndentListPluginModule(require) {
                 return indent(nearestListBlock);
         }
         return 0;
+    }
+
+    /**
+     * Returns true if the depth of the whole tree (ol structure) is more than the threshold maxLevel.
+     * The total tree depth is given by the level upside + level downside of the selected element.
+     */
+    function _isListDepthMoreThanThreshold(startSelection, endSelection, maxLevel) {
+        var isStartSelectionDeeperThanThreshold = isSingleElementDeeperThanThreshold(startSelection, maxLevel);
+        var isEndSelectionDeeperThanThreshold = isSingleElementDeeperThanThreshold(endSelection, maxLevel);
+        LOG.debug("Depth calculation. isStartSelectionDeeperThanThreshold:" + isStartSelectionDeeperThanThreshold + ", isEndSelectionDeeperThanThreshold:" + isEndSelectionDeeperThanThreshold);
+        return isStartSelectionDeeperThanThreshold || isEndSelectionDeeperThanThreshold;
+    }
+
+    function isSingleElementDeeperThanThreshold(selected, maxLevel){
+        selected = selected.getAscendant(HTML_POINT, true);//get first li it founds in hierarchy considering even itself
+        var actualLevel = leosPluginUtils.calculateListLevel(selected);
+        var stopLevelDownside = maxLevel - actualLevel;
+        //LOG.debug("Depth maxLevel:" + maxLevel + ", actualLevel:" + actualLevel + ", stopLevelDownside: " + stopLevelDownside);
+        if (stopLevelDownside > 0) {
+            // if maxlevel is 4, and we selected an element in the second level, checks if any of the child has depth more than 2.
+            return _isDownsideDepthMoreThanThreshold(selected, stopLevelDownside);
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Returns true if the depth of any of child of the selected element reach stopLevel.
+     * Html Structure:
+     * <article>
+     *     <ol>
+     *        <li> ... </li>
+     *        <li>
+     *            <p/>                     (1, 2, 3 items)  (cursor here, actual depth level 1)
+     *            <ol>
+     *               <li> ... </li>
+     *               <li>
+     *                    <p/>             (a, b, c items)  (cursor here, actual depth level 2)
+     *                    <ol>
+     *                       <li> ... </li>
+     *                       <li>
+     *                           <p/>      (i, ii items)    (cursor here, actual depth level 3)
+     *                           <ol>
+     *                               <li/> (- items)        (cursor here, actual depth level 4)
+     *                               <li/>
+     *                          </ol>
+     *                       </li>
+     *                    </ol>
+     *               </li>
+     *            <ol>
+     *        </li>
+     *     </ol>
+     * <article>
+     */
+    function _isDownsideDepthMoreThanThreshold(element, stopLevel) {
+        var level = 0;
+        var childList = element.getChildren();
+        for (var child_idx = 0; child_idx < childList.count(); child_idx++) {
+            var child = childList.getItem(child_idx);
+            var child_name = leosPluginUtils.getElementName(child);
+            // only if we find an order_list_element (ol) it means we found another depth level
+            if (child_name === ORDER_LIST_ELEMENT) {
+                level++;
+                //LOG.debug(child_idx+"-th child found: " + child_name + ", calculated level: " + level + ", stopLevel: " + stopLevel);
+                if (level >= stopLevel) {
+                    return true;
+                } else {
+                    // go deeper in the list, check the children (li elements)
+                    for (var li_item_idx = 0; li_item_idx < child.getChildren().count(); li_item_idx++) {
+                        var listItem = child.getChildren().getItem(li_item_idx);
+                        if (_isDownsideDepthMoreThanThreshold(listItem, (stopLevel - level))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     // Determines whether a node is a list <li> element.

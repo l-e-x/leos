@@ -8,5 +8,5 @@
     <bean class="org.springframework.web.client.RestTemplate"/>
 
     <!-- Integration Properties -->
-    <util:properties id="integrationProperties" location="classpath:integration_${leos.build.instance}.properties"/>
+    <util:properties id="integrationProperties" location="classpath:integration_leos.properties"/>
 </beans>

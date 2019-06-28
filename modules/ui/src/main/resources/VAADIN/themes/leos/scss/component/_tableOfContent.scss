@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,9 @@
  */
 
 @mixin tableOfContent {
+
+    @extend %softAction;
+
     .leos-toc-tree-status {
         background:$GREY;
         text-align:center;
@@ -32,5 +35,39 @@
         .v-panel-caption {
             box-shadow: none;
         }       
-    }    
+    }
+
+    .leos-toc-user-coedition {
+        user-select: none;
+        cursor: default;
+        color: $HEADER_BLUE;
+        position: absolute;
+        left: -15px;
+    }
+
+    .v-treegrid-cell-content {
+        position: relative;
+    }
+
+    .v-treegrid-expander.collapsed + .v-treegrid-cell-content > .leos-toc-user-coedition,
+        .v-treegrid-expander.expanded + .v-treegrid-cell-content > .leos-toc-user-coedition {
+        left: -30px;
+    }
+
+    .leos-toc-user-coedition-self-user {
+        color: $GREY_COLOUR;
+    }
+
+    a.leos-toc-user-coedition-lync {
+        color: white;
+        text-decoration: underline;
+    }
+
+    a.leos-toc-user-coedition-lync:hover {
+        color: $LIGHT_BLUE;
+    }
+
+    .leos-toc-no-expander-icon .collapsed {
+        visibility: hidden;  
+    }
 }

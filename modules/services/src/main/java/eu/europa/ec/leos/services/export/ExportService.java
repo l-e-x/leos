@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,10 +13,23 @@
  */
 package eu.europa.ec.leos.services.export;
 
+
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import io.atlassian.fugue.Pair;
+
 import java.io.File;
+import java.util.Optional;
 
 public interface ExportService {
+
     String exportToToolboxCoDe(String documentId, ExportOptions exportOptions) throws Exception;
 
-    File createProposalLegisWritePackage(String jobFileName, String documentId, ExportOptions exportOptions) throws Exception;
+    byte[] exportToToolboxCoDe(File legFile, ExportOptions exportOptions) throws Exception;
+
+    String exportLegPackage(String proposalId, Pair<File, ExportResource> legPackage) throws Exception;
+
+    File createCollectionPackage(String jobFileName, String documentId, ExportOptions exportOptions) throws Exception;
+
+    File createDocuWritePackage(String jobFileName, String documentId, ExportOptions exportOptions, Optional<XmlDocument> versionToCompare) throws Exception;
+
 }

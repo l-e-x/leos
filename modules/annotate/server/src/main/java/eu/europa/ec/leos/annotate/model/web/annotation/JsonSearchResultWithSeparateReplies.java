@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
+import eu.europa.ec.leos.annotate.Generated;
+
 import java.util.List;
+import java.util.Objects;
 
 public class JsonSearchResultWithSeparateReplies extends JsonSearchResult {
 
@@ -27,13 +30,14 @@ public class JsonSearchResultWithSeparateReplies extends JsonSearchResult {
     // -------------------------------------
     // Constructors
     // -------------------------------------
-    // default constructor required for deserialisation
     public JsonSearchResultWithSeparateReplies() {
+        // default constructor required for deserialisation
+        super();
     }
-    
-    public JsonSearchResultWithSeparateReplies(List<JsonAnnotation> annotations, List<JsonAnnotation> replies) {
-        super(annotations);
-        
+
+    public JsonSearchResultWithSeparateReplies(final List<JsonAnnotation> annotations, final List<JsonAnnotation> replies, final long totalItems) {
+        super(annotations, totalItems);
+
         this.replies = replies;
     }
 
@@ -44,7 +48,32 @@ public class JsonSearchResultWithSeparateReplies extends JsonSearchResult {
         return replies;
     }
 
-    public void setReplies(List<JsonAnnotation> replies) {
+    public void setReplies(final List<JsonAnnotation> replies) {
         this.replies = replies;
+    }
+
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(getTotal(), getRows(), replies);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonSearchResultWithSeparateReplies other = (JsonSearchResultWithSeparateReplies) obj;
+        return Objects.equals(this.getTotal(), other.getTotal()) &&
+                Objects.equals(this.getRows(), other.getRows()) &&
+                Objects.equals(this.replies, other.replies);
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,7 +18,6 @@ define(function bookmarkHandlerModule(require) {
     // load module dependencies
     var log = require("logger");
     var $ = require('jquery');
-    var bookmarkHtml = require('text!./bookmarkTemplate.html');
     var CKEDITOR = require("promise!ckEditor");
     var UTILS = require("core/leosUtils");
     var WaypointInview = require("waypoint.inview");
@@ -38,17 +37,20 @@ define(function bookmarkHandlerModule(require) {
         var editor = event.editor;
         var rootElement = event.listenerData;
         var element = editor.element.$;
-        $(rootElement).append(bookmarkHtml);
-        $(BOOKMARK_SELECTOR).on("click.navigation", _navigateToEditor.bind(undefined, editor, element));
+        var language = editor.config.language;
+        var $bookmark =  $('<div>', { id:"bookmarkContainer", 'class':"bookmark-container" });
+        $bookmark.load("js/editor/core/templates/bookmarkTemplate_"+language+".html");
+        $(rootElement).append($bookmark);
+        $bookmark.on("click.navigation", _navigateToEditor.bind(undefined, editor, element));
 
-        $(BOOKMARK_SELECTOR)[0].waypoint = new Waypoint.Inview({
+        $bookmark[0].waypoint = new Waypoint.Inview({
             element: element,
             context: rootElement,
             enter: function(direction) {
-                $(BOOKMARK_SELECTOR).removeClass("displayed");
+                $bookmark.removeClass("displayed");
             },
             exited: function(direction) {
-                $(BOOKMARK_SELECTOR).addClass("displayed");
+                $bookmark.addClass("displayed");
             }
         });
     }
@@ -57,7 +59,8 @@ define(function bookmarkHandlerModule(require) {
         function _setFocus() {
             this.focus();
         }
-        contentScroller.scrollTo(element, _setFocus.bind(editor));
+        _setFocus.bind(editor);
+        contentScroller.scrollTo(element, null);
     }
 
     function _destroyBookmark(event) {

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+
+<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+  <Set name="securityHandler">
+    <New class="org.eclipse.jetty.security.ConstraintSecurityHandler">
+        <Set name="loginService">
+            <New class="org.eclipse.jetty.security.HashLoginService">
+                <Set name="name">default</Set>
+                <Set name="config">src/etc/jetty/realm.properties</Set>
+            </New>
+        </Set>
+    </New>
+  </Set>
+</Configure>

@@ -3,16 +3,15 @@
 
 1.  In the repository view, on the left pane, filters are available
     to filter the list of proposal in the view based on different criteria.
-
+   
 2.  The filters consists of:
    
-      - PROCEDURES: Shows the list of proposal belonging to the same procedures
-        type.
-
+      - PROCEDURES: Shows the list of proposal belonging to the same procedures type.
+      
       - ACT: Shows the list of proposal belonging to the same act type.
-
+       
       - LANGUAGES: Shows the list of proposal created using the selected
         languages. 
-
+            
 3.  A 'Reset' button is provided on top-right side of filter pane to reset the 
     changed filters to initial state.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,15 +21,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 @UIScope
 @Component
-public class LeosVaadinErrorHandler extends DefaultErrorHandler{
+public class LeosVaadinErrorHandler extends DefaultErrorHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LeosVaadinErrorHandler.class);
     private static final long serialVersionUID = 85924165400863840L;
 
     private EventBus eventBus;
 
-    public LeosVaadinErrorHandler(EventBus eventBus){
+    public LeosVaadinErrorHandler(EventBus eventBus) {
         this.eventBus = eventBus;
     }
 
@@ -37,7 +39,9 @@ public class LeosVaadinErrorHandler extends DefaultErrorHandler{
     public void error(com.vaadin.server.ErrorEvent event) {
         // Find the final cause
         Throwable throwable = event.getThrowable();
-        LOG.error("An error occurred!", throwable);
-        eventBus.post(new NotificationEvent(NotificationEvent.Type.ERROR, "error.message", throwable.getMessage()));
+        String errorReference = "#" + String.format("%04d", ThreadLocalRandom.current().nextInt(1, 10000));
+        LOG.error("An error occurred! " + errorReference, throwable);
+        eventBus.post(
+                new NotificationEvent(NotificationEvent.Type.ERROR, "generic.error.message", errorReference));
     }
 }

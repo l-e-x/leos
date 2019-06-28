@@ -1,5 +1,5 @@
 --
--- Copyright 2018 European Commission
+-- Copyright 2019 European Commission
 --
 -- Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 -- You may not use this work except in compliance with the Licence.
@@ -30,5 +30,5 @@ INSERT INTO GROUPS(NAME, DESCRIPTION, DISPLAYNAME, ISPUBLIC)
 
 -- client that we are connected to - HERE YOU CAN FILL IN THE CLIENT_ID AND SECRET OF YOUR LOCAL CLIENT
 INSERT INTO AUTHCLIENTS(DESCRIPTION, CLIENT_ID, SECRET, AUTHORITIES)
-  VALUES ('leos client', '@leos.h2.authclient@', '@leos.h2.authsecret@', NULL);
+  VALUES ('leos client', 'AnnotateIssuedClientId', 'AnnotateIssuedSecret', NULL);
 Commit;

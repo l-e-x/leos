@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,16 +14,14 @@
 package eu.europa.ec.leos.web.model;
 
 import elemental.json.JsonException;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.ui.component.toc.TableOfContentItemConverter;
+import eu.europa.ec.leos.services.support.TableOfContentHelper;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import eu.europa.ec.leos.i18n.MessageHelper;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+
 
 /** This file is almost a copy of file TableOfContentItemVO class as
  * 1. this contains additional fields
@@ -33,7 +31,6 @@ import java.util.List;
 public class TocItemVO extends TableOfContentItemVO implements Serializable {
 
     private static final long serialVersionUID = -3005288753552780530L;
-    private static final Logger LOG = LoggerFactory.getLogger(TocItemVO.class);
 
     private String text;
     private List <TocItemVO> children;
@@ -47,9 +44,10 @@ public class TocItemVO extends TableOfContentItemVO implements Serializable {
                 tableOfContentItemVO.getHeading(),
                 tableOfContentItemVO.getNumTagIndex(),
                 tableOfContentItemVO.getHeadingTagIndex(),
-                tableOfContentItemVO.getVtdIndex());
+                tableOfContentItemVO.getVtdIndex(),
+                tableOfContentItemVO.getContent());
 
-        this.setText(TableOfContentItemConverter.buildItemCaption(tableOfContentItemVO, TableOfContentItemConverter.DEFAULT_CAPTION_MAX_SIZE, messageHelper));
+        this.setText(TableOfContentHelper.buildItemCaption(tableOfContentItemVO, TableOfContentHelper.DEFAULT_CAPTION_MAX_SIZE, messageHelper));
         this.setChildren( convertChildren(tableOfContentItemVO.getChildItemsView(),messageHelper));
     }
 

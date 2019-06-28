@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,7 +22,8 @@ define(function scrollPaneExtensionModule(require) {
     var LODASH = require("lodash");
     
     var DOC_CONTAINER_SELECTOR = ".leos-doc-content";
-    var MARKED_CONTAINER_SELECTOR = ".leos-marked-content";
+    var CHANGE_PANE_CONTAINER;
+    var ID_PREFIX;
 
     const NON_SELECTABLE_ELEMENTS = "bill, doc, num, content, authorialNote, inline, ref, span, br, tbody, tr, td, th," +
     		                               "a, b, strong, i, em, hr, marker, text, .leos-actions, .cke_editable, hypothesis-highlight";
@@ -31,15 +32,16 @@ define(function scrollPaneExtensionModule(require) {
         log.debug("Initializing ScrollPane extension...");
         connector.setSyncState = _setSyncState;
         connector.userOriginated = true;
-        _registerScrollHandler(connector);
-        
+        _configStatic(connector);
+        log.debug("Registering scroll pane state change listener...");
+        connector.onStateChange = _connectorStateChangeListener;
         log.debug("Registering ScrollPane extension unregistration listener...");
         connector.onUnregister = _connectorUnregistrationListener;
     }
 
-    function _setSyncState(enabled) {
+    function _setSyncState(enable) {
         var connector = this;
-        if(enabled) {
+        if(enable) {
             _unregisterScrollHandler(connector);
             _registerScrollHandler(connector);
             $(DOC_CONTAINER_SELECTOR).trigger("scroll");
@@ -47,61 +49,70 @@ define(function scrollPaneExtensionModule(require) {
             _unregisterScrollHandler(connector);
         }
     }
+
+    // handle connector unregistration on client-side
+    function _connectorStateChangeListener() {
+        var connector = this;
+        log.debug("Scroll pane extension state changed...");
+        connector.getState(false).enableSync ? _registerScrollHandler(connector) : _unregisterScrollHandler(connector);
+    }
     
+    function _configStatic(connector) {
+        ID_PREFIX = connector.getState(false).idPrefix;
+        CHANGE_PANE_CONTAINER = connector.getState(false).containerSelector;
+    }
+
     function _registerScrollHandler(connector) {
         var $docContainer = $(DOC_CONTAINER_SELECTOR);
-        var $markedContainer = $(MARKED_CONTAINER_SELECTOR);
-        
-        var $docContainerElements = $docContainer.find(":not(" + NON_SELECTABLE_ELEMENTS + ")");
-        var $markedContainerElements = $markedContainer.find(":not(" + NON_SELECTABLE_ELEMENTS + ")");
+        var $changePaneContainer = $(CHANGE_PANE_CONTAINER);
         
         var data = {
             $docContainer: $docContainer,
-            $markedContainer: $markedContainer
+            $changePaneContainer: $changePaneContainer
         }
         
-        var docContainerScrollHandler = _docContainerscrollHandler.bind(undefined, connector, data);
-        var markedContainerScrollHandler = _markedContainerscrollHandler.bind(undefined, connector, data);
+        var docContainerScrollHandler = _docContainerScrollHandler.bind(undefined, connector, data);
+        var changePaneContainerScrollHandler = _changePaneContainerScrollHandler.bind(undefined, connector, data);
         
-        $docContainer.on("scroll.syncMarkedContainer",  LODASH.debounce(docContainerScrollHandler, 100));
-        $markedContainer.on("scroll.syncDocContainer", LODASH.debounce(markedContainerScrollHandler, 100));
+        $docContainer.on("scroll.syncDocContainer",  LODASH.debounce(docContainerScrollHandler, 100));
+        $changePaneContainer.on("scroll.syncChangePaneContainer", LODASH.debounce(changePaneContainerScrollHandler, 100));
     }
     
     function _unregisterScrollHandler(connector) {
-        $(DOC_CONTAINER_SELECTOR).off("scroll.syncMarkedContainer");
-        $(MARKED_CONTAINER_SELECTOR).off("scroll.syncDocContainer");
+        $(DOC_CONTAINER_SELECTOR).off("scroll.syncDocContainer");
+        $(CHANGE_PANE_CONTAINER).off("scroll.syncChangePaneContainer");
         connector.userOriginated = true;
     }
 
-    function _docContainerscrollHandler(connector, data, event) {
+    function _docContainerScrollHandler(connector, data, event) {
         if (connector.userOriginated) { // FIXME: find a better way to stop handling/firing non-user originated event
             log.debug("scrollHandler Called for - " + event.currentTarget.id);
-            var $docContainer = data.$docContainer, $markedContainer = data.$markedContainer;
+            var $docContainer = data.$docContainer, $changePaneContainer = data.$changePaneContainer;
 
             var docElement = _getFirstElementInViewPort($docContainer);
-            var markedElement = docElement ? document.getElementById("marked-" + docElement.id) : undefined;
+            var changePaneElement = docElement ? document.getElementById(ID_PREFIX + docElement.id) : undefined;
 
-            markedElement ? _scrollToPositionOfScrolledElememnt(connector, docElement, markedElement, $docContainer.get(0), $markedContainer.get(0)) : log
-                    .warn(docElement ? docElement.id + " :element with id does not exist in marked text container" : "Doc element does not exist");
+            changePaneElement ? _scrollToPositionOfScrolledElement(connector, docElement, changePaneElement, $docContainer.get(0), $changePaneContainer.get(0)) : log
+                    .warn(docElement ? docElement.id + " :element with id does not exist in change pane text container" : "Doc element does not exist");
         } else {
             connector.userOriginated = true;
         }
     }
 
-    function _markedContainerscrollHandler(connector, data, event) {
+    function _changePaneContainerScrollHandler(connector, data, event) {
         if (connector.userOriginated) { // FIXME: find a better way to stop handling/firing non-user originated event
             log.debug("scrollHandler Called for - " + event.currentTarget.id);
-            var $docContainer = data.$docContainer, $markedContainer = data.$markedContainer;
+            var $docContainer = data.$docContainer, $changePaneContainer = data.$changePaneContainer;
 
-            var markedElement = _getFirstElementInViewPort($markedContainer);
-            markedElement = markedElement ? _getNonDeletedMarkedElementInViewport(markedElement, $markedContainer) : undefined;
-            if (markedElement) {
-                var docElementId = markedElement.id.substring(7); // extract the id after 'marked-' prefix
+            var changePaneElement = _getFirstElementInViewPort($changePaneContainer);
+            changePaneElement = changePaneElement ? _getNonDeletedChangePaneElementInViewport(changePaneElement, $changePaneContainer) : undefined;
+            if (changePaneElement) {
+                var docElementId = changePaneElement.id.substring(ID_PREFIX.length); // extract the id after prefix
                 var docElement = document.getElementById(docElementId);
 
-                docElement ? _scrollToPositionOfScrolledElememnt(connector, markedElement, docElement, $markedContainer.get(0), $docContainer.get(0)) : log
-                        .warn(markedElement ? markedElement.id + " :element with id does not exist  or not visible in view port"
-                                : "Marked element does not exist");
+                docElement ? _scrollToPositionOfScrolledElement(connector, changePaneElement, docElement, $changePaneContainer.get(0), $docContainer.get(0)) : log
+                        .warn(changePaneElement ? changePaneElement.id + " :element with id does not exist  or not visible in view port"
+                                : "Selected element does not exist");
             }
         } else {
             connector.userOriginated = true;
@@ -120,12 +131,12 @@ define(function scrollPaneExtensionModule(require) {
         return elementInViewPort;
     }
     
-    function _getNonDeletedMarkedElementInViewport(markedElement, $markedContainer) {
-        if (markedElement && _isRemovedElement(markedElement)) {
-            var nextMarkedElement = $(markedElement).nextAll(":not(.leos-content-removed)"); //exclude deleted elements
-            markedElement = _checkElementInViewport(nextMarkedElement[0], $markedContainer.get(0)) ? nextMarkedElement[0] : undefined;
+    function _getNonDeletedChangePaneElementInViewport(changePaneElement, $changePaneContainer) {
+        if (changePaneElement && _isRemovedElement(changePaneElement)) {
+            var nextChangePaneElement = $(changePaneElement).nextAll(":not(.leos-content-removed)"); //exclude deleted elements
+            changePaneElement = _checkElementInViewport(nextChangePaneElement[0], $changePaneContainer.get(0)) ? nextChangePaneElement[0] : undefined;
         }
-        return markedElement;
+        return changePaneElement;
     }
     
     function _checkElementInViewport(element, container) {
@@ -139,7 +150,7 @@ define(function scrollPaneExtensionModule(require) {
         return $(element).hasClass("leos-content-removed");
     }
     
-    function _scrollToPositionOfScrolledElememnt(connector, scrolledElem, scrolledToElem, scrolledContainer, containerToBeScrolled) {
+    function _scrollToPositionOfScrolledElement(connector, scrolledElem, scrolledToElem, scrolledContainer, containerToBeScrolled) {
        var scrollTopPos = _getScrolledElementPositionFromTop(scrolledElem, scrolledToElem, scrolledContainer, containerToBeScrolled);
        _scrollPane(connector, containerToBeScrolled.id, scrollTopPos);
     }

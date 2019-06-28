@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,6 +18,7 @@ import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.AuthClient;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -25,24 +26,30 @@ import eu.europa.ec.leos.annotate.repository.AuthClientRepository;
 import eu.europa.ec.leos.annotate.repository.TokenRepository;
 import eu.europa.ec.leos.annotate.services.AuthenticationServiceWithTestFunctions;
 import eu.europa.ec.leos.annotate.services.UUIDGeneratorService;
-import eu.europa.ec.leos.annotate.services.exceptions.*;
-
-import java.io.UnsupportedEncodingException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.servlet.http.HttpServletRequest;
-
+import eu.europa.ec.leos.annotate.services.exceptions.AccessTokenExpiredException;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotStoreTokenException;
+import eu.europa.ec.leos.annotate.services.exceptions.TokenFromUnknownClientException;
+import eu.europa.ec.leos.annotate.services.exceptions.TokenInvalidForClientAuthorityException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+
+import javax.servlet.http.HttpServletRequest;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Service containing all user authentication functionality
@@ -57,18 +64,15 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
     // internal list of all clients, enables easy access to algorithms, JWTVerifier and configuration data
     private List<RegisteredClient> clients;
 
-    // currently authenticated user
-    private final static ThreadLocal<User> authenticatedUser = new ThreadLocal<>();
-
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
 
     @Autowired
-    private AuthClientRepository authClientRepos;
+    private final AuthClientRepository authClientRepos;
 
     @Autowired
-    private TokenRepository tokenRepository;
+    private final TokenRepository tokenRepository;
 
     @Autowired
     private UUIDGeneratorService uuidService;
@@ -79,30 +83,17 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
     @Value("${token.refresh.lifetime}")
     private int LIFETIME_REFRESH_TOKEN;
 
+    @Autowired
+    private AuthenticatedUserStore authUserStore;
+
     // -------------------------------------
     // Constructor
     // -------------------------------------
     @Autowired
-    public AuthenticationServiceImpl(AuthClientRepository authClientRepos, TokenRepository tokenRepos) {
+    public AuthenticationServiceImpl(final AuthClientRepository authClientRepos, final TokenRepository tokenRepos) {
 
         this.authClientRepos = authClientRepos;
         this.tokenRepository = tokenRepos;
-    }
-
-    /**
-     * retrieve the currently authenticated user
-     */
-    @Override
-    public User getAuthenticatedUser() {
-        return authenticatedUser.get();
-    }
-
-    /**
-     * set the user that was successfully authenticated
-     */
-    @Override
-    public void setAuthenticatedUser(User user) {
-        authenticatedUser.set(user);
     }
 
     /**
@@ -114,23 +105,23 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * @return the JWT token as string
      */
     @Override
-    public String createToken(String userId, String clientId) throws Exception {
+    public String createToken(final String userId, final String clientId) {
 
         final int EXPIRE_IN_MIN = 50000; // large value for simplifying testing
 
-        Date now = Calendar.getInstance().getTime();
-        Calendar expires = Calendar.getInstance();
+        final Date now = Calendar.getInstance().getTime();
+        final Calendar expires = Calendar.getInstance();
         expires.add(Calendar.MINUTE, EXPIRE_IN_MIN);
-        Date expiresAt = expires.getTime();
+        final Date expiresAt = expires.getTime();
 
         // read clients from DB, then search the one having the given client ID
         refreshClientList();
-        RegisteredClient registeredClient = this.clients.stream().filter(regClient -> regClient.getClient().getClientId().equals(clientId))
+        final RegisteredClient registeredClient = this.clients.stream().filter(regClient -> regClient.getClient().getClientId().equals(clientId))
                 .findFirst()
                 .get();
 
         // any more claims we need to verify?
-        String token = JWT.create()
+        final String token = JWT.create()
                 .withIssuer(registeredClient.getClient().getClientId())
                 .withSubject(String.format("acct:%s@%s", userId, registeredClient.getClient().getAuthorities()))
                 .withIssuedAt(now)
@@ -151,34 +142,34 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * @throws TokenInvalidForClientAuthorityException this exception is thrown when the decoding client may not authenticate the authority issuing the token
      */
     @Override
-    public String getUserLoginFromToken(String token) throws TokenFromUnknownClientException, TokenInvalidForClientAuthorityException {
+    public UserInformation getUserLoginFromToken(final String token) throws TokenFromUnknownClientException, TokenInvalidForClientAuthorityException {
 
         try {
-            AtomicReference<AuthClient> clientThatDecodedRef = new AtomicReference<AuthClient>();
-            DecodedJWT jwt = tryDecoding(token, clientThatDecodedRef);
+            final AtomicReference<AuthClient> clientThatDecodedRef = new AtomicReference<AuthClient>();
+            final DecodedJWT jwt = tryDecoding(token, clientThatDecodedRef);
             if (jwt == null) {
                 throw new TokenFromUnknownClientException(String.format("Received token '%s' could not be decoded with registered clients", token));
             }
-            String subject = jwt.getSubject();
-            Matcher m = SUBJECT_PATTERN.matcher(subject);
-            if (!m.matches()) {
+            final String subject = jwt.getSubject();
+            final Matcher match = SUBJECT_PATTERN.matcher(subject);
+            if (!match.matches()) {
                 return null;
             }
 
-            AuthClient client = clientThatDecodedRef.get();
+            final AuthClient client = clientThatDecodedRef.get();
 
             // check authority - client does not have any? -> token accepted
             if (client.getAuthoritiesList() == null) {
                 LOG.debug("Client may authenticate all authorities -> pass extracted user");
-                return m.group(1);
+                return new UserInformation(match.group(1), match.group(2));
             }
 
-            if (client.getAuthoritiesList().contains(m.group(2))) {
-                LOG.debug("Client may authenticate authority '{}' -> pass extracted user", m.group(2));
-                return m.group(1);
+            if (client.getAuthoritiesList().contains(match.group(2))) {
+                LOG.debug("Client may authenticate authority '{}' -> pass extracted user", match.group(2));
+                return new UserInformation(match.group(1), match.group(2));
             }
-            LOG.info("Client {} may not authenticate authority '{}' -> token ignored", client.getId(), m.group(2));
-            throw new TokenInvalidForClientAuthorityException(String.format("Client %s may not authenticate authority '%s'", client.getId(), m.group(2)));
+            LOG.info("Client {} may not authenticate authority '{}' -> token ignored", client.getId(), match.group(2));
+            throw new TokenInvalidForClientAuthorityException(String.format("Client %s may not authenticate authority '%s'", client.getId(), match.group(2)));
 
         } catch (Exception e) {
             LOG.error("Received exception during token verification", e);
@@ -192,14 +183,14 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * @param token token to be decoded
      * @return returns a decoded token, or {@literal null} if no registered client can decode it
      */
-    private DecodedJWT tryDecoding(String token, AtomicReference<AuthClient> successfulClientByRef) {
+    private DecodedJWT tryDecoding(final String token, final AtomicReference<AuthClient> successfulClientByRef) {
 
         refreshClientList();
 
-        for (RegisteredClient registeredClient : this.clients) {
+        for (final RegisteredClient registeredClient : this.clients) {
 
             try {
-                DecodedJWT decoded = registeredClient.getVerifier().verify(token);
+                final DecodedJWT decoded = registeredClient.getVerifier().verify(token);
                 LOG.info("Verified received token using client {}", registeredClient.getClient().getId());
                 successfulClientByRef.set(registeredClient.getClient());
                 return decoded;
@@ -212,10 +203,10 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
         return null;
     }
 
-    public String getDomainName(String url) {
+    public String getDomainName(final String url) {
         try {
-            URI uri = new URI(url);
-            String domain = uri.getHost();
+            final URI uri = new URI(url);
+            final String domain = uri.getHost();
             return domain.startsWith("www.") ? domain.substring(4) : domain;
         } catch (URISyntaxException ue) {
             return url;
@@ -234,48 +225,50 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * @throws AccessTokenExpiredException this exception is thrown when the provided access token is known, but has expired
      */
     @Override
-    public String getUserLogin(HttpServletRequest request) throws AccessTokenExpiredException {
+    public String getUserLogin(final HttpServletRequest request) throws AccessTokenExpiredException {
 
-        String authenticationHeader = request.getHeader("Authorization");
+        final String authenticationHeader = request.getHeader("Authorization");
 
         final String bearer = "Bearer ";
 
         if (StringUtils.isEmpty(authenticationHeader) || !authenticationHeader.startsWith(bearer)) {
+            authUserStore.clear();
             return null;
         }
 
-        String accessToken = authenticationHeader.substring(bearer.length());
+        final String accessToken = authenticationHeader.substring(bearer.length());
 
-        AtomicReference<Token> foundToken = new AtomicReference<Token>(); 
-        User user = findUserByAccessToken(accessToken, foundToken);
-        setAuthenticatedUser(user);
+        final UserInformation info = findUserByAccessToken(accessToken);
+        authUserStore.setUserInfo(info);
 
-        if(foundToken.get() != null && foundToken.get().isAccessTokenExpired()) {
+        if (info == null) {
+            return null;
+        }
+
+        final Token foundToken = info.getCurrentToken();
+        if (foundToken != null && foundToken.isAccessTokenExpired()) {
             throw new AccessTokenExpiredException();
         }
-        
-        if(user == null) {
-            return null;
-        }
 
-        return user.getLogin();
+        return info.getLogin();
     }
 
     /**
      * have access and refresh tokens generated for a user and stored directly
      * 
-     * @param user the {@link User} for which tokens are to be generated
+     * @param userInfo the {@link UserInformation} containing user for which tokens are to be generated
      * @return updated {@link User} object with new tokens set
      * 
      * @throws CannotStoreTokenException exception thrown when storing the token fails
      */
     @Override
-    public Token generateAndSaveTokensForUser(User user) throws CannotStoreTokenException {
+    public Token generateAndSaveTokensForUser(final UserInformation userInfo) throws CannotStoreTokenException {
 
         // store access token / refresh token in database
-        Token newUserToken = storeTokensForUser(user, uuidService.generateUrlSafeUUID(), uuidService.generateUrlSafeUUID());
+        final Token newUserToken = storeTokensForUser(userInfo.getUser(), userInfo.getAuthority(), uuidService.generateUrlSafeUUID(),
+                uuidService.generateUrlSafeUUID());
 
-        cleanupExpiredUserTokens(user);
+        cleanupExpiredUserTokens(userInfo.getUser());
         return newUserToken;
     }
 
@@ -283,66 +276,62 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * find the user owning a certain refresh token
      *
      * @param refreshToken the refresh token previously given to a user
-     * @param foundTokenRef ref to the token found in the database, for external processing
      * 
-     * @return found user, or {@literal null}
+     * @return found {@Link UserInformation}, or {@literal null}
      */
     @Override
-    public User findUserByRefreshToken(String refreshToken, AtomicReference<Token> foundTokenRef) {
+    public UserInformation findUserByRefreshToken(final String refreshToken) {
 
         if (StringUtils.isEmpty(refreshToken)) {
             LOG.error("Cannot search for user by empty refresh token");
             return null;
         }
 
-        Token foundToken = tokenRepository.findByRefreshToken(refreshToken);
-        foundTokenRef.set(foundToken);
+        final Token foundToken = tokenRepository.findByRefreshToken(refreshToken);
+        final UserInformation result = new UserInformation(foundToken);
         if (foundToken == null) {
             LOG.debug("Refresh token '{}' not found in database", refreshToken);
-            return null;
+            return result;
         }
 
         // note: due to DB constraints, user must be valid if token is valid
-        LOG.debug("Found refresh token '{}', belongs to user '{}': {}", refreshToken, foundToken.getUser().getLogin());
-        
-        if(foundToken.isRefreshTokenExpired()) {
-            LOG.debug("Found refresh token '{}' is already expired; return null", refreshToken);
-            return null;
+        LOG.debug("Found refresh token '{}', belongs to user '{}'", refreshToken, foundToken.getUser().getLogin());
+
+        if (foundToken.isRefreshTokenExpired()) {
+            LOG.info("Found refresh token '{}' is already expired", refreshToken);
         }
-        return foundToken.getUser();
+        return result;
     }
 
     /**
      * find the user owning a certain access token
      *
      * @param accessToken the access token previously given to a user
-     * @param foundTokenRef ref to the token found in the database, for external processing
      * 
-     * @return found user, or {@literal null}
+     * @return found {@link UserInformation}, or {@literal null}
      */
     @Override
-    public User findUserByAccessToken(String accessToken, AtomicReference<Token> foundTokenRef) {
+    public UserInformation findUserByAccessToken(final String accessToken) {
 
         if (StringUtils.isEmpty(accessToken)) {
             LOG.error("Cannot search for user by empty access token");
             return null;
         }
 
-        Token foundToken = tokenRepository.findByAccessToken(accessToken);
-        foundTokenRef.set(foundToken);
+        final Token foundToken = tokenRepository.findByAccessToken(accessToken);
+        final UserInformation result = new UserInformation(foundToken);
         if (foundToken == null) {
             LOG.debug("Access token '{}' not found in database", accessToken);
-            return null;
+            return result;
         }
 
         // note: due to DB constraints, user must be valid if token is valid
         LOG.debug("Found access token '{}', belongs to user '{}'", accessToken, foundToken.getUser().getLogin());
 
-        if(foundToken.isAccessTokenExpired()) {
-            LOG.debug("Found access token '{}' is already expired; return null", accessToken);
-            return null;
+        if (foundToken.isAccessTokenExpired()) {
+            LOG.debug("Found access token '{}' is already expired", accessToken);
         }
-        return foundToken.getUser();
+        return result;
     }
 
     /**
@@ -350,6 +339,7 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * note: creates the user if it does not exist yet
      * 
      * @param user the {@link User} for whom to store tokens
+     * @param authority the authority to which the token is bound
      * @param accessToken the access token to be stored
      * @param refreshToken the refresh token to be stored
      * 
@@ -357,19 +347,23 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      *
      * @throws CannotStoreTokenException exception thrown when storing the token fails or when required data is missing
      */
-    private Token storeTokensForUser(User user, String accessToken, String refreshToken) throws CannotStoreTokenException {
+    private Token storeTokensForUser(final User user, final String authority, final String accessToken, final String refreshToken) throws CannotStoreTokenException {
 
         if (user == null) {
             throw new CannotStoreTokenException("No user available");
+        }
+        if (StringUtils.isEmpty(authority)) {
+            throw new CannotStoreTokenException("Authority for which the token is issued is missing!");
         }
         if (StringUtils.isEmpty(accessToken) || StringUtils.isEmpty(refreshToken)) {
             throw new CannotStoreTokenException("Access and/or refresh token to be stored is/are missing!");
         }
 
-        Token newToken = new Token();
+        final Token newToken = new Token();
         newToken.setAccessToken(accessToken, LIFETIME_ACCESS_TOKEN);
         newToken.setRefreshToken(refreshToken, LIFETIME_REFRESH_TOKEN);
         newToken.setUser(user);
+        newToken.setAuthority(authority);
 
         try {
             tokenRepository.save(newToken);
@@ -389,7 +383,7 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      * @return {@literal true} if something was cleaned; {@literal false} if there was nothing to clean or an error occured 
      */
     @Override
-    public boolean cleanupExpiredUserTokens(User user) {
+    public boolean cleanupExpiredUserTokens(final User user) {
 
         if (user == null) {
             LOG.warn("Received invalid user for database token cleanup");
@@ -399,9 +393,9 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
         boolean cleanedSomething = false;
 
         try {
-            List<Token> expiredAccessTokens = tokenRepository.findByUserAndAccessTokenExpiresLessThanEqualAndRefreshTokenExpiresLessThanEqual(user,
+            final List<Token> expiredAccessTokens = tokenRepository.findByUserAndAccessTokenExpiresLessThanEqualAndRefreshTokenExpiresLessThanEqual(user,
                     LocalDateTime.now(), LocalDateTime.now());
-            if (expiredAccessTokens.size() > 0) {
+            if (!expiredAccessTokens.isEmpty()) {
                 LOG.debug("Discovered {} expired access tokens for user '{}'; delete them", expiredAccessTokens.size(), user.getLogin());
                 tokenRepository.delete(expiredAccessTokens);
                 cleanedSomething = true;
@@ -420,14 +414,14 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
 
         clients = new ArrayList<RegisteredClient>();
 
-        List<AuthClient> clientsInDb = (List<AuthClient>) authClientRepos.findAll();
-        for (AuthClient cl : clientsInDb) {
+        final List<AuthClient> clientsInDb = (List<AuthClient>) authClientRepos.findAll();
+        for (final AuthClient cl : clientsInDb) {
 
             try {
-                Algorithm alg = Algorithm.HMAC256(cl.getSecret());
+                final Algorithm alg = Algorithm.HMAC256(cl.getSecret());
 
                 // any more things to verify (i.e. claims)?
-                JWTVerifier jwtVerifier = JWT.require(alg)
+                final JWTVerifier jwtVerifier = JWT.require(alg)
                         .withIssuer(cl.getClientId())
                         .acceptLeeway(0) // no grace period for timing issues, fail immediately
                         .acceptNotBefore(0)
@@ -448,14 +442,14 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
      */
     private static class RegisteredClient {
 
-        private AuthClient client;
-        private Algorithm algorithm;
-        private JWTVerifier verifier;
+        private final AuthClient client;
+        private final Algorithm algorithm;
+        private final JWTVerifier verifier;
 
         // -------------------------------------
         // Constructor
         // -------------------------------------
-        public RegisteredClient(AuthClient client, Algorithm algorithm, JWTVerifier verifier) {
+        public RegisteredClient(final AuthClient client, final Algorithm algorithm, final JWTVerifier verifier) {
             this.client = client;
             this.algorithm = algorithm;
             this.verifier = verifier;

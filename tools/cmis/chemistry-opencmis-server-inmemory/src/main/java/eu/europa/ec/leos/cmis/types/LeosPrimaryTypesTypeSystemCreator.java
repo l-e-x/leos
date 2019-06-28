@@ -36,6 +36,9 @@ public class LeosPrimaryTypesTypeSystemCreator implements TypeCreator {
                         LeosPropertyDefinition.LEOS_TITLE,
                         LeosPropertyDefinition.LEOS_COLLABORATORS,
                         LeosPropertyDefinition.LEOS_METADATA_REF,
+                        LeosPropertyDefinition.LEOS_MILESTONE_COMMENTS,
+                        LeosPropertyDefinition.LEOS_INITIAL_CREATED_BY,
+                        LeosPropertyDefinition.LEOS_INITIAL_CREATION_DATE,                        
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TEMPLATE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_STAGE,
                         LeosPropertyDefinition.LEOS_METADATA_DOC_TYPE,
@@ -50,6 +53,13 @@ public class LeosPrimaryTypesTypeSystemCreator implements TypeCreator {
 
         // create LEOS Configuration File document type
         typesList.add(LeosPrimaryTypes.createLeosConfigType(leosDocType));
+        
+        // create LEOS LEG File document type
+        typesList.add(LeosPrimaryTypes.createLeosLegType(leosDocType, 
+                LeosPropertyDefinition.LEOS_JOB_ID,
+                LeosPropertyDefinition.LEOS_JOB_DATE,
+                LeosPropertyDefinition.LEOS_STATUS,
+                LeosPropertyDefinition.LEOS_MILESTONE_COMMENTS));
 
         return typesList;
     }

@@ -34,7 +34,10 @@ public class LeosSecondaryTypesTypeSystemCreator implements TypeCreator {
                         LeosPropertyDefinition.LEOS_TEMPLATE,
                         LeosPropertyDefinition.LEOS_LANGUAGE,
                         LeosPropertyDefinition.LEOS_TITLE,
-                        LeosPropertyDefinition.LEOS_COLLABORATORS);
+                        LeosPropertyDefinition.LEOS_COLLABORATORS,
+                        LeosPropertyDefinition.LEOS_MILESTONE_COMMENTS,
+                        LeosPropertyDefinition.LEOS_INITIAL_CREATED_BY,
+                        LeosPropertyDefinition.LEOS_INITIAL_CREATION_DATE);
         typesList.add(leosXmlDocType);
 
         // create LEOS Media File document type
@@ -62,6 +65,15 @@ public class LeosSecondaryTypesTypeSystemCreator implements TypeCreator {
 
         // create LEOS Bill secondary type
         typesList.add(LeosSecondaryTypes.createLeosBillType(leosMetadataSecType));
+        
+        // create LEOS LEG File document type
+        TypeDefinition leosLegSecType =
+                LeosSecondaryTypes.createLeosLegType(leosMetadataSecType,
+                        LeosPropertyDefinition.LEOS_JOB_ID,
+                        LeosPropertyDefinition.LEOS_JOB_DATE,
+                        LeosPropertyDefinition.LEOS_STATUS,
+                        LeosPropertyDefinition.LEOS_MILESTONE_COMMENTS);
+        typesList.add(leosLegSecType);
 
         // create LEOS Annex secondary type
         TypeDefinition leosAnnexSecType =

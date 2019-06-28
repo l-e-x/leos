@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,9 +15,6 @@ package eu.europa.ec.leos.services.notification;
 
 import eu.europa.ec.leos.integration.NotificationProvider;
 import eu.europa.ec.leos.model.notification.EmailNotification;
-import eu.europa.ec.leos.services.user.UserService;
-
-import java.util.Locale;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,10 +34,9 @@ class NotificationServiceImpl implements NotificationService {
     
     @Override
     public void sendNotification(EmailNotification emailNotification) {
-        Locale languageLocale = new Locale("en");
         EmailNotificationProcessor emailNotificationProcessor = emailNotificationProcessorFactory.getEmailNotificationProcessor(emailNotification);
         if(emailNotificationProcessor != null) {
-            emailNotificationProcessor.process(languageLocale, emailNotification);
+            emailNotificationProcessor.process(emailNotification);
             notificationProvider.sendNotification(emailNotification);    
         }else {
             throw new RuntimeException("No processor found for this notification!");

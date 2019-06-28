@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,6 +18,7 @@ var base_config = {
     server: "http://localhost:9099/annotate",
     clientId : "AnnotateIssuedClientId",
     secret : "AnnotateIssuedSecret",
+    authority : "LEOS",
     userLogin : "demo" //use any user login present in UD-repo
 };
 
@@ -33,6 +34,11 @@ function _configureHostBridge(connector) {
 
     var annotationContainerElt = document.querySelector(base_config.annotationContainer);
     if (annotationContainerElt) {
+        window.onresize = function(event) {
+            var event = new Event("annotationSidebarResize");
+            annotationContainerElt.dispatchEvent(event);
+        };
+
         var dummySecurityResponse = function (connector) {
             console.log("dummy responseSecurityToken sent");
             connector.hostBridge.responseSecurityToken(_getToken());
@@ -45,6 +51,14 @@ function _configureHostBridge(connector) {
             console.log("dummy responseMergeSuggestion sent");
             connector.hostBridge.responseMergeSuggestion({result: "SUCCESS",message: "Suggestion successfully merged."});
         };
+        var dummyDocumentMetadata = function (connector) {
+            console.log("dummy responseDocumentMetadata sent");
+            connector.hostBridge.responseDocumentMetadata('{}');
+        };
+        var dummySearchMetadata = function (connector) {
+            console.log("dummy responseSearchMetadata sent");
+            connector.hostBridge.responseSearchMetadata('[]');
+        };
 
         connector.hostBridge.requestSecurityToken = function () {
             setTimeout(dummySecurityResponse,100, connector);
@@ -55,7 +69,12 @@ function _configureHostBridge(connector) {
         connector.hostBridge.requestMergeSuggestion = function (selector) {
             setTimeout(dummyMergeResponse,100, connector, selector);
         };
-
+        connector.hostBridge.requestDocumentMetadata = function (selector) {
+            setTimeout(dummyDocumentMetadata,100, connector, selector);
+        };
+        connector.hostBridge.requestSearchMetadata = function (selector) {
+            setTimeout(dummySearchMetadata,100, connector, selector);
+        };
 
         annotationContainerElt.hostBridge = connector.hostBridge;
     }
@@ -72,7 +91,7 @@ function _getToken() {
 
     var data = {
         "iss": `${base_config.clientId}`,
-        "sub":`acct:${base_config.userLogin}@ecas`,
+        "sub":`acct:${base_config.userLogin}@${base_config.authority}`,
         "aud": "intragate.development.ec.europa.eu",
         "iat": dateNow ,
         "nbf": dateNow -50,
@@ -109,7 +128,7 @@ function _addScript(doc, url) {
     doc.head.appendChild(script);
 
     function _onErrorLoad(event) {
-        log.debug('Error occurred while loading script ', event);
+        console.log('Error occurred while loading script ', event);
     }
 }
 
@@ -117,6 +136,7 @@ function _addHostConfig(doc) {
     var script = doc.createElement('script');
     script.type = 'application/json';
     script.className = 'js-hypothesis-config';
+    var webSocketUrl = base_config.server.replace('https','wss').replace('http','ws')+"/ws";
 
     script.innerHTML = `{
             "leosDocumentRootNode": "${base_config.leosDocumentRootNode}",
@@ -125,9 +145,12 @@ function _addHostConfig(doc) {
             "allowedSelectorTags": "a.ref2link-generated",
             "editableAttribute": "leos:editable",
             "oauthClientId": "${base_config.clientId}",
+            "assetRoot": "${base_config.server}/client",
+            "sidebarAppUrl": "${base_config.server}/app.html",
             "services": [{
-                "authority": "ecas",
-                "apiUrl": "${base_config.server}/api/"
+                "authority": "${base_config.authority}",
+                "apiUrl": "${base_config.server}/api/",
+                "websocketUrl":"${webSocketUrl}"                                
                 }]
             }`;
     doc.body.appendChild(script);

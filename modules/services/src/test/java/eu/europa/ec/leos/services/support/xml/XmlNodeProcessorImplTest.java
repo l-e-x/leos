@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -71,26 +71,26 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     @Test
     public void setValues_tags_present_test() throws Exception {// meta/identification/FRBRExpression/FRBRlanguage/@language
         // setup
-        byte[] xmlContent = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\"><bill>"
-                + "<meta><identification><FRBRExpression><FRBRlanguage GUID=\"lang\" language=\"FR\"></FRBRlanguage></FRBRExpression></identification>"
+        byte[] xmlContent = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\">"
+                + "<bill><meta><identification><FRBRExpression><FRBRlanguage xml:id=\"lang\" language=\"FR\"></FRBRlanguage></FRBRExpression></identification>"
                 + "<proprietary>"
-                + "<leos:docPurpose GUID=\"xyyyzzz\">OLDVALUE</leos:docPurpose>"
-                + "<leos:docStage GUID=\"xyyyzzz\">OLDStage</leos:docStage>"
+                + "<leos:docPurpose xml:id=\"xyyyzzz\">OLDVALUE</leos:docPurpose>"
+                + "<leos:docStage xml:id=\"xyyyzzz\">OLDStage</leos:docStage>"
                 + "</proprietary>"
                 + "</meta>"
-                + "<body><article GUID=\"art486\"></article></body></bill>" +
+                + "<body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>").getBytes(UTF_8);
 
-        String expectedContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
-                "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\"><bill>"
-                + "<meta><identification><FRBRExpression><FRBRlanguage GUID=\"lang\" language=\"EN\"></FRBRlanguage></FRBRExpression></identification>"
+        String expectedContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                + "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\">"
+                + "<bill><meta><identification><FRBRExpression><FRBRlanguage xml:id=\"lang\" language=\"EN\"></FRBRlanguage></FRBRExpression></identification>"
                 + "<proprietary>"
-                + "<leos:docPurpose GUID=\"xyyyzzz\">NEWVALUE &amp;</leos:docPurpose>"
-                + "<leos:docStage GUID=\"xyyyzzz\">NEW Stage</leos:docStage>"
+                + "<leos:docPurpose xml:id=\"xyyyzzz\">NEWVALUE &amp;</leos:docPurpose>"
+                + "<leos:docStage xml:id=\"xyyyzzz\">NEW Stage</leos:docStage>"
                 + "</proprietary>"
                 + "</meta>"
-                + "<body><article GUID=\"art486\"></article></body></bill>" +
+                + "<body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>";
 
         Map<String, String> keyValue = new HashMap<>();
@@ -112,18 +112,18 @@ public class XmlNodeProcessorImplTest extends LeosTest {
                 "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\"><bill>"
                 + "<meta>"
                 + "</meta>"
-                + "<body><article GUID=\"art486\"></article></body></bill>" +
+                + "<body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>").getBytes(UTF_8);
 
         String expectedContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\"><bill>"
                 + "<meta><identification><FRBRExpression><FRBRlanguage language=\"EN\"></FRBRlanguage></FRBRExpression></identification>"
                 + "<proprietary>"
-                + "<leos:docPurpose GUID=\"xyyyzzz\">NEWVALUE</leos:docPurpose>"
-                + "<leos:docStage GUID=\"xyyyzzz\">NEW Stage</leos:docStage>"
+                + "<leos:docPurpose xml:id=\"xyyyzzz\">NEWVALUE</leos:docPurpose>"
+                + "<leos:docStage xml:id=\"xyyyzzz\">NEW Stage</leos:docStage>"
                 + "</proprietary>"
                 + "</meta>"
-                + "<body><article GUID=\"art486\"></article></body></bill>" +
+                + "<body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>";
 
         Map<String, String> keyValue = new HashMap<>();
@@ -164,13 +164,13 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     public void setValues_AttributeNodeSelectorAndCreateIsTrue() throws Exception {
         // setup
         byte[] xmlContent = ("<akomaNtoso>"
-                            +"<meta GUID=\"test\"></meta>"
-                            +"<coverPage GUID=\"testCover\"></coverPage>"
+                            +"<meta xml:id=\"test\"></meta>"
+                            +"<coverPage xml:id=\"testCover\"></coverPage>"
                             +"</akomaNtoso>").getBytes(UTF_8);
 
         byte[] expectedtResult = ("<akomaNtoso>"
-                +"<meta GUID=\"test\"></meta>"
-                +"<coverPage GUID=\"testCover\"><container name=\"annexNumber\"><p>Annex 1</p></container></coverPage>"
+                +"<meta xml:id=\"test\"></meta>"
+                +"<coverPage xml:id=\"testCover\"><container name=\"annexNumber\"><p>Annex 1</p></container></coverPage>"
                 +"</akomaNtoso>").getBytes(UTF_8);
 
         Map<String, String> keyValue = new HashMap<>();
@@ -191,8 +191,8 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     public void setValues_AttributeNodeSelectorAndCreateIsFalse() throws Exception {
         // setup
         byte[] xmlContent = ("<akomaNtoso>"
-                +"<meta GUID=\"test\"></meta>"
-                +"<coverPage GUID=\"testCover\"></coverPage>"
+                +"<meta xml:id=\"test\"></meta>"
+                +"<coverPage xml:id=\"testCover\"></coverPage>"
                 +"</akomaNtoso>").getBytes(UTF_8);
 
         Map<String, String> keyValue = new HashMap<>();
@@ -213,8 +213,8 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     public void getValues_AttributeNodeSelector() throws Exception {
         // setup
         byte[] xmlContent = ("<akomaNtoso>"
-                +"<meta GUID=\"test\"></meta>"
-                +"<coverPage GUID=\"testCover\">"
+                +"<meta xml:id=\"test\"></meta>"
+                +"<coverPage xml:id=\"testCover\">"
                 +"<container name=\"x\"><p>Dummuy</p></container>"
                 +"<container name=\"annexNumber\"><p>ValidValue &amp;</p></container>"
                 +"<container name=\"test\"><p>InValidValue</p></container>"
@@ -239,18 +239,18 @@ public class XmlNodeProcessorImplTest extends LeosTest {
         Map<String, XmlNodeConfig> configuration = new HashMap<>();
 
         configuration.put("docPurpose", new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docPurpose",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docpurpose", "leos:docPurpose"),
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__docpurpose", "leos:docPurpose"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
         configuration.put("docStage", new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__docstage", "leos:docStage"))));
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__docstage", "leos:docStage"))));
         configuration.put("docType", new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docType",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__doctype", "leos:docType"))));
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__doctype", "leos:docType"))));
         configuration.put("template", new XmlNodeConfig("//meta/proprietary/leos:template",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "proprietary__template","leos:template"))));
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__template","leos:template"))));
         configuration.put("language", new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "frbrexpression__frbrlanguage_1","FRBRlanguage"))));
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "frbrexpression__frbrlanguage_1","FRBRlanguage"))));
         configuration.put("annexNumberCover", new XmlNodeConfig("//coverPage/container[@name='annexNumber']/p",true,
-                Arrays.asList(new XmlNodeConfig.Attribute("GUID", "cover_annexNumber", "container"))));
+                Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "cover_annexNumber", "container"))));
         return configuration;
     }
 }

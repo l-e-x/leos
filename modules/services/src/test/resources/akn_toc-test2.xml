@@ -7,19 +7,19 @@
             <heading>preface heading...</heading>
         </preface>
         <mainbody>
-            <part GUID="part1">
+            <part xml:id="part1">
                 <heading>part-head</heading>
-                <title GUID="title1">
+                <title xml:id="title1">
                     <heading>title-head</heading>
                     <num>part 1</num>
-                    <chapter GUID="chap1">
+                    <chapter xml:id="chap1">
                         <num>chapter-num</num>
                         <heading>chapter-head</heading>
-                        <section GUID="sect1">
+                        <section xml:id="sect1">
                             <num>section-num</num>
                             <heading>section-head</heading>
                         </section>
-                        <blockContainer GUID="bc3">
+                        <blockContainer xml:id="bc3">
                              Block container 3
                         </blockContainer>
                     </chapter>

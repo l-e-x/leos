@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="renditions/html/css/bill.css"?>
+<akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos"
+            xmlns:xml="http://www.w3.org/XML/1998/namespace">
+    <bill name="REG">
+
+        <body leos:origin="ec" xml:id="body">
+            <article leos:origin="ec" xml:id="art_1" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" xml:id="art_1__num" leos:editable="false">Article 1</num>
+                <heading leos:origin="ec" xml:id="art_1__heading">Scope</heading>
+                <paragraph leos:origin="ec" xml:id="deleted_art_1__para_1" leos:editable="false" leos:deletable="false"
+                           leos:softaction="del" leos:softactionroot="true" leos:softuser="jane"
+                           leos:softdate="2019-04-25T13:45:57.544+02:00">
+                    <num leos:origin="ec" xml:id="deleted_art_1__para_1__num">1.</num>
+                    <content leos:origin="ec" xml:id="deleted_art_1__para_1__content">
+                        <p leos:origin="ec" xml:id="deleted_art_1__para_1__content__p">Text...</p>
+                    </content>
+                </paragraph>
+            </article>
+            <article leos:origin="ec" xml:id="art_2" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" xml:id="art_2__num" leos:editable="false">Article 2</num>
+                <heading leos:origin="ec" xml:id="art_2__heading">Entry into force</heading>
+                <paragraph leos:origin="ec" xml:id="art_2__para_1">
+                    <content leos:origin="ec" xml:id="art_2__para_1__content">
+                        <p leos:origin="ec" xml:id="art_2__para_1__content__p">This Regulation shall enter into force on
+                            the [...] day following that of its publication in the <i leos:origin="ec"
+                                                                                      xml:id="art_2__para_1__content__p__i">
+                                Official Journal of the European Union</i>.
+                        </p>
+                    </content>
+                </paragraph>
+            </article>
+            <article leos:origin="ec" xml:id="akn_art_oes0AX" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" xml:id="akn_art_oes0AX_LDY3i1" leos:editable="false">Article 3</num>
+                <heading leos:origin="ec" xml:id="akn_art_oes0AX_h4EPLj">Article heading...</heading>
+                <paragraph leos:origin="ec" xml:id="akn_art_oes0AX-par1">
+                    <num leos:origin="ec" xml:id="akn_art_oes0AX_Bhti40">1.</num>
+                    <content leos:origin="ec" xml:id="akn_art_oes0AX_iTEVBJ">
+                        <p leos:origin="ec" xml:id="akn_art_oes0AX_HrrZCm">Text...</p>
+                    </content>
+                </paragraph>
+            </article>
+        </body>
+
+    </bill>
+</akomaNtoso>

@@ -1,5 +1,5 @@
 @REM
-@REM Copyright 2018 European Commission
+@REM Copyright 2019 European Commission
 @REM
 @REM Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 @REM You may not use this work except in compliance with the Licence.
@@ -12,10 +12,10 @@
 @REM See the Licence for the specific language governing permissions and limitations under the Licence.
 @REM
 
-del /s /q .\server\src\main\filters\acc.properties
-del /s /q .\server\src\main\filters\dev.properties
-del /s /q .\server\src\main\filters\prod.properties
-del /s /q .\server\src\main\filters\test.properties
+del /s /q .\config\src\main\filters\acc.properties
+del /s /q .\config\src\main\filters\dev.properties
+del /s /q .\config\src\main\filters\prod.properties
+del /s /q .\config\src\main\filters\test.properties
 
 del /s /q  .\client\.npmrc
 type .\client\scripts\config.js | findstr /v /c:"ec.europa.eu" > .\client\scripts\temp_config.js

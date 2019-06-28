@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -30,18 +30,19 @@ import com.vaadin.v7.shared.ui.grid.HeightMode;
 import com.vaadin.v7.ui.ComboBox;
 import com.vaadin.v7.ui.Grid;
 import de.datenhahn.vaadin.componentrenderer.ComponentRenderer;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.web.event.view.proposal.EditCollaboratorRequest;
-import eu.europa.ec.leos.web.event.view.proposal.RemoveCollaboratorRequest;
+import eu.europa.ec.leos.permissions.Role;
+import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
+import eu.europa.ec.leos.ui.event.view.collection.EditCollaboratorRequest;
+import eu.europa.ec.leos.ui.event.view.collection.RemoveCollaboratorRequest;
 import eu.europa.ec.leos.web.model.CollaboratorVO;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.converter.UserDisplayConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -58,13 +59,17 @@ import java.util.stream.Stream;
 @SpringComponent
 @ViewScope
 public class CollaboratorsComponent extends CustomComponent {
+
+    @Autowired
+    LeosPermissionAuthorityMapHelper authorityMapHelper;
+
     private static final Logger LOG = LoggerFactory.getLogger(CollaboratorsComponent.class);
-    private static final EnumSet<LeosAuthority> selectableAuthorities = EnumSet.of(LeosAuthority.CONTRIBUTOR, LeosAuthority.OWNER, LeosAuthority.REVIEWER);
+    private static List<Role> selectableAuthorities = new ArrayList<>();
 
     enum COLUMN {
         NAME("user"),
         ENTITY("user.entity"),
-        AUTHORITY("leosAuthority"),
+        AUTHORITY("role"),
         ACTION("action");
 
         private String key;
@@ -88,6 +93,7 @@ public class CollaboratorsComponent extends CustomComponent {
     private MessageHelper messageHelper;
     private EventBus eventBus;
     private UrlBuilder urlBuilder;
+    private boolean hasPermission;
 
     @Autowired
     public CollaboratorsComponent(MessageHelper messageHelper, EventBus eventBus, UrlBuilder urlBuilder) {
@@ -124,8 +130,8 @@ public class CollaboratorsComponent extends CustomComponent {
             mainHeader.getCell(col.getPropertyId()).setHtml(messageHelper.getMessage("collaborator.header.column." + col.getPropertyId()));
         }
 
-        collaboratorGrid.setHeightMode(HeightMode.CSS);
-        collaboratorGrid.setSizeFull();
+        collaboratorGrid.setHeightMode(HeightMode.ROW);
+        collaboratorGrid.setWidth(100, Unit.PERCENTAGE);
         setCompositionRoot(collaboratorGrid);
     }
 
@@ -178,9 +184,12 @@ public class CollaboratorsComponent extends CustomComponent {
     // Combo box used for the Editing LeosAuthority field
     private ComboBox createInplaceAuthorityEditor(Item item, CollaboratorVO collaborator, Object propertyId) {
         ComboBox comboBox = new ComboBox();
-        for (LeosAuthority authority : selectableAuthorities) {
+
+        selectableAuthorities.addAll(authorityMapHelper.getCollaboratorRoles());
+
+        for (Role authority : selectableAuthorities) {
             comboBox.addItem(authority);
-            comboBox.setItemCaption(authority, messageHelper.getMessage("collaborator.column.leosAuthority." + authority.name()));
+            comboBox.setItemCaption(authority, messageHelper.getMessage(authority.getMessageKey()));
         }
         comboBox.addStyleName("role-editor");
         comboBox.setPropertyDataSource(item.getItemProperty(propertyId));
@@ -192,12 +201,13 @@ public class CollaboratorsComponent extends CustomComponent {
                 eventBus.post(new EditCollaboratorRequest(collaborator, urlBuilder.getDocumentUrl(this.getUI().getPage())));
             }
         });
+        comboBox.setEnabled(hasPermission);
         return comboBox;
     }
 
     public void addCollaborator() {
         if (editor == null) {
-            editor = new CollaboratorEditor(collaboratorGrid, messageHelper, eventBus, urlBuilder.getDocumentUrl(this.getUI().getPage()));
+            editor = new CollaboratorEditor(collaboratorGrid, messageHelper, eventBus, urlBuilder.getDocumentUrl(this.getUI().getPage()), authorityMapHelper);
         }
         editor.addCollaborator();
     }
@@ -205,6 +215,6 @@ public class CollaboratorsComponent extends CustomComponent {
     @Override
     public void setEnabled(boolean enabled){
         collaboratorGrid.getColumn(CollaboratorsComponent.COLUMN.ACTION.getKey()).setHidden(!enabled);//hide if disabled
-        collaboratorGrid.setEnabled(enabled);
+        this.hasPermission = enabled;
     }
 }

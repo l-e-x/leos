@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,6 +17,7 @@ import eu.europa.ec.leos.annotate.services.StaticContentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -32,8 +33,12 @@ import java.nio.charset.Charset;
  */
 @Service
 public class StaticContentServiceImpl implements StaticContentService {
-
+//This could be renamed or moved to controller
     private static final Logger LOG = LoggerFactory.getLogger(StaticContentServiceImpl.class);
+
+
+    @Value("${annotate.server.url}")
+    private String serverUrl;
 
     // -------------------------------------
     // Required components
@@ -51,7 +56,8 @@ public class StaticContentServiceImpl implements StaticContentService {
     public String getApi() throws IOException {
 
         try {
-            return getContent("responses/api.json");
+            return getContent("responses/api.json")
+                     .replaceAll("@annotate.server.url@", serverUrl);
         } catch (IOException e) {
             LOG.error("Cannot read static API resource!");
             throw e;
@@ -65,7 +71,8 @@ public class StaticContentServiceImpl implements StaticContentService {
     public String getLinks() throws IOException {
 
         try {
-            return getContent("responses/links.json");
+            return getContent("responses/links.json")
+                    .replaceAll("@annotate.server.url@", serverUrl);
         } catch (IOException e) {
             LOG.error("Cannot read static links resource!");
             throw e;
@@ -79,16 +86,16 @@ public class StaticContentServiceImpl implements StaticContentService {
      * @return file content as string
      * @throws IOException exception is thrown when requested resource does not exist
      */
-    private String getContent(String filePath) throws IOException {
+    private String getContent(final String filePath) throws IOException {
 
-        Resource resource = resourceLoader.getResource("classpath:" + filePath);
-        InputStream in = resource.getInputStream();
+        final Resource resource = resourceLoader.getResource("classpath:" + filePath);
+        final InputStream instream = resource.getInputStream();
 
-        StringBuilder sb = new StringBuilder();
-        try(InputStreamReader isr = new InputStreamReader(in, Charset.forName("UTF-8"))) {
+        final StringBuilder sb = new StringBuilder();
+        try(InputStreamReader isr = new InputStreamReader(instream, Charset.forName("UTF-8"))) {
             try(BufferedReader reader = new BufferedReader(isr)) {
                 while (true) {
-                    String line = reader.readLine();
+                    final String line = reader.readLine();
                     if (line == null) break;
                     sb.append(line);
                 }

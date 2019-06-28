@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,12 +17,10 @@ import eu.europa.ec.leos.model.user.User;
 
 public class ModelHelper {
 
-    public static User buildUser(Long id, String login, String name) throws Exception {
-        User user = new User(id, login, name, null, null);
-        return user;
+    public static User buildUser(Long id, String login, String name){
+        return new User(id, login, name, null, null,null);
     }
-    public static User buildUser(Long id, String login, String name, String dgiId) throws Exception {
-        User user = new User(id, login, name, dgiId, null);
-        return user;
+    public static User buildUser(Long id, String login, String name, String dgiId){
+        return new User(id, login, name, dgiId, null,null);
     }
 }

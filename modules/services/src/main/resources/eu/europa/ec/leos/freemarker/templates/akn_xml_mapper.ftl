@@ -5,10 +5,11 @@
       strip_whitespace=true
       strip_text=true
       ns_prefixes={"D":"http://docs.oasis-open.org/legaldocml/ns/akn/3.0",
-                   "leos":"urn:eu:europa:ec:leos"}>
+                   "leos":"urn:eu:europa:ec:leos",
+                    "xml":"http://www.w3.org/XML/1998/namespace"}>
 
 <#--
-    Copyright 2017 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -29,7 +30,7 @@
     'body':'aknBody',
     'title':'aknTitle',
     'p':'aknP',
-    'GUID':'id'
+    'xml:id':'id'
 }>
 
 <#assign authorialNoteList = []>
@@ -48,12 +49,12 @@
 
 <#macro bill>
     <#local nodeName=.node?node_name>
-    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>>
+    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>
 </#macro>
 
 <#macro doc>
     <#local nodeName=.node?node_name>
-    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>>
+    <${nodeName}${handleAttributes(.node.@@)?no_esc}><#recurse><@printAuthorialNotes/></${nodeName}><#t>
 </#macro>
 
 <#-----------------------------------------------------------------------------
@@ -62,7 +63,7 @@
 <#macro container>
     <#local language = (.node["@name"][0]!'') == 'language'>
     <#if (language)>
-    <container id="${.node.@GUID[0]!}" name="language" data-lang="${.node.p}"/>
+    <container id="${.node["@xml:id"][0]!}" name="language" data-lang="${.node.p}"/>
     <#else>
         <@@element/>
     </#if>
@@ -72,7 +73,7 @@
 ------------------------------------------------------------------------------>
 <#macro authorialNote>
 	<#assign authorialNoteList = authorialNoteList + [.node]>
-    <#local noteId=.node.@GUID[0]!''>
+    <#local noteId=.node["@xml:id"][0]!''>
     <#if (noteId?length gt 0)>
         <authorialNote${handleAttributes(.node.@@)?no_esc} onClick="LEOS.scrollTo('endNote_${noteId}')"><#t>
         <#recurse><#t>
@@ -103,7 +104,7 @@ Cross Reference handler
         <#items as authNote>
             <#local noteMarker=authNote.@marker[0]!'*'>
             <#local noteText=authNote.@@text?trim>
-            <#local noteId=authNote.@GUID[0]!''>
+            <#local noteId=authNote["@xml:id"][0]!''>
             <#if (noteId?length gt 0)>
                 <span id="endNote_${noteId}" class="leos-authnote" onClick="LEOS.scrollTo('${noteId}')">
                     <marker id="marker_${noteId}">${noteMarker}</marker>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,21 +15,28 @@ package eu.europa.ec.leos.services.support.xml.ref;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 abstract public class LabelHandler {
-    protected final String CURRENT = "current";
+    protected final String THIS_REF = "this";
     protected final String ARTICLE = "article";
+    protected final String PARAGRAPH = "paragraph";
+    protected final String SUBPARAGRAPH = "subparagraph";
+    protected final String POINT = "point";
+    protected final String SUBPOINT = "sub-point";
+    protected final String INDENT = "indent";
+
     
-    abstract public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, StringBuffer label);
+    abstract public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale);
 
     abstract public int getOrder();
 
-    protected String createAnchor(TreeNode ref) {
-        return String.format("<ref GUID=\"%s\" href=\"%s\">%s</ref>",
+    protected String createAnchor(TreeNode ref, Locale locale) {
+        return String.format("<ref xml:id=\"%s\" href=\"%s\">%s</ref>",
                 ref.getRefId(),
                 ref.getIdentifier(),
-                NumFormatter.formattedNum(ref));
+                NumFormatter.formattedNum(ref, locale));
     }
     protected final boolean contains(List<TreeNode> node, Function<TreeNode, Object> valueGetter, Object value) {
         for (TreeNode treeNode : node) {
@@ -55,5 +62,9 @@ abstract public class LabelHandler {
             }
         }
         return nodes;
+    }
+    
+    protected boolean inThisArticle(List<TreeNode> mrefCommonNodes) {
+        return mrefCommonNodes.size() > 0 && ARTICLE.equals(mrefCommonNodes.get(0).getType());
     }
 }

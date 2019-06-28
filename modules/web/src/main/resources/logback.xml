@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <configuration debug="false" scan="true" scanPeriod="5 minutes">
+
+    <property resource="application_leos.properties" />
     <!-- Ignore or print logback internal status messages on the console -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
     <!--<statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>-->
@@ -20,7 +22,7 @@
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>./logs/${leos.log.filePrefix}-${leos.build.env}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${leos.log.path}/${leos.log.filePrefix}-%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 15 days' worth of history -->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -33,7 +35,7 @@
     <appender name="ADMINLOGFILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>./logs/${leos.log.filePrefix}-admin-${leos.build.env}-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${leos.log.path}/${leos.log.filePrefix}-admin-%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 15 days' worth of history -->
             <maxHistory>15</maxHistory>
         </rollingPolicy>
@@ -43,20 +45,15 @@
         </encoder>
     </appender>
 
-    <logger name="eu.europa.ec.leos" level="ALL"/>
+    <logger name="eu.europa.ec.leos" level="${leos.log.level}"/>
 
-    <logger name="freemarker" level="INFO"/>
-
-    <logger name="eu.europa.ec.leos.services.locking"  level="INFO" additivity="false">
-        <appender-ref ref="STDOUT"/>
-        <appender-ref ref="ADMINLOGFILE" />
-    </logger>
+    <logger name="freemarker" level="${leos.log.level}"/>
     
-    <logger name="org.apache.chemistry"  level="ERROR" additivity="false">
+    <logger name="org.apache.chemistry"  level="${leos.chemistry.log.level}" additivity="false">
         <appender-ref ref="FILE" />
     </logger>
     
-    <root level="INFO">
+    <root level="${leos.log.level}">
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="FILE"/>
     </root>

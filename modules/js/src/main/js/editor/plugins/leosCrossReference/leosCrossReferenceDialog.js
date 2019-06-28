@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -31,7 +31,7 @@ define(function leosCrossReferenceDialog(require) {
 
     dialogDefinition.initializeDialog = function initializeDialog(editor) {
         var docType = editor.LEOS.type;
-        var htmlTocTemplate = '<div id="treeContainer"></div>';
+        var htmlTocTemplate = '<div id="treeContainer" class="crTableOfContent leos-toc-tree"></div>';
         var htmlContentTemplate = '<div id="content"><div id="contentContainer"  class="selected-content '
                 + docType
                 + '"></div>'
@@ -50,7 +50,7 @@ define(function leosCrossReferenceDialog(require) {
 
         var dialogDefinition = {
             title: "Internal reference",
-            minWidth: 800,
+            minWidth: 1000,
             minHeight: 600,
             resizable: CKEDITOR.DIALOG_RESIZE_NONE,
             contents: [{
@@ -59,7 +59,7 @@ define(function leosCrossReferenceDialog(require) {
                     id: "crossRef",
                     type: 'hbox',
                     className: 'crDialogbox',
-                    widths: ['30%', '60%'],
+                    widths: ['40%', '60%'],
                     height: 600,
                     /* Set the dialog state upon data from widget, this is only used for editing already existed widgets. */
                     setup: function setup(widget) {
@@ -94,8 +94,7 @@ define(function leosCrossReferenceDialog(require) {
                     children: [{
                         type: 'html',
                         title: 'Table of Content',
-                        html: htmlTocTemplate,
-                        className: 'crTableOfContent'
+                        html: htmlTocTemplate
                     }, {
                         type: 'html',
                         title: 'Selected Content',
@@ -178,6 +177,7 @@ define(function leosCrossReferenceDialog(require) {
             var that = this;
             // adds hidden border
             this.$contentContainer.find(that.SELECTABLE_ELEMENTS).addClass("selectable-element");
+            this.$contentContainer.find("paragraph").addClass("selectable-element-paragraph");
             this.$contentContainer.find(this.SELECTABLE_ELEMENTS).click(function(event) {
                 that.clearErrorLabel();
                 var $this = $(this);
@@ -332,6 +332,9 @@ define(function leosCrossReferenceDialog(require) {
             } else if (this.getRefrenceText().trim().length === 0) {
                 this.showErrors("supportedElementsMessage");
                 return false;
+            } else if(this.checkMoveDelSoftAction()){
+                this.showErrors("movedOrDeletedElementsMessage");
+                return false;
             }
             this.clearErrorLabel();
             return true;
@@ -409,7 +412,12 @@ define(function leosCrossReferenceDialog(require) {
             if (startElement.getId() === null) {
                 // if id is null, it means that it is not a valid XML selected element
                 // Mref exists, it returns the mref id
-                return this.getSelectedMrefId();
+                var selectedMrefId = this.getSelectedMrefId();
+                if(selectedMrefId === null) {
+                    selectedMrefId = editor.getSelection().getCommonAncestor();
+                    return selectedMrefId && selectedMrefId.getId();
+                }
+                return selectedMrefId;
             }
             if (startElement.hasAttribute(this.articleHeadingAknName) &&
                 startElement.getAttribute(this.articleHeadingAknName) === 'aknHeading') {
@@ -434,6 +442,15 @@ define(function leosCrossReferenceDialog(require) {
                 }
             });
             return true;
+        },
+        checkMoveDelSoftAction: function checkMoveDelSoftAction() {
+            var nodeIds = Array.from(this.getTreeNodeIds());
+            for (var i = 0; i < nodeIds.length; i++) {
+                var softAtrrValue = document.getElementById(nodeIds[i]).getAttribute('leos:softaction');
+                if (softAtrrValue && (softAtrrValue === 'move_to' || softAtrrValue === 'del')) {
+                    return true;
+                }
+            }
         }
     };
 
@@ -545,8 +562,9 @@ define(function leosCrossReferenceDialog(require) {
             return treePath;
         },
         populateContent: function populateContent(selectedNode, nbrOfSelectedNodes) {
+            var higherElements = ["PART", "TITLE", "CHAPTER", "SECTION"];
             var selectedNodeTypeName = selectedNode.original.type;
-            if (this.contentRequired() && (nbrOfSelectedNodes === 1) && (selectedNodeTypeName === "ARTICLE" || selectedNodeTypeName === "CITATIONS" || selectedNodeTypeName === "RECITALS")) {
+            if (this.contentRequired() && (nbrOfSelectedNodes === 1) && higherElements.indexOf(selectedNodeTypeName) === -1) {
                 this.editor.fire("requestElement", {
                     elementId: selectedNode.original.id,
                     elementType: selectedNodeTypeName.toLowerCase()

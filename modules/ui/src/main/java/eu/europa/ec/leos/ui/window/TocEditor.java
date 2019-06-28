@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,57 @@
  */
 package eu.europa.ec.leos.ui.window;
 
+import com.vaadin.data.TreeData;
+import com.vaadin.data.provider.TreeDataProvider;
+import com.vaadin.ui.TreeGrid;
+import eu.europa.ec.leos.ui.component.toc.TocDropResult;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.TocItemType;
+
+import java.util.List;
+import java.util.Map;
 
 public interface TocEditor {
 
-    boolean isNumFieldEditable(TableOfContentItemVO item);
+    void setTocTreeDataFilter(TreeDataProvider<TableOfContentItemVO> dataProvider);
+
+    void setTocTreeStyling(MultiSelectTreeGrid<TableOfContentItemVO> treeGrid, TreeDataProvider<TableOfContentItemVO> dataProvider);
+
+    boolean isDeletableItem(TreeData<TableOfContentItemVO> treeData, TableOfContentItemVO tableOfContentItemVO);
+
+    boolean isDeletedItem(TableOfContentItemVO tableOfContentItemVO);
+
+    boolean isUndeletableItem(TableOfContentItemVO tableOfContentItemVO);
+
+    boolean checkIfConfirmDeletion(TreeData<TableOfContentItemVO> treeData, TableOfContentItemVO tableOfContentItemVO);
+
+    void deleteItem(TreeGrid<TableOfContentItemVO> tocTree, TableOfContentItemVO tableOfContentItemVO);
     
-    TableOfContentItemVO moveOriginAttribute(TableOfContentItemVO droppedElement, TableOfContentItemVO targetElement);
+    void undeleteItem(TreeGrid<TableOfContentItemVO> tocTree, TableOfContentItemVO tableOfContentItemVO);
+
+    boolean isArabicNumberingOnly(String itemType);
+    
+    boolean isRomanNumberingOnly(String itemType);
+
+    /**
+     * Depending on the
+     * @param isAdd, adds or moves the
+     * @param droppedItems in the
+     * @param tocTree according to
+     * @param tableOfContentRules and relative to
+     * @param targetItem, either
+     * @param position - AS_CHILDREN, if dropped ON the targetItem
+     *                 - BEFORE, if dropped ABOVE targetItem
+     *                 - AFTER, if dropped BELOW targetItem
+     * and
+     * @return the result of the action
+     * */
+    TocDropResult addOrMoveItems(boolean isAdd, TreeGrid<TableOfContentItemVO> tocTree, Map<TocItemType, List<TocItemType>> tableOfContentRules,
+            List<TableOfContentItemVO> droppedItems, TableOfContentItemVO targetItem, ItemPosition position);
+
+    enum ItemPosition {
+        BEFORE,
+        AS_CHILDREN,
+        AFTER
+    }
 }

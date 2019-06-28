@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,9 +16,9 @@ package eu.europa.ec.leos.annotate.controllers;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserPreferences;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserProfile;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.UserService;
 import eu.europa.ec.leos.annotate.services.exceptions.UserNotFoundException;
+import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,9 +48,9 @@ public class UserApiController {
     // -------------------------------------
     @Autowired
     private UserService userService;
-    
+
     @Autowired
-    private AuthenticationService authService;
+    private AuthenticatedUserStore authUser;
 
     // -------------------------------------
     // Endpoints
@@ -60,7 +60,7 @@ public class UserApiController {
      *
      * @param request Incoming request
      * @param response Outgoing response, containing user profile as JSON body
-     * @param authority the authority, as request parameter
+     * @param authority the authority, as request parameter (ignored)
      *
      * @return 
      * in case of success: HTTP status 200, JSON based response containing current user profile 
@@ -71,15 +71,15 @@ public class UserApiController {
      */
     @RequestMapping(value = "/profile", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseBody
-    public ResponseEntity<Object> getProfile(HttpServletRequest request, HttpServletResponse response,
-            @RequestParam(value = "authority", required = false) String authority)
+    public ResponseEntity<Object> getProfile(final HttpServletRequest request, final HttpServletResponse response,
+            @RequestParam(value = "authority", required = false) final String authority)
             throws IOException, ServletException {
 
         JsonUserProfile profile = null;
         String errorMsg = "";
 
         try {
-            profile = userService.getUserProfile(authService.getAuthenticatedUser().getLogin(), authority);
+            profile = userService.getUserProfile(authUser.getUserInfo());
             return new ResponseEntity<Object>(profile, HttpStatus.OK);
 
         } catch (UserNotFoundException unfe) {
@@ -111,13 +111,14 @@ public class UserApiController {
      */
     @RequestMapping(value = "/profile", method = RequestMethod.PATCH, consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public ResponseEntity<Object> updateUserPreferences(HttpServletRequest request, HttpServletResponse response, @RequestBody JsonUserPreferences jsonUserPref)
+    public ResponseEntity<Object> updateUserPreferences(final HttpServletRequest request, final HttpServletResponse response,
+            @RequestBody final JsonUserPreferences jsonUserPref)
             throws IOException, ServletException {
 
         String errorMsg = "";
 
         try {
-            userService.updateSidebarTutorialVisible(authService.getAuthenticatedUser().getLogin(), jsonUserPref.getPreferences().isShow_sidebar_tutorial());
+            userService.updateSidebarTutorialVisible(authUser.getUserInfo().getLogin(), jsonUserPref.getPreferences().isShow_sidebar_tutorial());
 
         } catch (UserNotFoundException e) {
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -35,7 +35,7 @@ define(function testAknRecitalPlugin(require) {
 
 
     describe("Unit tests for plugins/aknRecitalPlugin", function () {
-        var transformationConfigForRecital = '{"akn":"recital","html":"p","attr":[{"akn":"GUID","html":"id"},{"akn":"leos:editable","html":"contenteditable"},{"html":"data-akn-name=recital"},{"akn":"leos:origin","html":"data-origin"}],"sub":[{"akn":"num","html":"p","attr":[{"akn":"GUID","html":"data-akn-num-id"},{"akn":"leos:origin","html":"data-num-origin"}],"sub":{"akn":"text","html":"p[data-akn-num]"}},{"akn":"mp","html":"p","attr":[{"akn":"GUID","html":"data-akn-mp-id"},{"akn":"leos:origin","html":"data-mp-origin"}],"sub":{"akn":"text","html":"p/text"}}]}';
+        var transformationConfigForRecital = '{"akn":"recital","html":"p","attr":[{"akn":"xml:id","html":"id"},{"akn":"leos:editable","html":"data-akn-attr-editable"},{"html":"data-akn-name=recital"}],"sub":[{"akn":"num","html":"p","attr":[{"akn":"xml:id","html":"data-akn-num-id"}],"sub":{"akn":"text","html":"p[data-akn-num]"}},{"akn":"mp","html":"p","attr":[{"akn":"xml:id","html":"data-akn-mp-id"},{"akn":"leos:origin","html":"data-mp-origin"}],"sub":{"akn":"text","html":"p/text"}}]}';
 
         describe("Tests if transformation config is valid.", function () {
             it("Expects uptodate transformation config.", function () {

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -14,8 +14,7 @@
     See the Licence for the specific language governing permissions and limitations under the Licence.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>eu.europa.ec.digit.leos.pilot.annotate</groupId>
     <artifactId>anot-server</artifactId>
@@ -27,16 +26,18 @@
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>annotate</artifactId>
-        <version>2.0.0</version>
+        <version>2.1.0</version>
     </parent>
 
     <properties>
         <failOnMissingWebXml>false</failOnMissingWebXml>
+        <maven-surefire-plugin.version>2.12.4</maven-surefire-plugin.version>
+        <spring-boot-maven-plugin.version>2.0.4.RELEASE</spring-boot-maven-plugin.version>
     </properties>
 
     <dependencies>
         <dependency>
-           <groupId>eu.europa.ec.digit.leos.pilot.annotate</groupId>
+            <groupId>eu.europa.ec.digit.leos.pilot.annotate</groupId>
             <artifactId>anot-client</artifactId>
             <version>${project.version}</version>
         </dependency>
@@ -47,6 +48,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-freemarker</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -67,8 +72,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+            <version>${apache-commons-io.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -93,43 +103,20 @@
             <groupId>org.aspectj</groupId>
             <artifactId>aspectjrt</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+            <version>1.2</version>
+        </dependency>
     </dependencies>
 
     <build>
-        <finalName>server-${build.env}</finalName>
-        <filters>
-            <filter>src/main/filters/common.properties</filter>
-            <filter>src/main/filters/${build.env}.properties</filter>
-        </filters>
-        <resources>
-            <resource>
-                <!-- Filtered resource files to inject the values -->
-                <filtering>true</filtering>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>**/*.properties</include>
-                    <include>**/*.xml</include>
-                    <include>**/*.html</include>
-                    <include>**/*.json</include>
-                    <include>**/*.sql</include>
-                </includes>
-            </resource>
-            <resource>
-                <filtering>false</filtering>
-                <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>**/*.properties</exclude>
-                    <exclude>**/*.xml</exclude>
-                    <exclude>**/*.html</exclude>
-                    <exclude>**/*.json</exclude>
-                    <exclude>**/*.sql</exclude>
-                </excludes>
-            </resource>
-        </resources>
+        <finalName>annotate</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot-maven-plugin.version}</version>
             </plugin>
             <plugin>
                 <!-- JaCoCo plugin for generation of code coverage reports from tests -->
@@ -161,6 +148,7 @@
                         </goals>
                         <configuration>
                             <!-- Sets the path to the file which contains the execution data. -->
+                            <destFile>${project.build.directory}/coverage-reports/jacoco.exec</destFile>
                             <dataFile>${project.build.directory}/coverage-reports/jacoco.exec</dataFile>
                             <!-- Sets the output directory for the code coverage report. -->
                             <outputDirectory>${project.reporting.outputDirectory}/jacoco-ut</outputDirectory>
@@ -204,12 +192,19 @@
                             </rules>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!--  <version>2.15</version> -->
+                <version>${maven-surefire-plugin.version}</version>
                 <configuration>
                     <!-- Sets the VM argument line used when unit tests are run. -->
                     <argLine>${surefireArgLine}</argLine>

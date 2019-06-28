@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.annotate.services.impl;
 
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.model.GroupComparator;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.entity.UserGroup;
@@ -29,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
@@ -59,7 +62,14 @@ public class GroupServiceImpl implements GroupService {
     // -------------------------------------
     // Service functionality
     // -------------------------------------
-    
+
+    /**
+     * return the name of the default group - instead of hard-coding it...
+     */
+    public String getDefaultGroupName() {
+        return DEFAULT_GROUP_NAME;
+    }
+
     /**
      * create a new group with a given name and visibility
      * 
@@ -70,20 +80,17 @@ public class GroupServiceImpl implements GroupService {
      * @return the created {@link Group} object
      */
     @Override
-    public Group createGroup(String name, boolean isPublic) throws GroupAlreadyExistingException {
-        
-        if(StringUtils.isEmpty(name)) {
-            LOG.error("Cannot create group without a given name!");
-            throw new IllegalArgumentException("Group name undefined!");
-        }
-        
+    public Group createGroup(final String name, final boolean isPublic) throws GroupAlreadyExistingException {
+
+        Assert.isTrue(!StringUtils.isEmpty(name), "Cannot create group without a given name!");
+
         LOG.info("Save group with name '{}' in the database", name);
-        
-        Group newGroup = new Group(name, isPublic);
+
+        final Group newGroup = new Group(getInternalGroupName(name), isPublic);
         try {
             groupRepos.save(newGroup);
             LOG.debug("Group '{}' created with id {}", name, newGroup.getId());
-        } catch(DataIntegrityViolationException dive) {
+        } catch (DataIntegrityViolationException dive) {
             LOG.error("The group '{}' already exists", name);
             throw new GroupAlreadyExistingException(dive);
         } catch (Exception ex) {
@@ -92,7 +99,37 @@ public class GroupServiceImpl implements GroupService {
         }
         return newGroup;
     }
-    
+
+    /**
+     * generate an internal name for the group, which is URL-safe
+     * 
+     * @param groupDisplayName nice name of the group
+     * @return URL-safe internal group name
+     */
+    private String getInternalGroupName(final String groupDisplayName) {
+
+        // we want to keep it simple and allow those characters denoted "unreserved characters" in section 2.3 of RFC 3986:
+        // ALPHA / DIGIT / "-" / "." / "_" / "~"
+        // (where we dropped "~")
+        // corresponds to character ranges:
+        // ALPHA: [a-z] = 97-122, [A-Z] = 65-90
+        // DIGIT: [0-9] = 48-57
+        // "-" = 45, "." = 46, "_" = 95
+
+        // idea: drop all characters not contained in any of the above ranges - this implicitly also removes spaces
+        final StringBuilder simpleName = new StringBuilder();
+        for (int i = 0; i < groupDisplayName.length(); i++) {
+
+            final int codePoint = Character.codePointAt(groupDisplayName, i);
+            if (97 <= codePoint && codePoint <= 122 || 65 <= codePoint && codePoint <= 90 || 48 <= codePoint && codePoint <= 57 || codePoint == 45 ||
+                    codePoint == 46 || codePoint == 95) {
+                simpleName.append(groupDisplayName.charAt(i));
+            }
+        }
+
+        return simpleName.toString();
+    }
+
     /**
      * find a group based on its internal group name
      * 
@@ -101,17 +138,19 @@ public class GroupServiceImpl implements GroupService {
      * @return found {@link Group}, or {@literal null}
      */
     @Override
-    public Group findGroupByName(String groupName) {
+    public Group findGroupByName(final String groupName) {
 
-        Group foundGroup = groupRepos.findByName(groupName);
-        LOG.debug("Found group based on group name: " + (foundGroup != null));
+        final Group foundGroup = groupRepos.findByName(groupName);
+        LOG.debug("Found group based on group name: {}", foundGroup != null);
         return foundGroup;
     }
 
     /**
      * search the database for the configured default group
+     * 
+     * @return found default {@link Group}, or {@literal null}
      */
-    private Group findDefaultGroup() {
+    public Group findDefaultGroup() {
         return findGroupByName(DEFAULT_GROUP_NAME);
     }
 
@@ -123,9 +162,9 @@ public class GroupServiceImpl implements GroupService {
      * @throws DefaultGroupNotFoundException exception thrown in case default group is unavailable
      */
     @Override
-    public void assignUserToDefaultGroup(User user) throws DefaultGroupNotFoundException {
+    public void assignUserToDefaultGroup(final User user) throws DefaultGroupNotFoundException {
 
-        Group defaultGroup = findDefaultGroup();
+        final Group defaultGroup = findDefaultGroup();
         if (defaultGroup == null) {
             LOG.error("Cannot assign user to the default group; seems not to be configured in database");
             throw new DefaultGroupNotFoundException();
@@ -143,26 +182,25 @@ public class GroupServiceImpl implements GroupService {
      * @return flag indicating if user is a group member (in the end)
      */
     @Override
-    public boolean assignUserToGroup(User user, Group group) {
+    public boolean assignUserToGroup(final User user, final Group group) {
 
-        if(user == null || group == null) {
-            throw new IllegalArgumentException("user and group must both be defined to assign user to group");
-        }
-        
+        Assert.notNull(user, "User must be defined to assign user to group");
+        Assert.notNull(group, "Group must be defined to assign user to group");
+
         // check if already assigned
-        if(isUserMemberOfGroup(user, group)) {
+        if (isUserMemberOfGroup(user, group)) {
             LOG.info("User '{}' is already member of group '{}' - nothing to do", user.getLogin(), group.getName());
             return true;
         }
-        
-        long userId = user.getId(), groupId = group.getId();
-        UserGroup foundUserGroup = new UserGroup(userId, groupId);
+
+        final long userId = user.getId();
+        final long groupId = group.getId();
+        final UserGroup foundUserGroup = new UserGroup(userId, groupId);
         userGroupRepos.save(foundUserGroup);
         LOG.info("Saved user '{}' (id {}) as member of group '{}' (id {})", user.getLogin(), userId, group.getName(), groupId);
 
         return true;
     }
-
 
     /**
      * check if the default group is configured; throw exception if not
@@ -189,21 +227,14 @@ public class GroupServiceImpl implements GroupService {
      * @return flag indicating if user is member of the group
      */
     @Override
-    public boolean isUserMemberOfGroup(User user, Group group) {
+    public boolean isUserMemberOfGroup(final User user, final Group group) {
 
-        if (user == null) {
-            LOG.error("Cannot check if user is group member when no user is given");
-            throw new IllegalArgumentException("User is null");
-        }
+        Assert.notNull(user, "Cannot check if user is group member when no user is given");
+        Assert.notNull(group, "Cannot check if user is group member when no group is given");
 
-        if (group == null) {
-            LOG.error("Cannot check if user is group member when no group is given");
-            throw new IllegalArgumentException("Group is null");
-        }
-
-        UserGroup membership = userGroupRepos.findByUserIdAndGroupId(user.getId(), group.getId());
+        final UserGroup membership = userGroupRepos.findByUserIdAndGroupId(user.getId(), group.getId());
         LOG.debug("User '{}' (id {}) is member of group '{}' (id {}): {}", user.getLogin(), user.getId(), group.getName(), group.getId(), membership != null);
-        return (membership != null);
+        return membership != null;
     }
 
     /**
@@ -215,23 +246,40 @@ public class GroupServiceImpl implements GroupService {
      * @return list of groups the user is registered in or {@literal null} when none are found
      */
     @Override
-    public List<Group> getGroupsOfUser(User user) {
+    public List<Group> getGroupsOfUser(final User user) {
 
-        if (user == null) {
-            LOG.error("Cannot search for groups of undefined User (null)");
-            throw new IllegalArgumentException("User is null");
-        }
+        Assert.notNull(user, "Cannot search for groups of undefined User (null)");
 
-        List<UserGroup> foundUserGroups = userGroupRepos.findByUserId(user.getId());
-        LOG.debug("Found {} groups in which user '{}' is member", foundUserGroups != null ? foundUserGroups.size() : 0, user.getLogin());
+        final List<UserGroup> foundUserGroups = userGroupRepos.findByUserId(user.getId());
+        LOG.debug("Found {} groups in which user '{}' is member", foundUserGroups == null ? 0 : foundUserGroups.size(), user.getLogin());
 
         if (foundUserGroups == null) {
             return null;
         }
 
         // extract groupIds of found assignments and get corresponding groups
-        List<Group> foundGroups = groupRepos.findByIdIn(foundUserGroups.stream().map(ug -> ug.getGroupId()).collect(Collectors.toList()));
-        return foundGroups;
+        return groupRepos.findByIdIn(foundUserGroups.stream().map(usergroup -> usergroup.getGroupId()).collect(Collectors.toList()));
+    }
+
+    /**
+     * find all groups a user is member of and provide their group IDs
+     * 
+     *  @param user the user whose groups are wanted
+     *  @return list of group IDs, or {@literal null}
+     */
+    @Override
+    public List<Long> getGroupIdsOfUser(final User user) {
+
+        if (user == null) {
+            LOG.warn("Cannot retrieve group IDs from undefined user");
+            return null;
+        }
+
+        final List<UserGroup> userGroups = userGroupRepos.findByUserId(user.getId());
+        if (userGroups == null) return null;
+
+        // extract the groupIds
+        return userGroups.stream().map(UserGroup::getGroupId).distinct().collect(Collectors.toList());
     }
 
     /**
@@ -241,20 +289,18 @@ public class GroupServiceImpl implements GroupService {
      *  @return list of user IDs, or {@literal null}
      */
     @Override
-    public List<Long> getUserIdsOfGroup(Group group) {
+    public List<Long> getUserIdsOfGroup(final Group group) {
 
         if (group == null) {
             LOG.warn("Cannot retrieve user IDs from undefined group");
             return null;
         }
 
-        List<UserGroup> userGroups = userGroupRepos.findByGroupId(group.getId());
+        final List<UserGroup> userGroups = userGroupRepos.findByGroupId(group.getId());
         if (userGroups == null) return null;
 
         // extract the userId
-        List<Long> userIds = userGroups.stream().map(UserGroup::getUserId).collect(Collectors.toList());
-
-        return userIds;
+        return userGroups.stream().map(UserGroup::getUserId).collect(Collectors.toList());
     }
 
     /**
@@ -264,45 +310,54 @@ public class GroupServiceImpl implements GroupService {
      *  @return list of user IDs, or {@literal null}
      */
     @Override
-    public List<Long> getUserIdsOfGroup(String groupName) {
+    public List<Long> getUserIdsOfGroup(final String groupName) {
 
-        Group group = findGroupByName(groupName);
+        final Group group = findGroupByName(groupName);
         return getUserIdsOfGroup(group);
     }
 
     /**
-     * find all groups in which a user is member and provide their details in the Json format 
+     * find all groups in which a user is member and provide their details in the JSON format 
      * that should be returned by the groups API
      * 
-     *  @param user the user for which all groups are wanted
-     *  @return list of found groups, wrapped in Json objects ({@link JsonGroupWithDetails}); 
+     *  @param userinfo {@link UserInformation} of the user for which all groups are wanted; ISC users are treated slightly different than others
+     *  @return list of found groups, wrapped in JSON objects ({@link JsonGroupWithDetails}); 
      *          if no user is given (=not logged in), only the default group is returned
      */
     @Override
-    public List<JsonGroupWithDetails> getUserGroupsAsJson(User user) {
+    public List<JsonGroupWithDetails> getUserGroupsAsJson(final UserInformation userinfo) {
 
         List<Group> allGroups = null;
-        
-        if (user == null) {
+
+        if (userinfo == null ||
+                userinfo.getUser() == null || 
+                StringUtils.isEmpty(userinfo.getAuthority())) {
             LOG.info("Groups retrieval request received without user - return default group only");
             allGroups = new ArrayList<Group>();
             allGroups.add(findDefaultGroup());
         } else {
 
+            final User user = userinfo.getUser();
             allGroups = getGroupsOfUser(user);
             if (allGroups == null) {
                 LOG.warn("Did not receive a valid result from querying groups of user");
                 return null;
             }
             LOG.debug("Found {} groups for user '{}'", allGroups.size(), user.getLogin());
+            
+            if(Authorities.isIsc(userinfo.getAuthority())) {
+                // for ISC, we should not return the default group -> filter out
+                LOG.debug("Remove default group for ISC user {}", user.getLogin());
+                allGroups.remove(findDefaultGroup());
+            }
         }
-        
+
         // sort the groups as desired
         allGroups.sort(new GroupComparator(DEFAULT_GROUP_NAME));
 
-        List<JsonGroupWithDetails> results = new ArrayList<JsonGroupWithDetails>();
+        final List<JsonGroupWithDetails> results = new ArrayList<JsonGroupWithDetails>();
         for (int i = 0; i < allGroups.size(); i++) {
-            Group currentGroup = allGroups.get(i);
+            final Group currentGroup = allGroups.get(i);
             results.add(new JsonGroupWithDetails(currentGroup.getDisplayName(), currentGroup.getName(), currentGroup.isPublicGroup()));
         }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,6 @@
  */
 package eu.europa.ec.leos.security;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.user.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,16 +30,13 @@ public class SecurityContext {
     private static final Logger LOG = LoggerFactory.getLogger(SecurityContext.class);
 
     private LeosPermissionEvaluator leosPermissionEvaluator;
-    private LeosHierarchicalRoleEvaluator leosHierarchicalRoleEvaluator;
-    private TokenGenerator tokenGenerator;
+    private TokenService tokenService;
 
     @Autowired
-    public SecurityContext(LeosPermissionEvaluator leosPermissionEvaluator, 
-                           LeosHierarchicalRoleEvaluator leosHierarchicalRoleVoter, 
-                           TokenGenerator tokenGenerator){
+    public SecurityContext(LeosPermissionEvaluator leosPermissionEvaluator,
+                           TokenService tokenService){
         this.leosPermissionEvaluator = leosPermissionEvaluator;
-        this.leosHierarchicalRoleEvaluator = leosHierarchicalRoleVoter;
-        this.tokenGenerator = tokenGenerator;
+        this.tokenService = tokenService;
     }
 
     public User getUser() {
@@ -53,7 +49,7 @@ public class SecurityContext {
 
     public boolean hasPermission(Object domainObject, LeosPermission permission){
         return leosPermissionEvaluator.hasPermission(SecurityContextHolder.getContext().getAuthentication(),
-                                                        domainObject,
+                                                        domainObject == null ? new Object() : domainObject,
                                                         permission.name());
     }
 
@@ -70,19 +66,7 @@ public class SecurityContext {
         return permissions;
     }
     
-    public boolean hasRole(LeosAuthority authority) {
-        //FIXME: Call Spring's SecurityExpressionRoot method directly??
-        return leosHierarchicalRoleEvaluator.hasRole(SecurityContextHolder.getContext().getAuthentication(), authority.name());
-    }
-
-    public String getToken(String url) {
-        String ticket = null;
-        try {
-            ticket = tokenGenerator.getSecurityToken(this.getUser().getLogin(), url);
-        } catch (Exception ex) {
-            //If ticket is not return.. continue. We have no alternative
-            LOG.error("Grant ticket not found!!! Continuing without ticket", ex);
-        }
-        return ticket;
+    public String getAnnotateToken(String url) {
+        return tokenService.getAnnotateToken(this.getUser().getLogin(), url);
     }
 }

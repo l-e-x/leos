@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -20,7 +20,7 @@
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>leos-modules</artifactId>
-        <version>2.0.0</version>
+        <version>2.1.0</version>
     </parent>
 
     <artifactId>leos-config</artifactId>
@@ -31,7 +31,6 @@
 
     <properties>
         <!-- Project -->
-        <project.final.name>leos-config</project.final.name>
         <project.output.directory>target/generated-config</project.output.directory>
     </properties>
 
@@ -96,19 +95,15 @@
                             <fileSets>
                                 <fileSet>
                                     <sourceFile>${project.output.directory}/application.properties</sourceFile>
-                                    <destinationFile>${project.output.directory}/application_${leos.build.instance}.properties</destinationFile>
+                                    <destinationFile>${project.output.directory}/application_leos.properties</destinationFile>
                                 </fileSet>
                                 <fileSet>
                                     <sourceFile>${project.output.directory}/integration.properties</sourceFile>
-                                    <destinationFile>${project.output.directory}/integration_${leos.build.instance}.properties</destinationFile>
-                                </fileSet>
-                                <fileSet>
-                                    <sourceFile>${project.output.directory}/ecas-config.xml</sourceFile>
-                                    <destinationFile>${project.output.directory}/ecas-config-${project.web.context.path}.xml</destinationFile>
+                                    <destinationFile>${project.output.directory}/integration_leos.properties</destinationFile>
                                 </fileSet>
                                 <fileSet>
                                     <sourceFile>${project.output.directory}/message.properties</sourceFile>
-                                    <destinationFile>${project.output.directory}/message_${leos.build.instance}.properties</destinationFile>
+                                    <destinationFile>${project.output.directory}/message_leos.properties</destinationFile>
                                 </fileSet>
                             </fileSets>
                         </configuration>

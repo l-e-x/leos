@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,6 +26,7 @@ define(function leosPreventElementDeletionPluginModule(require) {
         requires: "widget",
 
         init: function init(editor) {
+            editor.on("toHtml", addPreventElementDeletionWidgetToFirstChild, null, null, 14);
             editor.on("toHtml", addEmptyElement, null, null, 7);
             editor.on("toDataFormat", removeEmptyElement, null, null, 13);
 
@@ -38,25 +39,32 @@ define(function leosPreventElementDeletionPluginModule(require) {
         }
     };
 
+    function addPreventElementDeletionWidgetToFirstChild(event) {
+        var topEditorElement = event.data.dataValue;
+        if(event.editor.config.addPreventElementDeletionWidgetToFirstChild && topEditorElement.children.length > 1) {
+            var widgetDiv = topEditorElement.children[0];
+            topEditorElement.children[1].add(widgetDiv, 0);
+        }
+    }
+
     function addEmptyElement(event) {
         var topEditorElement = event.data.dataValue;
-        if(topEditorElement.children.length > 0){
+        if(topEditorElement.children.length > 0 && topEditorElement.children[0].type === CKEDITOR.NODE_ELEMENT){
             var text = new CKEDITOR.htmlParser.text(leosNonEditableEmptyWidget.elementText);
             var emptyElement = new CKEDITOR.htmlParser.element(leosNonEditableEmptyWidget.elementName, {class: leosNonEditableEmptyWidget.elementClass});
             emptyElement.add(text);
-            topEditorElement.children[0].add(emptyElement, 0);
+            topEditorElement.add(emptyElement, 0);
         }
     }
 
     function removeEmptyElement(event) {
         var topEditorElement = event.data.dataValue;
-        if(topEditorElement.children.length > 0 && topEditorElement.children[0].children.length > 0){
-            var emptyElement = topEditorElement.children[0].getFirst(function(child){
-                return child.hasClass(leosNonEditableEmptyWidget.elementClass);
-            });
-            if(emptyElement){
+        if(topEditorElement && topEditorElement.children.length > 0){
+            topEditorElement.find(function(child){
+                return child.hasClass && child.hasClass(leosNonEditableEmptyWidget.elementClass);
+            }, true).forEach(function (emptyElement) {
                 emptyElement.remove();
-            }
+            });
         }
     }
 

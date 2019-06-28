@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.services.exceptions.AccessTokenExpiredException;
@@ -22,26 +23,19 @@ import eu.europa.ec.leos.annotate.services.exceptions.TokenInvalidForClientAutho
 
 import javax.servlet.http.HttpServletRequest;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public interface AuthenticationService {
 
     // extract user login from token or request
-    String getUserLoginFromToken(String token) throws TokenFromUnknownClientException, TokenInvalidForClientAuthorityException;
+    UserInformation getUserLoginFromToken(String token) throws TokenFromUnknownClientException, TokenInvalidForClientAuthorityException;
 
     String getUserLogin(HttpServletRequest request) throws AccessTokenExpiredException;
 
-    Token generateAndSaveTokensForUser(User user) throws CannotStoreTokenException;
+    Token generateAndSaveTokensForUser(UserInformation userInfo) throws CannotStoreTokenException;
 
     // token management
-    User findUserByRefreshToken(String refreshToken, AtomicReference<Token> foundTokenRef);
+    UserInformation findUserByRefreshToken(String refreshToken);
 
-    User findUserByAccessToken(String accessToken, AtomicReference<Token> foundTokenRef);
+    UserInformation findUserByAccessToken(String accessToken);
 
     boolean cleanupExpiredUserTokens(User user);
-
-    // store the authenticated user in a ThreadLocal variable
-    User getAuthenticatedUser();
-
-    void setAuthenticatedUser(User user);
 }

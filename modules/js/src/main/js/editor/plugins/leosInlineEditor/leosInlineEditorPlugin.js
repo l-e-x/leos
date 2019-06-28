@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -36,13 +36,26 @@ define(function leosInlineEditorPluginModule(require) {
             });
            
             function _getContentHeight(element) {
-                var editorElem = element.$;
-                return editorElem.getBoundingClientRect().height;
+            	if (element) {
+            		var editorElem = element.$;
+            		return editorElem.getBoundingClientRect().height;
+            	} else {
+            		return 0;
+            	} 
             }
-            
-            editor.on('blur', function(evt) {
-                evt.editor.element.removeClass('leos-editor-focus');
-                evt.editor.element.addClass('leos-editor-blur');
+
+            editor.on('blur', function (evt) {
+                if (evt.editor.LEOS.implicitSaveEnabled) {
+                    if (evt.editor.checkDirty()) {
+                        editor.fire("save", {
+                            data: editor.getData()
+                        });
+                    }
+                    editor.fire("close");
+                } else {
+                    evt.editor.element.removeClass('leos-editor-focus');
+                    evt.editor.element.addClass('leos-editor-blur');
+                }
             });
 
             editor.on('focus', function(evt) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,21 +14,20 @@
 package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
-import eu.europa.ec.leos.annotate.helper.TestData;
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.helper.*;
+import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.*;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -47,7 +46,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class AddAnnotationTest {
@@ -55,36 +54,11 @@ public class AddAnnotationTest {
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "helloRefresh";
 
     // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = new User("demo");
-        userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-        authService.setAuthenticatedUser(null);
-    }
-
-    // -------------------------------------
     // Required services and repositories
     // -------------------------------------
     @Autowired
-    private AuthenticationService authService;
-
-    @Autowired
-    private AnnotationRepository annotRepos;
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
     private GroupRepository groupRepos;
@@ -104,34 +78,56 @@ public class AddAnnotationTest {
     private MockMvc mockMvc;
 
     // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final User theUser = new User("demo");
+        userRepos.save(theUser);
+        tokenRepos.save(new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
     /**
      * successfully create an annotation, expected HTTP 200 and returned annotation
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testAddAnnotationOk() throws Exception {
 
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject("acct:user@domain.eu");
-        String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject("acct:user@domain.eu");
+        final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
 
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/api/annotations")
-                .header("authorization", "Bearer " + ACCESS_TOKEN)
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/api/annotations")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedAnnotation);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonAnnotation jsResponse = SerialisationHelper.deserializeJsonAnnotation(responseString);
+        final JsonAnnotation jsResponse = SerialisationHelper.deserializeJsonAnnotation(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getId().isEmpty());
 
@@ -140,9 +136,45 @@ public class AddAnnotationTest {
     }
 
     /**
+     * create an annotation having its response status set to SENT already
+     * expected HTTP 400
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testAddAnnotationWithResponseStatusSentRefused() throws Exception {
+
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject("acct:user@domain.eu");
+        final SimpleMetadata metadata = new SimpleMetadata();
+        metadata.put("responseStatus", "SENT");
+        jsAnnot.getDocument().setMetadata(metadata);
+        final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
+
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/api/annotations")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(serializedAnnotation);
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 200
+        result.andExpect(MockMvcResultMatchers.status().isBadRequest());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // the response must be a failure response
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertTrue(!jsResponse.getReason().isEmpty());
+
+        // the annotation was not saved
+        Assert.assertEquals(0, annotRepos.count());
+    }
+    
+    /**
      * annotation not created, expect HTTP 400 and failure response
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testAddAnnotationFail() throws Exception {
 
@@ -150,24 +182,24 @@ public class AddAnnotationTest {
         groupRepos.deleteAll();
         userGroupRepos.deleteAll();
 
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject("acct:user@domain.eu");
-        String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject("acct:user@domain.eu");
+        final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
 
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/api/annotations")
-                .header("authorization", "Bearer " + ACCESS_TOKEN)
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.post("/api/annotations")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedAnnotation);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // the response must be a failure response
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
 

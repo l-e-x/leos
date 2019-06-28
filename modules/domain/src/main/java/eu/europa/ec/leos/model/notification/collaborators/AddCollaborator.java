@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,12 +13,11 @@
  */
 package eu.europa.ec.leos.model.notification.collaborators;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.user.User;
 
 public class AddCollaborator extends CollaboratorEmailNotification {
 
-    public AddCollaborator(User recipient, LeosAuthority leosAuthority, String documentId, String link) {
+    public AddCollaborator(User recipient, String leosAuthority, String documentId, String link) {
         super(recipient, leosAuthority, documentId, link);
 
     }

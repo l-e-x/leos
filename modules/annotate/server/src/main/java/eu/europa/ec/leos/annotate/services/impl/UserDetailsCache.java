@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Cache for temporarily storing user detail information to avoid unnecessarily repeating calls to
@@ -32,11 +33,11 @@ public class UserDetailsCache {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserDetailsCache.class);
 
-    private HashMap<String, UserDetails> userDetailsCache;
+    private final Map<String, UserDetails> userDetailsCache;
     private LocalDateTime nextCacheCleanupTime = null; // time after which cache should be wiped
 
     // time in minutes after which cache should be wiped
-    private final int USER_DETAILS_CACHE_CLEANUP_TIME_MINUTES = 10;
+    private final static int USER_DETAILS_CACHE_CLEANUP_TIME_MINUTES = 10;
 
     // -------------------------------------
     // Constructor
@@ -56,7 +57,7 @@ public class UserDetailsCache {
      * @param login the login serving as cache key
      * @return found UserDetails object, or null
      */
-    public UserDetails getCachedUserDetails(String login) {
+    public UserDetails getCachedUserDetails(final String login) {
 
         if (StringUtils.isEmpty(login)) {
             LOG.warn("Cannot search for cached user details based on empty login");
@@ -84,9 +85,9 @@ public class UserDetailsCache {
      * @param login the user's login, serving as cache key
      * @param details the details of the user
      */
-    public void cache(String login, UserDetails details) {
+    public void cache(final String login, final UserDetails details) {
 
-        if (login == null || login.isEmpty()) {
+        if (StringUtils.isEmpty(login)) {
             LOG.warn("Cannot cache user details without key");
             return;
         }
@@ -115,6 +116,17 @@ public class UserDetailsCache {
         return userDetailsCache.size();
     }
 
+    /**
+     * set the next cleanup time to a certain timestamp
+     * 
+     * @param nextTime date/time of next scheduled cleanup
+     */
+    public void setNextCacheCleanupTime(final LocalDateTime nextTime) {
+        
+        if(nextTime != null) {
+            nextCacheCleanupTime = nextTime;
+        }
+    }
     /**
      *  schedule next time after which user details cache should be cleaned
      */

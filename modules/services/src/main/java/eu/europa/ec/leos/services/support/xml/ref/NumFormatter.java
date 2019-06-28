@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,17 +13,20 @@
  */
 package eu.europa.ec.leos.services.support.xml.ref;
 
+import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.RuleBasedNumberFormat;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.core.io.ClassPathResource;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.ResourceBundle;
 
 class NumFormatter {
-    static private final List<String> unNumberedItems = Arrays.asList("paragraph", "subparagraph", "sub-point", "point", "indent");
+    static private final List<String> unNumberedItems = Arrays.asList("citation", "paragraph", "subparagraph", "sub-point", "point", "indent");
 
-    static String formattedNum(TreeNode node) {
+    static String formattedNum(TreeNode node, Locale locale) {
         switch (node.getType()) {
             case "part":
             case "title":
@@ -32,7 +35,7 @@ class NumFormatter {
             case "article":
                 return node.getNum();
             default:
-                return (isUnnumbered(node)) ? formatUnnumbered(node) : formatNumbered(node);
+                return (isUnnumbered(node)) ? formatUnnumbered(node, locale) : formatNumbered(node);
         }
     }
 
@@ -54,18 +57,11 @@ class NumFormatter {
             return false;
         }
         else{
-            return isUnnumbered(node)
-                    || anyUnnumberedParent(node.getParent());
+            return isUnnumbered(node) ||
+                    anyUnnumberedParent(node.getParent());
         }        
     }
     
-    static String formatUnnumbered(TreeNode node) {
-        RuleBasedNumberFormat numberFormat = new RuleBasedNumberFormat(new Locale("en"), RuleBasedNumberFormat.SPELLOUT);
-        numberFormat.setDefaultRuleSet("%spellout-ordinal");
-
-        return numberFormat.format(node.getSiblingNumber());
-    }
-
     static String formatUnnumbered(TreeNode node, Locale locale) {
         RuleBasedNumberFormat numberFormat = new RuleBasedNumberFormat(locale, RuleBasedNumberFormat.SPELLOUT);
         //FIXME: Need to define spellout rules for other than english in files RbnfRulesSet
@@ -73,7 +69,14 @@ class NumFormatter {
         if (locale.getLanguage().equalsIgnoreCase("en")) {
             numberFormat.setDefaultRuleSet("%spellout-ordinal");
         }
-
+        
         return numberFormat.format(node.getSiblingNumber());
+    }
+    
+    static String formatPlural(TreeNode node, int number, Locale locale) {
+        ResourceBundle bundle = ResourceBundle.getBundle(new ClassPathResource("messages/message").getPath(), locale);
+        String pattern = bundle.getString("plural");
+        MessageFormat msgFormat = new MessageFormat(pattern, locale);
+        return msgFormat.format(new Object[] {node.getType(), number});
     }
 }

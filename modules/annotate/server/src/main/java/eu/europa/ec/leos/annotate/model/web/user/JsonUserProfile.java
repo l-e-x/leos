@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,11 @@
  */
 package eu.europa.ec.leos.annotate.model.web.user;
 
+import eu.europa.ec.leos.annotate.Generated;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Class representing the entire user profile that can be retrieved
@@ -39,6 +42,7 @@ public class JsonUserProfile {
     // -----------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------
+    
     public JsonUserProfile() {
         this.features = new JsonClientFeatures();
         this.flash = new JsonFlash();
@@ -50,18 +54,25 @@ public class JsonUserProfile {
     // Comfort getters & setters
     // -----------------------------------------------------------
 
-    public void addGroup(JsonGroup group) {
+    public void addGroup(final JsonGroup group) {
         if (this.groups == null) {
             this.groups = new ArrayList<JsonGroup>();
         }
         this.groups.add(group);
     }
 
-    public void setDisplayName(String name) {
+    public void setDisplayName(final String name) {
         if (this.user_info == null) {
             this.user_info = new JsonUserInfo();
         }
         this.user_info.setDisplay_name(name);
+    }
+
+    public void setEntityName(final String entity) {
+        if (this.user_info == null) {
+            this.user_info = new JsonUserInfo();
+        }
+        this.user_info.setEntity_name(entity);
     }
 
     // -----------------------------------------------------------
@@ -71,7 +82,7 @@ public class JsonUserProfile {
         return authority;
     }
 
-    public void setAuthority(String authority) {
+    public void setAuthority(final String authority) {
         this.authority = authority;
     }
 
@@ -79,7 +90,7 @@ public class JsonUserProfile {
         return userid;
     }
 
-    public void setUserid(String userid) {
+    public void setUserid(final String userid) {
         this.userid = userid;
     }
 
@@ -87,7 +98,7 @@ public class JsonUserProfile {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(final String status) {
         this.status = status;
     }
 
@@ -95,7 +106,7 @@ public class JsonUserProfile {
         return preferences;
     }
 
-    public void setPreferences(JsonUserShowSideBarPreference preferences) {
+    public void setPreferences(final JsonUserShowSideBarPreference preferences) {
         this.preferences = preferences;
     }
 
@@ -103,7 +114,7 @@ public class JsonUserProfile {
         return groups;
     }
 
-    public void setGroups(List<JsonGroup> groups) {
+    public void setGroups(final List<JsonGroup> groups) {
         this.groups = groups;
     }
 
@@ -111,7 +122,7 @@ public class JsonUserProfile {
         return features;
     }
 
-    public void setFeatures(JsonClientFeatures features) {
+    public void setFeatures(final JsonClientFeatures features) {
         this.features = features;
     }
 
@@ -119,7 +130,7 @@ public class JsonUserProfile {
         return flash;
     }
 
-    public void setFlash(JsonFlash flash) {
+    public void setFlash(final JsonFlash flash) {
         this.flash = flash;
     }
 
@@ -127,8 +138,37 @@ public class JsonUserProfile {
         return user_info;
     }
 
-    public void setUser_info(JsonUserInfo user_info) {
+    public void setUser_info(final JsonUserInfo user_info) {
         this.user_info = user_info;
     }
 
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(authority, userid, status, preferences, groups, user_info, features, flash);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonUserProfile other = (JsonUserProfile) obj;
+        return Objects.equals(this.authority, other.authority) &&
+                Objects.equals(this.userid, other.userid) &&
+                Objects.equals(this.status, other.status) &&
+                Objects.equals(this.preferences, other.preferences) &&
+                Objects.equals(this.groups, other.groups) &&
+                Objects.equals(this.user_info, other.user_info) &&
+                Objects.equals(this.features, other.features) &&
+                Objects.equals(this.flash, other.flash);
+    }
 }

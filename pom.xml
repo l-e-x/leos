@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -19,7 +19,7 @@
 
     <groupId>eu.europa.ec.digit.leos.pilot</groupId>
     <artifactId>leos</artifactId>
-    <version>2.0.0</version>
+    <version>2.1.0</version>
     <packaging>pom</packaging>
 
     <name>LEOS Pilot</name>
@@ -79,7 +79,8 @@
         <leos.build.date>${git.build.time}</leos.build.date>
         <leos.build.timestamp>${buildnumber.timestamp}</leos.build.timestamp>
         <leos.source.status>${git.commit.id.describe-short}</leos.source.status>
-        <leos.source.revision>${git.commit.id.describe}</leos.source.revision>
+        <!--leos.source.revision>${git.commit.id.describe}</leos.source.revision-->
+		<leos.source.revision>${project.version}</leos.source.revision>
         <leos.source.committedRevision>${git.commit.id}</leos.source.committedRevision>
         <leos.source.committedDate>${git.commit.time}</leos.source.committedDate>
         <!-- Plugins -->
@@ -124,15 +125,17 @@
         <mockito.version>2.7.22</mockito.version>
         <mathjax.version>2.7.0</mathjax.version>
         <spring.version>4.3.16.RELEASE</spring.version>
-        <spring-data.version>Codd-SR3</spring-data.version><!--UPGRADE PENDING-->
+        <spring-data.version>Codd-SR3</spring-data.version>
         <hibernate-orm.version>4.2.10.Final</hibernate-orm.version><!--UPGRADE PENDING-->
         <spring-security.version>4.2.5.RELEASE</spring-security.version>
+        <spring-webmvc.version>4.3.5.RELEASE</spring-webmvc.version>
         <auth0.version>3.2.0</auth0.version>
         <jboss-logging.version>3.3.0.Final</jboss-logging.version>
         <chemistry-opencmis.version>1.1.0</chemistry-opencmis.version>
         <servlet.version>3.0.1</servlet.version>
         <javax-inject.version>1</javax-inject.version>
         <commons-lang3.version>3.5</commons-lang3.version>
+        <commons-fileupload.version>1.3.3</commons-fileupload.version>
         <commons-io.version>2.5</commons-io.version>
         <guava.version>20.0</guava.version>
         <jsr305.version>3.0.1</jsr305.version>
@@ -148,32 +151,29 @@
         <cxf-maven-plugin.version>3.1.10</cxf-maven-plugin.version>
         <jaxb2-maven-plugin.version>2.3.1</jaxb2-maven-plugin.version>
         <fugue.version>4.4.0</fugue.version>
-        <okio.version>1.11.0</okio.version>
         <okhttp.version>3.7.0</okhttp.version>
         <saxon.version>9.8.0-3</saxon.version>
         <jena.version>3.3.0</jena.version>
         <icu4j.version>60.2</icu4j.version>
         <!-- Vaadin -->
-        <vaadin.version>8.4.0</vaadin.version>
+        <vaadin.version>8.5.2</vaadin.version>
         <vaadin-sass-compiler.version>0.9.13</vaadin-sass-compiler.version>
         <vaadin-plugin.version>${vaadin.version}</vaadin-plugin.version>
-        <vaadin-spring.version>3.0.0</vaadin-spring.version>
-        <vaadin-confirmdialog.version>3.1.1</vaadin-confirmdialog.version>
+        <vaadin-spring.version>3.1.1</vaadin-spring.version>
+        <vaadin-confirmdialog.version>3.2.0</vaadin-confirmdialog.version>
         <vaadin-commponent-renderer.version>2.0.0</vaadin-commponent-renderer.version>
-        <vaadin-onoffswitch.version>1.0.0</vaadin-onoffswitch.version>
-        <vaadin-dndscroll.version>2.0.1</vaadin-dndscroll.version>
+        <vaadin-onoffswitch.version>1.1.0</vaadin-onoffswitch.version>
+        <vaadin-dndscroll.version>2.0.2</vaadin-dndscroll.version>
         <vaadin-gridextensionpack.version>2.0.0</vaadin-gridextensionpack.version>
         <!-- JUnit 5 -->
         <junit-jupiter.version>5.0.2</junit-jupiter.version>
         <junit-platform.version>1.0.2</junit-platform.version>
         <junit-vintage.version>4.12.2</junit-vintage.version>
-        <!-- Kotlin -->
-        <kotlin.version>1.2.41</kotlin.version>
-        <kotlin-logging.version>1.5.4</kotlin-logging.version>
         <!-- httpclient -->
         <httpclient.version>4.5.3</httpclient.version>
         <!-- Sonar -->
         <sonar-maven-plugin.version>3.2</sonar-maven-plugin.version>
+        <commons-text.version>1.4</commons-text.version>
     </properties>
 
     <prerequisites>
@@ -250,6 +250,11 @@
                 <version>${spring-security.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-webmvc</artifactId>
+                <version>${spring-webmvc.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.auth0</groupId>
                 <artifactId>java-jwt</artifactId>
                 <version>${auth0.version}</version>
@@ -320,6 +325,11 @@
                 <version>${commons-lang3.version}</version>
             </dependency>
             <dependency>
+                <groupId>commons-fileupload</groupId>
+                <artifactId>commons-fileupload</artifactId>
+                <version>${commons-fileupload.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.atlassian.fugue</groupId>
                 <artifactId>fugue</artifactId>
                 <version>${fugue.version}</version>
@@ -328,11 +338,6 @@
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
                 <version>${commons-io.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.squareup.okio</groupId>
-                <artifactId>okio</artifactId>
-                <version>${okio.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.squareup.okhttp3</groupId>
@@ -532,27 +537,11 @@
                 <version>${hamcrest.version}</version>
                 <scope>test</scope>
             </dependency>
-            <!-- Kotlin libraries -->
             <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-stdlib-jre8</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.jetbrains.kotlin</groupId>
-                <artifactId>kotlin-reflect</artifactId>
-                <version>${kotlin.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.microutils</groupId>
-                <artifactId>kotlin-logging</artifactId>
-                <version>${kotlin-logging.version}</version>
-            </dependency>
+			    <groupId>org.apache.commons</groupId>
+			    <artifactId>commons-text</artifactId>
+			    <version>${commons-text.version}</version>
+			</dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -605,6 +594,8 @@
                                     <requireProperty>
                                         <property>leos.build.instance</property>
                                         <message>LEOS instance build profile must be specified.</message>
+                                        <regex>(os)|(ec)|(cn)</regex>
+                                        <regexMessage>Instance can have only values os, ec or cn</regexMessage>
                                     </requireProperty>
                                 </rules>
                             </configuration>
@@ -615,50 +606,6 @@
                             <groupId>org.codehaus.mojo</groupId>
                             <artifactId>extra-enforcer-rules</artifactId>
                             <version>${extra-enforcer-rules.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-                <plugin>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                    <artifactId>kotlin-maven-plugin</artifactId>
-                    <version>${kotlin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>compile</id>
-                            <phase>compile</phase>
-                            <goals>
-                                <goal>compile</goal>
-                            </goals>
-                            <configuration>
-                                <sourceDirs>
-                                    <sourceDir>src/main/kotlin</sourceDir>
-                                </sourceDirs>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>test-compile</id>
-                            <phase>test-compile</phase>
-                            <goals>
-                                <goal>test-compile</goal>
-                            </goals>
-                            <configuration>
-                                <sourceDirs>
-                                    <sourceDir>src/test/kotlin</sourceDir>
-                                </sourceDirs>
-                            </configuration>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <jvmTarget>1.8</jvmTarget>
-                        <compilerPlugins>
-                            <plugin>spring</plugin>
-                        </compilerPlugins>
-                    </configuration>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.jetbrains.kotlin</groupId>
-                            <artifactId>kotlin-maven-allopen</artifactId>
-                            <version>${kotlin.version}</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -829,6 +776,10 @@
                         <tagNameFormat>@{project.version}</tagNameFormat>
                         <preparationGoals>clean verify</preparationGoals>
                         <arguments>-Denv=${leos.build.env} -Dinstance=${leos.build.instance}</arguments>
+                        <checkModificationExcludes>
+                            <checkModificationExclude>release-settings.xml</checkModificationExclude>
+                            <checkModificationExclude>pom.xml</checkModificationExclude>
+                        </checkModificationExcludes>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -946,7 +897,7 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
                     <version>${sonar-maven-plugin.version}</version>
-                </plugin>
+                </plugin>                
             </plugins>
         </pluginManagement>
         <plugins>
@@ -1055,14 +1006,12 @@
     </build>
 
     <profiles>
-        <!-- LOCAL -->
+        <!-- SET build env -->
         <profile>
-            <id>env-local</id>
+            <id>env-default</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <property>
-                    <name>env</name>
-                    <value>local</value>
+                    <name>!env</name>
                 </property>
             </activation>
             <properties>
@@ -1077,22 +1026,16 @@
 
         <!-- OS Instance -->
         <profile>
-            <id>instance-os</id>
+            <id>instance-default</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
                 <property>
-                    <name>instance</name>
-                    <value>os</value>
+                    <name>!instance</name>
                 </property>
             </activation>
             <properties>
                 <leos.build.instance>os</leos.build.instance>
-                <project.web.context.path>leos-pilot</project.web.context.path>
-                <project.java.debug>true</project.java.debug>
-                <project.java.optimize>false</project.java.optimize>
-                <project.vaadin.draftCompile>true</project.vaadin.draftCompile>
-                <js.skipTests>false</js.skipTests>
-                <skipTests>false</skipTests>
+                <leos.web.context.path>leos-pilot</leos.web.context.path>
+				<leos.web.auth.method>BASIC</leos.web.auth.method>
             </properties>
         </profile>
     </profiles>

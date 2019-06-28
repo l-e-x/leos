@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,16 +18,19 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 
 @Component
 class DocumentVOVoter implements AccessDecisionVoter<DocumentVO> {
+
+    @Autowired
+    LeosPermissionAuthorityMap authorityMap;
 
     @Override
     public boolean supports(ConfigAttribute attribute) {
@@ -41,14 +44,14 @@ class DocumentVOVoter implements AccessDecisionVoter<DocumentVO> {
 
     @Override
     public int vote(Authentication authentication, DocumentVO documentVO, Collection<ConfigAttribute> attributes) {
-        LeosAuthority authority = retrieveAuthority(authentication, documentVO);
+        String authority = retrieveAuthority(authentication, documentVO);
         LeosPermission permission = retrievePermission(attributes);
 
         if (authority == null || permission == null) {
             return ACCESS_DENIED;
         }
 
-        Set<LeosPermission> authorityPermissions = LeosPermissionAuthorityMap.getPermissions(authority);
+        Set<LeosPermission> authorityPermissions = authorityMap.getPermissions(authority);
         if (authorityPermissions != null && authorityPermissions.contains(permission)) {
             return ACCESS_GRANTED;
         } else {
@@ -56,10 +59,10 @@ class DocumentVOVoter implements AccessDecisionVoter<DocumentVO> {
         }
     }
 
-    private LeosAuthority retrieveAuthority(Authentication authentication, DocumentVO documentVO) {
+    private String retrieveAuthority(Authentication authentication, DocumentVO documentVO) {
         String userLogin = ((AuthenticatedUser) authentication.getPrincipal()).getLogin();
-        LeosAuthority authority = null;
-        Map<String, LeosAuthority> collaborators =  documentVO.getCollaborators();
+        String authority = null;
+        Map<String, String> collaborators =  documentVO.getCollaborators();
         for (String collaboratorLogin : collaborators.keySet()) {
             if (userLogin.equals(collaboratorLogin)) {
                 authority = collaborators.get(collaboratorLogin);

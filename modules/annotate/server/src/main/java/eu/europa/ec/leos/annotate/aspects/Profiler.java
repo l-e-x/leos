@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -29,7 +29,7 @@ public class Profiler {
     @Around("execution(public * *.controllers.*.*(..))")
     public Object logMethod(final ProceedingJoinPoint joinPoint) throws Throwable {
         try {
-            String mName = joinPoint.getSignature().toShortString();
+            final String mName = joinPoint.getSignature().toShortString();
             LOG.trace("{} started.", mName);
             final StopWatch stopWatch = new StopWatch();
             stopWatch.start();
@@ -37,7 +37,8 @@ public class Profiler {
             stopWatch.stop();
             LOG.trace("{} finished. Took {}ms", mName, stopWatch.getTotalTimeMillis());
             return retVal;
-        } catch (final Throwable ex) {
+        } catch (final Exception ex) {
+            LOG.error("Error occurred within running profiler aspect");
             throw ex;
         }
     }

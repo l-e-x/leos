@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,71 +17,90 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.data.TreeData;
 import com.vaadin.icons.VaadinIcons;
+import com.vaadin.server.Resource;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
 import com.vaadin.ui.*;
-import eu.europa.ec.leos.domain.common.InstanceContext;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.domain.document.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
+import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.component.toc.TableOfContentItemConverter;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenRequest;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenResponse;
 import eu.europa.ec.leos.ui.event.toc.RefreshTocWindowEvent;
-import eu.europa.ec.leos.ui.window.EditTocWindow;
 import eu.europa.ec.leos.ui.window.TocEditor;
+import eu.europa.ec.leos.vo.coedition.CoEditionVO;
+import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.LegalTextTocItemType;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.event.component.ComparisonResponseEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
+import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent.Action;
 import eu.europa.ec.leos.web.model.TocAndAncestorsVO;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.component.LegalTextPaneComponent;
 import eu.europa.ec.leos.web.ui.component.MenuBarComponent;
 import eu.europa.ec.leos.web.ui.window.ImportWindow;
 import eu.europa.ec.leos.web.ui.window.MajorVersionWindow;
 import eu.europa.ec.leos.web.ui.window.TimeLineWindow;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.web.context.WebApplicationContext;
+import org.vaadin.dialogs.ConfirmDialog;
 
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @SpringComponent
 @ViewScope
-class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
+abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
 
     private static final long serialVersionUID = 1L;
 
     private static final Logger LOG = LoggerFactory.getLogger(DocumentScreenImpl.class);
+    
+    public static SimpleDateFormat dataFormat = new SimpleDateFormat("dd-MM-yyyy HH:mm");
 
-    private final UserHelper userHelper;
-    private final SecurityContext securityContext;
-    private final EventBus eventBus;
-    private final ConfigurationHelper cfgHelper;
-    private final MessageHelper messageHelper;
-    private InstanceContext instanceContext;
+    protected final UserHelper userHelper;
+    protected final SecurityContext securityContext;
+    protected final EventBus eventBus;
+    protected final ConfigurationHelper cfgHelper;
+    protected final MessageHelper messageHelper;
+    protected final InstanceTypeResolver instanceTypeResolver;
 
     private final Label docTitle = new Label();
     private final Label docIcon = new Label("", ContentMode.HTML);
-    private LegalTextPaneComponent legalTextPaneComponent;
+    
     private TimeLineWindow timeLineWindow;
     private ImportWindow importWindow;
-    private TocEditor tocEditor;
+    protected TocEditor tocEditor;
+    protected LegalTextPaneComponent legalTextPaneComponent;
+    private WebApplicationContext webAppContext;
+    private LeosPermissionAuthorityMapHelper authorityMapHelper;
+
+    @Value("${leos.coedition.sip.enabled}")
+    private boolean coEditionSipEnabled;
+
+    @Value("${leos.coedition.sip.domain}")
+    private String coEditionSipDomain;
 
     @Autowired
     DocumentScreenImpl(UserHelper userHelper, SecurityContext securityContext, EventBus eventBus, ConfigurationHelper cfgHelper,
-                       MessageHelper messageHelper, TocEditor numberEditor, InstanceContext instanceContext) {
+                       MessageHelper messageHelper, TocEditor tocEditor, InstanceTypeResolver instanceTypeResolver,
+                       WebApplicationContext webAppContext, LeosPermissionAuthorityMapHelper authorityMapHelper) {
         LOG.trace("Initializing document screen...");
         Validate.notNull(userHelper, "UserHelper must not be null!");
         this.userHelper = userHelper;
@@ -93,12 +112,16 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
         this.cfgHelper = cfgHelper;
         Validate.notNull(messageHelper, "MessageHelper must not be null!");
         this.messageHelper = messageHelper;
-        Validate.notNull(numberEditor, "NumberEditor must not be null!");
-        this.tocEditor = numberEditor;
-        Validate.notNull(instanceContext, "InstanceContext must not be null!");
-        this.instanceContext = instanceContext;
+        Validate.notNull(tocEditor, "TocEditor must not be null!");
+        this.tocEditor = tocEditor;
+        Validate.notNull(instanceTypeResolver, "instanceTypeResolver must not be null!");
+        this.instanceTypeResolver = instanceTypeResolver;
+        Validate.notNull(webAppContext, "webAppContext must not be null!");
+        this.webAppContext = webAppContext;
+        Validate.notNull(authorityMapHelper, "authorityMapHelper must not be null!");
+        this.authorityMapHelper = authorityMapHelper;
 
-        initLayout();
+        init();
     }
 
     @Override
@@ -132,45 +155,46 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
 
     @Override
     public void populateMarkedContent(final String markedContent) {
-        legalTextPaneComponent.populateMarkedContent(markedContent);
     }
 
     @Override
+    public void populateDoubleComparisonContent(String doubleComparisonContent) {
+    }
+    
+    @Override
     public void setToc(final List<TableOfContentItemVO> tableOfContentItemVoList) {
-    	TreeData<TableOfContentItemVO> treeTocData= TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
+        TreeData<TableOfContentItemVO> treeTocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
         legalTextPaneComponent.setTableOfContent(treeTocData);
+    }
+
+    @Override
+    public void setTocEditWindow(final List<TableOfContentItemVO> tableOfContentItemVoList) {
+        TreeData<TableOfContentItemVO> treeTocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
         eventBus.post(new RefreshTocWindowEvent(treeTocData));
     }
 
     @Override
-    public void showElementEditor(final String elementId, final String  elementTagName, final String elementFragment) {
-        eventBus.post(new EditElementResponseEvent(elementId, elementTagName, elementFragment, LeosCategory.BILL.name(),
-                securityContext.getUser(),
-                securityContext.hasRole(LeosAuthority.SUPPORT) ? new LeosAuthority[]{LeosAuthority.SUPPORT} : null, instanceContext.getType().getValue()));
+    public void showElementEditor(final String elementId, final String  elementTagName, final String elementFragment, String alternatives) {
+        eventBus.post(instanceTypeResolver.createEvent(elementId, elementTagName, elementFragment, LeosCategory.BILL.name(),
+                securityContext.getUser(),authorityMapHelper.getPermissionsForRoles(securityContext.getUser().getRoles()),alternatives));
     }
 
     @Override
-    public void refreshElementEditor(final String elementId, final String  elementTagName, final String elementFragment) {
+    public void refreshElementEditor(final String elementId, final String elementTagName, final String elementFragment) {
         eventBus.post(new RefreshElementEvent(elementId, elementTagName, elementFragment));
     }
 
     @Override
-    public void showTocEditWindow(List<TableOfContentItemVO> tableOfContentItemVoList,
-                                  Map<TocItemType, List<TocItemType>> tableOfContentRules) {
-        TocItemType[] tocItemTypes = LegalTextTocItemType.getValues();
-        EditTocWindow<LegalTextTocItemType> editTocWindow = new EditTocWindow(messageHelper, eventBus, cfgHelper, tableOfContentRules, tocItemTypes, tocEditor);
-        TreeData<TableOfContentItemVO> tocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
-        editTocWindow.setTableOfContent(tocData);
-        UI.getCurrent().addWindow(editTocWindow);
-        editTocWindow.center();
-        editTocWindow.focus();
+    public void showTimeLineWindow(List documentVersions) {
+        timeLineWindow = new TimeLineWindow(securityContext, messageHelper, eventBus, userHelper, documentVersions);
+        UI.getCurrent().addWindow(timeLineWindow);
+        timeLineWindow.center();
+        timeLineWindow.focus();
     }
 
     @Override
-    public void showTimeLineWindow(List documentVersions) {
-        timeLineWindow = new TimeLineWindow(messageHelper, eventBus, userHelper, documentVersions);
-        UI.getCurrent().addWindow(timeLineWindow);
-        timeLineWindow.center();
+    public void updateTimeLineWindow(List documentVersions) {
+        timeLineWindow.updateVersions(documentVersions);
         timeLineWindow.focus();
     }
 
@@ -181,7 +205,7 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
         majorVersionWindow.center();
         majorVersionWindow.focus();
     }
-    
+
     @Override
     public void showImportWindow() {
         importWindow = new ImportWindow(messageHelper, eventBus);
@@ -191,8 +215,8 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
     }
 
     @Override
-    public void displayComparison(HashMap<Integer, Object> htmlResult){
-        eventBus.post(new ComparisonResponseEvent(htmlResult,LeosCategory.BILL.name().toLowerCase()));
+    public void displayComparison(HashMap<Integer, Object> htmlResult) {
+        eventBus.post(new ComparisonResponseEvent(htmlResult, LeosCategory.BILL.name().toLowerCase()));
     }
 
     @Override
@@ -201,11 +225,11 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
     }
 
     @Override
-    public void setElement( String elementId, String elementType, String elementContent) {
+    public void setElement(String elementId, String elementType, String elementContent) {
         eventBus.post(new FetchElementResponseEvent(elementId, elementType, elementContent));
     }
 
-    private void initLayout() {
+    void init() {
         setSizeFull();
         setMargin(false);
         setSpacing(false);
@@ -236,8 +260,8 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
         docLayout.setComponentAlignment(docTitle, Alignment.MIDDLE_LEFT);
 
         // add menu bar component
-        MenuBarComponent menuBarComponent = new MenuBarComponent(messageHelper, eventBus);
-        menuBarComponent.setWidth("125px");
+        MenuBarComponent menuBarComponent = webAppContext.getBean(MenuBarComponent.class);
+        menuBarComponent.setWidth("73px");
         docLayout.addComponent(menuBarComponent);
         docLayout.setComponentAlignment(menuBarComponent, Alignment.TOP_RIGHT);
         return docLayout;
@@ -247,7 +271,7 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
         LOG.debug("Building document pane...");
 
         // Add Legal Text Pane and add content and toc in it
-        legalTextPaneComponent = new LegalTextPaneComponent(eventBus, messageHelper, userHelper, cfgHelper, securityContext);
+        legalTextPaneComponent = new LegalTextPaneComponent(eventBus, messageHelper, cfgHelper, securityContext);
         addComponent(legalTextPaneComponent);
         setExpandRatio(legalTextPaneComponent, 1.0f);
     }
@@ -269,28 +293,104 @@ class DocumentScreenImpl extends VerticalLayout implements DocumentScreen {
 
     @Override
     public void closeImportWindow() {
-       if(importWindow != null) {
-           importWindow.close();
-       }
+        if (importWindow != null) {
+            importWindow.close();
+        }
     }
 
     @Override
-    public void setPermissions(DocumentVO bill){
-        legalTextPaneComponent.setPermissions(bill);
+    public void setPermissions(DocumentVO bill) {
+        legalTextPaneComponent.setPermissions(bill, instanceTypeResolver.getInstanceType());
     }
 
     @Subscribe
-    public void fetchToken(SecurityTokenRequest event){
-        eventBus.post(new SecurityTokenResponse(securityContext.getToken(event.getUrl())));
+    public void fetchToken(SecurityTokenRequest event) {
+        eventBus.post(new SecurityTokenResponse(securityContext.getAnnotateToken(event.getUrl())));
     }
 
     @Override
-    public void scrollToMarkedChange(String elementId) {
-        legalTextPaneComponent.scrollToMarkedChange(elementId);
+    public void scrollTo(String elementId) {
+    	com.vaadin.ui.JavaScript.getCurrent().execute("LEOS.scrollTo('" + elementId + "');");
     }
 
     @Override
     public void setReferenceLabel(String referenceLabels) {
         eventBus.post(new ReferenceLabelResponseEvent(referenceLabels));
+    }
+
+    @Override
+    public void updateUserCoEditionInfo(List<CoEditionVO> coEditionVos, String presenterId) {
+        this.getUI().access(() -> {
+            legalTextPaneComponent.updateTocUserCoEditionInfo(coEditionVos, presenterId);
+            legalTextPaneComponent.getUserCoEditionExtension().updateUserCoEditionInfo(coEditionVos, presenterId);
+        });
+    }
+
+    @Override
+    public void displayDocumentUpdatedByCoEditorWarning() {
+        this.getUI().access(() -> {
+            legalTextPaneComponent.displayDocumentUpdatedByCoEditorWarning();
+        });    
+    }
+
+    @Override
+    public void checkElementCoEdition(List<CoEditionVO> coEditionVos, User user, final String elementId, final String elementTagName, final Action action, final Object actionEvent) {
+        StringBuilder coEditorsList = new StringBuilder();
+        coEditionVos.stream().filter((x) -> InfoType.ELEMENT_INFO.equals(x.getInfoType()) && x.getElementId().equals(elementId))
+                .sorted(Comparator.comparing(CoEditionVO::getUserName).thenComparingLong(CoEditionVO::getEditionTime)).forEach(x -> {
+                    StringBuilder userDescription = new StringBuilder();
+                    if (!x.getUserLoginName().equals(user.getLogin())) {
+                        userDescription.append("<a href=\"")
+                                .append(StringUtils.isEmpty(x.getUserEmail()) ? "" : (coEditionSipEnabled ? new StringBuilder("sip:").append(x.getUserEmail().replaceFirst("@.*", "@" + coEditionSipDomain)).toString()
+                                        : new StringBuilder("mailto:").append(x.getUserEmail()).toString()))
+                                .append("\">").append(x.getUserName()).append(" (").append(StringUtils.isEmpty(x.getEntity()) ? "-" : x.getEntity())
+                                .append(")</a>");
+                    } else {
+                        userDescription.append(x.getUserName()).append(" (").append(StringUtils.isEmpty(x.getEntity()) ? "-" : x.getEntity()).append(")");
+                    }
+                    coEditorsList.append("&nbsp;&nbsp;-&nbsp;")
+                            .append(messageHelper.getMessage("coedition.tooltip.message", userDescription, dataFormat.format(new Date(x.getEditionTime()))))
+                            .append("<br>");
+                });
+        if (!StringUtils.isEmpty(coEditorsList)) {
+            confirmCoEdition(coEditorsList.toString(), elementId, action, actionEvent);
+        } else {
+            eventBus.post(actionEvent);
+        }
+    }
+
+    private void confirmCoEdition(String coEditorsList, String elementId, Action action, Object actionEvent) {
+        ConfirmDialog confirmDialog = ConfirmDialog.getFactory().create(
+                messageHelper.getMessage("coedition." + action.getValue() + ".element.confirmation.title"),
+                messageHelper.getMessage("coedition." + action.getValue() + ".element.confirmation.message", coEditorsList),
+                messageHelper.getMessage("coedition." + action.getValue() + ".element.confirmation.confirm"),
+                messageHelper.getMessage("coedition." + action.getValue() + ".element.confirmation.cancel"), null);
+        confirmDialog.setContentMode(ConfirmDialog.ContentMode.HTML);
+        confirmDialog.getContent().setHeightUndefined();
+        confirmDialog.setHeightUndefined();
+        confirmDialog.show(getUI(), dialog -> {
+            if (dialog.isConfirmed()) {
+                eventBus.post(actionEvent);
+            } else {
+                eventBus.post(new CancelActionElementRequestEvent(elementId));
+            }
+        }, true);
+    }
+
+    @Override
+    public void showAlertDialog(String messageKey) {
+        ConfirmDialog confirmDialog = ConfirmDialog.getFactory().create(
+                messageHelper.getMessage(messageKey + ".alert.title"),
+                messageHelper.getMessage(messageKey + ".alert.message"),
+                messageHelper.getMessage(messageKey + ".alert.confirm"), null, null);
+        confirmDialog.setContentMode(ConfirmDialog.ContentMode.HTML);
+        confirmDialog.getContent().setHeightUndefined();
+        confirmDialog.setHeightUndefined();
+        confirmDialog.getCancelButton().setVisible(false);
+        confirmDialog.show(getUI(), dialog -> {}, true);
+    }
+    
+    @Override
+    public void setDownloadStreamResource(Resource downloadstreamResource) {
     }
 }

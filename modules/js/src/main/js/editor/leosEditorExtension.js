@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,6 +24,7 @@ define(function leosEditorExtensionModule(require) {
     var toolbarPositionAdapter = require("./core/toolbarPositionAdapter");
     var elementEditor = require("./core/elementEditor");
     var bookmarkHandler = require("./core/bookmarkHandler");
+    var $ = require("jquery");
 
     // configuration
     var EDITOR_CHANNEL_CFG = CONFIG.channels.editor;
@@ -36,6 +37,7 @@ define(function leosEditorExtensionModule(require) {
         toolbarPositionAdapter.setup(connector);
         elementEditor.setup(connector);
         bookmarkHandler.setup(connector);
+        _registerUnLoadHandlers(connector);
 
         log.debug("Registering Leos Editor extension unregistration listener...");
         connector.onUnregister = _connectorUnregistrationListener;
@@ -67,6 +69,7 @@ define(function leosEditorExtensionModule(require) {
         toolbarPositionAdapter.teardown(connector);
         actionHandler.teardown(connector);
         _teardownEditorChannel(connector);
+        _unregisterUnLoadHandlers;
     }
 
     function _teardownEditorChannel(connector) {
@@ -77,6 +80,38 @@ define(function leosEditorExtensionModule(require) {
         }
         // clear editor channel
         connector.editorChannel = null;
+    }
+
+    function _registerUnLoadHandlers(connector) {
+        log.debug("Registering beforeunload handler...");
+        $(window).on("beforeunload", function() {
+            if ($("akomantoso .cke_editable").is("[data-wrapped-id]") ||
+                    $("div.popupContent .leos-toc-tree").length) {
+                return "Changes you made may not be saved."; // Browser shows it's own message and not this
+            }
+        });
+        log.debug("Registering unload handler...");
+        $(window).on("unload", _closeBrowser.bind(undefined, connector));
+    }
+
+    function _unregisterUnLoadHandlers() {
+        log.debug("Unregistering unload handlers...");
+        $(window).off("beforeunload");
+        $(window).off("unload");
+    }
+
+    function _closeBrowser(connector) {
+        // After the call to "closeBrowser" a delay it is needed to be added to allow
+        // the call be launched. If this delay is not added the browser is closed without calling.
+        connector.closeBrowser();
+        _sleepFor(1000);
+    }
+
+    function _sleepFor(sleepDuration) {
+        // Previously implemented with JS setTimeout, promises, etc. but it does not work when it is
+        // called from browser "unload" event. Seems that JS native functions are aborted.
+        var now = new Date().getTime();
+        while (new Date().getTime() < now + sleepDuration) { /* do nothing */ }
     }
 
     return {

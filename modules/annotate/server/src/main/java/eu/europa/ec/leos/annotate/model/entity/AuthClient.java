@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -45,6 +46,7 @@ public class AuthClient {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "authclientsSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     // human-readable description
@@ -70,7 +72,7 @@ public class AuthClient {
         // default constructor required by JPA
     }
 
-    public AuthClient(String description, String secret, String clientId, String authorities) {
+    public AuthClient(final String description, final String secret, final String clientId, final String authorities) {
 
         this.description = description;
         this.secret = secret;
@@ -85,15 +87,15 @@ public class AuthClient {
         return id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public void setId(final long newId) {
+        this.id = newId;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
@@ -101,7 +103,7 @@ public class AuthClient {
         return secret;
     }
 
-    public void setSecret(String secret) {
+    public void setSecret(final String secret) {
         this.secret = secret;
     }
 
@@ -109,7 +111,7 @@ public class AuthClient {
         return clientId;
     }
 
-    public void setClientId(String clientId) {
+    public void setClientId(final String clientId) {
         this.clientId = clientId;
     }
 
@@ -117,7 +119,7 @@ public class AuthClient {
         return authorities;
     }
 
-    public void setAuthorities(String authorities) {
+    public void setAuthorities(final String authorities) {
         this.authorities = authorities;
     }
 
@@ -135,13 +137,15 @@ public class AuthClient {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, description, secret, clientId, authorities);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

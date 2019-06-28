@@ -6,7 +6,7 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
             http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.1.xsd
             http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd">
-            
+
     <!-- Cmis Context -->
     <import resource="classpath:eu/europa/ec/leos/cmisContext.xml"/>
 
@@ -16,7 +16,7 @@
     <!-- XSLT Context -->
     <import resource="classpath:eu/europa/ec/leos/xslt/xsltContext.xml"/>
     
-    <!-- TOC V8 Context -->
+    <!-- TOC Context -->
     <import resource="classpath:eu/europa/ec/leos/toc/tableOfContentContext.xml"/>
 	
     <cache:annotation-driven />
@@ -28,13 +28,18 @@
             </bean>
         </property>
     </bean>
-    
-    <task:scheduler id="taskScheduler" />
-    
-    <!-- Using the SimpleAsyncTaskExecutor to spawn a new thread executing asynchronously. This implementation does not reuse threads -->
-    <task:annotation-driven scheduler="taskScheduler" executor="simpleAsyncNonReusableThreadPool"/>
-    <task:executor id="simpleAsyncNonReusableThreadPool" pool-size="5"/>
-   
+
+    <!-- Always use the delegatingSecurityContextAsyncTaskExecutor bean.
+    Using the DelegatingSecurityContextAsyncTaskExecutor wrapping the default SimpleAsyncTaskExecutor
+    to spawn a new thread executing asynchronously and to pass it the current SecurityContext.
+    This implementation does not reuse threads. -->
+    <task:executor id="defaultSimpleAsyncTaskExecutor" pool-size="10"/>
+    <bean id="delegatingSecurityContextAsyncTaskExecutor" class="org.springframework.security.task.DelegatingSecurityContextAsyncTaskExecutor">
+        <constructor-arg ref="defaultSimpleAsyncTaskExecutor"/>
+    </bean>
+    <task:scheduler id="taskScheduler" pool-size="5"/>
+    <task:annotation-driven scheduler="taskScheduler" executor="delegatingSecurityContextAsyncTaskExecutor"/>
+
         <!-- Message Source -->
     <bean id="servicesMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
         <property name="cacheSeconds" value="-1"/>
@@ -43,21 +48,9 @@
         <property name="fallbackToSystemLocale" value="false"/>
         <property name="basenames">
             <list>
-                <value>classpath:eu/europa/ec/leos/content</value>
+                <value>classpath:messages/message</value>
             </list>
         </property>
     </bean>
 
-        <!-- Message Source -->
-    <bean id="emailsMessageSource" class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
-        <property name="cacheSeconds" value="-1"/>
-        <property name="defaultEncoding" value="UTF-8"/>
-        <property name="useCodeAsDefaultMessage" value="true"/>
-        <property name="fallbackToSystemLocale" value="false"/>
-        <property name="basenames">
-            <list>
-                <value>classpath:eu/europa/ec/leos/email</value>
-            </list>
-        </property>
-    </bean>
 </beans>

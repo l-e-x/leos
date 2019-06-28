@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@ package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Token;
@@ -49,7 +50,7 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class RefreshTokenExpiredTest {
@@ -58,29 +59,6 @@ public class RefreshTokenExpiredTest {
      * Test that request using expired refresh token is refused - run test using a profile update request
      */
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "noLongerRefreshing";
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -101,6 +79,28 @@ public class RefreshTokenExpiredTest {
     private WebApplicationContext wac;
 
     private MockMvc mockMvc;
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
 
     // -------------------------------------
     // Tests
@@ -110,36 +110,35 @@ public class RefreshTokenExpiredTest {
      * sending a request for getting a new refresh token using an expired refresh token, expected HTTP 400 and failure response
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testExpiredRefreshTokenIsRefused() throws Exception {
 
         final String login = "demo";
 
         // preparation: save a user and assign it to a group
-        User theUser = new User(login);
+        final User theUser = new User(login);
         userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(1), REFRESH_TOKEN, LocalDateTime.now().minusMinutes(1))); // refresh
-                                                                                                                                                   // token
-                                                                                                                                                   // expired
+        tokenRepos.save(new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(1), REFRESH_TOKEN,
+                LocalDateTime.now().minusMinutes(1))); // refresh token expired
 
-        UserGroup membership = new UserGroup();
+        final UserGroup membership = new UserGroup();
         membership.setUserId(theUser.getId());
         membership.setGroupId(defaultGroup.getId());
         userGroupRepos.save(membership);
 
         // send refresh token request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/token?grant_type=refresh_token&refresh_token=" + REFRESH_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/token?grant_type=refresh_token&refresh_token=" + REFRESH_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400 - cf. https://docs.apigee.com/api-platform/reference/policies/oauth-http-status-code-reference
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected annotation was returned
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
 
         // invalid token response expected
@@ -147,4 +146,43 @@ public class RefreshTokenExpiredTest {
         Assert.assertTrue(!jsResponse.getError_description().isEmpty());
     }
 
+    /**
+     * sending a request for getting a new refresh token, but not providing the previous refresh token, expected HTTP 400 and failure response
+     */
+    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    public void testRefreshTokenNotSent() throws Exception {
+
+        final String login = "demo";
+
+        // preparation: save a user and assign it to a group
+        final User theUser = new User(login);
+        userRepos.save(theUser);
+        tokenRepos.save(new Token(theUser, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(1), REFRESH_TOKEN,
+                LocalDateTime.now().minusMinutes(1))); // refresh token expired
+
+        final UserGroup membership = new UserGroup();
+        membership.setUserId(theUser.getId());
+        membership.setGroupId(defaultGroup.getId());
+        userGroupRepos.save(membership);
+
+        // send refresh token request
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/token?grant_type=refresh_token&refresh_token=");
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 400 - cf. https://docs.apigee.com/api-platform/reference/policies/oauth-http-status-code-reference
+        result.andExpect(MockMvcResultMatchers.status().isBadRequest());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // check that the expected annotation was returned
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        Assert.assertNotNull(jsResponse);
+
+        // invalid token response expected
+        Assert.assertEquals("invalid_grant", jsResponse.getError());
+        Assert.assertTrue(!jsResponse.getError_description().isEmpty());
+    }
 }

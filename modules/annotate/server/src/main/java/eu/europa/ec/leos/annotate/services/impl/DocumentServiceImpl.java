@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -50,15 +50,27 @@ public class DocumentServiceImpl implements DocumentService {
      *        the URI of the document
      */
     @Override
-    public Document findDocumentByUri(URI uri) {
+    public Document findDocumentByUri(final URI uri) {
 
         if (uri == null) {
             LOG.error("Cannot search for document as given URI is empty");
             return null;
         }
         
-        Document doc = documentRepos.findByUri(uri.toString());
-        LOG.debug("Found document with uri '" + uri + "': " + (doc != null));
+        return findDocumentByUri(uri.toString());
+    }
+    
+    /**
+     * search for a document based on its URI (as String)
+     * 
+     * @param uri
+     *        the URI of the document as String
+     */
+    @Override
+    public Document findDocumentByUri(final String uri) {
+        
+        final Document doc = documentRepos.findByUri(uri);
+        LOG.debug("Found document with uri '{}':{} ", uri, doc != null);
         return doc;
     }
 
@@ -71,7 +83,7 @@ public class DocumentServiceImpl implements DocumentService {
      *        exception is thrown when data cannot be created due to missing data
      */
     @Override
-    public Document createNewDocument(JsonAnnotationDocument document) throws CannotCreateDocumentException {
+    public Document createNewDocument(final JsonAnnotationDocument document) throws CannotCreateDocumentException {
 
         if (document == null) {
             LOG.error("Cannot create document, given document is null");
@@ -87,7 +99,7 @@ public class DocumentServiceImpl implements DocumentService {
             LOG.error("UNEXPECTED: Received more than one link for a document; to be checked!");
         }
 
-        Document doc = new Document(document.getLink().get(0).getHref(), document.getTitle());
+        final Document doc = new Document(document.getLink().get(0).getHref(), document.getTitle());
         try {
             documentRepos.save(doc);
         } catch (Exception e) {
@@ -106,7 +118,7 @@ public class DocumentServiceImpl implements DocumentService {
      *        exception is thrown when data cannot be created due to missing data
      */
     @Override
-    public Document createNewDocument(URI uri) throws CannotCreateDocumentException {
+    public Document createNewDocument(final URI uri) throws CannotCreateDocumentException {
 
         if (uri == null) {
             LOG.error("Cannot create document from URI, given URI is null");
@@ -114,7 +126,7 @@ public class DocumentServiceImpl implements DocumentService {
         }
 
         // create a new document without title
-        Document doc = new Document(uri, null);
+        final Document doc = new Document(uri, null);
         try {
             documentRepos.save(doc);
         } catch (Exception e) {
@@ -133,7 +145,7 @@ public class DocumentServiceImpl implements DocumentService {
      *        exception is thrown when the persistence layer complains
      */
     @Override
-    public void deleteDocument(Document doc) throws CannotDeleteDocumentException {
+    public void deleteDocument(final Document doc) throws CannotDeleteDocumentException {
         
         if(doc == null) {
             LOG.error("Cannot delete document, given document is null");

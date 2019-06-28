@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,11 +15,16 @@ package eu.europa.ec.leos.ui.view.repository;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosPackage;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Proposal;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.document.Proposal;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.common.ActType;
+import eu.europa.ec.leos.domain.common.ProcedureType;
+import eu.europa.ec.leos.domain.common.Result;
+import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.ValidationVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.converter.ProposalConverterService;
 import eu.europa.ec.leos.services.mandate.PostProcessingMandateService;
@@ -28,21 +33,17 @@ import eu.europa.ec.leos.services.store.TemplateService;
 import eu.europa.ec.leos.services.store.WorkspaceService;
 import eu.europa.ec.leos.services.validation.ValidationService;
 import eu.europa.ec.leos.ui.event.CreateDocumentRequestEvent;
-import eu.europa.ec.leos.domain.common.ActType;
-import eu.europa.ec.leos.domain.common.ProcedureType;
-import eu.europa.ec.leos.domain.common.Result;
+import eu.europa.ec.leos.ui.event.view.collection.DisplayCollectionEvent;
 import eu.europa.ec.leos.ui.model.RepositoryType;
 import eu.europa.ec.leos.ui.view.AbstractLeosPresenter;
+import eu.europa.ec.leos.usecases.document.CollectionContext;
 import eu.europa.ec.leos.usecases.document.ContextAction;
-import eu.europa.ec.leos.usecases.document.ProposalContext;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
-import eu.europa.ec.leos.web.event.view.proposal.DisplayProposalEvent;
 import eu.europa.ec.leos.web.event.view.repository.*;
-import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.web.support.SessionAttribute;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.UuidHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +54,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Provider;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.sql.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -67,7 +69,7 @@ class RepositoryPresenter extends AbstractLeosPresenter {
     private final WorkspaceService workspaceService;
     private final TemplateService templateService;
     private final PackageService packageService;
-    private final Provider<ProposalContext> proposalContextProvider;
+    private final Provider<CollectionContext> proposalContextProvider;
     private final MessageHelper messageHelper;
     private final ValidationService validationService;
     private final ProposalConverterService proposalConverterService;
@@ -79,11 +81,11 @@ class RepositoryPresenter extends AbstractLeosPresenter {
             RepositoryScreen repositoryScreen,
             WorkspaceService workspaceService,
             TemplateService templateService,
-            Provider<ProposalContext> proposalContextProvider,
+            Provider<CollectionContext> proposalContextProvider,
             PackageService packageService, MessageHelper messageHelper, ValidationService validationService, 
             ProposalConverterService proposalConverterService,
-            PostProcessingMandateService postProcessingMandateService) {
-        super(securityContext, httpSession, eventBus);
+            PostProcessingMandateService postProcessingMandateService, EventBus leosApplicationEventBus, UuidHelper uuidHelper) {
+        super(securityContext, httpSession, eventBus, leosApplicationEventBus, uuidHelper);
         LOG.trace("Initializing repository presenter...");
         this.repositoryScreen = repositoryScreen;
         this.workspaceService = workspaceService;
@@ -108,7 +110,7 @@ class RepositoryPresenter extends AbstractLeosPresenter {
         List<DocumentVO> documentVOs;
 
         if (RepositoryType.PROPOSALS.equals(getRepositoryType())) {
-            List<XmlDocument.Proposal> proposals = workspaceService.browseWorkspace(XmlDocument.Proposal.class, false);
+            List<Proposal> proposals = workspaceService.browseWorkspace(Proposal.class, false);
             documentVOs = proposals
                     .stream()
                     .map(this::mapProposalToViewObject)
@@ -126,11 +128,17 @@ class RepositoryPresenter extends AbstractLeosPresenter {
         repositoryScreen.populateData(documentVOs);
     }
 
-    private DocumentVO mapProposalToViewObject(XmlDocument.Proposal proposal) {
+    private DocumentVO mapProposalToViewObject(Proposal proposal) {
         DocumentVO documentVO = new DocumentVO(proposal);
         documentVO.setProcedureType(ProcedureType.ORDINARY_LEGISLATIVE_PROC);   // FIXME get from template
         String docType = proposal.getMetadata().get().getType();
-        documentVO.setActType(ActType.valueOf(docType.substring(0, docType.indexOf(" "))));// FIXME need a better implementation.
+        try {
+            documentVO.setActType(ActType.valueOf(docType.substring(0, docType.indexOf(" "))));// FIXME need a better implementation.
+        } catch(Exception e) {
+            documentVO.setActType(ActType.valueOf(docType.substring(docType.indexOf(" ")+1)));// FIXME need a better implementation. LEOS-3453
+        }
+        documentVO.setCreatedBy(proposal.getInitialCreatedBy());
+        documentVO.setCreatedOn(Date.from(proposal.getInitialCreationInstant()));
         return documentVO;
     }
 
@@ -140,7 +148,7 @@ class RepositoryPresenter extends AbstractLeosPresenter {
     }
 
     private RepositoryType getRepositoryType() {
-        RepositoryType repositoryType = (RepositoryType) httpSession.getAttribute(SessionAttribute.REPOSITORY_TYPE.name());
+        RepositoryType repositoryType = (RepositoryType) httpSession.getAttribute(id + "." + SessionAttribute.REPOSITORY_TYPE.name());
         if (repositoryType == null) {
             repositoryType = RepositoryType.PROPOSALS;// setDefault
         }
@@ -148,7 +156,7 @@ class RepositoryPresenter extends AbstractLeosPresenter {
     }
 
     private void setRepositoryType(RepositoryType repositoryType) {
-        httpSession.setAttribute(SessionAttribute.REPOSITORY_TYPE.name(), repositoryType);
+        httpSession.setAttribute(id + "." + SessionAttribute.REPOSITORY_TYPE.name(), repositoryType);
         repositoryScreen.setRepositoryType(repositoryType);
     }
 
@@ -179,15 +187,15 @@ class RepositoryPresenter extends AbstractLeosPresenter {
         LOG.debug("Handling create document request event... [category={}]", event.getDocument().getCategory());
         if (event.getDocument().isUploaded()) {
             //if it has id means that it is an uploaded document.
-            ProposalContext context = proposalContextProvider.get();
+            CollectionContext context = proposalContextProvider.get();
             context.useDocument(event.getDocument());
             addTemplateInContext(context,event.getDocument());
             context.useActionMessage(ContextAction.METADATA_UPDATED, messageHelper.getMessage("operation.document.imported"));
             context.useActionMessage(ContextAction.ANNEX_BLOCK_UPDATED, messageHelper.getMessage("operation.document.imported"));
-            context.useActionMessage(ContextAction.ANNEX_ADDED, messageHelper.getMessage("proposal.block.annex.added"));
+            context.useActionMessage(ContextAction.ANNEX_ADDED, messageHelper.getMessage("collection.block.annex.added"));
             context.executeImportProposal();
         }else if (LeosCategory.PROPOSAL.equals(event.getDocument().getCategory())) {
-            ProposalContext context = proposalContextProvider.get();
+            CollectionContext context = proposalContextProvider.get();
             String template = event.getDocument().getMetadata().getDocTemplate();
             String[] templates = (template != null) ? template.split(";") : new String[0];
             for (String name : templates) {
@@ -204,7 +212,7 @@ class RepositoryPresenter extends AbstractLeosPresenter {
     }
 
     @Subscribe
-    void displayProposalEvent(DisplayProposalEvent event){
+    void displayCollectionEvent(DisplayCollectionEvent event){
         if (event.getDocumentType().equals(LeosCategory.PROPOSAL)){
             eventBus.post(new NavigationRequestEvent(Target.getTarget(LeosCategory.PROPOSAL), event.getDocumentId()));
         }
@@ -235,10 +243,10 @@ class RepositoryPresenter extends AbstractLeosPresenter {
 
     @Subscribe
     void fetchProposalFromFile(FetchProposalFromFileEvent event) {
-        proposalConverterService.createProposalFromLegFile(event.getFile(), event.getDocument());
+        proposalConverterService.createProposalFromLegFile(event.getFile(), event.getDocument(), true);
     }
 
-    private void addTemplateInContext(ProposalContext context, eu.europa.ec.leos.domain.vo.DocumentVO documentVO){
+    private void addTemplateInContext(CollectionContext context, eu.europa.ec.leos.domain.vo.DocumentVO documentVO){
         context.useTemplate(documentVO.getMetadata().getDocTemplate());
         if(documentVO.getChildDocuments()!=null) {
             for (eu.europa.ec.leos.domain.vo.DocumentVO docChild : documentVO.getChildDocuments()) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,6 +18,7 @@ import com.google.common.eventbus.Subscribe;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.AbstractSplitPanel;
 import com.vaadin.ui.HorizontalSplitPanel;
+import eu.europa.ec.leos.ui.component.toc.TableOfContentComponent;
 import eu.europa.ec.leos.web.event.component.LayoutChangeRequestEvent;
 import eu.europa.ec.leos.web.event.view.PaneAddEvent;
 import eu.europa.ec.leos.web.event.view.PaneEnableEvent;
@@ -26,7 +27,10 @@ import eu.europa.ec.leos.web.ui.screen.document.ColumnPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListener{
@@ -34,15 +38,16 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
 
     private EventBus eventBus;
     private List<HorizontalSplitPanel> splitters;
+    private List<PaneSettings> panesList;
+
     public ScreenLayoutHelper(EventBus eventBus, List<HorizontalSplitPanel> splitters) {
         this.eventBus = eventBus;
         this.splitters = splitters;
+        this.panesList = new ArrayList<>();    // List of panes on the screen, flag enabling them or not
     }
-    
-    private List<PaneSettings> panesList = new ArrayList<>();    // List of panes on the screen, flag enabling them or not
 
     public void addPane(ContentPane pane, Integer position, Boolean isEnabled) {
-        eventBus.post(new PaneAddEvent(pane.getClass()));
+        eventBus.post(new PaneAddEvent(pane.getClass(), pane.getChildClass()));
         PaneSettings paneSettings = new PaneSettings(pane, position, isEnabled);
         panesList.add(paneSettings);
     }
@@ -123,27 +128,34 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
 
     // TODO calculation to be checked again -- bad implementation
     private float getDefaultSplitterPosition(int indexSplitter) {
-        float splitterSize=0f;
+        final float splitterSize;
 
         List<PaneSettings> panes = getSortedEnabledPanes();
+        boolean tocPaneEnabled = isTocPaneEnabled();
         //we give priority to the first element - left element
         switch(panes.size()){
-            case 1:
-                splitterSize=0f;
-                break;
             case 2:
-                splitterSize = panes.get(0).getPane().getDefaultPaneWidth(2);
+                splitterSize = panes.get(0).getPane().getDefaultPaneWidth(2, tocPaneEnabled);
                 break;
             case 3:
-                splitterSize = (indexSplitter == 0) ? panes.get(0).getPane().getDefaultPaneWidth(3) : 100f - panes.get(2).getPane().getDefaultPaneWidth(3);
+                splitterSize = (indexSplitter == 0) ?
+                                panes.get(0).getPane().getDefaultPaneWidth(3, tocPaneEnabled) :
+                                100f - panes.get(2).getPane().getDefaultPaneWidth(3, tocPaneEnabled);
+                break;
+            default:
+                splitterSize=0f;
                 break;
         }//end switch
         return splitterSize;
     }
 
+    private boolean isTocPaneEnabled() {
+        return panesList.stream().anyMatch(paneSettings -> paneSettings.getPane().getClass().equals(TableOfContentComponent.class) && paneSettings.isEnabled());
+    }
+
     private class PaneSettings {
         private Boolean enabled = false;
-        private Integer position = 0;
+        private Integer position;
         private ContentPane pane;
 
         PaneSettings(ContentPane pane, Integer position, Boolean enabled) {

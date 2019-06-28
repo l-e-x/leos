@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,16 +14,19 @@
 package eu.europa.ec.leos.annotate;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.helper.TestHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.*;
+import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotAcceptSentSuggestionException;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotAcceptSuggestionException;
-import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateAnnotationException;
 import eu.europa.ec.leos.annotate.services.exceptions.MissingPermissionException;
 import eu.europa.ec.leos.annotate.services.exceptions.NoSuggestionException;
 import org.junit.After;
@@ -32,6 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -39,8 +43,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class SuggestionAcceptTest {
 
     /**
@@ -48,24 +53,9 @@ public class SuggestionAcceptTest {
      * this also covers special cases like deleting suggestions with sub replies
      */
 
-    // -------------------------------------
-    // Cleanup of database content before running new test
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = userRepos.save(new User("demo"));
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
+    private static final String LOGIN = "demo";
+    private static final String HYPO_USER_ACCOUNT = "acct:" + LOGIN + "@" + Authorities.ISC;
+    private User theUser;
 
     // -------------------------------------
     // Required services and repositories
@@ -74,10 +64,17 @@ public class SuggestionAcceptTest {
     private AnnotationService annotService;
 
     @Autowired
-    private AnnotationRepository annotRepos;
+    private AnnotationConversionService conversionService;
+    
+    @Autowired
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
     private DocumentRepository documentRepos;
+
+    @Autowired
+    private MetadataRepository metadataRepos;
 
     @Autowired
     private TagRepository tagRepos;
@@ -92,196 +89,301 @@ public class SuggestionAcceptTest {
     private UserGroupRepository userGroupRepos;
 
     // -------------------------------------
+    // Cleanup of database content before running new test
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        theUser = userRepos.save(new User(LOGIN));
+        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
     /**
      * a suggestion without replies is accepted
-     * -> this also cleans up the document referred to
+     * -> should be working
      */
     @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testAcceptSimpleSuggestion() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final String authority = Authorities.ISC;
 
         // retrieve our test annotation and make it become a suggestion
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+        annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
         Assert.assertEquals(1, documentRepos.count());
         Assert.assertEquals(1, tagRepos.count());
 
         // accept it again - works as user was assigned to annotation group in test setup
-        annotService.acceptSuggestionById(jsAnnot.getId(), login);
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
 
-        // verify that the document and the tags have also been removed as they are not referred to
-        // by any other annotation
-        Assert.assertEquals(0, annotRepos.count());
-        Assert.assertEquals(0, documentRepos.count());
-        Assert.assertEquals(0, tagRepos.count());
+        // verify that the document remains in DB and the tags have been kept
+        // annotation is flagged as ACCEPTED
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(1, tagRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
+
+        // check that the annotation status would be reported correctly in JSON format
+        final Annotation annot = annotRepos.findById(jsAnnot.getId());
+        final JsonAnnotation jsConverted = conversionService.convertToJsonAnnotation(annot, userInfo);
+        Assert.assertNotNull(jsConverted);
+        Assert.assertEquals(AnnotationStatus.ACCEPTED, jsConverted.getStatus().getStatus());
+        Assert.assertNotNull(jsConverted.getStatus().getUpdated());
+        // corresponds to user of UserInformation instance
+        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUpdated_by());
     }
 
     /**
-     * a suggestion with a reply is accepted
-     * -> this also cleans up the document referred to
+     * a suggestion with response status SENT is accepted from ISC
+     * -> should be prohibited
      */
     @Test
+    public void testCannotAcceptSentSuggestionInIsc() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+        
+        // retrieve our test annotation and make it become a suggestion
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(1, tagRepos.count());
+
+        // change the metadata response status of the suggestion
+        final Metadata savedMeta = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMeta.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMeta);
+
+        // accept it - should throw exception since the SENT response status does not allow accepting
+        try {
+            annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
+            Assert.fail("Expected exception for disallowed accepting of SENT suggestion not received");
+        } catch (CannotAcceptSentSuggestionException ex) {
+            // OK
+        }
+
+        // verify that the document remains in DB and the tags have been kept
+        // annotation is still flagged as NORMAL, not ACCEPTED!
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(1, tagRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.NORMAL, null);
+    }
+
+    /**
+     * a suggestion with response status SENT is accepted from LEOS
+     * -> should be possible
+     */
+    @Test
+    public void testAcceptSentSuggestionInLeos() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+        
+        // retrieve our test annotation and make it become a suggestion
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(1, tagRepos.count());
+
+        // change the metadata response status of the suggestion
+        final Metadata savedMeta = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMeta.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMeta);
+
+        // change the user's authority such that he is a LEOS user now
+        userInfo.setAuthority(Authorities.EdiT);
+        
+        // accept it - should be ok
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
+
+        // verify that the document remains in DB and the tags have been kept
+        // annotation is flagged as ACCEPTED
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(1, tagRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
+    }
+    
+    /**
+     * a suggestion with a reply is accepted
+     */
+    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testAcceptSimpleSuggestionWithReply() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
 
         // retrieve our test suggestion and a reply to it
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
 
-        JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        annotService.createAnnotation(jsReply, login);
+        final JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(HYPO_USER_ACCOUNT, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsReply, userInfo);
 
         Assert.assertEquals(2, annotRepos.count());
         Assert.assertEquals(1, documentRepos.count());
 
         // accept the suggestion - works as user was assigned to annotation group in test setup
-        annotService.acceptSuggestionById(jsAnnot.getId(), login);
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
 
-        // verify that the document and the tags have also been removed as they are not referred to
-        // by any other annotation
-        Assert.assertEquals(0, annotRepos.count());
-        Assert.assertEquals(0, documentRepos.count());
+        // verify that the document remains in DB, and the suggestion and its reply are flagged as being accepted
+        // verify that the tags have been kept as they are still referred to by the annotation
+        Assert.assertEquals(2, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count()); // (suggestion, myreplytag)
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
+        TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
+    }
+
+    /**
+     * a suggestion with a reply is accepted; the reply was already DELETED before, 
+     * and should thus keep its DELETED state
+     */
+    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    public void testAcceptSimpleSuggestionWithDeletedReply() throws Exception {
+
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+
+        // retrieve our test suggestion and a reply to it
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        final JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(HYPO_USER_ACCOUNT, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsReply, userInfo);
+
+        // make the reply be deleted
+        final Annotation savedReply = annotRepos.findById(jsReply.getId());
+        savedReply.setStatus(AnnotationStatus.DELETED);
+        annotRepos.save(savedReply);
+
+        // accept the suggestion - works as user was assigned to annotation group in test setup
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
+
+        // verify that the annotation was ACCEPTED, but its reply remains in DELETED state (was not ACCEPTED)
+        Assert.assertEquals(2, annotRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
+        TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.DELETED, null); // null since we manually manipulated status; AnnotationService
+                                                                                                 // was not involved
     }
 
     /**
      * a suggestion with undefined ID is tried to be accepted
      * -> error expected 
      */
-    @Test
-    @SuppressFBWarnings(value = "DE_MIGHT_IGNORE", justification = "Intended for test")
-    public void testUndefinedSuggestionId() {
+    @Test(expected = IllegalArgumentException.class)
+    @SuppressFBWarnings(value = SpotBugsAnnotations.ExceptionIgnored, justification = SpotBugsAnnotations.ExceptionIgnored)
+    public void testUndefinedSuggestionId() throws Exception {
 
-        try {
-            annotService.acceptSuggestionById(null, "login");
-            Assert.fail("Expected exception for undefined suggestion ID not received");
-        } catch (Exception e) {
-            // OK
-        }
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        annotService.acceptSuggestionById(null, userInfo);
+        Assert.fail("Expected exception for undefined suggestion ID not received");
     }
 
     /**
      * a suggestion cannot be found by its ID
      * -> error expected
      */
-    @Test
-    public void testSuggestionNotFound() {
+    @Test(expected = CannotAcceptSuggestionException.class)
+    public void testSuggestionNotFound() throws Exception {
 
-        try {
-            annotService.acceptSuggestionById("suggestionId", "login");
-            Assert.fail("Expected exception for unavailable suggestion not received");
-        } catch (CannotAcceptSuggestionException casex) {
-            // ok
-        } catch (Exception e) {
-            Assert.fail("Received different exception than expected for unavailable suggestion");
-        }
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        annotService.acceptSuggestionById("suggestionId", userInfo);
+        Assert.fail("Expected exception for unavailable suggestion not received");
     }
 
     /**
      * an annotation not representing a suggestion is tried to be accepted
      * -> error expected
      */
-    @Test
-    public void testAcceptNonSuggestion() throws CannotCreateAnnotationException {
+    @Test(expected = NoSuggestionException.class)
+    public void testAcceptNonSuggestion() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
-
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        
         // retrieve our test annotation
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("comment")); // -> no suggestion
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(HYPO_USER_ACCOUNT);
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_COMMENT)); // -> no suggestion
+        annotService.createAnnotation(jsAnnot, userInfo);
 
-        try {
-            annotService.acceptSuggestionById(jsAnnot.getId(), login);
-            Assert.fail("Expected exception for invalid annotation type (no suggestion) not received");
-        } catch (NoSuggestionException casex) {
-            // ok
-        } catch (Exception e) {
-            Assert.fail("Received different exception than expected for trying to accept non-suggestion annotation");
-        }
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
+        Assert.fail("Expected exception for invalid annotation type (no suggestion) not received");
     }
 
     /**
      * a suggestion should be accepted, but requesting user not specified
      * -> error expected
      */
-    @Test
-    public void testAcceptSuggestionWithoutUserLogin() throws CannotCreateAnnotationException {
-
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+    @Test(expected = IllegalArgumentException.class)
+    public void testAcceptSuggestionWithoutUserLogin() throws Exception {
 
         // retrieve our test annotation
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion")); // -> becomes suggestion
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, new UserInformation(theUser, Authorities.ISC));
 
-        try {
-            annotService.acceptSuggestionById(jsAnnot.getId(), null);
-            Assert.fail("Expected exception for invalid user not received");
-        } catch (MissingPermissionException casex) {
-            // ok
-        } catch (Exception e) {
-            Assert.fail("Received different exception than expected for trying to accept suggestion");
-        }
+        annotService.acceptSuggestionById(jsAnnot.getId(), null);
+        Assert.fail("Expected exception for invalid user not received");
     }
 
     /**
      * a suggestion should be accepted, but requesting user is unknown
      * -> error expected
      */
-    @Test
-    public void testAcceptSuggestionWithUnknownUser() throws CannotCreateAnnotationException {
+    @Test(expected = MissingPermissionException.class)
+    public void testAcceptSuggestionWithUnknownUser() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
-
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        
         // retrieve our test annotation
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion")); // -> becomes suggestion
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
 
-        try {
-            annotService.acceptSuggestionById(jsAnnot.getId(), "unknownUser");
-            Assert.fail("Expected exception for invalid user not received");
-        } catch (MissingPermissionException casex) {
-            // ok
-        } catch (Exception e) {
-            Assert.fail("Received different exception than expected for trying to accept suggestion");
-        }
+        userInfo.setUser(null);
+        
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
+        Assert.fail("Expected exception for invalid user not received");
     }
 
     /**
      * a suggestion should be accepted, but requesting user is not member of the group to which the suggestion belongs
      * -> error expected
      */
-    @Test
-    public void testAcceptSuggestionWithUserNotBeingGroupMember() throws CannotCreateAnnotationException {
+    @Test(expected = MissingPermissionException.class)
+    public void testAcceptSuggestionWithUserNotBeingGroupMember() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
-
+        final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        
         // retrieve our test annotation
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion")); // -> becomes suggestion
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
+        annotService.createAnnotation(jsAnnot, userInfo);
 
         // remove user from group
-        User user = userRepos.findByLogin(login);
+        final User user = userRepos.findByLogin(LOGIN);
         userGroupRepos.delete(userGroupRepos.findByUserId(user.getId()));
 
-        try {
-            annotService.acceptSuggestionById(jsAnnot.getId(), login); // should fail now as user is not member of the requested group any more
-            Assert.fail("Expected exception for invalid user not received");
-        } catch (MissingPermissionException casex) {
-            // ok
-        } catch (Exception e) {
-            Assert.fail("Received different exception than expected for trying to accept suggestion");
-        }
+        annotService.acceptSuggestionById(jsAnnot.getId(), userInfo); // should fail now as user is not member of the requested group any more
+        Assert.fail("Expected exception for invalid user not received");
     }
 }

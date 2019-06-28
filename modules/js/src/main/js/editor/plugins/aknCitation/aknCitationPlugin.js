@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,13 +17,25 @@ define(function aknCitationPluginModule(require) {
 
     // load module dependencies
     var pluginTools = require("plugins/pluginTools");
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
 
     var pluginName = "aknCitation";
+    var ENTER_KEY = 13;
 
     var pluginDefinition = {
         init: function init(editor) {
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : ENTER_KEY,
+                action : _onEnterKey
+            });
         }
     };
+
+    function _onEnterKey(context) {
+        context.event.cancel();
+    }
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
@@ -33,14 +45,14 @@ define(function aknCitationPluginModule(require) {
         akn: CITATION_NAME,
         html: "p",
         attr: [ {
-            akn: "GUID",
+            akn: "xml:id",
             html: "id"
         }, {
-            akn : "leos:origin",
-            html : "data-origin"
+            akn: "refersTo",
+            html: "data-refersto"
         }, {
             akn: "leos:editable",
-            html: "contenteditable"
+            html : "data-akn-attr-editable"
         }, {
             html : ["data-akn-name", CITATION_NAME].join("=")
         }],
@@ -48,12 +60,9 @@ define(function aknCitationPluginModule(require) {
             akn: "mp",
             html: "p",
             attr : [ {
-                akn : "GUID",
+                akn : "xml:id",
                 html : "data-akn-mp-id"
-            }, {
-                akn : "leos:origin",
-                html : "data-mp-origin"
-            } ],
+            }],
             sub: {
                 akn: "text",
                 html: "p/text"

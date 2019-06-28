@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -34,31 +34,21 @@ var configs ={
       sassOpts:{
         outputStyle: 'nested'
       },
-      minify:false,
-      apiHost: 'http://localhost:9099/annotate',
-      assetHost:'http://localhost:9099/annotate/client'
+      minify:false
     },
 
     // Below values overrides the defaults based on env  
     dev: {
-      apiHost: 'https://intragate.development.ec.europa.eu/annotate',
-      assetHost:'https://intragate.development.ec.europa.eu/annotate/client'
     },
     test: {
-      apiHost: 'https://intragate.test.ec.europa.eu/annotate',
-      assetHost:'https://intragate.test.ec.europa.eu/annotate/client'
     },
     acc: {
-      apiHost: 'https://webgate.acceptance.ec.europa.eu/annotate',
-      assetHost:'https://webgate.acceptance.ec.europa.eu/annotate/client'
     },
     prod: {
       sassOpts:{
         outputStyle: 'compressed'
       },
-      minify:true,
-      apiHost: 'https://intragate.ec.europa.eu/annotate',
-      assetHost:'https://intragate.ec.europa.eu/annotate/client'
+      minify:true
     }
   };
 

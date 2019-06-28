@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,20 +44,20 @@ public class TagsServiceImpl implements TagsService {
      * @param annotation the annotation object to which the tags belong
      */
     @Override
-    public List<Tag> getTagList(List<String> tags, Annotation annotation) {
+    public List<Tag> getTagList(final List<String> tags, final Annotation annotation) {
 
         if (annotation == null) {
             LOG.error("Cannot save tags as belonging annotation is missing!");
             return null;
         }
 
-        if (tags == null || tags.size() == 0) {
+        if (tags == null || tags.isEmpty()) {
             LOG.info("No tags found for saving");
             return null;
         }
 
-        List<Tag> preparedTags = new ArrayList<Tag>();
-        tags.forEach(t -> preparedTags.add(new Tag(t, annotation)));
+        final List<Tag> preparedTags = new ArrayList<Tag>();
+        tags.forEach(tag -> preparedTags.add(new Tag(tag, annotation)));
 
         return preparedTags;
     }
@@ -69,10 +69,10 @@ public class TagsServiceImpl implements TagsService {
      */
     @Transactional
     @Override
-    public void removeTags(List<Tag> tagsToRemove) {
+    public void removeTags(final List<Tag> tagsToRemove) {
 
         if(tagsToRemove != null) {
-            for(Tag t : tagsToRemove) {
+            for(final Tag t : tagsToRemove) {
                 tagRepos.customDelete(t.getId());
             }
         }
@@ -85,13 +85,13 @@ public class TagsServiceImpl implements TagsService {
      * @return flag indicating whether the dedicated tag was found
      */
     @Override
-    public boolean hasSuggestionTag(List<Tag> tags) {
+    public boolean hasSuggestionTag(final List<Tag> tags) {
 
-        if(tags == null || tags.size() == 0) {
+        if(tags == null || tags.isEmpty()) {
             return false;
         }
         
-        return tags.stream().anyMatch(tag -> tag.getName().equals("suggestion"));
+        return tags.stream().anyMatch(tag -> tag.getName().equals(Annotation.ANNOTATION_SUGGESTION));
     }
 
 

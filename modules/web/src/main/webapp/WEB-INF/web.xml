@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -59,6 +59,7 @@
     <!-- Spring security should be applied only to Secure URLs -->
     <filter-mapping>
         <filter-name>springSecurityFilterChain</filter-name>
+        <url-pattern>/api/secured/*</url-pattern>
         <url-pattern>/ui/*</url-pattern>
         <url-pattern>/VAADIN/*</url-pattern>
     </filter-mapping>
@@ -76,9 +77,25 @@
         <filter-name>requestContextFilter</filter-name>
         <url-pattern>/ui/*</url-pattern>
         <url-pattern>/VAADIN/*</url-pattern>
+        <url-pattern>/ws/*</url-pattern>
     </filter-mapping>
 
     <!-- LEOS Web Application Servlet -->
+    <servlet>
+        <servlet-name>dispatcher</servlet-name>
+        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+        <init-param>
+            <param-name>contextConfigLocation</param-name>
+            <param-value>/WEB-INF/dispatcher-servlet.xml</param-value>
+        </init-param>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>dispatcher</servlet-name>
+        <url-pattern>/api/*</url-pattern>
+        <url-pattern>/secured-api/*</url-pattern>
+    </servlet-mapping>
+
     <servlet>
         <servlet-name>LEOS Web Application Servlet</servlet-name>
         <servlet-class>eu.europa.ec.leos.web.support.vaadin.LeosSpringVaadinServlet</servlet-class>
@@ -123,14 +140,8 @@
 
     <!-- User authentication -->
     <login-config>
-        <auth-method>BASIC</auth-method>
+        <auth-method>${leos.web.auth.method}</auth-method>
     </login-config>
-
-    <!-- User roles -->
-    <security-role>
-        <description>Role to allow authentication</description>
-        <role-name>${leos.security.role.name}</role-name>
-    </security-role>
 
     <!-- User access privileges -->
     <security-constraint>
@@ -141,8 +152,8 @@
             <url-pattern>/VAADIN/*</url-pattern>
         </web-resource-collection>
         <auth-constraint>
-            <description>Allow only users with role</description>
-            <role-name>${leos.security.role.name}</role-name>
+            <description>Allow access to authenticated users</description>
+            <role-name>**</role-name>
         </auth-constraint>
         <user-data-constraint>
             <description>Encryption is not required</description>
@@ -165,4 +176,22 @@
         <session-timeout>5</session-timeout>
         <!-- session timeout should always be more then double of heartbeat  -->
     </session-config>
+
+    <!-- Error pages -->
+    <error-page>
+        <error-code>401</error-code>
+        <location>/WEB-INF/html/401.html</location>
+    </error-page>
+    <error-page>
+        <error-code>403</error-code>
+        <location>/WEB-INF/html/403.html</location>
+    </error-page>
+    <error-page>
+        <error-code>404</error-code>
+        <location>/WEB-INF/html/404.html</location>
+    </error-page>
+    <error-page>
+        <error-code>500</error-code>
+        <location>/WEB-INF/html/500.html</location>
+    </error-page>
 </web-app>

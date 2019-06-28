@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,14 +17,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.europa.ec.leos.annotate.Generated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Objects;
 
 public class JsonAnnotationTargets {
@@ -43,7 +44,7 @@ public class JsonAnnotationTargets {
     // -------------------------------------
 
     @JsonCreator
-    public JsonAnnotationTargets(@JsonProperty("selector") Object selectors) {
+    public JsonAnnotationTargets(@JsonProperty("selector") final Object selectors) {
 
         this.selector = selectors;
     }
@@ -56,7 +57,7 @@ public class JsonAnnotationTargets {
         return source;
     }
 
-    public void setSource(URI source) {
+    public void setSource(final URI source) {
         this.source = source;
     }
 
@@ -64,7 +65,7 @@ public class JsonAnnotationTargets {
         return selector;
     }
 
-    public void setSelector(Object selector) {
+    public void setSelector(final Object selector) {
         this.selector = selector;
     }
 
@@ -74,13 +75,13 @@ public class JsonAnnotationTargets {
      * @param serialized serialized string
      */
     @JsonIgnore
-    public void setDeserializedSelectors(String serialized) {
+    public void setDeserializedSelectors(final String serialized) {
 
         try {
             @SuppressWarnings("unchecked")
-            ArrayList<LinkedHashMap<String, Object>> deserialized = new ObjectMapper().readValue(serialized, ArrayList.class);
-            if (deserialized != null && deserialized.size() > 0) {
-                LinkedHashMap<String, Object> lhm = deserialized.get(0);
+            final List<LinkedHashMap<String, Object>> deserialized = new ObjectMapper().readValue(serialized, List.class);
+            if (deserialized != null && !deserialized.isEmpty()) {
+                final LinkedHashMap<String, Object> lhm = deserialized.get(0);
                 this.selector = lhm.get("selector");
                 if (lhm.get("source") != null) {
                     try {
@@ -100,13 +101,15 @@ public class JsonAnnotationTargets {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(source, selector);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,29 +14,37 @@
 package eu.europa.ec.leos.annotate;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.helper.TestHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
+import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.*;
+import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteSentAnnotationException;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class AnnotationDeleteTest {
 
     /**
@@ -45,34 +53,23 @@ public class AnnotationDeleteTest {
      */
 
     // -------------------------------------
-    // Cleanup of database content before running new test
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = userRepos.save(new User("demo"));
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
-
-    // -------------------------------------
     // Required services and repositories
     // -------------------------------------
     @Autowired
     private AnnotationService annotService;
 
     @Autowired
-    private AnnotationRepository annotRepos;
+    private AnnotationConversionService conversionService;
+    
+    @Autowired
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
     private DocumentRepository documentRepos;
+
+    @Autowired
+    private MetadataRepository metadataRepos;
 
     @Autowired
     private TagRepository tagRepos;
@@ -87,6 +84,31 @@ public class AnnotationDeleteTest {
     private UserGroupRepository userGroupRepos;
 
     // -------------------------------------
+    // Help variables
+    // -------------------------------------
+    private final static String LOGIN = "demo";
+    private final static String HYPO_PREFIX = "acct:user@";
+    private User theUser;
+
+    // -------------------------------------
+    // Cleanup of database content before running new test
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        theUser = userRepos.save(new User(LOGIN));
+        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
@@ -97,41 +119,47 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteSimpleAnnotation() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@europa";
+        final String authority = "europa";
 
         // retrieve out test annotation: has two tags
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+        annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
         Assert.assertEquals(1, documentRepos.count());
         Assert.assertEquals(2, tagRepos.count());
 
         // remove it again
-        annotService.deleteAnnotationById(jsAnnot.getId(), login);
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
 
-        // verify that the document and the tags have also been removed as they are not referred to
-        // by any other annotation
-        Assert.assertEquals(0, annotRepos.count());
-        Assert.assertEquals(0, documentRepos.count());
-        Assert.assertEquals(0, tagRepos.count());
+        // verify that the tags, document and annotation remain in DB, but annotation is flagged as being deleted
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.DELETED, theUser.getId());
+        
+        // check that the annotation status would be reported correctly in JSON format
+        final Annotation annot = annotRepos.findById(jsAnnot.getId());
+        final JsonAnnotation jsConverted = conversionService.convertToJsonAnnotation(annot, userInfo);
+        Assert.assertNotNull(jsConverted);
+        Assert.assertEquals(AnnotationStatus.DELETED, jsConverted.getStatus().getStatus());
+        Assert.assertNotNull(jsConverted.getStatus().getUpdated());
+        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUpdated_by()); // corresponds to user of UserInformation instance
     }
 
     /**
      * an annotation is deleted, but deletion request is lacking the annotation ID
      * -> should throw exception
      */
-    @Test
-    @SuppressFBWarnings(value = "DE_MIGHT_IGNORE", justification = "Intended for test")
+    @Test(expected = IllegalArgumentException.class)
+    @SuppressFBWarnings(value = SpotBugsAnnotations.ExceptionIgnored, justification = SpotBugsAnnotations.ExceptionIgnored)
     public void testDeleteAnnotationWithoutId() throws Exception {
 
         // remove an annotation without specifying its ID
-        try {
-            annotService.deleteAnnotationById("", "demo");
-            Assert.fail("Expected exception about missing annotation ID not received");
-        } catch (Exception e) {
-            // OK
-        }
+        annotService.deleteAnnotationById("", new UserInformation(LOGIN, Authorities.EdiT));
     }
 
     /**
@@ -141,27 +169,95 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteSimpleAnnotationOfOtherUser() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo", otherLogin = "demo2";
-
-        userRepos.save(new User(otherLogin));
+        final String authority = "someauth";
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+        final String otherLogin = "demo2";
+        final User otherUser = new User(otherLogin);
+        userRepos.save(otherUser);
 
         // retrieve out test annotation: has two tags
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        annotService.createAnnotation(jsAnnot, login);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+        final UserInformation otherUserInfo = new UserInformation(otherLogin, authority);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
         Assert.assertEquals(1, documentRepos.count());
         Assert.assertEquals(2, tagRepos.count());
 
         // other user tries to remove it -> ok
-        annotService.deleteAnnotationById(jsAnnot.getId(), otherLogin);
+        annotService.deleteAnnotationById(jsAnnot.getId(), otherUserInfo);
 
-        // verify that the document and the tags have been removed
-        Assert.assertEquals(0, annotRepos.count());
-        Assert.assertEquals(0, documentRepos.count());
-        Assert.assertEquals(0, tagRepos.count());
+        // verify that the tags and the document have not been removed, but the annotation is flagged as being deleted
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.DELETED, otherUser.getId());
     }
 
+    /**
+     * an annotation having response status SENT is tried to be deleted (by same ISC user) 
+     * -> refused
+     */
+    @Test(expected = CannotDeleteSentAnnotationException.class)
+    public void testCannotDeleteSentAnnotationFromIsc() throws Exception {
+
+        final String authority = "someauth";
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+
+        // retrieve out test annotation: has two tags
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count());
+
+        // set metadata response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove it -> should fail
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+    }
+
+    /**
+     * an annotation having response status SENT is tried to be deleted (by another LEOS user) 
+     * -> feasible
+     */
+    @Test
+    public void testDeleteSentAnnotationFromEdit() throws Exception {
+
+        final String hypothesisUserAccount = HYPO_PREFIX + Authorities.ISC;
+
+        // retrieve our test annotation
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, Authorities.ISC);
+        userInfo.setUser(theUser);
+
+        // annotation is created as an ISC user
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count());
+
+        // set metadata response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove it as an EdiT user -> should be possible
+        final UserInformation userInfoEdit = new UserInformation(LOGIN, Authorities.EdiT);
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfoEdit);
+    }
+    
     /**
      * a reply of another user is tried to be deleted
      * -> accepted, but parent annotation shall remain
@@ -169,25 +265,113 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteSimpleReplyOfOtherUser() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo", otherLogin = "demo2";
-
-        userRepos.save(new User(otherLogin));
+        final String authority = Authorities.EdiT;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+        final String otherLogin = "demo2";
+        final User otherUser = new User(otherLogin);
+        userRepos.save(otherUser);
 
         // retrieve out test annotation: has two tags
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        annotService.createAnnotation(jsAnnot, login);
-        JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(login, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        annotService.createAnnotation(jsReply, login);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+        final UserInformation otherUserInfo = new UserInformation(otherLogin, authority);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+        final JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(LOGIN, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsReply, userInfo);
 
         Assert.assertEquals(2, annotRepos.count());
 
         // other user tries to remove the reply -> ok
-        annotService.deleteAnnotationById(jsReply.getId(), otherLogin);
+        annotService.deleteAnnotationById(jsReply.getId(), otherUserInfo);
 
         // verify that the parent annotation and the document remain
-        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(2, annotRepos.count());
         Assert.assertEquals(1, documentRepos.count());
         Assert.assertNotNull(annotRepos.findById(jsAnnot.getId()));
+
+        // "deleted" annotation must be flagged, its parent must not be flagged
+        TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.NORMAL, null);
+        TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.DELETED, otherUser.getId());
+    }
+
+    /**
+     * a reply with response status SENT is tried to be deleted as an ISC user
+     * -> should be refused
+     */
+    @Test
+    public void testCannotDeleteSentReplyFromIsc() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+
+        // retrieve our test annotation
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+        final JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(LOGIN, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsReply, userInfo);
+
+        Assert.assertEquals(2, annotRepos.count());
+
+        // now change response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsReply.getId()).getMetadata();
+        savedMetadata.setResponseStatus(ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove the reply -> exception
+        try {
+            annotService.deleteAnnotationById(jsReply.getId(), userInfo);
+            Assert.fail("Expected exception when trying to delete SENT reply, but did not get any");
+        } catch (CannotDeleteSentAnnotationException ex) {
+            // OK
+        }
+
+        // verify that the parent annotation and the reply remain
+        Assert.assertEquals(2, annotRepos.count());
+
+        // reply must still be flagged as "NORMAL", it must not be flagged as DELETED
+        TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.NORMAL, null);
+    }
+
+    /**
+     * a reply with response status SENT is tried to be deleted as an EdiT user
+     * -> should be possible
+     */
+    @Test
+    public void testDeleteSentReplyFromLeos() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+
+        // retrieve our test annotation
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+        final JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(LOGIN, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsReply, userInfo);
+
+        Assert.assertEquals(2, annotRepos.count());
+
+        // now change response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsReply.getId()).getMetadata();
+        savedMetadata.setResponseStatus(ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove the reply as a LEOS/EdiT user -> allowed
+        userInfo.setAuthority(Authorities.EdiT);
+        annotService.deleteAnnotationById(jsReply.getId(), userInfo);
+
+        // verify that the parent annotation and the reply remain
+        Assert.assertEquals(2, annotRepos.count());
+
+        // reply must be flagged as "DELETED" now
+        TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.DELETED, userInfo.getUser().getId());
     }
     
     /**
@@ -198,18 +382,23 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteOneAnnotationOfTwoForSameDocument() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", LOGIN = "demo";
+        final String authority = "EU";
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
 
         // retrieve out first test annotation: has two tags; save it
-        JsonAnnotation jsAnnotFirst = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        annotService.createAnnotation(jsAnnotFirst, LOGIN);
+        final JsonAnnotation jsAnnotFirst = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        annotService.createAnnotation(jsAnnotFirst, userInfo);
 
         // retrieve a second test annotation with three tags; save it
-        JsonAnnotation jsAnnotSecond = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final JsonAnnotation jsAnnotSecond = TestData.getTestAnnotationObject(hypothesisUserAccount);
         jsAnnotSecond.getTags().add("a_third_tag");
-        annotService.createAnnotation(jsAnnotSecond, LOGIN);
+        annotService.createAnnotation(jsAnnotSecond, userInfo);
 
-        String annotId1 = jsAnnotFirst.getId(), annotId2 = jsAnnotSecond.getId();
+        final String annotId1 = jsAnnotFirst.getId();
+        final String annotId2 = jsAnnotSecond.getId();
 
         // verify after initial storage: document is shared, two of the three tags also
         Assert.assertEquals(2, annotRepos.count());
@@ -219,54 +408,66 @@ public class AnnotationDeleteTest {
         Assert.assertEquals(3, tagRepos.countByAnnotationId(annotId2)); // ... three of them for the second annotation
 
         // now we delete the first annotation
-        annotService.deleteAnnotationById(annotId1, LOGIN);
+        annotService.deleteAnnotationById(annotId1, userInfo);
 
         // verify
-        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(2, annotRepos.count()); // both remain in database
         Assert.assertEquals(1, documentRepos.count()); // document must remain as it is still referred to
-        Assert.assertEquals(3, tagRepos.count()); // two tags must have been removed
-        Assert.assertEquals(3, tagRepos.countByAnnotationId(annotId2)); // and all three remaining tags refer to the second annotation
+        Assert.assertEquals(5, tagRepos.count()); // tags remain (must not have been removed since annotation logically remains in DB)
+        Assert.assertEquals(3, tagRepos.countByAnnotationId(annotId2)); // and still three remaining tags refer to the second annotation
+        Assert.assertEquals(2, tagRepos.countByAnnotationId(annotId1)); // and still two remaining tags refer to the first ("deleted") annotation
+
+        // check that the "deleted" annotation was flagged accordingly
+        TestHelper.assertHasStatus(annotRepos, annotId1, AnnotationStatus.DELETED, theUser.getId());
+        TestHelper.assertHasStatus(annotRepos, annotId2, AnnotationStatus.NORMAL, null);
     }
 
     /**
      *  an annotation with two immediate replies and a reply to a reply is created
      *  the annotation is deleted
-     *  -> all child replies are also removed
+     *  -> all child replies are also removed (i.e. all flagged as being DELETED)
      */
     @Test
     public void testEntireAnnotationThreadRemoved() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final String authority = Authorities.EdiT;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
 
         // retrieve out test annotation: has two tags; save it
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
 
         // create a reply to the root annotation
         JsonAnnotation jsAnnotFirstReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, login);
+        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, userInfo);
         Assert.assertEquals(2, annotRepos.count());
 
         // add a reply to the reply
-        JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
+        final JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
                 Arrays.asList(jsAnnot.getId(), jsAnnotFirstReply.getId()));
-        annotService.createAnnotation(jsAnnotFirstReplyReply, login);
+        annotService.createAnnotation(jsAnnotFirstReplyReply, userInfo);
         Assert.assertEquals(3, annotRepos.count());
 
         // create a second reply to the root annotation
-        JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        annotService.createAnnotation(jsAnnotSecondReply, login);
+        final JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsAnnotSecondReply, userInfo);
         Assert.assertEquals(4, annotRepos.count());
 
         // still only one document is present
         Assert.assertEquals(1, documentRepos.count());
 
         // now remove the root
-        annotService.deleteAnnotationById(jsAnnot.getId(), login);
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
 
-        // verify: all annotations and the referenced (now orphaned) document have been removed
-        Assert.assertEquals(0, annotRepos.count());
-        Assert.assertEquals(0, documentRepos.count());
+        // verify:
+        // - all annotations and have been "removed" (=flagged as being DELETED)
+        // - the referenced (now orphaned) document still remains
+        Assert.assertEquals(4, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        assertFlag(Arrays.asList(jsAnnot, jsAnnotFirstReply, jsAnnotFirstReplyReply, jsAnnotSecondReply), AnnotationStatus.DELETED, theUser.getId());
     }
 
     /**
@@ -277,38 +478,46 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteReplyWithoutSubreply() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final String auth = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + auth;
 
         // retrieve out test annotation: has two tags; save it
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
+        final UserInformation userInfo = new UserInformation(LOGIN, auth);
+        userInfo.setUser(theUser);
+
+        jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
 
         // create a reply to the root annotation
         JsonAnnotation jsAnnotFirstReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, login);
+        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, userInfo);
         Assert.assertEquals(2, annotRepos.count());
 
         // add a reply to the reply
-        JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
+        final JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
                 Arrays.asList(jsAnnot.getId(), jsAnnotFirstReply.getId()));
-        annotService.createAnnotation(jsAnnotFirstReplyReply, login);
+        annotService.createAnnotation(jsAnnotFirstReplyReply, userInfo);
         Assert.assertEquals(3, annotRepos.count());
 
         // create a second reply to the root annotation
-        JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        annotService.createAnnotation(jsAnnotSecondReply, login);
+        final JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsAnnotSecondReply, userInfo);
         Assert.assertEquals(4, annotRepos.count());
 
         // still only one document is present
         Assert.assertEquals(1, documentRepos.count());
 
         // now remove the reply not having sub replies
-        annotService.deleteAnnotationById(jsAnnotSecondReply.getId(), login);
+        annotService.deleteAnnotationById(jsAnnotSecondReply.getId(), userInfo);
 
-        // verify: three annotations are remaining; the referenced document also remains
-        Assert.assertEquals(3, annotRepos.count());
-        Assert.assertEquals(2, annotRepos.countByRootAnnotationIdNotNull());
+        // verify: all four annotations are remaining, but one is flagged as being deleted; the referenced document also remains
+        Assert.assertEquals(4, annotRepos.count());
+        Assert.assertEquals(3, annotRepos.countByRootAnnotationIdNotNull());
         Assert.assertEquals(1, documentRepos.count());
+        TestHelper.assertHasStatus(annotRepos, jsAnnotSecondReply.getId(), AnnotationStatus.DELETED, theUser.getId());
+
+        // other annotations are not flagged
+        assertFlag(Arrays.asList(jsAnnot, jsAnnotFirstReply, jsAnnotFirstReplyReply), AnnotationStatus.NORMAL, null);
     }
 
     /**
@@ -320,43 +529,55 @@ public class AnnotationDeleteTest {
     @Test
     public void testDeleteReplyHavingSubreply() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@europa.eu", login = "demo";
+        final String auth = "europa";
+        final String hypothesisUserAccount = HYPO_PREFIX + auth;
+
+        final UserInformation userInfo = new UserInformation(LOGIN, auth);
+        userInfo.setUser(theUser);
 
         // retrieve out test annotation: has two tags; save it
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
+        jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
 
         // create a reply to the root annotation
         JsonAnnotation jsAnnotFirstReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, login);
+        jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, userInfo);
         Assert.assertEquals(2, annotRepos.count());
 
         // add a reply to the reply
-        JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
+        final JsonAnnotation jsAnnotFirstReplyReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(),
                 Arrays.asList(jsAnnot.getId(), jsAnnotFirstReply.getId()));
-        annotService.createAnnotation(jsAnnotFirstReplyReply, login);
+        annotService.createAnnotation(jsAnnotFirstReplyReply, userInfo);
         Assert.assertEquals(3, annotRepos.count());
 
         // create a second reply to the root annotation
-        JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
-        annotService.createAnnotation(jsAnnotSecondReply, login);
+        final JsonAnnotation jsAnnotSecondReply = TestData.getTestReplyToAnnotation(hypothesisUserAccount, jsAnnot.getUri(), Arrays.asList(jsAnnot.getId()));
+        annotService.createAnnotation(jsAnnotSecondReply, userInfo);
         Assert.assertEquals(4, annotRepos.count());
 
         // still only one document is present
         Assert.assertEquals(1, documentRepos.count());
 
         // now remove the reply having a sub reply
-        annotService.deleteAnnotationById(jsAnnotFirstReply.getId(), login);
+        annotService.deleteAnnotationById(jsAnnotFirstReply.getId(), userInfo);
 
-        // verify: three annotations are remaining; the referenced document also remains
-        Assert.assertEquals(3, annotRepos.count());
-        Assert.assertEquals(2, annotRepos.countByRootAnnotationIdNotNull());
+        // verify: all four annotations are remaining; the referenced document also remains
+        Assert.assertEquals(4, annotRepos.count());
+        Assert.assertEquals(3, annotRepos.countByRootAnnotationIdNotNull());
         Assert.assertEquals(1, documentRepos.count());
 
+        // verify: one annotation is flagged for being deleted, others are not
+        TestHelper.assertHasStatus(annotRepos, jsAnnotFirstReply.getId(), AnnotationStatus.DELETED, theUser.getId());
+
         // verify in particular that the annotation, the sub reply of first reply, and the second reply are the items remaining
+        assertFlag(Arrays.asList(jsAnnot, jsAnnotFirstReplyReply, jsAnnotSecondReply), AnnotationStatus.NORMAL, null);
         Assert.assertNotNull(annotService.findAnnotationById(jsAnnot.getId())); // annotation
         Assert.assertNotNull(annotService.findAnnotationById(jsAnnotFirstReplyReply.getId())); // sub reply of first reply
         Assert.assertNotNull(annotService.findAnnotationById(jsAnnotSecondReply.getId())); // second reply
+    }
+
+    private void assertFlag(final List<JsonAnnotation> annots, final AnnotationStatus status, final Long userId) {
+        annots.forEach(annot -> TestHelper.assertHasStatus(annotRepos, annot.getId(), status, userId));
     }
 
 }

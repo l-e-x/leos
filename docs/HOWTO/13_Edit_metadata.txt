@@ -9,5 +9,5 @@
 	- the proposal title . Click in it to edit it.
 	- the annexe(s) title(s) . Click in it to edit it.
    
-3. For both element, a "V" and a "X" is available to the right of the editing
-   field in order to 'Save' or 'Cancel' the change.
+3. For both element, a "V" and a "X" is available to the right of the editing field
+   in order to 'Save' or 'Cancel' the change.

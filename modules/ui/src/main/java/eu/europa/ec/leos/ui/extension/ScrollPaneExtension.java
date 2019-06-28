@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -43,6 +43,16 @@ public class ScrollPaneExtension extends LeosJavaScriptExtension {
     public void detach() {
         eventBus.unregister(this);
         super.detach();
+    }
+
+    @Override
+    public ScrollPaneState getState() {
+        return (ScrollPaneState) super.getState();
+    }
+    
+    @Override
+    protected ScrollPaneState getState(boolean markAsDirty) {
+        return (ScrollPaneState) super.getState(markAsDirty);
     }
     
     @Subscribe

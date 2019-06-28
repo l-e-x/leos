@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,11 @@
  */
 package eu.europa.ec.leos.annotate;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.entity.UserGroup;
@@ -39,8 +42,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -49,30 +50,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.net.URI;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class AnnotationSaveWithDocumentMockTest {
-
-    @SuppressWarnings("unused")
-    private static Logger LOG = LoggerFactory.getLogger(AnnotationSaveTest.class);
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content before running new test
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        MockitoAnnotations.initMocks(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -104,21 +84,44 @@ public class AnnotationSaveWithDocumentMockTest {
     @Mock
     private DocumentService documentService;
 
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content before running new test
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        MockitoAnnotations.initMocks(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
 
     // test creation of an annotation when document service has internal failures - annotation creation should throw expected exception
-    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test(expected = CannotCreateAnnotationException.class)
     public void testCreateAnnotation_DocumentService_Failure() throws CannotCreateAnnotationException, CannotCreateDocumentException {
 
-        final String username = "acct:myusername@europa.eu", login = "demo";
+        final String login = "demo";
+        final String authority = Authorities.ISC;
+        final String username = "acct:" + login + "@" + authority;
 
         // add user to default group
-        User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User(login));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+        final UserInformation userInfo = new UserInformation(theUser, authority);
 
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
         jsAnnot.setDocument(null); // no document information available
 
         // configure mocks; especially DocumentService should throw a custom exception
@@ -128,14 +131,41 @@ public class AnnotationSaveWithDocumentMockTest {
         Mockito.when(documentService.createNewDocument(Mockito.any(URI.class))).thenThrow(new CannotCreateDocumentException(new RuntimeException()));
 
         // let the annotation be created - should not be successful
+        annotService.createAnnotation(jsAnnot, userInfo);
+    }
+
+    // test that exception is thrown when no authenticated user can be determined
+    @Test
+    public void testCreateAnnotation_NoAuthenticatedUser() {
+
+        final String username = "acct:myusername@europa.eu";
+
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
+
+        // let the annotation be created - should not be successful
         try {
-            annotService.createAnnotation(jsAnnot, login);
+            annotService.createAnnotation(jsAnnot, null);
             Assert.fail("Expected exception due to document service failure not received");
         } catch (CannotCreateAnnotationException ccae) {
-            // OK
+            Assert.assertTrue(ccae.getCause() instanceof java.lang.RuntimeException);
         } catch (Exception e) {
             Assert.fail("Received unexpected exception");
         }
+    }
 
+    // test that exception is thrown when user cannot be determined
+    @Test(expected = CannotCreateAnnotationException.class)
+    public void testCreateAnnotation_UserUnknown() throws Exception {
+
+        // note: this test case might be somehow constructed as this case should not occur in practice
+        // except maybe if there would be database access problems...
+        final String authority = Authorities.EdiT;
+        final String username = "acct:myusername@" + authority;
+
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
+
+        // let the annotation be created - should not be successful as we gave UserInformation about unknown user
+        final UserInformation userInfo = new UserInformation("somebody", authority);
+        annotService.createAnnotation(jsAnnot, userInfo);
     }
 }

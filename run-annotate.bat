@@ -1,5 +1,5 @@
 @REM
-@REM Copyright 2018 European Commission
+@REM Copyright 2019 European Commission
 @REM
 @REM Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 @REM You may not use this work except in compliance with the Licence.
@@ -25,13 +25,17 @@ if not defined pr echo "WARNING: PROXY SETTING NOT FOUND. If you are behind a pr
 for /F %%a in ('findstr /c:bamboo_NPM_TOKEN .\client\.npmrc') do set token=%%a
 if defined token echo "ERROR: you need to remove/update NPM_TOKEN in ./client/.npmrc!!!"
 
+
+echo "---------------------Annotate Server-----------------------------------------------"
+
+
 echo "---------------------Annotate Server COMPILING...----------------------------------"
 call mvn clean install -Dmaven.test.skip=true
 echo "---------------------Annotate Server COMPILED.-------------------------------------"
 
 echo "---------------------Annotate Server STARTING...-----------------------------------"
 cd ./server
-call mvn spring-boot:run -Dspring.profiles.active=h2 
+call mvn spring-boot:run -Dspring-boot.run.profiles=h2 -Dspring-boot.run.folders=../config/target/generated-config
 echo "---------------------Annotate Server STOPPED....-----------------------------------"
 
 pause

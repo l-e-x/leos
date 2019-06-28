@@ -1,16 +1,17 @@
-//
-// Copyright 2018 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
 
 @mixin tableOfContent {
     .leos-toc {
@@ -40,6 +41,31 @@
         text-decoration: none;
         &:hover {
             text-decoration: underline;
+        }
+    }
+
+    .leos-toc-content {
+        .toc-content-area {
+            @include editor;
+            @extend %xmlAuthorialNote;
+            @extend %xmlPreamble;
+            @extend %xmlCitation;
+            @extend %tocCitation;
+            @extend %xmlRecital;
+            @extend %tocRecital;
+            @extend %xmlArticleParagraph;
+            @extend %tocArticleParagraph;
+            @extend %xmlArticleSubParagraph;
+            @extend %tocArticleSubParagraph;
+            @extend %xmlArticleAlinea;
+            @extend %xmlList;
+            @extend %xmlTable;
+            @extend %xmlImage;
+            @extend %xmlReference;
+
+            overflow-y: auto;
+            padding: 3px 5px;
+            border: 1px solid $G_BORDER_COLOR;
         }
     }
 }

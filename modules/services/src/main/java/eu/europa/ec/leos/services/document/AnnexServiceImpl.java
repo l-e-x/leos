@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,18 +15,18 @@ package eu.europa.ec.leos.services.document;
 
 import com.google.common.base.Stopwatch;
 import cool.graph.cuid.Cuid;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Annex;
-import eu.europa.ec.leos.domain.document.LeosMetadata.AnnexMetadata;
-import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
+import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.repository.document.AnnexRepository;
 import eu.europa.ec.leos.services.document.util.DocumentVOProvider;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
-import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.AnnexTocItemType;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import eu.europa.ec.leos.services.validation.ValidationService;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toctype.AnnexTocItemType;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +44,7 @@ public class AnnexServiceImpl implements AnnexService {
     private static final Logger LOG = LoggerFactory.getLogger(AnnexServiceImpl.class);
 
     private static final String ANNEX_NAME_PREFIX = "annex_";
+    private static final String ANNEX_DOC_EXTENSION = ".xml";
 
     private final AnnexRepository annexRepository;
     private final XmlNodeProcessor xmlNodeProcessor;
@@ -71,6 +72,15 @@ public class AnnexServiceImpl implements AnnexService {
         Annex annex = annexRepository.createAnnex(templateId, path, name, metadata);
         byte[] updatedBytes = updateDataInXml((content==null)? getContent(annex) : content, metadata);
         return annexRepository.updateAnnex(annex.getId(), metadata, updatedBytes, false, actionMessage);
+    }
+
+    @Override
+    public Annex createAnnexFromContent(String path, AnnexMetadata metadata, String actionMessage, byte[] content) {
+        LOG.trace("Creating Annex From Content... [path={}, metadata={}]", path, metadata);
+        String name = generateAnnexName();
+        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
+        Annex annex = annexRepository.createAnnexFromContent(path, name, metadata, content);
+        return annexRepository.updateAnnex(annex.getId(), metadata, content, false, actionMessage);
     }
 
     @Override
@@ -106,7 +116,7 @@ public class AnnexServiceImpl implements AnnexService {
 
     @Override
     public Annex updateAnnex(Annex annex, AnnexMetadata updatedMetadata, boolean major, String comment) {
-        LOG.trace("Updating Annex... [id={}, updatedMetadata={}]", annex.getId(), updatedMetadata);
+        LOG.trace("Updating Annex... [id={}, updatedMetadata={}, major={}, comment={}]", annex.getId(), updatedMetadata, major, comment);
         Stopwatch stopwatch = Stopwatch.createStarted();
         byte[] updatedBytes = updateDataInXml(getContent(annex), updatedMetadata); //FIXME: Do we need latest data again??
         
@@ -119,15 +129,26 @@ public class AnnexServiceImpl implements AnnexService {
         return annex;
     }
 
-    private byte[] updateDataInXml(final byte[] content, AnnexMetadata dataObject) {
-        byte[] updatedBytes = xmlNodeProcessor.setValuesInXml(content, createValueMap(dataObject), xmlNodeConfigHelper.getConfig(dataObject.getCategory()));
-        return xmlContentProcessor.doXMLPostProcessing(updatedBytes);
+    @Override
+    public Annex updateAnnex(String annexId, AnnexMetadata updatedMetadata) {
+        LOG.trace("Updating Annex... [id={}, updatedMetadata={}]", annexId, updatedMetadata);
+        return annexRepository.updateAnnex(annexId, updatedMetadata);
     }
 
-    private String generateAnnexName() {
-        return ANNEX_NAME_PREFIX + Cuid.createCuid();
+    @Override
+    public Annex updateAnnexWithMilestoneComments(Annex annex, List<String> milestoneComments, boolean major, String comment){
+        LOG.trace("Updating Annex... [id={}, milestoneComments={}, major={}, comment={}]", annex.getId(), milestoneComments, major, comment);
+        final byte[] updatedBytes = getContent(annex);
+        annex = annexRepository.updateMilestoneComments(annex.getId(), milestoneComments, updatedBytes, major, comment);
+        return annex;
     }
-    
+
+    @Override
+    public Annex updateAnnexWithMilestoneComments(String annexId, List<String> milestoneComments){
+        LOG.trace("Updating Annex... [id={}, milestoneComments={}]", annexId, milestoneComments);
+        return annexRepository.updateMilestoneComments(annexId, milestoneComments);
+    }
+
     @Override
     public List<Annex> findVersions(String id) {
         LOG.trace("Finding Annex versions... [id={}]", id);
@@ -141,7 +162,7 @@ public class AnnexServiceImpl implements AnnexService {
         final Annex annex = findAnnex(id);
         final AnnexMetadata metadata = annex.getMetadata().getOrError(() -> "Annex metadata is required!");
         final Content content = annex.getContent().getOrError(() -> "Annex content is required!");
-        final byte[] contentBytes = content.getSource().getByteString().toByteArray();
+        final byte[] contentBytes = content.getSource().getBytes();
         return annexRepository.updateAnnex(id, metadata, contentBytes, major, comment);
     }
     
@@ -149,17 +170,17 @@ public class AnnexServiceImpl implements AnnexService {
     public List<TableOfContentItemVO> getTableOfContent(Annex annex) {
         Validate.notNull(annex, "Annex is required");
         final Content content = annex.getContent().getOrError(() -> "Annex content is required!");
-        final byte[] annexContent = content.getSource().getByteString().toByteArray();
-        return xmlContentProcessor.buildTableOfContent("doc", AnnexTocItemType::fromName, annexContent);
+        final byte[] annexContent = content.getSource().getBytes();
+        return xmlContentProcessor.buildTableOfContent("doc", AnnexTocItemType::fromName, annexContent, false);
     }
     
     @Override
-    public Annex saveTableOfContent(Annex annex, List<TableOfContentItemVO> tocList, String actionMsg) {
+    public Annex saveTableOfContent(Annex annex, List<TableOfContentItemVO> tocList, String actionMsg, User user) {
         Validate.notNull(annex, "Annex is required");
         Validate.notNull(tocList, "Table of content list is required");
 
         byte[] newXmlContent;
-        newXmlContent = xmlContentProcessor.createDocumentContentWithNewTocList(AnnexTocItemType::fromName, AnnexTocItemType.BODY, tocList, getContent(annex));
+        newXmlContent = xmlContentProcessor.createDocumentContentWithNewTocList(AnnexTocItemType::fromName, tocList, getContent(annex), user);
         newXmlContent = xmlContentProcessor.doXMLPostProcessing(newXmlContent);
 
         return updateAnnex(annex, newXmlContent, false, actionMsg);
@@ -167,8 +188,16 @@ public class AnnexServiceImpl implements AnnexService {
 
     private byte[] getContent(Annex annex) {
         final Content content = annex.getContent().getOrError(() -> "Annex content is required!");
-        return content.getSource().getByteString().toByteArray();
+        return content.getSource().getBytes();
     }
-    
+
+    private byte[] updateDataInXml(final byte[] content, AnnexMetadata dataObject) {
+        byte[] updatedBytes = xmlNodeProcessor.setValuesInXml(content, createValueMap(dataObject), xmlNodeConfigHelper.getConfig(dataObject.getCategory()));
+        return xmlContentProcessor.doXMLPostProcessing(updatedBytes);
+    }
+
+    private String generateAnnexName() {
+        return ANNEX_NAME_PREFIX + Cuid.createCuid() + ANNEX_DOC_EXTENSION;
+    }
     
 }

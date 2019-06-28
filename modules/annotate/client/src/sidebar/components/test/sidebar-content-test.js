@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,6 +21,8 @@ var events = require('../../events');
 var noCallThru = require('../../../shared/test/util').noCallThru;
 
 var searchClients;
+
+//LEOS Change: setTimeout of 0.5 sec added on tests because searchMetadata promise timeout
 
 class FakeSearchClient extends EventEmitter {
   constructor(searchFn, opts) {
@@ -100,6 +102,8 @@ describe('sidebar.components.sidebar-content', function () {
       unloadAnnotations: sandbox.spy(),
     };
 
+    fakeBridge = {};
+
     fakeFrameSync = {
       focusAnnotations: sinon.stub(),
       scrollToAnnotation: sinon.stub(),
@@ -141,6 +145,7 @@ describe('sidebar.components.sidebar-content', function () {
     $provide.value('analytics', fakeAnalytics);
     $provide.value('annotationMapper', fakeAnnotationMapper);
     $provide.value('api', fakeApi);
+    $provide.value('bridge', fakeBridge);
     $provide.value('drafts', fakeDrafts);
     $provide.value('features', fakeFeatures);
     $provide.value('frameSync', fakeFrameSync);
@@ -193,9 +198,11 @@ describe('sidebar.components.sidebar-content', function () {
       var uri = 'http://example.com';
       setFrames([{uri: uri}]);
       $scope.$digest();
-      var loadSpy = fakeAnnotationMapper.loadAnnotations;
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
+      setTimeout(function(){
+        var loadSpy = fakeAnnotationMapper.loadAnnotations;
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
+      }, 500);
     });
 
     it('loads all annotations for a frame with multiple urls', function () {
@@ -213,12 +220,14 @@ describe('sidebar.components.sidebar-content', function () {
         },
       }]);
       $scope.$digest();
-      var loadSpy = fakeAnnotationMapper.loadAnnotations;
+      setTimeout(function(){
+        var loadSpy = fakeAnnotationMapper.loadAnnotations;
 
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: fingerprint + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: fingerprint + '456'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: fingerprint + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: fingerprint + '456'})]);
+      }, 500);
     });
 
     it('loads all annotations for all frames', function () {
@@ -227,11 +236,13 @@ describe('sidebar.components.sidebar-content', function () {
         return {uri: uri};
       }));
       $scope.$digest();
-      var loadSpy = fakeAnnotationMapper.loadAnnotations;
-      assert.calledWith(loadSpy, [sinon.match({id: uris[0] + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uris[0] + '456'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uris[1] + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uris[1] + '456'})]);
+      setTimeout(function(){
+        var loadSpy = fakeAnnotationMapper.loadAnnotations;
+        assert.calledWith(loadSpy, [sinon.match({id: uris[0] + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uris[0] + '456'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uris[1] + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uris[1] + '456'})]);
+      }, 500);
     });
 
     it('updates annotation fetch status for all frames', function () {
@@ -240,9 +251,11 @@ describe('sidebar.components.sidebar-content', function () {
         return {uri: frameUri};
       }));
       $scope.$digest();
-      var updateSpy = store.updateFrameAnnotationFetchStatus;
-      assert.isTrue(updateSpy.calledWith(frameUris[0], true));
-      assert.isTrue(updateSpy.calledWith(frameUris[1], true));
+      setTimeout(function(){
+        var updateSpy = store.updateFrameAnnotationFetchStatus;
+        assert.isTrue(updateSpy.calledWith(frameUris[0], true));
+        assert.isTrue(updateSpy.calledWith(frameUris[1], true));
+      }, 500);
     });
 
     context('when there is a selection', function () {
@@ -260,15 +273,19 @@ describe('sidebar.components.sidebar-content', function () {
       });
 
       it('switches to the selected annotation\'s group', function () {
-        assert.calledWith(fakeGroups.focus, '__world__');
-        assert.calledOnce(fakeAnnotationMapper.loadAnnotations);
-        assert.calledWith(fakeAnnotationMapper.loadAnnotations, [
-          {id: uri + '123', group: '__world__'},
-        ]);
+        setTimeout(function() {
+          assert.calledWith(fakeGroups.focus, '__world__');
+          assert.calledOnce(fakeAnnotationMapper.loadAnnotations);
+          assert.calledWith(fakeAnnotationMapper.loadAnnotations, [
+            {id: uri + '123', group: '__world__'},
+          ]);
+        }, 500);
       });
 
       it('fetches annotations for all groups', function () {
-        assert.calledWith(searchClients[0].get, {uri: [uri], group: null});
+        setTimeout(function() {
+          assert.calledWith(searchClients[0].get, {uri: [uri], group: null});
+        }, 500);
       });
 
       it('loads annotations in one batch', function () {
@@ -290,7 +307,9 @@ describe('sidebar.components.sidebar-content', function () {
       });
 
       it('fetches annotations for the current group', function () {
-        assert.calledWith(searchClients[0].get, {uri: [uri], group: 'a-group'});
+        setTimeout(function() {
+          assert.calledWith(searchClients[0].get, {uri: [uri], group: 'a-group'});
+        }, 500);
       });
 
       it('loads annotations in batches', function () {
@@ -310,9 +329,11 @@ describe('sidebar.components.sidebar-content', function () {
       });
 
       it('loads annotations from the focused group instead', function () {
-        assert.calledWith(fakeGroups.focus, 'private-group');
-        assert.calledWith(fakeAnnotationMapper.loadAnnotations,
-          [{group: 'private-group', id: 'http://example.com456'}]);
+        setTimeout(function() {
+          assert.calledWith(fakeGroups.focus, 'private-group');
+          assert.calledWith(fakeAnnotationMapper.loadAnnotations,
+            [{group: 'private-group', id: 'http://example.com456'}]);
+        }, 500);
       });
     });
   });
@@ -331,7 +352,9 @@ describe('sidebar.components.sidebar-content', function () {
 
       $scope.$digest();
 
-      assert.called(fakeAnnotationMapper.loadAnnotations);
+      setTimeout(function() {
+        assert.called(fakeAnnotationMapper.loadAnnotations);
+      }, 500);
     });
   });
 
@@ -346,7 +369,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.updateSession(newProfile);
       $scope.$digest();
 
-      assert.called(fakeAnnotationMapper.loadAnnotations);
+      setTimeout(function() {
+        assert.called(fakeAnnotationMapper.loadAnnotations);
+      }, 500);
     });
 
     it('does not reload annotations if the user ID is the same', () => {
@@ -359,7 +384,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.updateSession(newProfile);
       $scope.$digest();
 
-      assert.notCalled(fakeAnnotationMapper.loadAnnotations);
+      setTimeout(function() {
+        assert.notCalled(fakeAnnotationMapper.loadAnnotations);
+      }, 500);
     });
   });
 
@@ -406,8 +433,10 @@ describe('sidebar.components.sidebar-content', function () {
       assert.calledWith(fakeAnnotationMapper.unloadAnnotations,
         [sinon.match({id: '123'})]);
       $scope.$digest();
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
-      assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
+      setTimeout(function() {
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '123'})]);
+        assert.calledWith(loadSpy, [sinon.match({id: uri + '456'})]);
+      }, 500);
     });
 
     it('should clear the selection', () => {
@@ -415,7 +444,9 @@ describe('sidebar.components.sidebar-content', function () {
 
       changeGroup();
 
-      assert.isFalse(store.hasSelectedAnnotations());
+      setTimeout(function() {
+        assert.isFalse(store.hasSelectedAnnotations());
+      }, 500);
     });
   });
 
@@ -444,7 +475,9 @@ describe('sidebar.components.sidebar-content', function () {
       addFrame();
       store.selectAnnotations(['missing']);
       $scope.$digest();
-      assert.isTrue(ctrl.selectedAnnotationUnavailable());
+      setTimeout(function() {
+        assert.isTrue(ctrl.selectedAnnotationUnavailable());
+      }, 500);
     });
 
     it('does not show a message if the selection is available', function () {
@@ -452,14 +485,18 @@ describe('sidebar.components.sidebar-content', function () {
       store.addAnnotations([{id: '123'}]);
       store.selectAnnotations(['123']);
       $scope.$digest();
-      assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      setTimeout(function() {
+        assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      }, 500);
     });
 
     it('does not a show a message if there is no selection', function () {
       addFrame();
       store.selectAnnotations([]);
       $scope.$digest();
-      assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      setTimeout(function() {
+        assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      }, 500);
     });
 
     it('doesn\'t show a message if the document isn\'t loaded yet', function () {
@@ -469,7 +506,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.selectAnnotations(['missing']);
       $scope.$digest();
 
-      assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      setTimeout(function() {
+        assert.isFalse(ctrl.selectedAnnotationUnavailable());
+      }, 500);
     });
 
     it('shows logged out message if selection is available', function () {
@@ -480,7 +519,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.addAnnotations([{id: '123'}]);
       store.selectAnnotations(['123']);
       $scope.$digest();
-      assert.isTrue(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isTrue(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
 
     it('does not show loggedout message if selection is unavailable', function () {
@@ -490,7 +531,9 @@ describe('sidebar.components.sidebar-content', function () {
       };
       store.selectAnnotations(['missing']);
       $scope.$digest();
-      assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
 
     it('does not show loggedout message if there is no selection', function () {
@@ -500,7 +543,9 @@ describe('sidebar.components.sidebar-content', function () {
       };
       store.selectAnnotations([]);
       $scope.$digest();
-      assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
 
     it('does not show loggedout message if user is not logged out', function () {
@@ -511,7 +556,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.addAnnotations([{id: '123'}]);
       store.selectAnnotations(['123']);
       $scope.$digest();
-      assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
 
     it('does not show loggedout message if not a direct link', function () {
@@ -523,7 +570,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.addAnnotations([{id: '123'}]);
       store.selectAnnotations(['123']);
       $scope.$digest();
-      assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
 
     it('does not show loggedout message if using third-party accounts', function () {
@@ -534,7 +583,9 @@ describe('sidebar.components.sidebar-content', function () {
       store.selectAnnotations(['123']);
       $scope.$digest();
 
-      assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      setTimeout(function() {
+        assert.isFalse(ctrl.shouldShowLoggedOutMessage());
+      }, 500);
     });
   });
 

@@ -1,5 +1,5 @@
 ====
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -15,9 +15,10 @@
 ANNOTATE APPLICATION
 --------------------------------------------------------------------------------
 Annotate 
-This application is divided in two parts 
+This application is divided in three parts 
 1)  client
 2)  server
+3)  config
 
 CLIENT
 --------------------------------------------------------------------------------
@@ -29,6 +30,10 @@ SERVER
 --------------------------------------------------------------------------------
 Server part is an API server which expose an API for client to consume and also 
     serves static(client) files.
+
+CONFIG
+--------------------------------------------------------------------------------
+Contains configuration property files.
 
 
 DEVELOPMENT OF SERVER
@@ -48,19 +53,27 @@ COMPILING
 1) UNZIP the Zip in folder henceforth referred as {annotate}
 
 2) Check or modify the database that should be used by the server application.
-   To do so, set the according profile in file 
-   {annotate}\server\src\main\resources\application.properties file:
-   - if you want to use H2 in-memory database, set
-        spring.profiles.active=h2
-   - if you want to use Oracle database, set
-        spring.profiles.active=oracle
 
-3) To compile for environment {env} (possible values-dev/local), run the following 
-   command in {annotate}
-	$ mvn clean install -Denv={env}
-   For example
-	$ mvn clean install -Denv=local
-	It injects appropriate values from property files.
+   To do so, set the according profile in file {annotate}\config\src\main\filters\local.properties file:   
+   - if you want to use H2 in-memory database, set
+        annotate.db=h2
+   - if you want to use Oracle database, set
+        annotate.db=oracle
+
+    Inside folder {annotate}\config\src\main\resources:
+    - if you want to use H2 in-memory database no needed any change here.
+    - if you want to use Oracle database.
+        1. Rename file 'anot-h2.properties' to 'anot-oracle.properties'.
+        2. Remove all content in this file and add the following:
+            #Basic Spring Boot Config for Oracle
+            spring.datasource.jndi-name=jdbc/leosDB
+            spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
+            spring.jpa.database-platform=org.hibernate.dialect.Oracle10gDialect
+        3. Save changes.
+
+3) To compile run the following command in {annotate}
+    $ mvn clean install -Dmaven.test.skip=true
+    It will generate appropriate configuration files values from property files.
 
 4) Now, on successful finish, WAR file would be visible in {annotate}/server/target
     folder.
@@ -95,30 +108,31 @@ B) For Oracle
 
 DEPLOYMENT
 --------------------------------------------------------------------------------
-A) For TOMCAT
-    1) Create data source jdbc/leosDB for DB connections in context.xml.
-    2) Deploy the WAR server-{env}.war in TOMCAT with context root at '/annotate' 
-	    with port 9099
-    3) Welcome page will be available at http://localhost:9099/annotate/app.html
 
+Notes:
+    - To use Oracle database it is needed to create data source named 'jdbc/leosDB' (this name is referenced
+        in 'anot-oracle.properies' file) and configure it against the Oracle database schema to be used for annotate. 
+
+
+A) For TOMCAT
+    1) Deploy the WAR annotate.war in TOMCAT with context root at '/annotate' with port 9099
+    2) Welcome page will be available at http://localhost:9099/annotate/app.html
 
 B) For WEBLOGIC
-    1) Create data source jdbc/leosDB for DB connections
-    2) Deploy the WAR server-{env}.war in Weblogic at port 9099
-    3) Welcome page will be available at http://localhost:9099/annotate/app.html
+    1) Deploy the WAR annotate.war in Weblogic at port 9099
+    2) Welcome page will be available at http://localhost:9099/annotate/app.html
 
 
 NOTES
 --------------------------------------------------------------------------------
 1) The server can work with Http/https both.
 2) Configurable properties are present at following places
-	{annotate}/server/src/main/filters/common.properties
-	{annotate}/server/src/main/filters/{env}.properties
-	{annotate}/client/scripts/config.js
-	Above-mentioned port 9099 might have to be configured in the 'config.js' 
-	 property file.
+    {annotate}/config/src/main/filters/common.properties
+    {annotate}/config/src/main/filters/local.properties
+    Above-mentioned port 9099 might have to be configured in the 'anot.properties' 
+     property file.
 3) When using Oracle, you may need to install oracle driver in MAVEN as this is 
-	not open source. 
+    not open source.
 4) When using Oracle, an entry for the default group needs to be created in the 
     GROUPS table. The "Name" column of this group needs to coincide to the corres-
     ponding property in common.properties file (defaultgroup.name).

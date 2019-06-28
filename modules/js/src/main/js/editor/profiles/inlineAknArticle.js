@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -47,12 +47,14 @@ define(function aknInlineArticleProfileModule(require) {
     plugins.push(require("plugins/leosPaste/leosPastePlugin"));
     plugins.push(require("plugins/leosCrossReference/leosCrossReferencePlugin"));
     plugins.push(require("plugins/leosHierarchicalElementShiftEnterHandler/leosHierarchicalElementShiftEnterHandler"));
+    plugins.push(require("plugins/leosHierarchicalElementSubparagraphAfterLastPoint/leosHierarchicalElementSubparagraphAfterLastPoint"));
     plugins.push(require("plugins/leosFloatingSpace/leosFloatingSpacePlugin"));
     plugins.push(require("plugins/leosMessageBus/leosMessageBusPlugin"));
     plugins.push(require("plugins/leosDropHandler/leosDropHandlerPlugin"));
     plugins.push(require("plugins/leosXmlEntities/leosXmlEntitiesPlugin"));
     plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
+    plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -66,10 +68,7 @@ define(function aknInlineArticleProfileModule(require) {
     var externalPluginsNames = [];
     pluginTools.addExternalPlugins(externalPluginsNames);
     var extraPlugins = pluginNames.concat(externalPluginsNames).join(",");
-    var leosEditorCss = pluginTools.toUrl("css/leosEditor.css");
     
-    var customContentsCss = [leosEditorCss];
-
     var profileName = "Inline AKN Article";
     // create profile configuration
     var profileConfig = {
@@ -89,50 +88,29 @@ define(function aknInlineArticleProfileModule(require) {
         allowedContent: true,
         //only allow elements configured in transformer while paste
         pasteFilter:leosPasteFilter,
-        defaultPasteElement:'paragraph/content/mp/text',
-        // custom style sheet
-        contentsCss: customContentsCss,
+        defaultPasteElement:'text',
         // force Paste as plain text
         forcePasteAsPlainText: false,
         //Use native spellchecker
         disableNativeSpellChecker: false,
+        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in recital
+        blockedKeystrokes: [
+            CKEDITOR.CTRL + 65 //CTRL +A
+        ],
         // toolbar groups arrangement, optimized for a single toolbar row
-        toolbarGroups : [ {
-            name : "save"
-        }, {
-            name : "document",
-            groups : [ "document", "doctools" ]
-        }, {
-            name : "clipboard",
-            groups : [ "clipboard", "undo" ]
-        }, {
-            name : "editing",
-            groups : ["selection", "spellchecker" ]
-        }, {
-            name : "forms"
-        }, {
-            name : "basicstyles",
-            groups : [ "basicstyles", "cleanup" ]
-        }, {
-            name : "paragraphmode"
-        }, {
-            name : "paragraph",
-            groups : [ "indent", "blocks", "align", "bidi" ]
-        }, {
-            name : "ref"
-        }, '/', {
-            name : "insert"
-        }, {
-            name : "styles"
-        }, {
-            name : "tools"
-        }, {
-            name : "others"
-        }, {
-            name : "mode"
-        }, {
-            name : "about"
-        } ],
+        toolbar: [
+            {name: 'save', items: ['leosInlineSave', 'leosInlineSaveClose', 'leosInlineCancel']},
+            {name: 'clipboard', items: ['Cut', 'Copy', 'Paste', '-', 'Undo', 'Redo']},
+            {name: 'editing', items: ['Scayt']},
+            {name: 'basicstyles', items: ['Bold', 'Italic', 'Subscript', 'Superscript', 'TransformTextSwitcher']},
+            {name: 'soft_insert', items: ['leosHierarchicalElementShiftEnterHandler', 'leosHierarchicalElementSubparagraphAfterLastPoint']},
+            {name: 'paragraph', items: ['aknNumberedParagraph', '-', 'Outdent', 'Indent']},
+            {name: 'ref', items: ['authorialNoteWidget', 'LeosCrossReference']},
+            '/',
+            {name: 'insert', items: ['Mathjax', 'Table', 'SpecialChar']},
+            {name: 'tools', items: ['LeosShowBlocks']},
+            {name: "mode", items: ['Sourcedialog']}
+        ],
         //show toolbar on startup
         startupFocus: 'end',
         // comma-separated list of toolbar button names that must not be rendered

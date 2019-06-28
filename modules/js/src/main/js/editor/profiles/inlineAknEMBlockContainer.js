@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -51,6 +51,7 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
     plugins.push(require("plugins/leosImageResize/leosImageResizePlugin"));
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
     plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
+    plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -76,7 +77,7 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
         // comma-separated list of plugins to be loaded
         plugins: "toolbar,wysiwygarea,elementspath," +
                  "clipboard,undo,basicstyles,enterkey," + "list,indent," +
-                 "specialchar,table,tableresize,tabletools,tableselection,button,dialog,dialogui,widget,pastetext",
+                 "specialchar,table,tableresize,tabletools,tableselection,button,dialog,dialogui,contextmenu,menubutton,widget,pastetext",
         // comma-separated list of toolbar button names that must not be rendered
         removeButtons: "Strike,TextColor,PasteText",
         // comma-separated list of additional plugins to be loaded
@@ -89,6 +90,10 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
         disableNativeSpellChecker: false,
         // LEOS-2887 removing tooltip title 
         title: false,
+        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in memorandum
+        blockedKeystrokes: [
+            CKEDITOR.CTRL + 65 //CTRL +A
+        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
@@ -97,7 +102,7 @@ define(function aknInlineEMBlockContainerProfileModule(require) {
             groups : [ "clipboard", "undo" ]
         }, {
             name : "editing",
-            groups : [ "selection" ]
+            groups : [ "selection", "spellchecker" ]
         }, {
             name : "basicstyles",
             groups : [ "basicstyles", "cleanup" ]

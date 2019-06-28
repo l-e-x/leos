@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -72,12 +72,18 @@ define(function aknInlineClauseProfileModule(require) {
         disableNativeSpellChecker: false,
         // LEOS-2887 removing tooltip title 
         title: false,
+        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements
+        blockedKeystrokes: [
+            CKEDITOR.CTRL + 65 //CTRL +A
+        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
         }, {
             name : "alternatives"
-        }]
+        }],
+        // LEOS-3418 : to save modification in the Alternatives clause.
+        isClause: true
     };
     // adding the specific configs coming from the plugins.
     profileConfig = $.extend( profileConfig,  specificConfig);

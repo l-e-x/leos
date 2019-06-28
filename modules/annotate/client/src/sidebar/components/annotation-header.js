@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -38,6 +38,21 @@ function AnnotationHeaderController(features, groups, settings, serviceUrl) {
       }
     }
     return username(this.annotation.user);
+  };
+
+  this.entityName = () => {
+        var userInfo = this.annotation.user_info;
+        var isThirdPartyUser_ = isThirdPartyUser(this.annotation.user, settings.authDomain);
+        if (features.flagEnabled('client_display_names') || isThirdPartyUser_) {
+            // userInfo is undefined if the api_render_user_info feature flag is off.
+            if (userInfo) {
+                // entity_name is null if the user doesn't have a entity associated.
+                if (userInfo.entity_name) {
+                    return userInfo.entity_name;
+                }
+            }
+        }
+        return "";
   };
 
   this.isThirdPartyUser = function () {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.UserDetails;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
@@ -23,6 +24,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "USERS", uniqueConstraints = @UniqueConstraint(columnNames = {"LOGIN"}))
+@SuppressWarnings("PMD.ShortClassName")
 public class User {
 
     /**
@@ -42,6 +44,7 @@ public class User {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "usersSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     @Column(name = "LOGIN", nullable = false)
@@ -55,13 +58,14 @@ public class User {
     // -----------------------------------------------------------
 
     public User() {
+        // default constructor required by JPA
     }
 
-    public User(String login) {
+    public User(final String login) {
         this.login = login;
     }
 
-    public User(String login, boolean tutorialDismissed) {
+    public User(final String login, final boolean tutorialDismissed) {
         this.login = login;
         this.sidebarTutorialDismissed = tutorialDismissed;
     }
@@ -74,7 +78,7 @@ public class User {
         return login;
     }
 
-    public void setLogin(String login) {
+    public void setLogin(final String login) {
         this.login = login;
     }
 
@@ -82,15 +86,15 @@ public class User {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(final Long newId) {
+        this.id = newId;
     }
 
     public boolean isSidebarTutorialDismissed() {
         return sidebarTutorialDismissed;
     }
 
-    public void setSidebarTutorialDismissed(boolean sidebarTutorialDismissed) {
+    public void setSidebarTutorialDismissed(final boolean sidebarTutorialDismissed) {
         this.sidebarTutorialDismissed = sidebarTutorialDismissed;
     }
 
@@ -98,13 +102,15 @@ public class User {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, login, sidebarTutorialDismissed);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

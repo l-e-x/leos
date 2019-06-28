@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.web.helper.LocalDateTimeDeserializer;
 import eu.europa.ec.leos.annotate.model.web.helper.LocalDateTimeSerializer;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserInfo;
@@ -55,10 +56,14 @@ public class JsonAnnotation {
     @JsonSerialize(using = LocalDateTimeSerializer.class)
     @JsonDeserialize(using = LocalDateTimeDeserializer.class)
     private LocalDateTime updated;
+    @SuppressWarnings("PMD.ShortVariable")
     private String id;
 
     // User meta data
     private JsonUserInfo user_info;
+    
+    // annotation status
+    private JsonAnnotationStatus status;
 
     // -----------------------------------------------------------
     // Getters & setters
@@ -68,7 +73,7 @@ public class JsonAnnotation {
         return created;
     }
 
-    public void setCreated(LocalDateTime created) {
+    public void setCreated(final LocalDateTime created) {
         this.created = created;
     }
 
@@ -76,7 +81,7 @@ public class JsonAnnotation {
         return updated;
     }
 
-    public void setUpdated(LocalDateTime updated) {
+    public void setUpdated(final LocalDateTime updated) {
         this.updated = updated;
     }
 
@@ -84,7 +89,7 @@ public class JsonAnnotation {
         return text;
     }
 
-    public void setText(String text) {
+    public void setText(final String text) {
         this.text = text;
     }
 
@@ -92,7 +97,7 @@ public class JsonAnnotation {
         return group;
     }
 
-    public void setGroup(String group) {
+    public void setGroup(final String group) {
         this.group = group;
     }
 
@@ -100,15 +105,15 @@ public class JsonAnnotation {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(final String annotId) {
+        this.id = annotId;
     }
 
     public List<String> getTags() {
         return tags;
     }
 
-    public void setTags(List<String> tags) {
+    public void setTags(final List<String> tags) {
         this.tags = tags;
     }
 
@@ -116,7 +121,7 @@ public class JsonAnnotation {
         return document;
     }
 
-    public void setDocument(JsonAnnotationDocument document) {
+    public void setDocument(final JsonAnnotationDocument document) {
         this.document = document;
     }
 
@@ -124,7 +129,7 @@ public class JsonAnnotation {
         return uri;
     }
 
-    public void setUri(URI uri) {
+    public void setUri(final URI uri) {
         this.uri = uri;
     }
 
@@ -132,7 +137,7 @@ public class JsonAnnotation {
         return user;
     }
 
-    public void setUser(String user) {
+    public void setUser(final String user) {
         this.user = user;
     }
 
@@ -140,7 +145,7 @@ public class JsonAnnotation {
         return permissions;
     }
 
-    public void setPermissions(JsonAnnotationPermissions permissions) {
+    public void setPermissions(final JsonAnnotationPermissions permissions) {
         this.permissions = permissions;
     }
 
@@ -148,7 +153,7 @@ public class JsonAnnotation {
         return references;
     }
 
-    public void setReferences(List<String> references) {
+    public void setReferences(final List<String> references) {
         this.references = references;
     }
 
@@ -156,7 +161,7 @@ public class JsonAnnotation {
         return target;
     }
 
-    public void setTarget(List<JsonAnnotationTargets> target) {
+    public void setTarget(final List<JsonAnnotationTargets> target) {
         this.target = target;
     }
 
@@ -164,15 +169,27 @@ public class JsonAnnotation {
         return user_info;
     }
 
-    public void setUser_info(JsonUserInfo user_info) {
+    public void setUser_info(final JsonUserInfo user_info) {
         this.user_info = user_info;
     }
+
+    public JsonAnnotationStatus getStatus() {
+        return status;
+    }
+    
+    public void setStatus(final JsonAnnotationStatus newStatus) {
+        this.status = newStatus;
+    }
+    
+    // -------------------------------------
+    // Helper functions
+    // -------------------------------------
 
     @JsonIgnore
     public String getSerializedTargets() {
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            final ObjectMapper mapper = new ObjectMapper();
             return mapper.writeValueAsString(target);
         } catch (JsonProcessingException e) {
             LOG.error("Annotation target selectors could not be serialized to JSON", e);
@@ -183,20 +200,39 @@ public class JsonAnnotation {
     @JsonIgnore
     // help function stating whether the object denotes a reply to an annotation
     public boolean isReply() {
-        return this.getReferences() != null && this.getReferences().size() > 0;
+        return this.getReferences() != null && !this.getReferences().isEmpty();
+    }
+
+    @JsonIgnore
+    // help function that retrieves the root of a communication thread (for replies)
+    public String getRootAnnotationId() {
+
+        if (!isReply()) {
+            return null;
+        }
+
+        return this.getReferences().get(0);
+    }
+
+    @JsonIgnore
+    // return whether the object features metadata
+    public boolean hasMetadata() {
+        return getDocument() != null && getDocument().getMetadata() != null;
     }
 
     // -------------------------------------
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(id, created, document, text, group, tags, uri, target, references, user, permissions, updated);
+        return Objects.hash(id, created, document, text, group, tags, uri, target, references, user, permissions, updated, user_info, status);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }
@@ -215,6 +251,8 @@ public class JsonAnnotation {
                 Objects.equals(this.document, other.document) &&
                 Objects.equals(this.tags, other.tags) &&
                 Objects.equals(this.target, other.target) &&
-                Objects.equals(this.permissions, other.permissions);
+                Objects.equals(this.permissions, other.permissions) && 
+                Objects.equals(this.user_info, other.user_info) &&
+                Objects.equals(this.status, other.status);
     }
 }

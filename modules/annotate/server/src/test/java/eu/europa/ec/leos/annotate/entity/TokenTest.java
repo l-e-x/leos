@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,7 +24,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class TokenTest {
 
@@ -43,16 +43,16 @@ public class TokenTest {
         final String access = "acc";
         final int lifetime = 5;
 
-        Token t = new Token();
-        t.setAccessToken(access, lifetime); // use the "combined" function
+        final Token token = new Token();
+        token.setAccessToken(access, lifetime); // use the "combined" function
 
-        Assert.assertEquals(access, t.getAccessToken());
-        Assert.assertEquals(lifetime, t.getAccessTokenLifetimeSeconds());
+        Assert.assertEquals(access, token.getAccessToken());
+        Assert.assertEquals(lifetime, token.getAccessTokenLifetimeSeconds());
 
-        LocalDateTime latestExpiration = LocalDateTime.now().plusSeconds(lifetime);
+        final LocalDateTime latestExpiration = LocalDateTime.now().plusSeconds(lifetime);
 
         // note: as our reference date is computed after the token's date was computed, it should be (slightly) after the token's expiration or even identical
-        Assert.assertTrue(t.getAccessTokenExpires().isBefore(latestExpiration) || t.getAccessTokenExpires().equals(latestExpiration));
+        Assert.assertTrue(token.getAccessTokenExpires().isBefore(latestExpiration) || token.getAccessTokenExpires().equals(latestExpiration));
     }
 
     // check that refresh token's expiration time is computed correctly
@@ -62,43 +62,43 @@ public class TokenTest {
         final String refresh = "re";
         final int lifetime = 100;
 
-        Token t = new Token();
-        t.setRefreshToken(refresh, lifetime); // use the "combined" function
+        final Token token = new Token();
+        token.setRefreshToken(refresh, lifetime); // use the "combined" function
 
-        Assert.assertEquals(refresh, t.getRefreshToken());
-        Assert.assertEquals(lifetime, t.getRefreshTokenLifetimeSeconds());
+        Assert.assertEquals(refresh, token.getRefreshToken());
+        Assert.assertEquals(lifetime, token.getRefreshTokenLifetimeSeconds());
 
-        LocalDateTime latestExpiration = LocalDateTime.now().plusSeconds(lifetime);
+        final LocalDateTime latestExpiration = LocalDateTime.now().plusSeconds(lifetime);
 
         // note: as our reference date is computed after the token's date was computed, it should be (slightly) after the token's expiration or even identical
-        Assert.assertTrue(t.getRefreshTokenExpires().isBefore(latestExpiration) || t.getRefreshTokenExpires().equals(latestExpiration));
+        Assert.assertTrue(token.getRefreshTokenExpires().isBefore(latestExpiration) || token.getRefreshTokenExpires().equals(latestExpiration));
     }
 
     // check that the access token is correctly considered expired
     @Test
     public void testAccessTokenExpired() {
 
-        Token t = new Token();
-        t.setAccessToken("access", 1);
+        final Token token = new Token();
+        token.setAccessToken("access", 1);
 
         // now set the expiration date backwards by 2 seconds -> should then be a past date
-        t.setAccessTokenExpires(LocalDateTime.now().minusSeconds(2));
+        token.setAccessTokenExpires(LocalDateTime.now().minusSeconds(2));
 
         // verify: must be expired
-        Assert.assertTrue(t.isAccessTokenExpired());
+        Assert.assertTrue(token.isAccessTokenExpired());
     }
 
     // check that the refresh token is correctly considered expired
     @Test
     public void testRefreshTokenExpired() {
 
-        Token t = new Token();
-        t.setAccessToken("refresh", 1);
+        final Token token = new Token();
+        token.setAccessToken("refresh", 1);
 
         // now set the expiration date backwards by 2 seconds -> should then be a past date
-        t.setRefreshTokenExpires(LocalDateTime.now().minusSeconds(2));
+        token.setRefreshTokenExpires(LocalDateTime.now().minusSeconds(2));
 
         // verify: must be expired
-        Assert.assertTrue(t.isRefreshTokenExpired());
+        Assert.assertTrue(token.isRefreshTokenExpired());
     }
 }

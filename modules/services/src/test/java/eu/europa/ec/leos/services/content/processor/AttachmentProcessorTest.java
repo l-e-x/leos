@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,20 +13,19 @@
  */
 package eu.europa.ec.leos.services.content.processor;
 
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.Test;
-
-import eu.europa.ec.leos.services.support.xml.VtdXmlContentProcessor;
+import eu.europa.ec.leos.services.support.xml.VtdXmlContentProcessorForProposal;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.hamcrest.Matchers;
+import org.junit.Test;
 import org.mockito.InjectMocks;
+
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class AttachmentProcessorTest extends LeosTest {
 
-    private XmlContentProcessor xmlContentProcessor = new VtdXmlContentProcessor();
+    private XmlContentProcessor xmlContentProcessor = new VtdXmlContentProcessorForProposal();
 
     @InjectMocks
     private AttachmentProcessor attachmentProcessor = new AttachmentProcessorImpl(xmlContentProcessor);
@@ -35,14 +34,14 @@ public class AttachmentProcessorTest extends LeosTest {
     public void test_addAttachment_NoAttachmentsTag() throws Exception {
         // setup
         String xml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
                 "</bill>";
         String href = "annex_href";
         String showAs = "";
         String expectedXml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
                 "<attachments>" +
-                "<attachment GUID=.+?><documentRef GUID=.+? href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
+                "<attachment xml:id=.+?><documentRef xml:id=.+? href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";
 
@@ -57,18 +56,18 @@ public class AttachmentProcessorTest extends LeosTest {
     public void test_addAttachment_WithAttachmentsTag() throws Exception {
         // setup
         String xml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
-                "<attachments GUID=\"attachs\">" +
-                "<attachment GUID=\"atta\"><documentRef GUID=\"docref\" href=\"someHref\" showAs=\"\"/></attachment>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
+                "<attachments xml:id=\"attachs\">" +
+                "<attachment xml:id=\"atta\"><documentRef xml:id=\"docref\" href=\"someHref\" showAs=\"\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";
         String href = "annex_href";
         String showAs = "";
         String expectedXml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
-                "<attachments GUID=\"attachs\">" +
-                "<attachment GUID=\"atta\"><documentRef GUID=\"docref\" href=\"someHref\" showAs=\"\"/></attachment>" +
-                "<attachment GUID=.+?><documentRef GUID=.+? href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
+                "<attachments xml:id=\"attachs\">" +
+                "<attachment xml:id=\"atta\"><documentRef xml:id=\"docref\" href=\"someHref\" showAs=\"\"/></attachment>" +
+                "<attachment xml:id=.+?><documentRef xml:id=.+? href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";
 
@@ -86,14 +85,14 @@ public class AttachmentProcessorTest extends LeosTest {
         String showAs = "";
 
         String xml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
-                "<attachments GUID=\"id1\">" +
-                "<attachment GUID=\"id2\"><documentRef GUID=\"id3\" href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
+                "<attachments xml:id=\"id1\">" +
+                "<attachment xml:id=\"id2\"><documentRef xml:id=\"id3\" href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";
 
         String expectedXml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
                 "</bill>";
 
         // make the actual call
@@ -112,17 +111,17 @@ public class AttachmentProcessorTest extends LeosTest {
         String showAs2 = "";
 
         String xml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
-                "<attachments GUID=\"id1\">" +
-                "<attachment GUID=\"id2\"><documentRef GUID=\"id3\" href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
-                "<attachment GUID=\"id2\"><documentRef GUID=\"id3\" href=\"" + href2 + "\" showAs=\"" + showAs2 + "\"/></attachment>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
+                "<attachments xml:id=\"id1\">" +
+                "<attachment xml:id=\"id2\"><documentRef xml:id=\"id3\" href=\"" + href + "\" showAs=\"" + showAs + "\"/></attachment>" +
+                "<attachment xml:id=\"id2\"><documentRef xml:id=\"id3\" href=\"" + href2 + "\" showAs=\"" + showAs2 + "\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";
 
         String expectedXml = "<bill>" +
-                "<meta GUID=\"ElementId\"></meta>" +
-                "<attachments GUID=\"id1\">" +
-                "<attachment GUID=\"id2\"><documentRef GUID=\"id3\" href=\"" + href2 + "\" showAs=\"" + showAs2 + "\"/></attachment>" +
+                "<meta xml:id=\"ElementId\"></meta>" +
+                "<attachments xml:id=\"id1\">" +
+                "<attachment xml:id=\"id2\"><documentRef xml:id=\"id3\" href=\"" + href2 + "\" showAs=\"" + showAs2 + "\"/></attachment>" +
                 "</attachments>" +
                 "</bill>";;
 

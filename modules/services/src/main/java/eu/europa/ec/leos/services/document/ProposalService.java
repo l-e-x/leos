@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,23 +13,34 @@
  */
 package eu.europa.ec.leos.services.document;
 
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Proposal;
-import eu.europa.ec.leos.domain.document.LeosMetadata.ProposalMetadata;
+
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Proposal;
+import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
+
+import java.util.List;
 
 public interface ProposalService {
 
     Proposal createProposal(String templateId, String path, ProposalMetadata metadata, byte[] content);
 
+    Proposal createProposalFromContent(String path, ProposalMetadata metadata, byte[] content);
+
     Proposal findProposal(String id);
+
+    Proposal updateProposal(Proposal proposal, ProposalMetadata metadata, boolean major, String comment);
 
     Proposal updateProposal(Proposal proposal, ProposalMetadata metadata);
 
     Proposal addComponentRef(Proposal proposal, String href, LeosCategory leosCategory);
 
+    Proposal updateProposalWithMilestoneComments(Proposal proposal, List<String> milestoneComments, boolean major, String comment);
+
+    Proposal updateProposalWithMilestoneComments(String proposalId, List<String> milestoneComments);
+
     Proposal removeComponentRef(Proposal proposal, String href, LeosCategory leosCategory);
 
-    void updateProposalAsync(String id);
+    void updateProposalAsync(String id, String comment);
 
     Proposal findProposalByPackagePath(String path);
 }

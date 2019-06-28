@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,7 +19,7 @@ import com.vaadin.ui.Button;
 import com.vaadin.ui.TextArea;
 import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.web.event.view.document.SaveMajorVersionEvent;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +70,10 @@ public class MajorVersionWindow extends AbstractWindow {
         commentsBinder.setBean(commentsVO);
         
         windowLayout.addComponent(commentArea);
+        
+        addFocusListener(event -> {
+        	commentArea.focus();
+        });
     }
 
     private Button buildSaveButton() {

@@ -8,7 +8,7 @@
                    "leos":"urn:eu:europa:ec:leos"}>
 
 <#--
-    Copyright 2017 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -34,7 +34,7 @@
 </#macro>
 
 <#macro @createWrapper>
-    <#local elementId = .node.@GUID[0]!>
+    <#local elementId = .node["@xml:id"][0]!>
     <#local elementName=.node?node_name>
     <#local compliant = (.node["@leos:compliant"][0]!'true') == 'true'>
     <#if (elementId?length gt 0) && (compliant)>

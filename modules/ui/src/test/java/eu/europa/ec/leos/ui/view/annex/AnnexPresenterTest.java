@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,43 +14,45 @@
 package eu.europa.ec.leos.ui.view.annex;
 
 import com.vaadin.server.VaadinServletService;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.Content.Source;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Annex;
-import eu.europa.ec.leos.domain.document.LeosMetadata.AnnexMetadata;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.Content.Source;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.content.processor.AnnexProcessor;
+import eu.europa.ec.leos.services.content.processor.DocumentContentService;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
-import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.services.document.AnnexService;
 import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
+import eu.europa.ec.leos.ui.support.CoEditionHelper;
+import eu.europa.ec.leos.vo.coedition.CoEditionActionInfo;
+import eu.europa.ec.leos.vo.coedition.CoEditionActionInfo.Operation;
+import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.UuidHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import io.atlassian.fugue.Option;
-import okio.ByteString;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.io.ByteArrayInputStream;
 import java.time.Instant;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.sameInstance;
@@ -60,8 +62,13 @@ import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class AnnexPresenterTest extends LeosPresenterTest {
 
-    @Mock
+    private static final String PRESENTER_ID = "ab51f419-c6b0-45cb-82ed-77a61099b58f";
+
     private SecurityContext securityContext;
+
+    private User contextUser;
+
+    private UuidHelper uuidHelper;
 
     @Mock
     private AnnexScreen annexScreen;
@@ -76,13 +83,16 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     private AnnexProcessor annexProcessor;
 
     @Mock
-    private TransformationService transformationManager;
+    private DocumentContentService documentContentService;
 
     @Mock
     private UrlBuilder urlBuilder;
 
     @Mock
     private UserHelper userHelper;
+    
+    @Mock
+    private CoEditionHelper coEditionHelper;
 
     @Mock
     private MessageHelper messageHelper;
@@ -95,29 +105,37 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     private byte[] byteContent;
 
     @Before
-    public void init() throws Exception {
+    public void setup(){
+        contextUser = ModelHelper.buildUser(45L, "login", "name");
+        securityContext = mock(SecurityContext.class);
+        when(securityContext.getUser()).thenReturn(contextUser);
+        uuidHelper = mock(UuidHelper.class);
+        when(uuidHelper.getRandomUUID()).thenReturn(PRESENTER_ID);
+        super.setup();
+    }
+
+    @Before
+    public void init() {
         docId = "555";
         docTitle = "document title";
         byteContent = new byte[]{1, 2, 3};
-        when(httpSession.getAttribute(SessionAttribute.ANNEX_ID.name())).thenReturn(docId);
-        User user = ModelHelper.buildUser(45L, "login", "name");
-        when(securityContext.getUser()).thenReturn(user);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.ANNEX_ID.name())).thenReturn(docId);
     }
 
     @Test
-    public void testEnterDocumentView() throws Exception {
+    public void testEnterDocumentView() {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
         String documentVersion="1.1";
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle, "");
         Instant now = Instant.now();
         Annex annex = new Annex(docId, "Annex", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
         DocumentVO annexVO = new DocumentVO(docId,"EN", LeosCategory.ANNEX, "login",  Date.from(now));
         annexVO.setDocNumber(1);
@@ -127,13 +145,14 @@ public class AnnexPresenterTest extends LeosPresenterTest {
         User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
         List<LeosPermission> permissions = Collections.emptyList();
+        List<CoEditionVO> coEditionVos = Collections.emptyList();
 
         when(annexService.findAnnex(docId)).thenReturn(annex);
         when(userHelper.getUser("login")).thenReturn(user);
         when(securityContext.getPermissions(annex)).thenReturn(permissions);
-        when(transformationManager.toEditableXml(isA(ByteArrayInputStream.class), any(), eq(LeosCategory.ANNEX),eq(permissions))).thenReturn(displayableContent);
+        when(documentContentService.toEditableContent(isA(XmlDocument.class), any(), any())).thenReturn(displayableContent);
         when(annexService.getTableOfContent(annex)).thenReturn(tableOfContentItemVoList);
-        
+
         // DO THE ACTUAL CALL
         annexPresenter.enter();
 
@@ -142,14 +161,15 @@ public class AnnexPresenterTest extends LeosPresenterTest {
         verify(userHelper).getUser("login");
         
         verify(annexScreen).setDocumentVersionInfo(any());
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.ANNEX),eq(permissions));
-        
+        verify(documentContentService).toEditableContent(any(XmlDocument.class), any(), any());
+
         verify(annexScreen).setContent(displayableContent);
         verify(annexScreen).setTitle(docTitle);
         verify(annexScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
         verify(annexScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id",equalTo(annexVO.getId()))));
+        verify(annexScreen).updateUserCoEditionInfo(coEditionVos, PRESENTER_ID);
 
-        verifyNoMoreInteractions(userHelper, annexService, transformationManager, annexScreen);
+        verifyNoMoreInteractions(userHelper, annexService, documentContentService, annexScreen);
     }
 
     @Test
@@ -160,18 +180,18 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     }
 
     @Test
-    public void testRefreshDocument() throws Exception {
+    public void testRefreshDocument() {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
         String documentVersion="1.1";
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
         Instant now = Instant.now();
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle, "");
         Annex annex = new Annex(docId, "Annex", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
         DocumentVO annexVO = new DocumentVO(docId,"EN", LeosCategory.ANNEX, "login",  Date.from(now));
         annexVO.setDocNumber(1);
@@ -180,12 +200,13 @@ public class AnnexPresenterTest extends LeosPresenterTest {
         User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
         List<LeosPermission> permissions = Collections.emptyList();
+        List<CoEditionVO> coEditionVos = Collections.emptyList();
 
         when(annexService.findAnnex(docId)).thenReturn(annex);
         when(urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest())).thenReturn("");
         when(userHelper.getUser("login")).thenReturn(user);
         when(securityContext.getPermissions(annex)).thenReturn(permissions);
-        when(transformationManager.toEditableXml(any(ByteArrayInputStream.class),any(), eq(LeosCategory.ANNEX), eq(permissions))).thenReturn(displayableContent);
+        when(documentContentService.toEditableContent(isA(XmlDocument.class), any(), any())).thenReturn(displayableContent);
         when(annexService.getTableOfContent(annex)).thenReturn(tableOfContentItemVoList);
         
         // DO THE ACTUAL CALL
@@ -194,36 +215,37 @@ public class AnnexPresenterTest extends LeosPresenterTest {
         verify(annexService).findAnnex(docId);
         verify(annexService).getTableOfContent(annex);
         verify(userHelper).getUser("login");
-        
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.ANNEX), eq(permissions));
+
+        verify(documentContentService).toEditableContent(any(XmlDocument.class), any(), any());
         verify(annexScreen).setDocumentVersionInfo(any());
         verify(annexScreen).setContent(displayableContent);
         verify(annexScreen).setTitle(docTitle);
         verify(annexScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
         verify(annexScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id",equalTo(annexVO.getId()))));
+        verify(annexScreen).updateUserCoEditionInfo(coEditionVos, PRESENTER_ID);        
 
-        verifyNoMoreInteractions(userHelper, annexService, transformationManager, annexScreen);
+        verifyNoMoreInteractions(userHelper, annexService, documentContentService, annexScreen);
     }
 
     @Test
-    public void testDeleteAnnexBlock() throws Exception {
+    public void testDeleteAnnexBlock() {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN", "","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN", "","annex-id", 1, "Annex 1", docTitle, "");
 
         Annex originalDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         byte[] updatedBytes = new byte[] {'1','2'};
         Annex savedDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         String elementTag = "division";
@@ -244,30 +266,27 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     }
 
     @Test
-    public void testInsertAnnexBlock_Before() throws Exception {
+    public void testInsertAnnexBlock_Before() {
 
         boolean before = true;
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle, "");
 
         Annex originalDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         byte[] updatedBytes = new byte[] {'1','2'};
         Annex savedDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         String elementId = "486";
@@ -287,28 +306,29 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     }
 
     @Test
-    public void testEditAnnexBlock() throws Exception {
+    public void testEditAnnexBlock() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN", "","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN", "","annex-id", 1, "Annex 1", docTitle, "");
 
         Annex document = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
-                "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                "test", "", "", true, true,
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
         String elementTag = "division";
         String elementId = "486";
-
+        CoEditionActionInfo actionInfo = new CoEditionActionInfo(true, Operation.STORE, null, new ArrayList<CoEditionVO>());
         String contentString = "Content";
 
         when(annexService.findAnnex(docId)).thenReturn(document);
         when(elementProcessor.getElement(document, elementTag, elementId)).thenReturn(contentString);
-
+        when(coEditionHelper.getCurrentEditInfo("test")).thenReturn(actionInfo.getCoEditionVos());
+        
         // DO THE ACTUAL CALL
         annexPresenter.editAnnexBlock(new EditElementRequestEvent(elementId, elementTag));
 
@@ -318,26 +338,26 @@ public class AnnexPresenterTest extends LeosPresenterTest {
     }
 
     @Test
-    public void testSaveAnnexBlock() throws Exception {
+    public void testSaveAnnexBlock() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle);
+        AnnexMetadata annexMetadata = new AnnexMetadata("", "REGULATION", "", "AN-000.xml", "EN","","annex-id", 1, "Annex 1", docTitle, "");
 
         Annex originalDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         byte[] updatedBytes = new byte[] {'1','2'};
         
         Annex savedDocument = new Annex(docId, "Annex", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                docTitle, Collections.emptyMap(),
+                docTitle, Collections.emptyMap(), Arrays.asList(""),
                 Option.some(content), Option.some(annexMetadata));
 
         String elementTag = "division";
@@ -351,7 +371,7 @@ public class AnnexPresenterTest extends LeosPresenterTest {
         when(annexService.updateAnnex(originalDocument, updatedBytes, false, messageHelper.getMessage("operation.annex.block.updated"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
-        annexPresenter.saveElement(new SaveElementRequestEvent(elementId, elementTag, updatedContent));
+        annexPresenter.saveElement(new SaveElementRequestEvent(elementId, elementTag, updatedContent, false));
 
         verify(elementProcessor).updateElement(originalDocument, updatedContent, elementTag, elementId);
         verify(annexService).updateAnnex(originalDocument, updatedBytes, false, messageHelper.getMessage("operation.annex.block.updated"));

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,8 +14,10 @@
 package eu.europa.ec.leos.annotate;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.entity.UserGroup;
@@ -44,31 +46,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class UserDetailsFromExternalRepoTest {
 
     /**
      * Test interaction with UD-REPO 
      */
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -89,6 +73,24 @@ public class UserDetailsFromExternalRepoTest {
     @Value("${user.repository.url}")
     private String repositoryUrl;
 
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -101,14 +103,14 @@ public class UserDetailsFromExternalRepoTest {
     public void testRestUdRepoCalls() {
 
         // mock the RestTemplate and inject it into the UserService
-        RestTemplate restOperations = Mockito.mock(RestTemplate.class);
-        UserService userService = new UserServiceImpl(restOperations);
+        final RestTemplate restOperations = Mockito.mock(RestTemplate.class);
+        final UserService userService = new UserServiceImpl(restOperations);
 
-        Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new HashMap<String, String>();
         params.put("userId", "login");
 
         // prepare Mockito to return the desired user details
-        UserDetails details = new UserDetails("login", (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails("login", (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
         Mockito.when(restOperations.getForObject(null, UserDetails.class, params)).thenReturn(details);
 
         // verify that the RestTemplate was called - should return the object specified for Mockito
@@ -120,7 +122,7 @@ public class UserDetailsFromExternalRepoTest {
         Mockito.verify(restOperations, Mockito.times(1)).getForObject(null, UserDetails.class, params);
 
         // query another user - there should be one call for ud-repo again
-        Map<String, String> secondCallParams = new HashMap<String, String>();
+        final Map<String, String> secondCallParams = new HashMap<String, String>();
         secondCallParams.put("userId", "anotheruser");
 
         result = userService.getUserDetailsFromUserRepo("anotheruser");
@@ -133,31 +135,33 @@ public class UserDetailsFromExternalRepoTest {
      * when calling the user profile
      * (test uses a mock for the REST template used for launching REST calls)
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testUserDisplayNameWithUdRepo() throws UserNotFoundException {
 
         // mock the RestTemplate and inject it into the UserService
-        RestTemplate restOperations = Mockito.mock(RestTemplate.class);
+        final RestTemplate restOperations = Mockito.mock(RestTemplate.class);
         userService.setRestTemplate(restOperations);
 
-        String userLogin = "login";
+        final String userLogin = "login";
+        final String userEntity = "DIGIT";
 
-        User theUser = userRepos.save(new User(userLogin));
+        final User theUser = userRepos.save(new User(userLogin));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
 
-        Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new HashMap<String, String>();
         params.put("userId", userLogin);
 
         // prepare Mockito to return the desired user details
-        UserDetails details = new UserDetails(userLogin, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(userLogin, (long) 47, "Santa", "Clause", userEntity, "santa@clause.europa.eu", null);
         Mockito.when(restOperations.getForObject(repositoryUrl, UserDetails.class, params)).thenReturn(details);
 
         // retrieve user profile and expect that display name is provided therein
-        JsonUserProfile profile = userService.getUserProfile(userLogin, "authority");
+        final JsonUserProfile profile = userService.getUserProfile(new UserInformation(theUser, "authority"));
         Assert.assertNotNull(profile);
         Assert.assertNotNull(profile.getUser_info());
         Assert.assertEquals("Clause Santa", profile.getUser_info().getDisplay_name());
+        Assert.assertEquals(userEntity, profile.getUser_info().getEntity_name());
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,12 +28,12 @@ import java.time.LocalDateTime;
 public class LocalDateTimeAttributeConverter implements AttributeConverter<LocalDateTime, Timestamp> {
 
     @Override
-    public Timestamp convertToDatabaseColumn(LocalDateTime locDateTime) {
+    public Timestamp convertToDatabaseColumn(final LocalDateTime locDateTime) {
         return (locDateTime == null ? null : Timestamp.valueOf(locDateTime));
     }
 
     @Override
-    public LocalDateTime convertToEntityAttribute(Timestamp sqlTimestamp) {
+    public LocalDateTime convertToEntityAttribute(final Timestamp sqlTimestamp) {
         return (sqlTimestamp == null ? null : sqlTimestamp.toLocalDateTime());
     }
 

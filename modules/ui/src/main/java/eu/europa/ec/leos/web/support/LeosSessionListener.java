@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,19 +13,21 @@
  */
 package eu.europa.ec.leos.web.support;
 
+import eu.europa.ec.leos.ui.support.CoEditionHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import org.springframework.web.context.support.WebApplicationContextUtils;
 
 import javax.servlet.annotation.WebListener;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionEvent;
 import javax.servlet.http.HttpSessionListener;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 @WebListener
 @Component
@@ -44,6 +46,9 @@ public class LeosSessionListener implements HttpSessionListener {
     @Override
     public void sessionDestroyed(HttpSessionEvent event) {
         sessionInstances.remove(event.getSession());
+        CoEditionHelper coEditionHelper = WebApplicationContextUtils.getRequiredWebApplicationContext(
+                event.getSession().getServletContext()).getBean(CoEditionHelper.class);
+        coEditionHelper.removeUserEditInfo(event.getSession().getId());
     }
 
     @Scheduled(cron = "${maintenance.session.invalid.cron}")

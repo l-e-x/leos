@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,67 +13,112 @@
  */
 package eu.europa.ec.leos.security;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.io.InputStream;
+import java.util.*;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 
-class LeosPermissionAuthorityMap {
+import eu.europa.ec.leos.permissions.Permissions;
+import eu.europa.ec.leos.permissions.Role;
+import eu.europa.ec.leos.permissions.Roles;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+import org.xml.sax.SAXException;
 
-    private final static Map<LeosAuthority, Set<LeosPermission>> permissionMap = new HashMap<>();
+import javax.annotation.PostConstruct;
+import javax.xml.XMLConstants;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
 
-    static {
-        final Set<LeosPermission> ownerPermissions = new HashSet<>();
-        ownerPermissions.add(LeosPermission.CAN_READ);
-        ownerPermissions.add(LeosPermission.CAN_UPDATE);
-        ownerPermissions.add(LeosPermission.CAN_DELETE);
-        ownerPermissions.add(LeosPermission.CAN_COMMENT);
-        ownerPermissions.add(LeosPermission.CAN_SUGGEST);
-        ownerPermissions.add(LeosPermission.CAN_MERGE_SUGGESTION);
-        ownerPermissions.add(LeosPermission.CAN_SHARE);
-        ownerPermissions.add(LeosPermission.CAN_PRINT_LW);
-        permissionMap.put(LeosAuthority.OWNER, ownerPermissions);
+@Component
+public class LeosPermissionAuthorityMap {
 
-        final Set<LeosPermission> collaboratorPermissions = new HashSet<>();
-        collaboratorPermissions.add(LeosPermission.CAN_READ);
-        collaboratorPermissions.add(LeosPermission.CAN_UPDATE);
-        collaboratorPermissions.add(LeosPermission.CAN_COMMENT);
-        collaboratorPermissions.add(LeosPermission.CAN_SUGGEST);
-        collaboratorPermissions.add(LeosPermission.CAN_MERGE_SUGGESTION);
-        permissionMap.put(LeosAuthority.CONTRIBUTOR, collaboratorPermissions);
+    private static final Logger LOG = LoggerFactory.getLogger(LeosPermissionAuthorityMap.class);
 
-        final Set<LeosPermission> reviewerPermissions = new HashSet<>();
-        reviewerPermissions.add(LeosPermission.CAN_READ);
-        reviewerPermissions.add(LeosPermission.CAN_COMMENT);
-        reviewerPermissions.add(LeosPermission.CAN_SUGGEST);
-        permissionMap.put(LeosAuthority.REVIEWER, reviewerPermissions);
-        
-        final Set<LeosPermission> supportPermission = new HashSet<>();
-        supportPermission.add(LeosPermission.CAN_READ);
-        supportPermission.add(LeosPermission.CAN_UPDATE);
-        supportPermission.add(LeosPermission.CAN_DELETE);
-        supportPermission.add(LeosPermission.CAN_COMMENT);
-        supportPermission.add(LeosPermission.CAN_SUGGEST);
-        supportPermission.add(LeosPermission.CAN_MERGE_SUGGESTION);
-        supportPermission.add(LeosPermission.CAN_SHARE);
-        supportPermission.add(LeosPermission.CAN_PRINT_LW);
-        permissionMap.put(LeosAuthority.SUPPORT, supportPermission);
-        
-        final Set<LeosPermission> adminPermission = new HashSet<>();
-        adminPermission.add(LeosPermission.CAN_READ);
-        adminPermission.add(LeosPermission.CAN_UPDATE);
-        adminPermission.add(LeosPermission.CAN_DELETE);
-        adminPermission.add(LeosPermission.CAN_COMMENT);
-        adminPermission.add(LeosPermission.CAN_SUGGEST);
-        adminPermission.add(LeosPermission.CAN_MERGE_SUGGESTION);
-        adminPermission.add(LeosPermission.CAN_SHARE);
-        adminPermission.add(LeosPermission.CAN_PRINT_LW);
-        permissionMap.put(LeosAuthority.ADMIN, adminPermission);
+    private final Map<String, Set<LeosPermission>> permissionMap = new HashMap<>();
+
+    private final Map<String, Role> roleMap = new HashMap<>();
+
+    private final List<Role> listOfRoles = new ArrayList<>();
+
+    @PostConstruct
+    void createPermissionMap() {
+        Roles roles;
+        try {
+            roles = unmarshallerRolesPermission();
+        } catch (SAXException exception) {
+            throw new RuntimeException("Invalid Roles Permission XML", exception);
+        } catch (JAXBException exception) {
+            throw new RuntimeException("Error occurred in role permission unmarshaller", exception);
+        } catch (Exception exception) {
+            throw new RuntimeException("Error occurred while creating leos Permission Hierarchy", exception);
+        }
+        if (roles != null) {
+            listOfRoles.addAll(roles.getRoles());
+            roles.getRoles().forEach(role -> roleMap.put(role.getName(), role));
+            for (Role role : listOfRoles) {
+                Permissions permissions = role.getPermissions();
+                List<String> listOfPermissions = permissions != null ? permissions.getPermissions() : Collections.emptyList();
+                Set<LeosPermission> rolePermissions = new HashSet<>();
+                for (String permission : listOfPermissions) {
+                    rolePermissions.add(getLeosPermission(permission));
+                }
+                permissionMap.put(role.getName(), rolePermissions);
+            }
+        }
     }
 
-    static Set<LeosPermission> getPermissions(LeosAuthority authority) {
+    private Roles unmarshallerRolesPermission() throws JAXBException, SAXException {
+        JAXBContext jaxbContext = JAXBContext.newInstance(Roles.class);
+        Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
+
+        SchemaFactory sf = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
+        Schema rolePermSchema = sf.newSchema(new StreamSource(loadPermissionHierarchySchema()));
+        jaxbUnmarshaller.setSchema(rolePermSchema);
+
+        return (Roles) jaxbUnmarshaller.unmarshal(loadPermissionHierarchy());
+    }
+
+    private InputStream loadPermissionHierarchy() {
+        return LeosPermissionAuthorityMap.class.getClassLoader().getResourceAsStream("leosPermissions.xml");
+    }
+
+    private InputStream loadPermissionHierarchySchema() {
+        return LeosPermissionAuthorityMap.class.getClassLoader().getResourceAsStream("schema/leosPermissions.xsd");
+    }
+
+    private LeosPermission getLeosPermission(String permission) {
+        try {
+            return LeosPermission.valueOf(permission);
+        } catch (IllegalArgumentException exception) {
+            LOG.error("Illegal Argument in LeosPermission : " + permission, exception);
+            return null;
+        }
+    }
+
+    public Set<LeosPermission> getPermissions(String authority) {
         return permissionMap.get(authority);
+    }
+    
+    public Set<LeosPermission> getPermissions(List<String> authorities) {
+		Set<LeosPermission> permissionDetails = new HashSet<>();
+		if (authorities != null) {
+			for (String authority : authorities) {
+				permissionDetails.addAll(permissionMap.get(authority));
+			}
+		}
+		return permissionDetails;
+	}
+
+    public List<Role> getAllRoles(){
+        return listOfRoles;
+    }
+
+    public Map<String, Role> getRoleMap() {
+        return roleMap;
     }
 }

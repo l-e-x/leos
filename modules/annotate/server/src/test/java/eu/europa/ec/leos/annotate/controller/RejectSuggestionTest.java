@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,25 +14,23 @@
 package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
-import eu.europa.ec.leos.annotate.helper.TestData;
-import eu.europa.ec.leos.annotate.helper.TestDbHelper;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.Token;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.Authorities;
+import eu.europa.ec.leos.annotate.helper.*;
+import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonSuggestionRejectSuccessResponse;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
-import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -51,38 +49,14 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class RejectSuggestionTest {
 
     private static final String ACCESS_TOKEN = "demoaccesstoken", ACCESS_TOKEN2 = "anothertoken";
     private static final String REFRESH_TOKEN = "refr", REFRESH_TOKEN2 = "refr2";
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        User theUser = new User("demo");
-        userRepos.save(theUser);
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        authService.setAuthenticatedUser(null);
-    }
+    private User user;
 
     // -------------------------------------
     // Required services and repositories
@@ -92,10 +66,8 @@ public class RejectSuggestionTest {
     private AnnotationService annotService;
 
     @Autowired
-    private AuthenticationService authService;
-
-    @Autowired
-    private AnnotationRepository annotRepos;
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
     private GroupRepository groupRepos;
@@ -115,67 +87,92 @@ public class RejectSuggestionTest {
     private MockMvc mockMvc;
 
     // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        user = new User("demo");
+        userRepos.save(user);
+        userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));
+        tokenRepos.save(new Token(user, "auth", ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
     /**
      * successfully reject an existing suggestion, expected HTTP 200 and ID of the rejected suggestion
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testRejectSuggestionOk() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be rejected later on
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_SUGGESTION));
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.ISC));
+        final String annotId = jsAnnot.getId();
 
         // send rejection request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id + "/reject")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId + "/reject")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonSuggestionRejectSuccessResponse jsResponse = SerialisationHelper.deserializeJsonSuggestionRejectSuccessResponse(responseString);
+        final JsonSuggestionRejectSuccessResponse jsResponse = SerialisationHelper.deserializeJsonSuggestionRejectSuccessResponse(responseString);
         Assert.assertNotNull(jsResponse);
-        Assert.assertEquals(id, jsResponse.getId());
+        Assert.assertEquals(annotId, jsResponse.getId());
         Assert.assertTrue(jsResponse.getRejected());
 
-        // the annotation was deleted
-        Assert.assertEquals(0, annotRepos.count());
+        // the annotation was rejected
+        Assert.assertEquals(1, annotRepos.count());
+        TestHelper.assertHasStatus(annotRepos, annotId, AnnotationStatus.REJECTED, user.getId());
     }
 
     /**
      * try rejecting a non-existing suggestion, expected HTTP 404
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testRejectSuggestionNotFound() throws Exception {
 
         // send acceptance request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/theid/reject")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/theid/reject")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 404
         result.andExpect(MockMvcResultMatchers.status().isNotFound());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
     }
@@ -184,32 +181,32 @@ public class RejectSuggestionTest {
      * try rejecting an existing annotation, which however is no suggestion
      * expected HTTP 400
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testRejectSuggestionNotOkIsNoSuggestion() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be rejected later on
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("highlight")); // -> no suggestion
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_HIGHLIGHT)); // -> no suggestion
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.EdiT));
+        final String annotId = jsAnnot.getId();
 
         // send rejection request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id + "/reject")
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId + "/reject")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
     }
@@ -218,42 +215,42 @@ public class RejectSuggestionTest {
      * try rejecting an existing suggestion, but permissions are insufficient
      * expected HTTP 404
      */
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "initialised in before-test setup function called by junit")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
     public void testRejectSuggestionNoPermission() throws Exception {
 
-        final String hypothesisUserAccount = "acct:user@domain.eu", login = "demo";
+        final String hypothesisUserAccount = "acct:user@domain.eu";
 
         // preparation: save a suggestion annotation that can be rejected later on
         JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot.setTags(Arrays.asList("suggestion"));
-        jsAnnot = annotService.createAnnotation(jsAnnot, login);
-        String id = jsAnnot.getId();
+        jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_SUGGESTION));
+        jsAnnot = annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.ISC));
+        final String annotId = jsAnnot.getId();
 
         // create another user, which however does not belong to the suggestion's group
-        User secondUser = new User("secondUser");
+        final User secondUser = new User("secondUser");
         userRepos.save(secondUser);
-        tokenRepos.save(new Token(secondUser, ACCESS_TOKEN2, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN2, LocalDateTime.now()));
+        final Token secondUserToken = new Token(secondUser, "auth", ACCESS_TOKEN2, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN2, LocalDateTime.now());
+        tokenRepos.save(secondUserToken);
 
-        Group secondGroup = new Group("secondGroupId", "second group", "description", true);
+        final Group secondGroup = new Group("secondGroupId", "second group", "description", true);
         groupRepos.save(secondGroup);
         userGroupRepos.save(new UserGroup(secondUser.getId(), secondGroup.getId()));
-        authService.setAuthenticatedUser(secondUser);
 
         // send rejection request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + id + "/reject")
-                .header("authorization", "Bearer " + ACCESS_TOKEN2);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.delete("/api/annotations/" + annotId + "/reject")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN2);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isNotFound());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // ID must have been set
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!jsResponse.getReason().isEmpty());
     }

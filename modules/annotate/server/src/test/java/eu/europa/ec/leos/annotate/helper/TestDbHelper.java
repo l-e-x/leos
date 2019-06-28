@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,30 +20,38 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Arrays;
 import java.util.List;
 
-public class TestDbHelper {
+public final class TestDbHelper {
 
-    @SuppressWarnings("unused")
-    private static Logger LOG = LoggerFactory.getLogger(TestDbHelper.class);
+    private static final Logger Log = LoggerFactory.getLogger(TestDbHelper.class);
 
+    private TestDbHelper() {
+        // utility class -> private constructor
+    }
+    
+    @SuppressWarnings("PMD.LongVariable")
     public static final String DEFAULT_GROUP_INTERNALNAME = "__world__";
 
     // clean the database by cleaning individual repositories
-    public static void cleanupRepositories(Object instance) throws Exception {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void cleanupRepositories(final Object instance) {
 
-        Class<?> clazz = instance.getClass();
+        final Class<?> clazz = instance.getClass();
 
-        List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
-        for (Field field : fields) {
+        final List<Field> fields = Arrays.asList(clazz.getDeclaredFields());
+        for (final Field field : fields) {
             // look for field being Autowired
-            List<Annotation> annots = Arrays.asList(field.getAnnotations());
+            final List<Annotation> annots = Arrays.asList(field.getAnnotations());
 
             boolean isCandidateField = false;
-            for (Annotation annot : annots) {
-                Class<? extends Annotation> annotType = annot.annotationType();
+            for (final Annotation annot : annots) {
+                final Class<? extends Annotation> annotType = annot.annotationType();
                 if (org.springframework.beans.factory.annotation.Autowired.class.isAssignableFrom(annotType)) {
                     isCandidateField = true;
                     break;
@@ -55,10 +63,10 @@ public class TestDbHelper {
             }
 
             // check if the found field is one of our repositories
-            Class<?> fieldType = field.getType();
+            final Class<?> fieldType = field.getType();
             if (fieldType.getCanonicalName().startsWith("eu.europa.ec.leos.annotate.repository.")) {
 
-                Method m = null;
+                Method method = null;
 
                 String targetMethodName = "deleteAll";
                 if (fieldType.getCanonicalName().endsWith("AnnotationRepository")) {
@@ -67,19 +75,31 @@ public class TestDbHelper {
 
                 if (!field.isAccessible()) {
                     // make private fields become callable
-                    field.setAccessible(true);
+                    AccessController.doPrivileged(new PrivilegedAction() {
+                        @Override
+                        public Object run() {
+                            field.setAccessible(true);
+                            return null;
+                        }
+                    });
                 }
-                Object fieldValue = field.get(instance); // retrieve the current instance of the field variable
-                m = fieldValue.getClass().getMethod(targetMethodName); // look for the desired method
-                m.invoke(fieldValue); // run
+
+                // retrieve the current instance of the field variable
+                try {
+                    final Object fieldValue = field.get(instance);
+                    method = fieldValue.getClass().getMethod(targetMethodName); // look for the desired method
+                    method.invoke(fieldValue); // run
+                } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+                    Log.error("Error during test cleanup", e);
+                }
             }
         }
     }
 
-    public static Group insertDefaultGroup(GroupRepository groupRepos) {
+    public static Group insertDefaultGroup(final GroupRepository groupRepos) {
 
         // insert required default group
-        Group defaultGroup = new Group(DEFAULT_GROUP_INTERNALNAME, "Public", "Group for everybody", true);
+        final Group defaultGroup = new Group(DEFAULT_GROUP_INTERNALNAME, "Public", "Group for everybody", true);
         groupRepos.save(defaultGroup);
         return defaultGroup;
     }

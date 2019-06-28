@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,10 @@
  */
 package eu.europa.ec.leos.usecases.document;
 
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
-import eu.europa.ec.leos.domain.document.LeosMetadata.MemorandumMetadata;
-import eu.europa.ec.leos.domain.document.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.document.Memorandum;
+import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
-import eu.europa.ec.leos.domain.vo.MetadataVO;
 import eu.europa.ec.leos.services.document.MemorandumService;
 import io.atlassian.fugue.Option;
 import org.apache.commons.lang3.Validate;
@@ -27,6 +26,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Component
@@ -40,6 +40,10 @@ public class MemorandumContext {
     private LeosPackage leosPackage = null;
     private Memorandum memorandum = null;
     private String purpose = null;
+    private String versionComment;
+    private String milestoneComment;
+    private String type = null;
+    private String template = null;
 
     private DocumentVO memoDocument;
 
@@ -78,6 +82,28 @@ public class MemorandumContext {
         Validate.notNull(document, "Memorandum document is required!");
         memoDocument = document;
     }
+
+    public void useVersionComment(String comment) {
+        Validate.notNull(comment, "Version comment is required!");
+        this.versionComment = comment;
+    }
+
+    public void useMilestoneComment(String milestoneComment) {
+        Validate.notNull(milestoneComment, "milestoneComment is required!");
+        this.milestoneComment = milestoneComment;
+    }
+    
+    public void useType(String type) {
+        Validate.notNull(type, "type is required!");
+        LOG.trace("Using type... [type={}]", type);
+        this.type = type;
+    }
+
+    public void usePackageTemplate(String template) {
+        Validate.notNull(template, "template is required!");
+        LOG.trace("Using template... [template={}]", template);
+        this.template = template;
+    }
     
     public Memorandum executeCreateMemorandum() {
         LOG.trace("Executing 'Create Memorandum' use case...");
@@ -88,7 +114,7 @@ public class MemorandumContext {
         Validate.isTrue(metadataOption.isDefined(), "Memorandum metadata is required!");
 
         Validate.notNull(purpose, "Memorandum purpose is required!");
-        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
+        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose).withType(type).withTemplate(template);
 
         return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
     }
@@ -112,16 +138,32 @@ public class MemorandumContext {
         LOG.trace("Executing 'Import Memorandum' use case...");
         Validate.notNull(leosPackage, "Memorandum package is required!");
         Validate.notNull(memorandum, "Memorandum template is required!");
-        MetadataVO memoMeta = memoDocument.getMetadata();
         Option<MemorandumMetadata> metadataOption = memorandum.getMetadata();
         Validate.isTrue(metadataOption.isDefined(), "Memorandum metadata is required!");
 
         Validate.notNull(purpose, "Memorandum purpose is required!");
         // TODO right now it's only needed the docPurpose and docRef, we will have to add more in the future.
-        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
-        
+        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose).withType(type).withTemplate(template);
+
         Validate.notNull(memoDocument.getSource(), "Memorandum xml is required!");
 
-        return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), memoDocument.getSource());
+        return memorandumService.createMemorandumFromContent(leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), memoDocument.getSource());
+    }
+
+    public void executeCreateMilestone() {
+        Memorandum memorandum = memorandumService.findMemorandumByPackagePath(leosPackage.getPath());
+        List<String> milestoneComments = memorandum.getMilestoneComments();
+        milestoneComments.add(milestoneComment);
+        if (memorandum.isMajorVersion()) {
+            memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum.getId(), milestoneComments);
+            LOG.info("Major version {} already present. Updated only milestoneComment for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
+        } else {
+            memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum, milestoneComments, true, versionComment);
+            LOG.info("Created major version {} for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
+        }
+    }
+    
+    public String getUpdatedMemorandumId() {
+        return memorandum.getId();
     }
 }

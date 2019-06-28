@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,7 +14,6 @@
 package eu.europa.ec.leos.web.support.vaadin;
 
 import com.google.common.eventbus.EventBus;
-import com.vaadin.server.ServiceException;
 import com.vaadin.spring.annotation.UIScope;
 import eu.europa.ec.leos.web.support.event.DeadEventLogSubscriber;
 import org.slf4j.Logger;
@@ -23,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 
 @UIScope
 @Component
@@ -32,20 +32,40 @@ public class DeadEventHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(DeadEventHandler.class);
 
-    private EventBus leosEventBus;
+    private EventBus eventBus;
+    private EventBus leosApplicationEventBus;
+    private DeadEventLogSubscriber deadEventSubscriber;
 
     @Autowired
-    public DeadEventHandler(EventBus leosEventBus){
-        this.leosEventBus = leosEventBus;
+    public DeadEventHandler(EventBus eventBus, EventBus leosApplicationEventBus){
+        this.eventBus = eventBus;
+        this.leosApplicationEventBus = leosApplicationEventBus;
     }
 
     @PostConstruct
-    public void init() throws ServiceException {
+    public void init() {
         LOG.trace("Event bus init...");
 
         // register dead event logger
-        Object deadEventSubscriber = new DeadEventLogSubscriber();
-        leosEventBus.register(deadEventSubscriber);
+        deadEventSubscriber = new DeadEventLogSubscriber();
+        if(eventBus != null){
+            eventBus.register(deadEventSubscriber);
+        }
+        if(leosApplicationEventBus != null){
+            leosApplicationEventBus.register(deadEventSubscriber);
+        }
         LOG.trace("Registered dead event logger: {}", deadEventSubscriber.getClass().getSimpleName());
+    }
+
+    @PreDestroy
+    void destroy(){
+        if(deadEventSubscriber != null){
+            if(eventBus != null ){
+                eventBus.unregister(deadEventSubscriber);
+            }
+            if(leosApplicationEventBus != null){
+                leosApplicationEventBus.unregister(deadEventSubscriber);
+            }
+        }
     }
 }

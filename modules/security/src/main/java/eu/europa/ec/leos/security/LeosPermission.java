@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,5 +22,12 @@ public enum LeosPermission {
     CAN_SUGGEST,
     CAN_MERGE_SUGGESTION,
     CAN_SHARE,
-    CAN_PRINT_LW
+    CAN_PRINT_LW,
+    CAN_PRINT_DW,
+    CAN_CREATE_MILESTONE,
+    CAN_RESTORE_PREVIOUS_VERSION,
+    CAN_ADD_REMOVE_COLLABORATOR,
+    CAN_DOWNLOAD_PROPOSAL,
+    CAN_UPLOAD,
+    CAN_SEE_SOURCE
 }

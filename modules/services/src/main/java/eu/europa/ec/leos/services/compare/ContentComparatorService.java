@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,25 +15,29 @@ package eu.europa.ec.leos.services.compare;
 
 public interface ContentComparatorService {
 
+    String ATTR_NAME = "class";
     String CONTENT_BLOCK_REMOVED_CLASS = "leos-marker-content-removed";
     String CONTENT_BLOCK_ADDED_CLASS = "leos-marker-content-added";
     String CONTENT_BLOCK_MODIFIED_CLASS = "leos-content-modified";
     String CONTENT_REMOVED_CLASS = "leos-content-removed";
     String CONTENT_ADDED_CLASS = "leos-content-new";
+    String CONTENT_SOFT_ADDED_CLASS = "leos-content-soft-new";
+    String CONTENT_SOFT_REMOVED_CLASS = "leos-content-soft-removed";
 
-    /** this service compares the two XHTML input string passed 
-     * and marks the modifed content with SPAN containing class in this interface for dispaly in single document form
-     * @param firstContent
-     * @param secondContent
-     * @return marked XHTML String
+    String DOUBLE_COMPARE_REMOVED_CLASS = "leos-double-compare-removed";
+    String DOUBLE_COMPARE_ADDED_CLASS = "leos-double-compare-added";
+    /** this service compares the two XML string in the context
+     * and marks the modifed content with SPAN containing attrName set to either removedValue or addedValue
+     * or the whole removed/added element with the same attrName in this interface for dispaly in single document form
+     * @param context of the comparison
+     * @return marked XML String
      */
-    String compareHtmlContents(String firstContent, String secondContent);
+    String compareContents(ContentComparatorContext context);
 
-    /** this service compares the two XHTML input string passed 
+    /** this service compares the two XML input string in the context
      * and marks the modifed content with SPAN containing class in this interface for dispaly in two column format
-     * @param firstContent
-     * @param secondContent
-     * @return two marked XHTML Strings in array
+     * @param context of the comparison
+     * @return two marked XML Strings in array
      */
-    String[] twoColumnsCompareHtmlContents(String firstContent, String secondContent);
+    String[] twoColumnsCompareContents(ContentComparatorContext context);
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -14,21 +14,13 @@
     See the Licence for the specific language governing permissions and limitations under the Licence.
 
 -->
-<!-- Copyright 2017 European Commission Licensed under the EUPL, Version 
-    1.2 or – as soon they will be approved by the European Commission - subsequent 
-    versions of the EUPL (the "Licence"); You may not use this work except in 
-    compliance with the Licence. You may obtain a copy of the Licence at: https://joinup.ec.europa.eu/software/page/eupl 
-    Unless required by applicable law or agreed to in writing, software distributed 
-    under the Licence is distributed on an "AS IS" basis, WITHOUT WARRANTIES 
-    OR CONDITIONS OF ANY KIND, either express or implied. See the Licence for 
-    the specific language governing permissions and limitations under the Licence. -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>leos-modules</artifactId>
-        <version>2.0.0</version>
+        <version>2.1.0</version>
     </parent>
 
     <!-- This would generate a warning but it is needed to generate different artifact for cn/os/ec till we find a better way-->
@@ -41,7 +33,7 @@
 
     <properties>
         <!-- Project -->
-        <project.final.name>leos-pilot-web</project.final.name>
+        <project.final.name>leos-web</project.final.name>
     </properties>
 
     <dependencies>
@@ -64,11 +56,6 @@
         <dependency>
             <groupId>eu.europa.ec.digit.leos.pilot</groupId>
             <artifactId>leos-services</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>eu.europa.ec.digit.leos.pilot</groupId>
-            <artifactId>leos-cmis</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -98,50 +85,15 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
         </dependency>
+        <!-- Apache library used by Spring CommonsMultipartResolver -->
+        <dependency>
+                <groupId>commons-fileupload</groupId>
+                <artifactId>commons-fileupload</artifactId>
+        </dependency>
     </dependencies>
     
-    <profiles>
-        <!-- EC Instance -->
-        <profile>
-            <id>instance-ec</id>
-            <activation>
-                <property>
-                    <name>instance</name>
-                    <value>ec</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>eu.europa.ec.digit.leos.pilot</groupId>
-                    <artifactId>leos-commission</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <!-- CN Instance -->
-        <profile>
-            <id>instance-cn</id>
-            <activation>
-                <property>
-                    <name>instance</name>
-                    <value>cn</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>eu.europa.ec.digit.leos.pilot</groupId>
-                    <artifactId>leos-council</artifactId>
-                    <version>${project.version}</version>
-                </dependency>
-            </dependencies>
-        </profile>
-    </profiles>
-    
     <build>
-        <finalName>${project.final.name}-${leos.build.instance}-${leos.build.env}</finalName>
-        <filters>
-            <filter>src/main/filters/leos-build.properties</filter>
-        </filters>
+        <finalName>${project.final.name}-${leos.build.instance}</finalName>
         <resources>
             <resource>
                 <!-- Filtered resource files. -->
@@ -194,6 +146,7 @@
                             <includes>
                                 <include>web.xml</include>
                                 <include>weblogic.xml</include>
+                                <include>dispatcher-servlet.xml</include>
                             </includes>
                             <targetPath>WEB-INF</targetPath>
                         </resource>
@@ -212,14 +165,9 @@
                 <artifactId>jetty-maven-plugin</artifactId>
                 <configuration>
                     <jettyXml>src/etc/jetty/jetty.xml</jettyXml>
-                    <loginServices>
-                        <loginService implementation="org.eclipse.jetty.security.HashLoginService">
-                            <name>default</name>
-                            <config>src/etc/jetty/realm.properties</config>
-                        </loginService>
-                    </loginServices>
+                    <contextXml>src/etc/jetty/jetty-context.xml</contextXml>
                     <webApp>
-                        <contextPath>/${project.web.context.path}</contextPath>
+                        <contextPath>/${leos.web.context.path}</contextPath>
                         <extraClasspath>../config/target/generated-config</extraClasspath>
                         <descriptor>target/${project.build.finalName}/WEB-INF/web.xml</descriptor>
                     </webApp>
@@ -232,7 +180,7 @@
                 <groupId>org.apache.tomcat.maven</groupId>
                 <artifactId>tomcat7-maven-plugin</artifactId>
                 <configuration>
-                    <path>/${project.web.context.path}</path>
+                    <path>/${leos.web.context.path}</path>
                     <server>leosServer</server>
                     <contextFile>src/etc/tomcat/context.xml</contextFile>
                     <tomcatUsers>src/etc/tomcat/tomcat-users.xml</tomcatUsers>

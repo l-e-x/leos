@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/css" href="renditions/html/css/bill.css"?>
+<akomaNtoso xmlns="http://docs.oasis-open.org/legaldocml/ns/akn/3.0" xmlns:leos="urn:eu:europa:ec:leos"
+            xmlns:xml="http://www.w3.org/XML/1998/namespace">
+    <bill name="REG">
+        <body leos:origin="ec" xml:id="body">
+            <article leos:origin="ec" xml:id="art_1" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" leos:editable="false" xml:id="art_1__num">Article 1</num>
+                <heading leos:origin="ec" xml:id="art_1__heading">Scope</heading>
+                <paragraph leos:origin="ec" xml:id="deleted_art_1__para_1" leos:editable="false" leos:deletable="false"
+                           leos:softaction="del" leos:softactionroot="true" leos:softuser="jane"
+                           leos:softdate="2019-04-26T11:05:54.006+02:00">
+                    <num leos:origin="ec" xml:id="deleted_art_1__para_1__num">1.</num>
+                    <subparagraph leos:origin="ec" xml:id="deleted_art_1_ftJWXT" leos:editable="false"
+                                  leos:deletable="false" leos:softaction="del" leos:softactionroot="false"
+                                  leos:softuser="jane" leos:softdate="2019-04-26T11:05:54.006+02:00">
+                        <content leos:origin="ec" xml:id="deleted_art_1__para_1__content">
+                            <p leos:origin="ec" xml:id="deleted_art_1__para_1__content__p">art1-par1 (sub) </p>
+                        </content>
+                    </subparagraph>
+                    <list leos:origin="ec" xml:id="deleted_art_1_1w6KRX" leos:editable="false" leos:deletable="false"
+                          leos:softaction="del" leos:softactionroot="false" leos:softuser="jane"
+                          leos:softdate="2019-04-26T11:05:54.006+02:00">
+                        <point leos:origin="ec" xml:id="deleted_art_1_06zx3M" leos:editable="false"
+                               leos:deletable="false" leos:softaction="del" leos:softactionroot="false"
+                               leos:softuser="jane" leos:softdate="2019-04-26T11:05:54.006+02:00">
+                            <num leos:origin="ec" xml:id="deleted_art_1_uUP9rw">(a)</num>
+                            <content leos:origin="ec" xml:id="deleted_art_1_CXRzLe">
+                                <p leos:origin="ec" xml:id="deleted_art_1_KiKmdt">point a</p>
+                            </content>
+                        </point>
+                        <point leos:softmove_label="MOVED to Article 2, first paragraph, point (-a)" leos:origin="ec"
+                               xml:id="moved_art_1_wLjAPO" leos:editable="false" leos:deletable="false"
+                               leos:softaction="move_to" leos:softactionroot="true" leos:softmove_to="art_1_wLjAPO"
+                               leos:softuser="jane" leos:softdate="2019-04-26T11:05:54.006+02:00">
+                            <num leos:origin="ec" xml:id="moved_art_1_K7mffV">(b)</num>
+                            <content leos:origin="ec" xml:id="moved_art_1_qeHeVe">
+                                <p leos:origin="ec" xml:id="moved_art_1_QthCUl">point blast subparagraph</p>
+                            </content>
+                        </point>
+                    </list>
+                </paragraph>
+            </article>
+            <article leos:origin="ec" xml:id="art_2" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" leos:editable="false" xml:id="art_2__num">Article 2</num>
+                <heading leos:origin="ec" xml:id="art_2__heading">Entry into force</heading>
+                <paragraph leos:origin="ec" xml:id="art_2__para_1">
+                    <subparagraph leos:origin="ec" xml:id="art_2_SNi868">
+                        <content leos:origin="ec" xml:id="art_2__para_1__content">
+                            <p leos:origin="ec" xml:id="art_2__para_1__content__p">This Regulation shall enter into
+                                force on the [...] day following that of its publication in the <i leos:origin="ec"
+                                                                                                   xml:id="art_2__para_1__content__p__i">
+                                    Official Journal of the European Union</i>.
+                            </p>
+                        </content>
+                    </subparagraph>
+                    <list leos:origin="ec" xml:id="art_2_lKHtUF">
+                        <point leos:softmove_label="MOVED from Article 1(1), point (b)" leos:origin="ec"
+                               xml:id="art_1_wLjAPO" leos:softaction="move_from" leos:softactionroot="true"
+                               leos:softmove_from="moved_art_1_wLjAPO" leos:softuser="jane"
+                               leos:softdate="2019-04-26T11:05:54.006+02:00">
+                            <num leos:origin="cn" xml:id="art_1_K7mffV">(-a)</num>
+                            <content leos:origin="ec" xml:id="art_1_qeHeVe">
+                                <p leos:origin="ec" xml:id="art_1_QthCUl">point blast subparagraph</p>
+                            </content>
+                        </point>
+                        <point leos:origin="ec" xml:id="art_2_h6TTYH">
+                            <num leos:origin="ec" xml:id="art_2_f5PbjR">(a)</num>
+                            <content leos:origin="ec" xml:id="art_2_Mwb6MZ">
+                                <p leos:origin="ec" xml:id="art_2_kqoeBc">art 2 - point a</p>
+                            </content>
+                        </point>
+                        <point leos:origin="ec" xml:id="art_2_9hY5ey">
+                            <num leos:origin="ec" xml:id="art_2_h3SMrc">(b)</num>
+                            <content leos:origin="ec" xml:id="art_2_8w88zp">
+                                <p leos:origin="ec" xml:id="art_2_U7akqK">art 2 - point b</p>
+                            </content>
+                        </point>
+                    </list>
+                </paragraph>
+                <paragraph leos:origin="ec" xml:id="art_2_fPwxSm">
+                    <content leos:origin="ec" xml:id="art_2_VwuEMh">
+                        <p leos:origin="ec" xml:id="art_2_Z4lBjI">Second unnumbered paragraph </p>
+                    </content>
+                </paragraph>
+            </article>
+            <article leos:origin="ec" xml:id="akn_art_B6BGPx" leos:editable="false" leos:deletable="false">
+                <num leos:origin="ec" leos:editable="false" xml:id="akn_art_B6BGPx_Kf5Fo6">Article 3</num>
+                <heading leos:origin="ec" xml:id="akn_art_B6BGPx_EXuYU0">Article heading...</heading>
+                <paragraph leos:origin="ec" xml:id="akn_art_B6BGPx-par1">
+                    <num leos:origin="ec" xml:id="akn_art_B6BGPx_CEEgdz">1.</num>
+                    <subparagraph leos:origin="ec" xml:id="akn_art_B6BGPx_LjgRwY">
+                        <content leos:origin="ec" xml:id="akn_art_B6BGPx_tAYgzk">
+                            <p leos:origin="ec" xml:id="akn_art_B6BGPx_S6dVOu">art 3 - par1 (sub)</p>
+                        </content>
+                    </subparagraph>
+                    <list leos:origin="ec" xml:id="akn_art_B6BGPx_patRZP">
+                        <point leos:origin="ec" xml:id="akn_art_B6BGPx_EFkmBp">
+                            <num leos:origin="ec" xml:id="akn_art_B6BGPx_55WP4L">(a)</num>
+                            <alinea leos:origin="ec" xml:id="akn_art_B6BGPx_dS0ZVD">
+                                <content leos:origin="ec" xml:id="akn_art_B6BGPx_LD9GxL">
+                                    <p leos:origin="ec" xml:id="akn_art_B6BGPx_GzpWwi">art3- point a</p>
+                                </content>
+                            </alinea>
+                            <list leos:origin="ec" xml:id="akn_art_B6BGPx_CKBXAf">
+                                <point leos:origin="ec" xml:id="akn_art_B6BGPx_oHLYyx">
+                                    <num leos:origin="ec" xml:id="akn_art_B6BGPx_APMWlv">(1)</num>
+                                    <content leos:origin="ec" xml:id="akn_art_B6BGPx_YoyUYX">
+                                        <p leos:origin="ec" xml:id="akn_art_B6BGPx_xW04jL">art 3- point (1)</p>
+                                    </content>
+                                </point>
+                                <point leos:origin="ec" xml:id="akn_art_B6BGPx_JagOyM">
+                                    <num leos:origin="ec" xml:id="akn_art_B6BGPx_bPwF1M">(2)</num>
+                                    <content leos:origin="ec" xml:id="akn_art_B6BGPx_vhsG38">
+                                        <p leos:origin="ec" xml:id="akn_art_B6BGPx_IO1Uhw">art 3- point (2)</p>
+                                    </content>
+                                </point>
+                            </list>
+                        </point>
+                        <point leos:origin="ec" xml:id="akn_art_B6BGPx_T4eNZ4">
+                            <num leos:origin="ec" xml:id="akn_art_B6BGPx_1Bb0tt">(b)</num>
+                            <content leos:origin="ec" xml:id="akn_art_B6BGPx_estWbD">
+                                <p leos:origin="ec" xml:id="akn_art_B6BGPx_lwQzwj">art3 - point b</p>
+                            </content>
+                        </point>
+                    </list>
+                </paragraph>
+            </article>
+        </body>
+
+    </bill>
+</akomaNtoso>

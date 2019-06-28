@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -76,7 +76,7 @@ define(function testHierarchicalElementTransformer(require) {
                             akn : "leos:editable",
                             html : "contenteditable"
                         }, {
-                            akn : "GUID",
+                            akn : "xml:id",
                             html : "id"
                         }, {
                             html : "data-akn-name=aknUnorderedList"
@@ -106,13 +106,13 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1])).toEqual(
-                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"},{"from":"data-akn-attr-editable","to":"leos:editable","action":"passAttributeTransformer"},{"from":"data-akn-attr-softaction","to":"leos:softaction","action":"passAttributeTransformer"},{"from":"data-akn-attr-softactionroot","to":"leos:softactionroot","action":"passAttributeTransformer"},{"from":"data-akn-attr-softuser","to":"leos:softuser","action":"passAttributeTransformer"},{"from":"data-akn-attr-softdate","to":"leos:softdate","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_to","to":"leos:softmove_to","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_from","to":"leos:softmove_from","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_label","to":"leos:softmove_label","action":"passAttributeTransformer"},{"from":"data-akn-attr-softtrans_from","to":"leos:softtrans_from","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/content/mp","toChild":"text","toChildTextValue":"fdsafsa"}');
@@ -148,17 +148,17 @@ define(function testHierarchicalElementTransformer(require) {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1]))
                                                                     .toEqual(
-                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"},{"from":"data-akn-attr-editable","to":"leos:editable","action":"passAttributeTransformer"},{"from":"data-akn-attr-softaction","to":"leos:softaction","action":"passAttributeTransformer"},{"from":"data-akn-attr-softactionroot","to":"leos:softactionroot","action":"passAttributeTransformer"},{"from":"data-akn-attr-softuser","to":"leos:softuser","action":"passAttributeTransformer"},{"from":"data-akn-attr-softdate","to":"leos:softdate","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_to","to":"leos:softmove_to","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_from","to":"leos:softmove_from","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_label","to":"leos:softmove_label","action":"passAttributeTransformer"},{"from":"data-akn-attr-softtrans_from","to":"leos:softtrans_from","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 3) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"fds"}');
@@ -167,10 +167,10 @@ define(function testHierarchicalElementTransformer(require) {
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
                                                             } else if (mapToChildProductsCounter === 5) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"xml:id","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 6) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 7) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
@@ -214,17 +214,17 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1])).toEqual(
-                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                    '[{"toPath":"list/indent","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"},{"from":"data-akn-attr-editable","to":"leos:editable","action":"passAttributeTransformer"},{"from":"data-akn-attr-softaction","to":"leos:softaction","action":"passAttributeTransformer"},{"from":"data-akn-attr-softactionroot","to":"leos:softactionroot","action":"passAttributeTransformer"},{"from":"data-akn-attr-softuser","to":"leos:softuser","action":"passAttributeTransformer"},{"from":"data-akn-attr-softdate","to":"leos:softdate","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_to","to":"leos:softmove_to","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_from","to":"leos:softmove_from","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_label","to":"leos:softmove_label","action":"passAttributeTransformer"},{"from":"data-akn-attr-softtrans_from","to":"leos:softtrans_from","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 3) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"fds"}');
@@ -233,10 +233,10 @@ define(function testHierarchicalElementTransformer(require) {
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
                                                             } else if (mapToChildProductsCounter === 5) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 6) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 7) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"sa"}');
@@ -280,22 +280,22 @@ define(function testHierarchicalElementTransformer(require) {
                                                         mapToProducts : function() {
                                                             expect(JSON.stringify(arguments[1]))
                                                                     .toEqual(
-                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
+                                                                            '[{"toPath":"list/indent","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"},{"from":"data-akn-attr-editable","to":"leos:editable","action":"passAttributeTransformer"},{"from":"data-akn-attr-softaction","to":"leos:softaction","action":"passAttributeTransformer"},{"from":"data-akn-attr-softactionroot","to":"leos:softactionroot","action":"passAttributeTransformer"},{"from":"data-akn-attr-softuser","to":"leos:softuser","action":"passAttributeTransformer"},{"from":"data-akn-attr-softdate","to":"leos:softdate","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_to","to":"leos:softmove_to","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_from","to":"leos:softmove_from","action":"passAttributeTransformer"},{"from":"data-akn-attr-softmove_label","to":"leos:softmove_label","action":"passAttributeTransformer"},{"from":"data-akn-attr-softtrans_from","to":"leos:softtrans_from","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num","attrs":[{"from":"data-akn-num-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-num-origin","to":"leos:origin","action":"passAttributeTransformer"}]},{"toPath":"list/indent/num/text","fromAttribute":"data-akn-num"}]');
                                                         },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"data-akn-alinea-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-alinea-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"list/indent","toChild":"alinea","attrs":[{"from":"id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 3) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea","toChild":"content","attrs":[{"from":"data-akn-wrapped-content-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-wrapped-content-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 4) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
-                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"GUID","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
+                                                                        '{"toPath":"list/indent/alinea/content","toChild":"mp","attrs":[{"from":"data-akn-mp-id","to":"xml:id","action":"passAttributeTransformer"},{"from":"data-mp-origin","to":"leos:origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 5) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual(
                                                                         '{"toPath":"list/indent/alinea/content/mp","toChild":"text","toChildTextValue":"Text"}');
@@ -331,7 +331,7 @@ define(function testHierarchicalElementTransformer(require) {
                                     function() {
                                         it("Element only with inline content.", function() {
                                             var elementToBeTransformed = fromFragmentToElement(ckEditorFragmentFactory
-                                                    .getCkFragmentForHtml("<list><indent><num>1</num><content><mp>fdsafsa</mp></content></indent></list>"));
+                                                    .getCkFragmentForHtml("<list><indent><num>-</num><content><mp>fdsafsa</mp></content></indent></list>"));
                                             var toAction = transformationConfig.transformer.to.action;
                                             var mapToProductsCounter = 0;
                                             var mapToChildProductsCounter = 0;
@@ -339,13 +339,13 @@ define(function testHierarchicalElementTransformer(require) {
                                             var fragmentMock = {
                                                 mapToProducts : function() {
                                                     if(mapToProductsCounter === 0) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"xml:id","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToProductsCounter === 1) {
                                                         expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
                                                     } else if (mapToProductsCounter === 2) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-content-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-content-origin","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"xml:id","to":"data-akn-content-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-content-origin","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToProductsCounter === 3) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"xml:id","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
                                                     } else {
                                                      // expect not to be called for mapToProductsCounter > 3
                                                         expect(true).toBe(false);
@@ -354,7 +354,7 @@ define(function testHierarchicalElementTransformer(require) {
                                                 },
                                                 mapToChildProducts : function() {
                                                     if (mapToChildProductsCounter === 0) {
-                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
+                                                        expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"xml:id","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"},{"from":"leos:editable","to":"data-akn-attr-editable","action":"passAttributeTransformer"},{"from":"leos:softaction","to":"data-akn-attr-softaction","action":"passAttributeTransformer"},{"from":"leos:softactionroot","to":"data-akn-attr-softactionroot","action":"passAttributeTransformer"},{"from":"leos:softuser","to":"data-akn-attr-softuser","action":"passAttributeTransformer"},{"from":"leos:softdate","to":"data-akn-attr-softdate","action":"passAttributeTransformer"},{"from":"leos:softmove_to","to":"data-akn-attr-softmove_to","action":"passAttributeTransformer"},{"from":"leos:softmove_from","to":"data-akn-attr-softmove_from","action":"passAttributeTransformer"},{"from":"leos:softmove_label","to":"data-akn-attr-softmove_label","action":"passAttributeTransformer"},{"from":"leos:softtrans_from","to":"data-akn-attr-softtrans_from","action":"passAttributeTransformer"}]}');
                                                     } else if (mapToChildProductsCounter === 1) {
                                                         expect(JSON.stringify(arguments[1])).toEqual(
                                                                 '{"toPath":"ul/li","toChild":"text","toChildTextValue":"fdsafsa"}');
@@ -380,10 +380,10 @@ define(function testHierarchicalElementTransformer(require) {
                                             });
                                         });
 
-                                        it("Element only with inline content, block content and nested inline content.",
+                                        it("Element only with inline content, nested inline content and block content.",
                                                 function() {
                                                     var elementToBeTransformed = fromFragmentToElement(ckEditorFragmentFactory
-                                                            .getCkFragmentForHtml("<list><indent><num>1</num><alinea><content><mp>fd<b>saf</b>sa</mp></content></alinea><block>fdas</block></indent></list>"));
+                                                            .getCkFragmentForHtml("<list><indent><num>-</num><alinea><content><mp>fd<b>saf</b>sa</mp></content></alinea><block>fdas</block></indent></list>"));
                                                     var toAction = transformationConfig.transformer.to.action;
                                                     var mapToProductsCounter = 0;
                                                     var mapToChildProductsCounter = 0;
@@ -392,7 +392,7 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                             mapToProducts : function() {
                                                                 if(mapToProductsCounter === 0) {
-                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"xml:id","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
                                                                 } else if (mapToProductsCounter === 1) {
                                                                     expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
                                                                 } else if (mapToProductsCounter === 2) {
@@ -407,9 +407,9 @@ define(function testHierarchicalElementTransformer(require) {
                                                             },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"xml:id","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"},{"from":"leos:editable","to":"data-akn-attr-editable","action":"passAttributeTransformer"},{"from":"leos:softaction","to":"data-akn-attr-softaction","action":"passAttributeTransformer"},{"from":"leos:softactionroot","to":"data-akn-attr-softactionroot","action":"passAttributeTransformer"},{"from":"leos:softuser","to":"data-akn-attr-softuser","action":"passAttributeTransformer"},{"from":"leos:softdate","to":"data-akn-attr-softdate","action":"passAttributeTransformer"},{"from":"leos:softmove_to","to":"data-akn-attr-softmove_to","action":"passAttributeTransformer"},{"from":"leos:softmove_from","to":"data-akn-attr-softmove_from","action":"passAttributeTransformer"},{"from":"leos:softmove_label","to":"data-akn-attr-softmove_label","action":"passAttributeTransformer"},{"from":"leos:softtrans_from","to":"data-akn-attr-softtrans_from","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"xml:id","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","toChild":"text","toChildTextValue":"fd"}');
                                                             } else if (mapToChildProductsCounter === 3) {
@@ -426,7 +426,7 @@ define(function testHierarchicalElementTransformer(require) {
                                                             if (mapToNestedChildProductCounter === 0) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p"}');
                                                             } else if (mapToNestedChildProductCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li"}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"to":"data-akn-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-content-origin","toValue":"","action":"passAttributeTransformer"}]}');
                                                             }  else {
                                                                 // expect not to be called for mapToChildProductsCounter > 2
                                                                 expect(true).toBe(false);
@@ -455,7 +455,7 @@ define(function testHierarchicalElementTransformer(require) {
                                                     var fragmentMock = {
                                                             mapToProducts : function() {
                                                                 if(mapToProductsCounter === 0) {
-                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"GUID","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
+                                                                    expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","attrs":[{"from":"xml:id","to":"data-akn-num-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-num-origin","action":"passAttributeTransformer"}]}');
                                                                 } else if (mapToProductsCounter === 1) {
                                                                     expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toAttribute":"data-akn-num"}');
                                                                 } else if (mapToProductsCounter === 2) {
@@ -474,9 +474,9 @@ define(function testHierarchicalElementTransformer(require) {
                                                             },
                                                         mapToChildProducts : function() {
                                                             if (mapToChildProductsCounter === 0) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"GUID","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul","toChild":"li","attrs":[{"from":"xml:id","to":"id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-origin","action":"passAttributeTransformer"},{"from":"leos:editable","to":"data-akn-attr-editable","action":"passAttributeTransformer"},{"from":"leos:softaction","to":"data-akn-attr-softaction","action":"passAttributeTransformer"},{"from":"leos:softactionroot","to":"data-akn-attr-softactionroot","action":"passAttributeTransformer"},{"from":"leos:softuser","to":"data-akn-attr-softuser","action":"passAttributeTransformer"},{"from":"leos:softdate","to":"data-akn-attr-softdate","action":"passAttributeTransformer"},{"from":"leos:softmove_to","to":"data-akn-attr-softmove_to","action":"passAttributeTransformer"},{"from":"leos:softmove_from","to":"data-akn-attr-softmove_from","action":"passAttributeTransformer"},{"from":"leos:softmove_label","to":"data-akn-attr-softmove_label","action":"passAttributeTransformer"},{"from":"leos:softtrans_from","to":"data-akn-attr-softtrans_from","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 1) {
-                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"GUID","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
+                                                                expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li","toChild":"p","attrs":[{"to":"id","toValue":"","action":"passAttributeTransformer"},{"to":"data-origin","toValue":"","action":"passAttributeTransformer"},{"to":"data-akn-wrapped-content-id","toValue":"","action":"passAttributeTransformer"},{"to":"data-wrapped-content-origin","toValue":"","action":"passAttributeTransformer"},{"from":"xml:id","to":"data-akn-mp-id","action":"passAttributeTransformer"},{"from":"leos:origin","to":"data-mp-origin","action":"passAttributeTransformer"}]}');
                                                             } else if (mapToChildProductsCounter === 2) {
                                                                 expect(JSON.stringify(arguments[1])).toEqual('{"toPath":"ul/li/p","toChild":"text","toChildTextValue":"Text"}');
                                                             } else {

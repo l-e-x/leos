@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,8 @@ package eu.europa.ec.leos.services.support.xml.ref;
 
 import com.google.common.base.Stopwatch;
 import com.ximpleware.*;
+import eu.europa.ec.leos.services.support.xml.VTDUtils;
+import eu.europa.ec.leos.services.support.xml.XmlHelper;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,8 @@ public class TreeHelper {
         for (Ref ref : refs) {
             AutoPilot ap = new AutoPilot(vtdNav);
             try {
-                ap.selectXPath(String.format("//*[@%s = '%s']", "GUID", ref.getHref()));
+                ap.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+                ap.selectXPath(String.format("//*[@%s = '%s']", "xml:id", ref.getHref()));
                 if (ap.evalXPath() == -1) {
                     //probably it is broken reference
                     LOG.debug("Element with id: {} does not exists. Skipping", ref.getHref());
@@ -94,7 +97,7 @@ public class TreeHelper {
         return root;
     }
 
-    static TreeNode find(TreeNode start, Function<TreeNode, Object> condition, Object value) {
+    public static TreeNode find(TreeNode start, Function<TreeNode, Object> condition, Object value) {
         if (start == null) {
             return null;
         }
@@ -127,7 +130,7 @@ public class TreeHelper {
         return leaves;
     }
 
-    private static final Pattern idPattern = Pattern.compile("\\s(GUID)(\\s)*=(\\s)*\"(.+?)\"");
+    private static final Pattern idPattern = Pattern.compile("\\s(xml:id)(\\s)*=(\\s)*\"(.+?)\"");
 
     static TreeNode createNode(VTDNav vtdNav, TreeNode parent, int depth) throws Exception {
         try {
@@ -187,7 +190,8 @@ public class TreeHelper {
         int currentIndex = vtdNav.getCurrentIndex();
         try {
             AutoPilot ap = new AutoPilot(vtdNav);
-            ap.selectXPath("//*[@GUID = '" + idAttributeValue + "']");
+            ap.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            ap.selectXPath("//*[@xml:id = '" + idAttributeValue + "']");
             if (ap.evalXPath() != -1) {
                 ancestorsIds.add(idAttributeValue);
                 /* Skip current element */
@@ -195,7 +199,7 @@ public class TreeHelper {
                     return ancestorsIds;
                 }
                 do {
-                    ap.selectAttr("GUID");
+                    ap.selectAttr("xml:id");
                     int i = -1;
                     String idValue = "";
                     if ((i = ap.iterateAttr()) != -1) {
@@ -220,10 +224,15 @@ public class TreeHelper {
         vtdNav.push();
         int childSeq = 0;
         try {
+            if (VTDUtils.toBeSkippedForNumbering(vtdNav)) {
+                childSeq++;
+            }
             do {
                 if (type == null || type.equals(vtdNav.toString(vtdNav.getCurrentIndex()))) {
                     //this considers elements of same type only.
-                    childSeq++;
+                    if (!VTDUtils.toBeSkippedForNumbering(vtdNav)) {
+                        childSeq++;
+                    }
                 }
             } while (vtdNav.toElement(VTDNav.PREV_SIBLING));
         } catch (Exception e) {
@@ -240,7 +249,7 @@ public class TreeHelper {
             if (contentNavigator.toElement(VTDNav.FIRST_CHILD)) {
                 do {
                     String childTag = contentNavigator.toString(contentNavigator.getCurrentIndex());
-                    if ("num".equalsIgnoreCase(childTag)) {
+                    if (XmlHelper.NUM.equalsIgnoreCase(childTag)) {
                         //get content
                         return parseNum(getContent(contentNavigator));
                     }

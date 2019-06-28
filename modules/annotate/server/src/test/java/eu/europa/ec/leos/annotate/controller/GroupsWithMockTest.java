@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,10 +16,12 @@ package eu.europa.ec.leos.annotate.controller;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.controllers.GroupApiController;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.user.JsonGroupWithDetails;
 import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.GroupService;
+import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,22 +47,10 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class GroupsWithMockTest {
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() {
-
-        MockitoAnnotations.initMocks(this);
-
-        StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(groupController);
-        this.mockMvc = builder.build();
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -75,9 +65,23 @@ public class GroupsWithMockTest {
 
     // needs to be mocked also in order to be available at all
     @Mock
-    private AuthenticationService authenticationService;
+    private AuthenticatedUserStore authStore;
+    @Mock
+    private AuthenticationService authService;
 
     private MockMvc mockMvc;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        final StandaloneMockMvcBuilder builder = MockMvcBuilders.standaloneSetup(groupController);
+        this.mockMvc = builder.build();
+    }
 
     // -------------------------------------
     // Tests
@@ -86,7 +90,7 @@ public class GroupsWithMockTest {
      * check that at least an empty list is returned in case the GroupService has problems, expected HTTP 200
      */
     @Test
-    @SuppressFBWarnings(value = {"UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR",
+    @SuppressFBWarnings(value = {SpotBugsAnnotations.FieldNotInitialized,
             "NP_NULL_PARAM_DEREF_ALL_TARGETS_DANGEROUS"}, justification = "Initialisation is done in function that is run before each test; passing null is done for testing purposes")
     public void testGetGroupsGetsNull() throws Exception {
 
@@ -95,19 +99,20 @@ public class GroupsWithMockTest {
         Mockito.when(groupService.getUserGroupsAsJson(null)).thenReturn(null);
 
         // send group retrieval request - without authorization header
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
-        Mockito.when(authenticationService.getUserLogin(null)).thenReturn(null); // note: this works although the getUserLogin method is not called with null
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
+        Mockito.when(authStore.getUserInfo()).thenReturn(null);
+        Mockito.when(authService.getUserLogin(null)).thenReturn(null);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the empty group list was returned
-        List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
+        final List<JsonGroupWithDetails> jsResponse = SerialisationHelper.deserializeJsonGroupWithDetails(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(0, jsResponse.size());
     }
@@ -116,27 +121,27 @@ public class GroupsWithMockTest {
      * provoke error in /groups request by making a service throw an exception; expect HTTP 400
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetGroupsThrowsExceptions() throws Exception {
 
         final String authority = "myauthority";
 
         // send group retrieval request - without authorization header
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/groups?authority=" + authority + "&expand=ignore&document_uri=ignore");
 
         // we throw any exception to provoke running through catch block of controller method
-        Mockito.when(groupService.getUserGroupsAsJson(null)).thenThrow(new NullPointerException());
+        Mockito.when(groupService.getUserGroupsAsJson(null)).thenThrow(new IllegalArgumentException());
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the empty group list was returned
-        JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertFalse(StringUtils.isEmpty(jsResponse.getReason()));
     }

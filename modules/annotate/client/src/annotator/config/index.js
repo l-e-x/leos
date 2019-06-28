@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -48,8 +48,10 @@ function configFrom(window_) {
     leosDocumentRootNode: settings.hostPageSetting('leosDocumentRootNode'), //LEOS Change
     ignoredTags: settings.hostPageSetting('ignoredTags', {defaultValue: []}), //LEOS Change
     allowedSelectorTags: settings.hostPageSetting('allowedSelectorTags', {defaultValue: '*'}), //LEOS Change
-    editableAttribute: settings.hostPageSetting('editableAttribute', {defaultValue: ''}), // LEOS Change
-    notAllowedSuggestSelector: settings.hostPageSetting('notAllowedSuggestSelector', {defaultValue: '*'}) // LEOS Change
+    editableSelector: settings.hostPageSetting('editableSelector', {defaultValue: ''}), // LEOS Change
+    notAllowedSuggestSelector: settings.hostPageSetting('notAllowedSuggestSelector', {defaultValue: '*'}), // LEOS Change
+    displayMetadataCondition: settings.hostPageSetting('displayMetadataCondition', {defaultValue: {}}), // LEOS Change
+    readOnly: settings.hostPageSetting('readOnly', {defaultValue: 'false'}) // LEOS Change
   };
 }
 

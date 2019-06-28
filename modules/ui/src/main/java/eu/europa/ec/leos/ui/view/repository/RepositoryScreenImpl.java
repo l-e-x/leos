@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -24,18 +24,17 @@ import com.vaadin.v7.data.util.converter.Converter;
 import com.vaadin.v7.ui.HorizontalLayout;
 import com.vaadin.v7.ui.TextField;
 import com.vaadin.v7.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
+
 import eu.europa.ec.leos.domain.common.Result;
 import eu.europa.ec.leos.domain.vo.ValidationVO;
+import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.model.RepositoryType;
-import eu.europa.ec.leos.ui.wizard.document.CreateDocumentWizard;
 import eu.europa.ec.leos.ui.wizard.document.UploadDocumentWizard;
-import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.web.event.view.repository.*;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.component.card.CardHolder;
 import eu.europa.ec.leos.web.ui.component.card.DataController;
 import eu.europa.ec.leos.web.ui.component.card.DocumentCard;
@@ -69,6 +68,7 @@ abstract class RepositoryScreenImpl extends HorizontalLayout implements Reposito
     protected CardHolder cardHolder;
 
     protected final SecurityContext securityContext;
+    protected final LeosPermissionAuthorityMapHelper authorityMapHelper;
     protected final EventBus eventBus;
     protected final MessageHelper messageHelper;
     protected final LanguageHelper langHelper;
@@ -76,7 +76,7 @@ abstract class RepositoryScreenImpl extends HorizontalLayout implements Reposito
     protected DataController dataController;
 
     RepositoryScreenImpl(SecurityContext securityContext, EventBus eventBus,
-                         MessageHelper messageHelper, LanguageHelper langHelper) {
+                         MessageHelper messageHelper, LanguageHelper langHelper, LeosPermissionAuthorityMapHelper authorityMapHelper) {
         LOG.trace("Initializing repository screen...");
         Validate.notNull(securityContext, "SecurityContext must not be null!");
         this.securityContext = securityContext;
@@ -86,6 +86,7 @@ abstract class RepositoryScreenImpl extends HorizontalLayout implements Reposito
         this.messageHelper = messageHelper;
         Validate.notNull(langHelper, "LanguageHelper must not be null!");
         this.langHelper = langHelper;
+        this.authorityMapHelper = authorityMapHelper;
 
         Design.read(this);
         initStaticData();

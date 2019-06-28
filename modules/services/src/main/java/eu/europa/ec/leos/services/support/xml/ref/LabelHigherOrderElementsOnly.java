@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.services.support.xml.ref;
 
+import eu.europa.ec.leos.i18n.LanguageHelper;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -22,9 +24,9 @@ import java.util.*;
 public class LabelHigherOrderElementsOnly extends LabelHandler {
 
     private List<String> higherOrderElements = Arrays.asList("part", "section", "title", "chapter");
-
+    
     @Override
-    public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, StringBuffer label) {
+    public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale) {
         //if all refs are higher than article generate and leave
         for (TreeNode ref : refs) {
             if (!higherOrderElements.contains(ref.getType())) {
@@ -47,9 +49,9 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
                 TreeNode node = toBeTreatedNodes.get(i);
                 if (!mrefCommonNodes.contains(node) || toBeTreatedNodes.size() > 1) {
                     if (node.getChildren().isEmpty()) {
-                        buffers.get(node).push(createAnchor(node));
+                        buffers.get(node).push(createAnchor(node, locale));
                     } else if (node.getNum() != null) {
-                        buffers.get(node).push(NumFormatter.formattedNum(node) + " ");
+                        buffers.get(node).push(String.format("%s, ", NumFormatter.formattedNum(node, locale)));
                     }
                 }
             }
@@ -84,7 +86,7 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
                         buffers.get(node).push(String.format("%s ", StringUtils.capitalize(node.getType())));
                     }
                     else {
-                        buffers.get(node).push(String.format("%s %s ", StringUtils.capitalize(CURRENT), node.getType()));
+                        buffers.get(node).push(String.format("%s %s ", StringUtils.capitalize(THIS_REF), node.getType()));
                     }
                 }
             }

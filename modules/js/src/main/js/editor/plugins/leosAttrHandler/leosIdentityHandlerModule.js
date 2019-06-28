@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,7 +44,7 @@ define(function leosIdentityHandler(require) {
     }
 
     function isElementOutDented(oldElementDetails, newElementDetails){
-        const elementCouldBeOutDented = oldElementDetails.elementWeight === 0;
+        const elementCouldBeOutDented = oldElementDetails.elementWeight === 0 && oldElementDetails.greatAncestors[oldElementDetails.greatAncestors.length - 1] != null;
         if(elementCouldBeOutDented){
             const oldElementGreatParent = oldElementDetails.greatAncestors[oldElementDetails.greatAncestors.length - 1];
             const newElementParent = newElementDetails.ancestors[newElementDetails.ancestors.length - 1];
@@ -58,11 +58,16 @@ define(function leosIdentityHandler(require) {
     }
 
     function removeIdentityFromNewElementAndItsSmallestSibling(newElement, oldElementDetails){
-        removeIdentity(newElement);
-        const oldElementsParentIsAListThatCanBeSplit = oldElementDetails.ancestors.length > 1;
+        let parentFirstPartIndex = 1;
+        if(oldElementDetails.parentIsLi){
+            newElement = newElement.getParent();
+            parentFirstPartIndex = 2;
+        }
+        removeIdentityFromElementAndItsChildren(newElement);
+        const oldElementsParentIsAListThatCanBeSplit = oldElementDetails.ancestors.length > parentFirstPartIndex;
         const parentIsSplitInTwo = oldElementDetails.hasPrevious && oldElementDetails.hasNext;
         if(oldElementsParentIsAListThatCanBeSplit && parentIsSplitInTwo){
-            const parentFirstPart = oldElementDetails.ancestors[1];
+            const parentFirstPart = oldElementDetails.ancestors[parentFirstPartIndex];
             const parentSecondPart = newElement.getNext().findOne(getMultipleAttributesQuerySelector(parentFirstPart));
             removeIdentityFromTSmallestAncestorAndItsChildren(parentFirstPart, newElement.getPrevious(), parentSecondPart, newElement.getNext());
         }
@@ -70,10 +75,14 @@ define(function leosIdentityHandler(require) {
 
     function removeIdentityFromTSmallestAncestorAndItsChildren(firstElement, firstElementAncestor, secondElement, secondElementAncestor){
         const objectToRemoveIdentityFrom = getObjectToRemoveIdentityFrom(firstElement, firstElementAncestor, secondElement, secondElementAncestor);
-        objectToRemoveIdentityFrom.removeIdFrom.find("*").toArray()
-            .filter(function(element){return element instanceof CKEDITOR.dom.element;})
-                .forEach(function(element){removeIdentity(element);});
-        removeIdentity(objectToRemoveIdentityFrom.removeIdFrom);
+        removeIdentityFromElementAndItsChildren(objectToRemoveIdentityFrom.removeIdFrom);
+    }
+
+    function removeIdentityFromElementAndItsChildren(element){
+        element.find("*").toArray()
+            .filter(function(child){return child instanceof CKEDITOR.dom.element;})
+            .forEach(function(child){removeIdentity(child);});
+        removeIdentity(element);
     }
 
     function removeIdentityFromTheSmallestElementOrTheSmallestAncestor(firstElement, firstElementAncestor, secondElement, secondElementAncestor){
@@ -189,13 +198,23 @@ define(function leosIdentityHandler(require) {
         while (!element.isBlockBoundary()) {
             element = element.getParent();
         }
-        let ancestors = getAncestors(element);
+        const ancestors = getAncestors(element);
+        const ascendantLi = element.getAscendant("li", true);
+        let hasPrevious = element.hasPrevious();
+        let hasNext = element.hasNext();
+        let parentIsLi = false;
+        if(ascendantLi && ascendantLi.equals(element.getParent())){
+            hasPrevious = ascendantLi.hasPrevious();
+            hasNext = ascendantLi.hasNext();
+            parentIsLi = true;
+        }
         return {
             elementWeight : getWeight(element),
-            hasPrevious : element.hasPrevious(),
-            hasNext : element.hasNext(),
+            hasPrevious : hasPrevious,
+            hasNext : hasNext,
+            parentIsLi : parentIsLi,
             ancestors : ancestors,
-            greatAncestors : getAncestors(ancestors[ancestors.length -1].getParent()),
+            greatAncestors : getAncestors(ancestors[ancestors.length -1].getParent())
         };
     }
 

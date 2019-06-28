@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,47 +13,60 @@
  */
 package eu.europa.ec.leos.annotate.services.impl;
 
-import eu.europa.ec.leos.annotate.model.AnnotationComparator;
-import eu.europa.ec.leos.annotate.model.AnnotationSearchOptions;
-import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.Authorities;
+import eu.europa.ec.leos.annotate.model.MetadataIdsAndStatuses;
+import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
-import eu.europa.ec.leos.annotate.model.web.annotation.*;
-import eu.europa.ec.leos.annotate.model.web.user.JsonUserInfo;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
+import eu.europa.ec.leos.annotate.model.search.*;
+import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
+import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationPermissions;
 import eu.europa.ec.leos.annotate.repository.AnnotationRepository;
+import eu.europa.ec.leos.annotate.repository.impl.AnnotationCountSearchSpec;
 import eu.europa.ec.leos.annotate.repository.impl.AnnotationReplySearchSpec;
-import eu.europa.ec.leos.annotate.repository.impl.AnnotationSearchSpec;
 import eu.europa.ec.leos.annotate.services.*;
 import eu.europa.ec.leos.annotate.services.exceptions.*;
 import org.hibernate.collection.internal.PersistentBag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.net.URI;
-import java.net.URISyntaxException;
+import javax.annotation.Nonnull;
+
 import java.rmi.activation.UnknownGroupException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * Service responsible for annotation administration functionality 
  */
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
 @Service
 public class AnnotationServiceImpl implements AnnotationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationServiceImpl.class);
+    private static final String ERROR_USERINFO_MISSING = "Required user information missing.";
 
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
     @Autowired
+    @Qualifier("annotationRepos")
     private AnnotationRepository annotRepos;
+
+    @Autowired
+    private AnnotationPermissionService annotPermService;
 
     @Autowired
     private UserService userService;
@@ -71,10 +84,27 @@ public class AnnotationServiceImpl implements AnnotationService {
     private MetadataService metadataService;
 
     @Autowired
+    private AnnotationConversionService conversionService;
+
+    @Autowired
     private UUIDGeneratorService uuidService;
 
-    @Value("${default.systemId}")
-    private String DEFAULT_SYSTEM_ID;
+    @Autowired
+    private SearchModelFactory searchModelFactory;
+
+    // -------------------------------------
+    // Constructors
+    // -------------------------------------
+    public AnnotationServiceImpl() {
+        // default constructor
+    }
+
+    // constructor e.g. used for testing
+    public AnnotationServiceImpl(final UserService userService) {
+        if (this.userService == null) {
+            this.userService = userService;
+        }
+    }
 
     // -------------------------------------
     // Service functionality
@@ -87,12 +117,12 @@ public class AnnotationServiceImpl implements AnnotationService {
      * @param annotId
      *        the ID of the wanted annotation
      *        
-     * @return returns the found annotation object, or null
+     * @return returns the found annotation object, or {@literal null}; note: only non-deleted annotations are returned
      */
     @Override
-    public Annotation findAnnotationById(String annotId) {
+    public Annotation findAnnotationById(final String annotId) {
 
-        return annotRepos.findById(annotId);
+        return annotRepos.findByIdAndStatus(annotId, AnnotationStatus.NORMAL);
     }
 
     /**
@@ -108,15 +138,12 @@ public class AnnotationServiceImpl implements AnnotationService {
      *         this exception is thrown when the user does not have the permission to view this annotation
      */
     @Override
-    public Annotation findAnnotationById(String annotId, String userlogin) throws MissingPermissionException {
+    public Annotation findAnnotationById(final String annotId, final String userlogin) throws MissingPermissionException {
 
-        if (StringUtils.isEmpty(annotId)) {
-            LOG.error("Cannot search for annotation, no annotation ID specified.");
-            throw new IllegalArgumentException("Required annotation ID missing");
-        }
+        Assert.isTrue(!StringUtils.isEmpty(annotId), "Cannot search for annotation, no annotation ID specified.");
 
         // retrieve the annotation first...
-        Annotation resultAnnotation = findAnnotationById(annotId);
+        final Annotation resultAnnotation = findAnnotationById(annotId);
         if (resultAnnotation == null) {
             LOG.error("The wanted annotation with id '{}' could not be found.", annotId);
             return null;
@@ -125,8 +152,8 @@ public class AnnotationServiceImpl implements AnnotationService {
         // ... then check the permissions
         // note: we did not combine the permission check directly with the database query here in order to be able
         // to easily distinguish between annotation being missing and annotation not being permitted to be viewed
-        User user = userService.findByLogin(userlogin);
-        if (!hasUserPermissionToSeeAnnotation(resultAnnotation, user)) {
+        final User user = userService.findByLogin(userlogin);
+        if (!annotPermService.hasUserPermissionToSeeAnnotation(resultAnnotation, user)) {
             LOG.warn("User '{}' does not have permission to see annotation with id '{}'.", userlogin, annotId);
             throw new MissingPermissionException(userlogin);
         }
@@ -139,84 +166,47 @@ public class AnnotationServiceImpl implements AnnotationService {
      * 
      * @param webAnnot
      *        the incoming annotation
-     * @param userLogin
-     *        the user's login
+     * @param userInfo
+     *        information about the user wanting to create an annotation
      * @throws CannotCreateAnnotationException 
      *         the exception is thrown when the annotation cannot be created due to unfulfilled constraints
      *         (e.g. missing document or user information)
      */
     @Override
-    public JsonAnnotation createAnnotation(JsonAnnotation webAnnot, String userLogin) throws CannotCreateAnnotationException {
+    public JsonAnnotation createAnnotation(final JsonAnnotation webAnnot, final UserInformation userInfo) throws CannotCreateAnnotationException {
+
+        if (userInfo == null) {
+            throw new CannotCreateAnnotationException(new IllegalArgumentException("userInfo is null"));
+        }
+        LOG.debug("createAnnotation: authUser='{}'", userInfo.getLogin());
 
         // find belonging user in DB
-        User registeredUser = userService.findByLogin(userLogin);
+        // NOTE: we could access the user using the authentication user's information retrieved above - but for currently unknown reasons,
+        // the User object received thereby might not be contained in the database in test scenarios - although it was explicitly saved
+        // therefore we have to re-retrieve the User object fresh from the database
+        final User registeredUser = userService.findByLogin(userInfo.getLogin());
         if (registeredUser == null) {
             // user was already created during client's initialisation (i.e. token exchange/profile retrieval)
             // so it should be known here unless an error had occurred before
             // therefore we don't do anything if user is still missing now
-            throw new CannotCreateAnnotationException(new UserNotFoundException(userLogin));
+            throw new CannotCreateAnnotationException(new UserNotFoundException(userInfo.getLogin()));
         }
 
         // find belonging group in DB
-        Group group = groupService.findGroupByName(webAnnot.getGroup());
+        final Group group = groupService.findGroupByName(webAnnot.getGroup());
         if (group == null) {
             LOG.error("Cannot create annotation as associate group is unknown");
             throw new CannotCreateAnnotationException(new UnknownGroupException(webAnnot.getGroup()));
         }
 
         // search if document is already contained in DB
-        Document document = documentService.findDocumentByUri(webAnnot.getUri());
-        if (document == null) {
+        final Document document = findOrCreateDocument(webAnnot);
 
-            // register new document
-            try {
-                if (webAnnot.getDocument() != null) {
-                    // new top-level annotations have a document object containing URI and title
-                    document = documentService.createNewDocument(webAnnot.getDocument());
-                } else {
-                    // replies to annotations do not have the document object, but still feature the URI
-                    document = documentService.createNewDocument(webAnnot.getUri());
-                }
-            } catch (CannotCreateDocumentException e) {
-                LOG.error("Cannot create annotation as associate document could not be registered");
-                throw new CannotCreateAnnotationException(e);
-            }
-        }
-
-        // determine system ID
-        String systemId = DEFAULT_SYSTEM_ID;
-        if (webAnnot.getDocument() != null && webAnnot.getDocument().getMetadata() != null) {
-            Metadata helpMeta = new Metadata();
-            helpMeta.setKeyValuePropertyFromHashMap(webAnnot.getDocument().getMetadata());
-            if (!StringUtils.isEmpty(helpMeta.getSystemId())) {
-                systemId = helpMeta.getSystemId();
-            }
-        }
-
-        // search if there is already a metadata set for the group+document+systemId combination
-        Metadata metadata = metadataService.findByDocumentAndGroupAndSystemId(document, group, systemId);
-        if (metadata == null) {
-
-            // register the new metadata
-            try {
-                metadata = new Metadata(document, group, systemId);
-                metadata.setKeyValuePropertyFromHashMap(webAnnot.getDocument().getMetadata());
-
-                metadata = metadataService.saveMetadata(metadata);
-            } catch (CannotCreateMetadataException ccme) {
-                LOG.error("Metadata could not be persisted while creating annotation");
-                throw new CannotCreateAnnotationException(ccme);
-            } catch (Exception e) {
-                LOG.error("Received unexpected exception when trying to persist metadata during creation of annotation", e);
-                throw new CannotCreateAnnotationException(e);
-            }
-        }
+        final Metadata metadata = prepareMetadata(webAnnot, document, group, userInfo);
 
         // save the annotation with all required reference IDs
         Annotation annot = new Annotation();
         annot.setCreated(webAnnot.getCreated());
-        annot.setDocument(document);
-        annot.setGroup(group);
         annot.setMetadata(metadata);
         annot.setUser(registeredUser);
         annot.setId(uuidService.generateUrlSafeUUID()); // as a new annotation is saved, we set an ID, regardless whether one was present before!
@@ -227,7 +217,7 @@ public class AnnotationServiceImpl implements AnnotationService {
         annot.setUpdated(LocalDateTime.now());
 
         // save tags, if present
-        if (webAnnot.getTags() != null && webAnnot.getTags().size() > 0) {
+        if (webAnnot.getTags() != null && !webAnnot.getTags().isEmpty()) {
             annot.setTags(tagsService.getTagList(webAnnot.getTags(), annot));
         }
 
@@ -245,21 +235,170 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
     /**
+     * looks up if a document already exists, or tries to create it
+     * 
+     * @param webAnnot incoming annotation (JSON-based)
+     * @return found {@link Document}
+     * @throws CannotCreateAnnotationException thrown when document cannot be created
+     */
+    @Nonnull
+    private Document findOrCreateDocument(final JsonAnnotation webAnnot)
+            throws CannotCreateAnnotationException {
+
+        Document document = documentService.findDocumentByUri(webAnnot.getUri());
+        if (document == null) {
+
+            // register new document
+            try {
+                if (webAnnot.getDocument() == null) {
+                    // replies to annotations do not have the document object, but still feature the URI
+                    document = documentService.createNewDocument(webAnnot.getUri());
+                } else {
+                    // new top-level annotations have a document object containing URI and title
+                    document = documentService.createNewDocument(webAnnot.getDocument());
+                }
+            } catch (CannotCreateDocumentException e) {
+                LOG.error("Cannot create annotation as associate document could not be registered");
+                throw new CannotCreateAnnotationException(e);
+            }
+        }
+        return document;
+    }
+
+    // prepare the metadata to be associated to an annotation
+    // this can either be an existing metadata set, or a new one that is created
+    @Nonnull
+    private Metadata prepareMetadata(final JsonAnnotation webAnnot,
+            final Document document, final Group group,
+            final UserInformation userInfo) throws CannotCreateAnnotationException {
+
+        // determine system ID
+        String systemId = userInfo.getAuthority();
+        Metadata receivedMetadata = null;
+        if (webAnnot.hasMetadata()) {
+            receivedMetadata = new Metadata();
+            receivedMetadata.setKeyValuePropertyFromSimpleMetadata(webAnnot.getDocument().getMetadata());
+
+            // if we received a system ID, we use it; otherwise, we propagate the system ID of the user
+            // note: usually, they should be identical anyway!
+            if (StringUtils.isEmpty(receivedMetadata.getSystemId())) {
+                receivedMetadata.setSystemId(systemId);
+            } else {
+                systemId = receivedMetadata.getSystemId();
+            }
+        }
+
+        if (receivedMetadata != null && receivedMetadata.isResponseStatusSent()) {
+            throw new CannotCreateAnnotationException("Cannot create new annotations having response status SENT already");
+        }
+
+        // search if there is already a metadata set for the group+document+systemId combination
+        Metadata metadata = null;
+        if (webAnnot.isReply()) {
+            metadata = findOrCreateReplyMetadata(webAnnot, document, group, userInfo.getAuthority(), receivedMetadata);
+
+            // no reply, but a new annotation
+        } else {
+
+            metadata = metadataService.findExactMetadata(document, group, systemId, receivedMetadata);
+            if (metadata == null) {
+
+                // register the new metadata
+                try {
+                    metadata = new Metadata(document, group, systemId);
+                    metadata.setKeyValuePropertyFromSimpleMetadata(webAnnot.getDocument().getMetadata());
+
+                    metadata = metadataService.saveMetadata(metadata);
+                } catch (CannotCreateMetadataException ccme) {
+                    LOG.error("Metadata could not be persisted while creating annotation");
+                    throw new CannotCreateAnnotationException(ccme);
+                } catch (Exception e) {
+                    LOG.error("Received unexpected exception when trying to persist metadata during creation of annotation", e);
+                    throw new CannotCreateAnnotationException(e);
+                }
+            }
+        }
+
+        return metadata;
+    }
+
+    /**
+     * finds existing metadata that will be associated to a reply; or creates appropriate new metadata
+     * 
+     * @param webAnnot incoming annotation (JSON-based)
+     * @param document associate document
+     * @param group associate group
+     * @param authority system from which the reply is being created 
+     * @param receivedMetadata incoming metadata
+     * 
+     * @return found or newly created {@link Metadata} object to be used for the reply
+     * 
+     * @throws CannotCreateAnnotationException thrown when no parent annotation found, parent is SENT, or other error
+     */
+    private Metadata findOrCreateReplyMetadata(final JsonAnnotation webAnnot, final Document document,
+            final Group group, final String authority, final Metadata receivedMetadata)
+            throws CannotCreateAnnotationException {
+
+        Metadata metadata = null;
+
+        // for replies, the annotation does not contain metadata; we reuse the metadata of the thread's root
+        final Annotation rootAnnot = findAnnotationById(webAnnot.getRootAnnotationId());
+        if (rootAnnot == null) {
+            throw new CannotCreateAnnotationException("No root annotation found for reply");
+        } else {
+            if (rootAnnot.isResponseStatusSent()) {
+                throw new CannotCreateAnnotationException("Replies on SENT annotations are not allowed");
+            }
+            metadata = rootAnnot.getMetadata();
+            if (!metadata.getSystemId().equals(authority)) {
+                // user is commenting on annotation created by from different system
+                // (e.g. LEOS/EdiT user is commenting on ISC annotation)
+                // in that case, we must find/create different metadata!
+                metadata = metadataService.findExactMetadata(document, group, authority, receivedMetadata); // receivedMetadata is null!
+                if (metadata == null) {
+
+                    // register the new metadata
+                    try {
+                        metadata = new Metadata(document, group, authority);
+                        metadata = metadataService.saveMetadata(metadata);
+                    } catch (CannotCreateMetadataException ccme) {
+                        LOG.error("Metadata could not be persisted while creating annotation reply");
+                        throw new CannotCreateAnnotationException(ccme);
+                    } catch (Exception e) {
+                        LOG.error("Received unexpected exception when trying to persist metadata during creation of annotation reply", e);
+                        throw new CannotCreateAnnotationException(e);
+                    }
+                }
+            }
+        }
+        return metadata;
+    }
+
+    /**
      * update an existing annotation in the database based on an incoming, JSON-deserialized annotation
      * 
-     * @param webAnnot
+     * @param annotationId 
+     *        id of the annotation to be updated
+     * @param webAnnot 
      *        the incoming annotation
+     * @param userInfo
+     *        information about the user wanting to create an annotation
+     *        
      * @throws CannotUpdateAnnotationException 
      *         the exception is thrown when the annotation cannot be updated (e.g. when it is not existing)
+     * @throws CannotUpdateSentAnnotationException
+     *         exception thrown when an annotation with response status SENT is tried to be updated
      * @throws MissingPermissionException 
      *         the exception is thrown when the user lacks permissions for updating the annotation
      */
     @Override
-    public JsonAnnotation updateAnnotation(String annotationId, JsonAnnotation webAnnot, String username)
-            throws CannotUpdateAnnotationException, MissingPermissionException {
+    public JsonAnnotation updateAnnotation(final String annotationId, final JsonAnnotation webAnnot, final UserInformation userInfo)
+            throws CannotUpdateAnnotationException, CannotUpdateSentAnnotationException, MissingPermissionException {
 
-        if (StringUtils.isEmpty(annotationId)) {
-            throw new IllegalArgumentException("Required annotation ID missing.");
+        Assert.isTrue(!StringUtils.isEmpty(annotationId), "Required annotation ID missing.");
+
+        if (userInfo == null) {
+            throw new CannotUpdateAnnotationException(new IllegalArgumentException("userInfo is null"));
         }
 
         final Annotation ann = findAnnotationById(annotationId);
@@ -267,10 +406,17 @@ public class AnnotationServiceImpl implements AnnotationService {
             throw new CannotUpdateAnnotationException("Annotation not found");
         }
 
-        // check permissions
-        if (!hasUserPermissionToUpdateAnnotation(ann, username)) {
-            LOG.warn("User '{}' does not have permission to update annotation with id '{}'.", username, annotationId);
-            throw new MissingPermissionException(username);
+        // check if the annotation is final already and may not be updated any longer (e.g. when having ResponseStatus SENT)
+        if (!annotPermService.canAnnotationBeUpdated(ann)) {
+            LOG.warn("Annotation with id '{}' is final (SENT) and cannot be updated.", annotationId);
+            throw new CannotUpdateSentAnnotationException(
+                    String.format("Annotation with id '%s' is final (responseStatus=SENT) and cannot be updated.", annotationId));
+        }
+
+        // check user permissions
+        if (!annotPermService.hasUserPermissionToUpdateAnnotation(ann, userInfo.getLogin())) {
+            LOG.warn("User '{}' does not have permission to update annotation with id '{}'.", userInfo.getLogin(), annotationId);
+            throw new MissingPermissionException(userInfo.getLogin());
         }
 
         // only the following properties of the annotation can be updated:
@@ -282,47 +428,68 @@ public class AnnotationServiceImpl implements AnnotationService {
         ann.setShared(!isPrivateAnnotation(webAnnot));
         ann.setUpdated(LocalDateTime.now());
 
+        final long originalMetadataId = ann.getMetadata().getId();
+        updateTags(webAnnot, ann);
+        updateGroup(webAnnot, ann, userInfo.getAuthority());
+
+        try {
+            annotRepos.save(ann);
+        } catch (Exception e) {
+            throw new CannotUpdateAnnotationException(e);
+        }
+
+        // update newly set properties for the response object - e.g. "Updated"
+        webAnnot.setUpdated(ann.getUpdated());
+
+        // if new metadata was assigned and the original metadata set is no longer referenced by any annotation, we can remove it
+        // note: retrieving the ID of the associate metadata object is more reliable than asking for metadataId of annotation object!
+        if (ann.getMetadata().getId() != originalMetadataId &&
+                annotRepos.countByMetadataId(originalMetadataId) == 0) {
+            metadataService.deleteMetadataById(originalMetadataId);
+        }
+
+        // add/update the status information
+        webAnnot.setStatus(conversionService.getJsonAnnotationStatus(ann));
+
+        return webAnnot;
+    }
+
+    /**
+    * update the tags associated to an annotation
+    * 
+    * @param webAnnot incoming annotation containing updated tags
+    * @param annot database annotation, tags may have to be updated
+    */
+    private void updateTags(final JsonAnnotation webAnnot, final Annotation annot) {
+
         // update the tags - due to hibernate mapping involved, we need to be more careful with this
-        boolean oldAnnotHasTags = ann.getTags() != null && ann.getTags().size() > 0;
-        boolean newAnnotHasTags = webAnnot.getTags() != null && webAnnot.getTags().size() > 0;
+        final boolean oldAnnotHasTags = annot.getTags() != null && !annot.getTags().isEmpty();
+        final boolean newAnnotHasTags = webAnnot.getTags() != null && !webAnnot.getTags().isEmpty();
 
-        // keep simple cases simple
-        if (!oldAnnotHasTags && !newAnnotHasTags) {
-
-            // nothing to do
-
-        } else if (!oldAnnotHasTags && newAnnotHasTags) {
-
-            // store all new tags
-            ann.setTags(tagsService.getTagList(webAnnot.getTags(), ann));
-
-        } else if (oldAnnotHasTags && !newAnnotHasTags) {
-
-            // remove all existing tags
-            tagsService.removeTags(ann.getTags());
-            ann.setTags(null);
-
-        } else {
+        if (oldAnnotHasTags && newAnnotHasTags) {
             // there were tags before and now, so we have to check more closely; comparing the total number of tags is not sufficient!
             // idea: check which ones to remove, which ones to add
 
             // retrieve those present in old annotation, but not contained in new annotation
-            List<Tag> tagsToRemove = ann.getTags().stream().filter(tag -> !webAnnot.getTags().contains(tag.getName())).collect(Collectors.toList());
-
-            // retrieve those present in new annotation, but not contained in old annotation
-            List<String> tagsToAdd = webAnnot.getTags().stream().filter(tagString -> !ann.getTags().stream().anyMatch(tag -> tag.getName().equals(tagString)))
+            final List<Tag> tagsToRemove = annot.getTags().stream()
+                    .filter(tag -> !webAnnot.getTags().contains(tag.getName()))
                     .collect(Collectors.toList());
 
-            if (tagsToRemove.size() > 0) {
-                ann.getTags().removeAll(tagsToRemove);
+            // retrieve those present in new annotation, but not contained in old annotation
+            final List<String> tagsToAdd = webAnnot.getTags().stream()
+                    .filter(tagString -> !annot.getTags().stream().anyMatch(tag -> tag.getName().equals(tagString)))
+                    .collect(Collectors.toList());
+
+            if (!tagsToRemove.isEmpty()) {
+                annot.getTags().removeAll(tagsToRemove);
 
                 // note: we also need to remove the tags from the internally stored list of items cached by hibernate
                 // alternative could be two first remove all items, save, add new items, save again - could be overhead
                 try {
-                    PersistentBag pb = (PersistentBag) ann.getTags();
-                    if (pb.getStoredSnapshot() instanceof ArrayList) {
+                    final PersistentBag persBag = (PersistentBag) annot.getTags();
+                    if (persBag.getStoredSnapshot() instanceof ArrayList) {
                         @SuppressWarnings("unchecked")
-                        List<Tag> snapshotList = (ArrayList<Tag>) (pb.getStoredSnapshot());
+                        final List<Tag> snapshotList = (ArrayList<Tag>) (persBag.getStoredSnapshot());
                         snapshotList.removeAll(tagsToRemove);
                     }
                 } catch (Exception e) {
@@ -334,21 +501,61 @@ public class AnnotationServiceImpl implements AnnotationService {
             }
 
             // add new items
-            if (tagsToAdd.size() > 0) {
-                ann.getTags().addAll(tagsService.getTagList(tagsToAdd, ann));
+            if (!tagsToAdd.isEmpty()) {
+                annot.getTags().addAll(tagsService.getTagList(tagsToAdd, annot));
+            }
+
+            // keep simple cases simple
+        } else if (!oldAnnotHasTags && newAnnotHasTags) {
+
+            // store all new tags
+            annot.setTags(tagsService.getTagList(webAnnot.getTags(), annot));
+
+        } else if (oldAnnotHasTags && !newAnnotHasTags) {
+
+            // remove all existing tags
+            tagsService.removeTags(annot.getTags());
+            annot.setTags(null);
+        }
+        // last case (= !oldAnnotHasTags && !newAnnotHasTags): nothing to do
+    }
+
+    /**
+     * update the group associated to an annotation, if necessary
+     * technically, this means assigning a different metadata set
+     * 
+     * @param webAnnot incoming annotation possibly containing a new group
+     * @param annot database annotation whose group may have to be updated
+     * @param systemId the authority of the user requesting the update
+     */
+    private void updateGroup(final JsonAnnotation webAnnot, final Annotation annot, final String systemId) throws CannotUpdateAnnotationException {
+
+        if (webAnnot.getGroup().equals(annot.getGroup().getName())) {
+            LOG.trace("No need to update annotation's group, new and old are identical");
+            return;
+        }
+
+        final Group newGroup = groupService.findGroupByName(webAnnot.getGroup());
+
+        // search if there is already a metadata set for the group+document+systemId combination
+        Metadata metadata = metadataService.findExactMetadata(annot.getDocument(), newGroup, systemId, annot.getMetadata());
+        if (metadata == null) {
+
+            // register the new metadata
+            try {
+                metadata = new Metadata(annot.getDocument(), newGroup, systemId);
+                metadata.setKeyValuePropertyFromSimpleMetadata(webAnnot.getDocument().getMetadata());
+
+                metadata = metadataService.saveMetadata(metadata);
+            } catch (CannotCreateMetadataException ccme) {
+                LOG.error("Metadata could not be persisted while creating annotation");
+                throw new CannotUpdateAnnotationException(ccme);
+            } catch (Exception e) {
+                LOG.error("Received unexpected exception when trying to persist metadata during creation of annotation", e);
+                throw new CannotUpdateAnnotationException(e);
             }
         }
-
-        try {
-            annotRepos.save(ann);
-        } catch (Exception e) {
-            throw new CannotUpdateAnnotationException(e);
-        }
-
-        // update newly set properties for the response object - e.g. "Updated"
-        webAnnot.setUpdated(ann.getUpdated());
-
-        return webAnnot;
+        annot.setMetadata(metadata);
     }
 
     /**
@@ -356,27 +563,74 @@ public class AnnotationServiceImpl implements AnnotationService {
      * 
      * @param annotationId
      *        the ID of the annotation to be deleted
-     * @param userlogin
-     *        login of the user requesting to delete an annotation
+     * @param userInfo
+     *        information about the user requesting to delete an annotation
      * @throws CannotDeleteAnnotationException 
      *         the exception is thrown when the annotation cannot be deleted, e.g. when it is not existing or due to unexpected database error)
+     * @throws CannotDeleteSentAnnotationException
+     *         the exception is thrown when trying to delete a SENT annotation
      */
     @Override
-    public void deleteAnnotationById(String annotationId, String userlogin) throws CannotDeleteAnnotationException {
+    public void deleteAnnotationById(final String annotationId, final UserInformation userInfo)
+            throws CannotDeleteAnnotationException, CannotDeleteSentAnnotationException {
 
-        if (StringUtils.isEmpty(annotationId)) {
-            throw new IllegalArgumentException("Required annotation ID missing.");
-        }
+        Assert.isTrue(!StringUtils.isEmpty(annotationId), "Required annotation ID missing.");
+        Assert.notNull(userInfo, ERROR_USERINFO_MISSING);
 
-        Annotation ann = findAnnotationById(annotationId);
+        final Annotation ann = findAnnotationById(annotationId);
         if (ann == null) {
             throw new CannotDeleteAnnotationException("Annotation not found");
         }
 
-        deleteAnnotationAndOrphanedDocument(ann);
+        if (ann.isResponseStatusSent() && !Authorities.isLeos(userInfo.getAuthority())) {
+            LOG.info("Annotation '{}' has response status SENT and thus cannot be deleted in {}", ann.getId(), userInfo.getAuthority());
+            throw new CannotDeleteSentAnnotationException("Annotation has response status SENT, cannot be deleted in " + userInfo.getAuthority());
+        }
+
+        final User user = userService.findByLogin(userInfo.getLogin());
+        deleteAnnotation(ann, user.getId());
     }
 
     /**
+     * delete a set of annotations in the database based on their IDs
+     * 
+     * @param annotationIds
+     *        the list of IDs of the annotation to be deleted
+     * @param userInfo
+     *        information about the user requesting to delete annotations
+     * @return returns a list of annotations that were successfully deleted
+     */
+    @Override
+    public List<String> deleteAnnotationsById(final List<String> annotationIds, final UserInformation userInfo) {
+
+        Assert.notNull(userInfo, ERROR_USERINFO_MISSING);
+
+        final List<String> deleted = new ArrayList<String>();
+        if (annotationIds == null || annotationIds.isEmpty()) {
+            LOG.warn("No annotations for bulk deletion received.");
+            return deleted;
+        }
+
+        final List<String> errors = new ArrayList<String>();
+
+        // simply call the method for deleting a single annotation and keep track of success and errors
+        for (final String annotationId : annotationIds) {
+            try {
+                deleteAnnotationById(annotationId, userInfo);
+                deleted.add(annotationId);
+            } catch (RuntimeException e) {
+                LOG.warn("Error while deleting one of several annotations", e);
+                throw e;
+            } catch (Exception e) {
+                errors.add(annotationId);
+            }
+        }
+        LOG.info("Annotation bulk deletion: {} annotations deleted successfully, {} errors", deleted.size(), errors.size());
+
+        return deleted;
+    }
+
+    /** 
      * search for annotations meeting certain criteria and for a given user
      * (user influences which other users' annotations are included)
      * 
@@ -384,75 +638,124 @@ public class AnnotationServiceImpl implements AnnotationService {
      * 
      * @param options
      *        the {@link AnnotationSearchOptions} detailing search criteria like group, number of results, ...
-     * @param userlogin
-     *        the login of the user for which the search is being executed
+     * @param userInfo
+     *        information about the user for which the search is being executed
      *        
-     * @return returns a list of Annotation objects meeting the search criteria
+     * @return returns a list of {@link Annotation} objects meeting the search criteria
      *         returns an empty list in case search could not be run due to unfulfilled requirements  
      */
     @Override
-    public List<Annotation> searchAnnotations(AnnotationSearchOptions options, String userlogin) {
+    public AnnotationSearchResult searchAnnotations(final AnnotationSearchOptions options, final UserInformation userInfo) {
 
-        final List<Annotation> emptyResult = new ArrayList<Annotation>();
+        Assert.notNull(userInfo, "User information not available");
 
-        if (StringUtils.isEmpty(userlogin)) {
-            LOG.error("Cannot search without user!");
-            throw new IllegalArgumentException("User login empty");
-        }
+        LOG.debug("User authenticated while searching for annotations: '{}'", userInfo.getLogin());
 
-        if (options == null) {
-            LOG.error("Cannot search without valid search parameters!");
-            throw new IllegalArgumentException("Options empty");
-        }
+        Assert.notNull(options, "Cannot search without valid search parameters!");
 
-        // 1) URI
-        Document doc = documentService.findDocumentByUri(options.getUri());
+        final AnnotationSearchResult emptyResult = new AnnotationSearchResult();
+
+        // 1) URI / document
+        final Document doc = documentService.findDocumentByUri(options.getUri());
         if (doc == null) {
-            LOG.debug("No document registered yet for given search URI: " + options.getUri());
+            LOG.debug("No document registered yet for given search URI: {}", options.getUri());
             return emptyResult;
         }
 
         // 2) group
-        Group group = groupService.findGroupByName(options.getGroup());
+        final Group group = groupService.findGroupByName(options.getGroup());
         if (group == null) {
-            LOG.debug("No group registered yet with given search group name: " + options.getGroup());
+            LOG.debug("No group registered yet with given search group name: {}", options.getGroup());
             return emptyResult;
         }
 
-        // 3) user (optional)
+        // 3) check that the user requesting the search actually is member of the requested group
+        // if not, he will not see any result
+        final User executingUser = getExecutingUser(userInfo, group);
+        if (executingUser == null) {
+            LOG.warn("Unable to determine user running search query");
+            return emptyResult;
+        }
+
+        // 4) user (optional)
         User user = null;
-        if (options.getUser() != null && !options.getUser().isEmpty()) {
+        if (!StringUtils.isEmpty(options.getUser())) {
             user = userService.findByLogin(options.getUser());
             if (user == null) {
-                // break instead of ignoring user (which would produce more search results and open
-                // an information leak)
+                // break instead of ignoring user (which would produce more search results and open an information leak)
                 LOG.debug("No user registered yet with given user name: {}, so there cannot be any matches", options.getUser());
                 return emptyResult;
             }
         }
 
-        // 4) sorting, ordering, limit and offset
+        // 5) sorting, ordering, limit and offset
         // our own Pageable implementation allows handing over sorting, limit and especially offset requirements
-        Pageable pageable = new OffsetBasedPageRequest(options.getItemOffset(), options.getItemLimit(), options.getSort());
+        final Pageable pageable = new OffsetBasedPageRequest(options.getItemOffset(), options.getItemLimit(), options.getSort());
 
-        List<Annotation> result = null;
         try {
+            // wrap up all available information in order to retrieve matching search model
+            final ResolvedSearchOptions rso = new ResolvedSearchOptions();
+            rso.setDocument(doc);
+            rso.setGroup(group);
+            rso.setExecutingUserToken(userInfo.getCurrentToken());
+            rso.setExecutingUser(executingUser);
+            rso.setFilterUser(user);
+            rso.setMetadataWithStatusesList(options.getMetadataMapsWithStatusesList());
 
-            User executingUser = userService.findByLogin(userlogin);
-            Long optionalUserIdToFilter = (user == null ? null : user.getId());
-
-            // the users belonging to the group are required for knowing which other users' public
-            // annotations are visible for the executing user
-            List<Long> userIdsOfGroup = groupService.getUserIdsOfGroup(group);
-
-            Page<Annotation> resultPage = annotRepos.findAll(
-                    new AnnotationSearchSpec(executingUser.getId(), doc.getId(), group.getId(), optionalUserIdToFilter, userIdsOfGroup), pageable);
-            result = resultPage.getContent();
+            return executeSearch(rso, pageable);
 
         } catch (Exception ex) {
             LOG.error("Search in annotation repository produced unexpected error!");
             throw ex;
         }
+    }
+
+    /**
+     * determine the {@link User} running the search - and check if he is member of the requested group at all
+     * 
+     * @param userInfo {@link UserInformation} containing user details
+     * @param group {@link Group} for which the user requested to retrieve information
+     * @return {@link User} object being member of given group, or {@literal null}
+     */
+    private User getExecutingUser(final UserInformation userInfo, final Group group) {
+
+        User executingUser = userInfo.getUser();
+        if (executingUser == null) {
+            executingUser = userService.findByLogin(userInfo.getLogin());
+        }
+
+        if (!groupService.isUserMemberOfGroup(executingUser, group)) {
+            LOG.info("User {} is not member of group {}, so he may not see any content", executingUser.getLogin(), group.getName());
+            return null;
+        }
+
+        return executingUser;
+    }
+
+    /**
+     * method that actually executes the search given the final set of options
+     * 
+     * @param rso {@link ResolvedSearchOptions} containing all query parameters
+     * @param pageable {@link OffsetBasedPageRequest} containing search parameters (limit, offset, sorting)
+     * 
+     * @return {@link AnnotationSearchResult} containing found results
+     */
+    private AnnotationSearchResult executeSearch(final ResolvedSearchOptions rso, final Pageable pageable) {
+
+        final SearchModel searchModel = searchModelFactory.getSearchModel(rso);
+        if (searchModel == null) {
+            LOG.warn("No suitable search model found or no matching DB content found");
+            return new AnnotationSearchResult(); // empty result
+        }
+
+        final AnnotationSearchResult result = new AnnotationSearchResult();
+        result.setSearchModelUsed(searchModel);
+
+        // search
+        final Page<Annotation> resultPage = annotRepos.findAll(searchModel.getSearchSpecification(), pageable);
+        result.setItems(resultPage.getContent());
+        result.setTotalItems(resultPage.getTotalElements());
+
         return result;
     }
 
@@ -462,30 +765,35 @@ public class AnnotationServiceImpl implements AnnotationService {
      * 
      * NOTE: search for tags is currently not supported - seems a special functionality from hypothesis client, but does not respect documented API
      * 
-     * @param annotations
-     *        the set of {@link Annotation}s whose replies are wanted
+     * @param annotSearchRes
+     *        the {@link AnnotationSearchResult} resulting from a previously executed search for (root) annotations
      * @param options
      *        the search options - required for sorting and ordering
-     * @param userlogin
-     *        the login of the user for which the search is being executed
+     * @param userInfo
+     *        information about the user requesting the search ({@link UserInformation})
      *        
      * @return returns a list of Annotation objects meeting belonging to the annotations and visible for the user
      */
     @Override
-    public List<Annotation> searchRepliesForAnnotations(List<Annotation> annotations, AnnotationSearchOptions options, String userlogin) {
+    public List<Annotation> searchRepliesForAnnotations(final AnnotationSearchResult annotSearchRes,
+            final AnnotationSearchOptions options,
+            final UserInformation userInfo) {
 
-        if (annotations == null || annotations.size() == 0) {
+        if (annotSearchRes == null) {
+            LOG.debug("No annotation search result received to search for answers");
+            return null;
+        }
+
+        if (CollectionUtils.isEmpty(annotSearchRes.getItems())) {
             LOG.debug("No annotations received to search for belonging answers");
-            return annotations;
+            return annotSearchRes.getItems();
         }
 
-        if (StringUtils.isEmpty(userlogin)) {
-            LOG.error("Cannot search for replies without user!");
-            throw new IllegalArgumentException("User login empty");
-        }
+        Assert.notNull(options, "Cannot search for replies without search options!");
+        Assert.notNull(userInfo, "Cannot search for replies without authenticated user!");
 
         // extract all the IDs of the given annotations
-        List<String> annotationIds = annotations.stream().map(Annotation::getId).collect(Collectors.toList());
+        final List<String> annotationIds = annotSearchRes.getItems().stream().map(Annotation::getId).collect(Collectors.toList());
 
         // notes:
         // - we want to retrieve ALL replies, no matter how many there are!
@@ -495,20 +803,45 @@ public class AnnotationServiceImpl implements AnnotationService {
         // we have to find all annotations having A's ID set in the "Root" field
         // we keep the sorting and ordering options
 
-        Pageable pageable = new OffsetBasedPageRequest(0, Integer.MAX_VALUE, options.getSort()); // hand over sorting
+        final Pageable pageable = new OffsetBasedPageRequest(0, Integer.MAX_VALUE, options.getSort()); // hand over sorting
 
         List<Annotation> result = null;
         try {
 
-            User executingUser = userService.findByLogin(userlogin);
+            final User executingUser = userService.findByLogin(userInfo.getLogin());
 
             // the users belonging to the group are required for knowing which other users' public
             // annotations are visible for the executing user
-            List<Long> userIdsOfGroup = groupService.getUserIdsOfGroup(options.getGroup());
+            final List<Long> userIdsOfGroup = groupService.getUserIdsOfGroup(options.getGroup());
 
-            Page<Annotation> resultPage = annotRepos.findAll(
+            final Page<Annotation> resultPage = annotRepos.findAll(
                     new AnnotationReplySearchSpec(annotationIds, executingUser.getId(), userIdsOfGroup), pageable);
             result = resultPage.getContent();
+
+            // now we need to filter out such replies which should not be found according to their status
+            // note: this would be too complicated to do on the database level, therefore it is performed as a postprocessing step
+            final List<Annotation> filteredList = new ArrayList<Annotation>();
+            final List<MetadataIdsAndStatuses> metaIdsStats = annotSearchRes.getSearchModelUsed().getMetadataAndStatusesList();
+            for (final Annotation rep : result) {
+                final String parentId = rep.getRootAnnotationId();
+                final Annotation parentAnnot = annotSearchRes.getItems().stream().filter(ann -> ann.getId().equals(parentId)).findFirst().get(); // must be
+                                                                                                                                                 // there by
+                                                                                                                                                 // construction
+                final long parentMetaId = parentAnnot.getMetadataId();
+
+                final List<AnnotationStatus> allowedStatus = metaIdsStats.stream()
+                        .filter(mis -> mis.getMetadataIds().contains(parentMetaId))
+                        .map(MetadataIdsAndStatuses::getStatuses)
+                        .flatMap(list -> list.stream()) // removes nested lists
+                        .distinct() // filter out duplicates
+                        .collect(Collectors.toList());
+
+                // now finally if the found reply has one of the found allowed status, if might pass
+                if (allowedStatus.contains(rep.getStatus())) {
+                    filteredList.add(rep);
+                }
+            }
+            result = filteredList;
         } catch (Exception ex) {
             LOG.error("Search for replies in annotation repository produced unexpected error!");
             throw ex;
@@ -517,32 +850,168 @@ public class AnnotationServiceImpl implements AnnotationService {
     }
 
     /**
-     * accept a suggestion, taking permissions into account
+     * retrieve the number of annotations for a given document/group/metadata
+     * hereby, only public annotations are counted, and highlights are ignored
+     * 
+     * @param options the options for the retrieval of annotations
+     * @param userInfo information about the user requesting the number of annotations
+     * 
+     * @throws MissingPermissionException
+     *         this exception is thrown when requesting user is no ISC user, 
+     *         or when other than ISC annotations are wanted
+     * @return number of annotations, or -1 when retrieval could not even be launched
+     *         due to failing precondition checks
+     */
+    @Override
+    public int getAnnotationsCount(final AnnotationSearchCountOptions options, final UserInformation userInfo)
+            throws MissingPermissionException {
+
+        Assert.notNull(userInfo, "User information not available");
+
+        LOG.debug("User authenticated while searching for annotations: '{}'", userInfo.getLogin());
+        if (!Authorities.isIsc(userInfo.getAuthority())) {
+            throw new MissingPermissionException("Only permitted for ISC users");
+        }
+
+        Assert.notNull(options, "Cannot search without valid search parameters!");
+
+        final int emptyResult = -1;
+
+        // 1) URI / document
+        final Document doc = documentService.findDocumentByUri(options.getUri());
+        if (doc == null) {
+            LOG.debug("No document registered yet for given search URI: {}", options.getUri());
+            return emptyResult;
+        }
+
+        // 2) group
+        final Group group = groupService.findGroupByName(options.getGroup());
+        if (group == null) {
+            LOG.debug("No group registered yet with given search group name: {}", options.getGroup());
+            return emptyResult;
+        }
+
+        // 3) check that the user requesting the search actually is member of the requested group
+        // if not, he will not see any result
+        final User executingUser = getExecutingUser(userInfo, group);
+        if (executingUser == null) {
+            LOG.warn("Unable to determine user running search query");
+            return emptyResult;
+        }
+
+        final ResolvedSearchOptions rso = new ResolvedSearchOptions();
+        rso.setDocument(doc);
+        rso.setGroup(group);
+
+        final List<MetadataIdsAndStatuses> metadataIdsAndStatuses = getMetadataIdsForAnnotationsCount(options.getMetadatasets(), rso);
+        if (metadataIdsAndStatuses == null) {
+            return 0; // reason was logged already
+        }
+
+        // finally search
+        try {
+            return (int) annotRepos.count(new AnnotationCountSearchSpec(metadataIdsAndStatuses));
+
+        } catch (Exception ex) {
+            LOG.error("Search in annotation repository for number of annotations produced unexpected error!");
+            throw ex;
+        }
+    }
+
+    /**
+     * processing of the metadata for counting annotations (externalised to reduce complexity)
+     * 
+     * @param options given JSON-encoded metadata sets to match
+     * @param rso {@link ResolvedSearchOptions} containing document and group; 
+     * @return list of retrieved IDs of metadata sets matching
+     * @throws MissingPermissionException if non-ISC annotations are requested
+     */
+    private List<MetadataIdsAndStatuses> getMetadataIdsForAnnotationsCount(final String metadataSets,
+            final ResolvedSearchOptions rso) throws MissingPermissionException {
+
+        rso.setMetadataWithStatusesList(metadataSets);
+
+        // check that ISC authority is requested, or no authority (and we thus assume ISC)
+        if (!rso.getMetadataWithStatusesList().isEmpty()) {
+            // creating a {@link Metadata} instance by using the given map, the system Id of the map is used
+            final Metadata metadataHelp = new Metadata(rso.getDocument(), rso.getGroup(), Authorities.ISC);
+            throwIfNonIscRequested(metadataHelp, rso);
+        }
+
+        // note: we do no longer perform an exact match, but instead AT LEAST all given metadata must match
+        // so first look for candidates associated to document, group and system ID
+        final List<Metadata> metaCandidates = metadataService.findMetadataOfDocumentGroupSystemid(rso.getDocument(), rso.getGroup(), Authorities.ISC);
+        if (metaCandidates.isEmpty()) {
+            LOG.info("No corresponding metadata found for document/group/ISC");
+            return null;
+        }
+
+        final List<MetadataIdsAndStatuses> metaAndStatus = new ArrayList<MetadataIdsAndStatuses>();
+        for (final SimpleMetadataWithStatuses smws : rso.getMetadataWithStatusesList()) {
+
+            // now check if these candidates have at least the metadata received via the search options
+            final List<Long> metadataIds = metadataService.getIdsOfMatchingMetadatas(metaCandidates, smws.getMetadata());
+            if (metadataIds == null) { // our function returns {@literal null} or a list with content, but no empty list
+                continue;
+            }
+            metaAndStatus.add(new MetadataIdsAndStatuses(metadataIds, smws.getStatuses()));
+        }
+
+        if (CollectionUtils.isEmpty(metaAndStatus)) {
+            LOG.info("No corresponding metadata fulfilling search criteria found in DB");
+            return null;
+        }
+
+        return metaAndStatus;
+    }
+
+    /**
+     * checks if non-ISC data was requested in search options; if so: throws exception
+     * 
+     * @param metadataHelp dummy object having main metadata properties already (time saver)
+     * @param rso filled {@link ResolvedSearchOptions} containing requested metadata sets
+     * 
+     * @throws MissingPermissionException thrown if any of the metadata sets requests non-ISC data
+     */
+    private void throwIfNonIscRequested(final Metadata metadataHelp, final ResolvedSearchOptions rso)
+            throws MissingPermissionException {
+
+        for (final SimpleMetadataWithStatuses requested : rso.getMetadataWithStatusesList()) {
+            metadataHelp.setKeyValuePropertyFromSimpleMetadata(requested.getMetadata());
+            if (!Authorities.isIsc(metadataHelp.getSystemId())) {
+                // other authority queried -> refuse
+                throw new MissingPermissionException("Only querying ISC is allowed");
+            }
+        }
+    }
+
+    /**
+     * accept a suggestion, taking permissions and authority into account
      * 
      * @param suggestionId
      *        the ID of the suggestion (annotation) to be accepted
-     * @param userlogin
-     *        the login of the user requesting to accept the suggestion
+     * @param userInfo
+     *        information about the user requesting to accept the suggestion
      *        
-     * @return returns the found annotation object, or null
+     * @return returns the found annotation object, or {@literal null}
      * @throws CannotAcceptSuggestionException
      *         this exception is thrown when the referenced suggestion does not exist
+     * @throws CannotAcceptSentSuggestionException
+     *         this exception is thrown when the annotation already has response status SENT
      * @throws NoSuggestionException
      *         this exception is thrown when the referenced annotation is not a suggestion, but a different kind of annotation
      * @throws MissingPermissionException 
-     *         this exception is thrown when the user does not have the permission to accept the suggestion
-     * @throws CannotDeleteAnnotationException
-     *         this exception is thrown when the technical deletion encounters an unexpected error
+     *         this exception is thrown when the user does not have the permission to accept the suggestion 
      */
     @Override
-    public void acceptSuggestionById(String suggestionId, String userlogin)
-            throws CannotAcceptSuggestionException, NoSuggestionException, MissingPermissionException, CannotDeleteAnnotationException {
+    public void acceptSuggestionById(final String suggestionId, final UserInformation userInfo)
+            throws CannotAcceptSuggestionException, CannotAcceptSentSuggestionException,
+            NoSuggestionException, MissingPermissionException {
 
-        if (StringUtils.isEmpty(suggestionId)) {
-            throw new IllegalArgumentException("Required suggestion/annotation ID missing.");
-        }
-
-        Annotation ann = findAnnotationById(suggestionId);
+        Assert.isTrue(!StringUtils.isEmpty(suggestionId), "Required suggestion/annotation ID missing.");
+        Assert.notNull(userInfo, ERROR_USERINFO_MISSING);
+        
+        final Annotation ann = findAnnotationById(suggestionId);
         if (ann == null) {
             throw new CannotAcceptSuggestionException("Suggestion not found");
         }
@@ -551,42 +1020,49 @@ public class AnnotationServiceImpl implements AnnotationService {
             throw new NoSuggestionException("Given ID '" + suggestionId + "' does not represent a suggestion");
         }
 
-        if (!hasUserPermissionToAcceptSuggestion(ann, userlogin)) {
-            LOG.warn("User '{}' does not have permission to accept suggestion/annotation with id '{}'.", userlogin, suggestionId);
-            throw new MissingPermissionException(userlogin);
+        // in ISC, accepting a suggestion is not allowed - but in LEOS!
+        if (ann.isResponseStatusSent() && !Authorities.isLeos(userInfo.getAuthority())) {
+            LOG.info("Annotation/suggestion '{}' has response status SENT and thus cannot be accepted in {}", ann.getId(), userInfo.getAuthority());
+            throw new CannotAcceptSentSuggestionException("Annotation/suggestion has response status SENT, cannot be accepted in " + userInfo.getAuthority());
         }
 
-        // NOTE: currently, accepting suggestions is done by deleting them; this will change in the future
-        deleteAnnotationAndOrphanedDocument(ann);
+        final User user = userInfo.getUser();
+        if (!annotPermService.hasUserPermissionToAcceptSuggestion(ann, user)) {
+            final String login = user == null ? "unknown user" : user.getLogin();
+            LOG.warn("User '{}' does not have permission to accept suggestion/annotation with id '{}'.", login, suggestionId);
+            throw new MissingPermissionException(login);
+        }
+
+        acceptAnnotation(ann, user.getId());
     }
 
     /**
-     * reject a suggestion, taking permissions into account
+     * reject a suggestion, taking permissions and authority into account
      * 
      * @param suggestionId
      *        the ID of the suggestion (annotation) to be rejected
-     * @param userlogin
-     *        the login of the user requesting to reject the suggestion
+     * @param userInfo
+     *        information about the user requesting to reject the suggestion
      *        
-     * @return returns the found annotation object, or null
-     * @throws CannotAcceptSuggestionException
+     * @return returns the found annotation object, or {@literal null}
+     * @throws CannotRejectSuggestionException
      *         this exception is thrown when the referenced suggestion does not exist
      * @throws NoSuggestionException
      *         this exception is thrown when the referenced annotation is not a suggestion, but a different kind of annotation
+     * @throws CannotRejectSentSuggestionException
+     *         this exception is thrown when the annotation has response status SENT
      * @throws MissingPermissionException 
      *         this exception is thrown when the user does not have the permission to reject the suggestion
-     * @throws CannotDeleteAnnotationException
-     *         this exception is thrown when the technical deletion encounters an unexpected error
      */
     @Override
-    public void rejectSuggestionById(String suggestionId, String userlogin)
-            throws CannotRejectSuggestionException, NoSuggestionException, MissingPermissionException, CannotDeleteAnnotationException {
+    public void rejectSuggestionById(final String suggestionId, final UserInformation userInfo)
+            throws CannotRejectSuggestionException, NoSuggestionException,
+            MissingPermissionException, CannotRejectSentSuggestionException {
 
-        if (StringUtils.isEmpty(suggestionId)) {
-            throw new IllegalArgumentException("Required suggestion/annotation ID missing.");
-        }
-
-        Annotation ann = findAnnotationById(suggestionId);
+        Assert.isTrue(!StringUtils.isEmpty(suggestionId), "Required suggestion/annotation ID missing.");
+        Assert.notNull(userInfo, ERROR_USERINFO_MISSING);
+        
+        final Annotation ann = findAnnotationById(suggestionId);
         if (ann == null) {
             throw new CannotRejectSuggestionException("Suggestion not found");
         }
@@ -595,13 +1071,20 @@ public class AnnotationServiceImpl implements AnnotationService {
             throw new NoSuggestionException("Given ID '" + suggestionId + "' does not represent a suggestion");
         }
 
-        if (!hasUserPermissionToRejectSuggestion(ann, userlogin)) {
-            LOG.warn("User '{}' does not have permission to reject suggestion/annotation with id '{}'.", userlogin, suggestionId);
-            throw new MissingPermissionException(userlogin);
+        // in ISC, rejecting a suggestion is not allowed - but in LEOS!
+        if (ann.isResponseStatusSent() && !Authorities.isLeos(userInfo.getAuthority())) {
+            LOG.info("Annotation/suggestion '{}' has response status SENT and thus cannot be rejected in {}", ann.getId(), userInfo.getAuthority());
+            throw new CannotRejectSentSuggestionException("Annotation/suggestion has response status SENT, cannot be rejected in " + userInfo.getAuthority());
         }
 
-        // NOTE: currently, rejecting suggestions is done by deleting them; this will change in the future
-        deleteAnnotationAndOrphanedDocument(ann);
+        final User user = userInfo.getUser();
+        if (!annotPermService.hasUserPermissionToRejectSuggestion(ann, user)) {
+            final String login = user == null ? "unknown user" : user.getLogin();
+            LOG.warn("User '{}' does not have permission to reject suggestion/annotation with id '{}'.", login, suggestionId);
+            throw new MissingPermissionException(login);
+        }
+
+        rejectAnnotation(ann, user.getId());
     }
 
     /**
@@ -612,204 +1095,127 @@ public class AnnotationServiceImpl implements AnnotationService {
      * @return true if the annotation was identified as a suggestion
      */
     @Override
-    public boolean isSuggestion(Annotation sugg) {
+    public boolean isSuggestion(final Annotation sugg) {
 
-        if (sugg == null) {
-            throw new IllegalArgumentException("Required suggestion missing");
-        }
+        Assert.notNull(sugg, "Required suggestion missing");
 
         return tagsService.hasSuggestionTag(sugg.getTags());
     }
 
     /**
-     * convert a given Annotation object into JsonAnnotation format
-     * 
-     * @param annot
-     *        the Annotation object to be converted
-     * @return the wrapped JsonAnnotation object
-     */
-    @Override
-    public JsonAnnotation convertToJsonAnnotation(Annotation annot) {
-
-        if (annot == null) {
-            LOG.error("Received null for annotation to be converted to JsonAnnotation");
-            return null;
-        }
-
-        URI docUri = null;
-        try {
-            if (annot.getDocument() != null) {
-                docUri = new URI(annot.getDocument().getUri());
-            }
-        } catch (URISyntaxException e) {
-            LOG.error("Unexpected error converting document URI '" + annot.getDocument().getUri() + "'", e);
-        }
-
-        JsonAnnotation result = new JsonAnnotation();
-        result.setCreated(annot.getCreated());
-        result.setId(annot.getId());
-        result.setText(annot.getText());
-        result.setUpdated(annot.getUpdated());
-        result.setUri(docUri);
-
-        // document info
-        JsonAnnotationDocument doc = new JsonAnnotationDocument();
-        doc.setTitle(annot.getDocument().getTitle());
-
-        JsonAnnotationDocumentLink docLink = new JsonAnnotationDocumentLink();
-        docLink.setHref(docUri);
-        doc.setLink(Arrays.asList(docLink));
-
-        // metadata is appended as a child of document
-        if (annot.getMetadata() != null) {
-            doc.setMetadata(annot.getMetadata().getKeyValuePropertyAsHashMap());
-        }
-        result.setDocument(doc);
-
-        // targets
-        JsonAnnotationTargets targets = new JsonAnnotationTargets(null);
-        targets.setDeserializedSelectors(annot.getTargetSelectors());
-        targets.setSource(docUri);
-        result.setTarget(Arrays.asList(targets));
-
-        // group info
-        String groupName = "";
-        if (annot.getGroup() != null) {
-            groupName = annot.getGroup().getName();
-            result.setGroup(groupName);
-        }
-
-        // user info
-        String userAccountForHypo = "";
-        if (annot.getUser() != null) {
-            userAccountForHypo = userService.getHypothesisUserAccountFromUser(annot.getUser());
-            result.setUser(userAccountForHypo);
-
-            // retrieve user's display name to have "nice names" being displayed for each annotation
-            String displayName = "";
-            UserDetails userDetails = userService.getUserDetailsFromUserRepo(annot.getUser().getLogin());
-            if (userDetails != null) {
-                displayName = userDetails.getDisplayName();
-            } else {
-                // usually, all users should be found in the UD repo, so this case is unlikely to occur...
-                // ... but the network could be down or whatever, therefore we use a fallback
-                // -> why? because annotate/hypothes.is client starts acting weird if the information is missing, and
-                // might even use the "display_name" provided in the current user's profile FOR ALL USERS, which is totally wrong!!!
-                // ... and that simply must be avoided!
-                displayName = annot.getUser().getLogin();
-            }
-            JsonUserInfo userInfo = new JsonUserInfo();
-            userInfo.setDisplay_name(displayName);
-            result.setUser_info(userInfo);
-        }
-
-        // permissions
-        // currently kept simple:
-        // - private annotation -> read permission for user only
-        // - public annotation -> read permission for group
-        // admin, delete and update always for user only
-        JsonAnnotationPermissions permissions = new JsonAnnotationPermissions();
-        permissions.setAdmin(Arrays.asList(userAccountForHypo));
-        permissions.setDelete(Arrays.asList(userAccountForHypo));
-        permissions.setUpdate(Arrays.asList(userAccountForHypo));
-        permissions.setRead(Arrays.asList(annot.isShared() ? "group:" + groupName : userAccountForHypo));
-        result.setPermissions(permissions);
-
-        // tags
-        if (annot.getTags() != null && annot.getTags().size() > 0) {
-            // convert from List<Tag> to List<String>
-            result.setTags(annot.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
-        }
-
-        // references
-        result.setReferences(annot.getReferencesList());
-
-        return result;
-    }
-
-    /**
-     * convert a given list of Annotation objects into JsonSearchResult format, taking search options into account
-     * (e.g. whether replies should be listed separately)
-     * 
-     * @param annotations
-     *        the list of Annotations objects to be converted
-     * @param replies the replies belonging to the found annotations
-     * @param options search options that might influence the result, e.g. whether replies should be listed separately
-     * @return the wrapped JsonSearchResult object
-     */
-    @Override
-    public JsonSearchResult convertToJsonSearchResult(List<Annotation> annotations, List<Annotation> replies, AnnotationSearchOptions options) {
-
-        if (annotations == null) {
-            LOG.info("There is no search result to be converted to JSON response format");
-            return null;
-        }
-
-        if (options == null) {
-            LOG.info("No search options given for creating search result");
-            return null;
-        }
-
-        // depending on how the results were requested, we create one result type or another
-        if (!options.isSeparateReplies()) {
-
-            // merge replies into annotations, re-sort according to options
-            // note: the annotations list might be implemented by an unmodifiable collection; therefore, we have to copy the items...
-            List<Annotation> mergedList = new ArrayList<Annotation>();
-            mergedList.addAll(annotations);
-            if (replies != null) {
-                mergedList.addAll(replies);
-            }
-            mergedList.sort(new AnnotationComparator(options.getSort()));
-
-            List<JsonAnnotation> annotationsAsJson = mergedList.stream().map(ann -> convertToJsonAnnotation(ann))
-                    .collect(Collectors.toList());
-            return new JsonSearchResult(annotationsAsJson);
-
-        } else {
-            List<JsonAnnotation> annotationsAsJson = annotations.stream().map(ann -> convertToJsonAnnotation(ann))
-                    .collect(Collectors.toList());
-            List<JsonAnnotation> repliesAsJson = (replies == null ? new ArrayList<JsonAnnotation>()
-                    : replies.stream().map(ann -> convertToJsonAnnotation(ann)).collect(Collectors.toList()));
-            return new JsonSearchResultWithSeparateReplies(annotationsAsJson, repliesAsJson);
-        }
-    }
-
-    /**
-     * technical deletion of an annotation; also takes care to remove a document entry if it becomes orphaned due to the deletion
+     * deletion of an annotation
+     * (recursive if annotation is a root annotation)
      *  
      * @param annot the annotation to be deleted
+     * @param userId ID of the user requesting rejection
+     * 
      * @throws CannotDeleteAnnotationException
      *         the exception is thrown when the annotation cannot be deleted, e.g. when it is not existing or due to unexpected database error)
      */
-    private void deleteAnnotationAndOrphanedDocument(Annotation annot) throws CannotDeleteAnnotationException {
+    private void deleteAnnotation(final Annotation annot, final long userId) throws CannotDeleteAnnotationException {
 
-        // we remove orphaned documents - therefore we now save the document information before removing the annotation
-        // notes:
-        // - we do not delete the user, the group, or the user's group membership
-        // - we do not have to delete tags, as they are deleted by their foreign key constraint to the annotation ID
-        Document doc = annot.getDocument();
+        /**
+         * note:
+         * due to the database schema construction, there is a foreign key constraint on the 'root' column;
+         * this makes all replies be deleted in case the thread's root annotation is deleted;
+         * however, with our soft delete, the "DELETED" information is not automatically propagated
+         *
+         * to propagate the information, a trigger would be a good option, but this fails as the trigger would
+         *  change other data of the table and thus again activate the trigger (ORA-04091)
+         * 
+         * so we have to do it ourselves: if a thread root is deleted, we delete all children;
+         *  if it is not the root, only the particular annotation is removed, but NO child
+         */
 
-        // note: due to the database schema construction, there is a foreign key constraint on the 'root' column
-        // this makes all replies be deleted in case the thread's root annotation is deleted
         try {
-            annotRepos.delete(annot);
+            updateAnnotationStatus(annot, AnnotationStatus.DELETED, userId);
+        } catch (CannotUpdateAnnotationException cuae) {
+            // wrap into more specific exception
+            throw new CannotDeleteAnnotationException(cuae);
+        }
+    }
+
+    /**
+     * accepting an annotation
+     * (recursive if annotation is a root annotation)
+     *  
+     * @param annot the annotation to be accepted
+     * @param userId ID of the user requesting rejection
+     * 
+     * @throws CannotAcceptSuggestionException
+     *         the exception is thrown when the annotation cannot be accepted, e.g. when it is not existing or due to unexpected database error)
+     */
+    private void acceptAnnotation(final Annotation annot, final long userId) throws CannotAcceptSuggestionException {
+
+        // cfr. comment in {@link deleteAnnotation}
+
+        try {
+            updateAnnotationStatus(annot, AnnotationStatus.ACCEPTED, userId);
+        } catch (CannotUpdateAnnotationException cuae) {
+            // wrap into more specific exception
+            throw new CannotAcceptSuggestionException(cuae);
+        }
+    }
+
+    /**
+     * rejecting an annotation
+     * (recursive if annotation is a root annotation)
+     *  
+     * @param annot the annotation to be rejected
+     * @param userId ID of the user requesting rejection
+     * 
+     * @throws CannotRejectSuggestionException
+     *         the exception is thrown when the annotation cannot be rejected, e.g. when it is not existing or due to unexpected database error)
+     */
+    private void rejectAnnotation(final Annotation annot, final long userId) throws CannotRejectSuggestionException {
+
+        // cfr. comment in {@link deleteAnnotation}
+
+        try {
+            updateAnnotationStatus(annot, AnnotationStatus.REJECTED, userId);
+        } catch (CannotUpdateAnnotationException cuae) {
+            // wrap into more specific exception
+            throw new CannotRejectSuggestionException(cuae);
+        }
+    }
+
+    /**
+     * method for updating the status of an annotation (recursive, if needed, e.g. for root annotations)
+     * 
+     * @param annot annotation (root) to be updated
+     * @param newStatus the new status to be applied
+     * @param userId internal DB id of the user requesting status change
+     * 
+     * @throws CannotUpdateAnnotationException
+     *         exception thrown when saving the updated annotation fails
+     */
+    private void updateAnnotationStatus(final Annotation annot, final AnnotationStatus newStatus, final long userId) throws CannotUpdateAnnotationException {
+
+        try {
+            annot.setStatus(newStatus);
+            annot.setStatusUpdated(LocalDateTime.now());
+            annot.setStatusUpdatedBy(userId);
+            annotRepos.save(annot);
         } catch (Exception e) {
-            LOG.error("Error deleting annotation with ID '" + annot.getId() + "'", e);
-            throw new CannotDeleteAnnotationException(e);
+            LOG.error("Error updating annotation status for annotation with ID '" + annot.getId() + "' to status '" + newStatus.toString() + '"', e);
+            throw new CannotUpdateAnnotationException(e);
         }
 
-        // check if document is orphaned (i.e. no more annotations are stored for the document) -> delete
-        if (annotRepos.existsByDocumentId(doc.getId())) {
-            LOG.debug("There are still annotations assigned to document '{}'. We do not delete the document.", doc.getId());
-        } else {
-            LOG.info("Document '" + doc.getId() + "' is no longer referenced by any annotation. We will remove the document now.");
-            try {
-                documentService.deleteDocument(doc);
-            } catch (CannotDeleteDocumentException cdde) {
-                LOG.error("Document '" + doc.getId() + "' could not be deleted, remains in database without being related to any annotation", cdde);
-            } catch (Exception e) {
-                LOG.error("Unexpected error upon deleting document '{}'; remains in database without being related to any annotation", doc.getId());
+        final boolean isThreadRoot = StringUtils.isEmpty(annot.getRootAnnotationId());
+
+        if (isThreadRoot) {
+            // get all children - fortunately, they all have the same root, no matter how many layers might be between the root and a successor
+            // note: we only adapt those items still being in "NORMAL" state (since e.g. we don't want to change an already DELETED item to ACCEPTED)
+            final List<Annotation> children = annotRepos.findByRootAnnotationIdIsInAndStatus(Arrays.asList(annot.getId()), AnnotationStatus.NORMAL, null);
+            for (final Annotation child : children) {
+                child.setStatus(newStatus);
+                child.setStatusUpdated(LocalDateTime.now());
+                child.setStatusUpdatedBy(userId);
+                try {
+                    annotRepos.save(child);
+                } catch (Exception e) {
+                    LOG.error("Error soft-deleting child '" + child.getId() + "' of annotation '" + annot.getId() + "'", e);
+                }
             }
         }
     }
@@ -819,164 +1225,50 @@ public class AnnotationServiceImpl implements AnnotationService {
      *  if it is readable for the user only, it is private
      * 
      * @param annotation
-     *        JsonAnnotation object to be checked
+     *        {@link JsonAnnotation} object to be checked
      * @return flag indicating whether annotation is meant to be visible for "only me"
      */
-    private boolean isPrivateAnnotation(JsonAnnotation annotation) {
+    private boolean isPrivateAnnotation(final JsonAnnotation annotation) {
 
         if (annotation == null) {
             LOG.error("Annotation to be checked for privacy is invalid!");
             return false;
         }
 
-        JsonAnnotationPermissions perms = annotation.getPermissions();
+        final JsonAnnotationPermissions perms = annotation.getPermissions();
         if (perms == null) {
             LOG.error("Annotation to be checked for privacy does not contain any permission information!");
             return false;
         }
 
-        List<String> readPerms = perms.getRead();
-        if (readPerms == null || readPerms.size() == 0) {
+        final List<String> readPerms = perms.getRead();
+        if (readPerms == null || readPerms.isEmpty()) {
             LOG.error("Annotation to be checked for privacy does not contain any read permissions!");
             return false;
         }
 
         // the annotation is private if and only if the user itself has read permissions
-        return readPerms.size() == 1 && readPerms.get(0).equals(annotation.getUser());
+        return readPerms.size() == 1 &&
+                readPerms.get(0).equals(annotation.getUser());
     }
 
     /**
-     * check if user may see the annotation based on
-     * - his user name (if the annotation is private and he is the user that created the annotation)
-     * - his group membership (if the annotation is public and he is member of the group the annotation is published in)
-     * 
-     * @param annot
-     *        the annotation to be retrieved
-     * @param user
-     *        the user requesting to view the annotation
-     *        
-     * @return true if user may see the annotation
-     */
-    private boolean hasUserPermissionToSeeAnnotation(Annotation annot, User user) {
+    * get a list of all {@link Annotation} objects that have certain metadata sets associated
+    * 
+    * @param metadataIds the IDs of the metadata sets associated to the annotations
+    * 
+    * @return non-empty list of String
+    */
+    @Override
+    @Nonnull
+    public List<String> getAnnotationIdsOfMetadata(final List<Long> metadataIds) {
 
-        if (user == null || annot == null) {
-            LOG.warn("Checking if user has permission to view annotation fails: annot available: {}, user available: {}. Deny permission.",
-                    annot != null, user != null);
-            return false;
+        final List<Annotation> annots = annotRepos.findByMetadataIdIsInAndStatus(metadataIds, AnnotationStatus.NORMAL);
+        if (annots.isEmpty()) { // repository returns empty list if no matches are found
+            return new ArrayList<String>();
         }
 
-        // if the requesting user created the annotation, then he may see it
-        if (annot.getUser().getId().equals(user.getId())) {
-            return true;
-        }
-
-        // otherwise, if annotation must be
-        // a) shared
-        if (!annot.isShared()) {
-            return false;
-        }
-
-        // b) user must be member of the group in which the annotation was published
-        if (!groupService.isUserMemberOfGroup(user, annot.getGroup())) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * check if user may update the annotation based on
-     * - his user name (if he is the user that created the annotation)
-     * - his group membership (if the annotation is public and he is member of the group the annotation is published in)
-     * 
-     * @param annot
-     *        the annotation to be updated
-     * @param userlogin
-     *        login of the user requesting to update the annotation
-     *        
-     * @return true if user may update the annotation
-     */
-    private boolean hasUserPermissionToUpdateAnnotation(Annotation annot, String userlogin) {
-
-        return isAnnotationOfUser(annot, userlogin);
-    }
-
-    /**
-     * check if user may accept a suggestion based on his user name (needs to be member of the group to which the annotation belongs)
-     * 
-     * @param sugg
-     *        the suggestion to be accepted
-     * @param userlogin
-     *        login of the user requesting to accept the suggestion
-     *        
-     * @return true if user may accept the suggestion
-     */
-    private boolean hasUserPermissionToAcceptSuggestion(Annotation sugg, String userlogin) {
-
-        if (StringUtils.isEmpty(userlogin)) {
-            LOG.warn("No user name given for checking permission to accept suggestion");
-            return false;
-        }
-
-        // note: currently, any user of the group may accept a suggestion
-        User user = null;
-
-        if ((user = userService.findByLogin(userlogin)) == null) {
-            LOG.debug("No user registered yet with given user name: {}, so there cannot be any matches", userlogin);
-            return false;
-        }
-        return groupService.isUserMemberOfGroup(user, sugg.getGroup());
-    }
-
-    /**
-     * check if user may reject a suggestion based on his user name (needs to be member of the group to which the annotation belongs)
-     * 
-     * @param sugg
-     *        the suggestion to be rejected
-     * @param userlogin
-     *        login of the user requesting to accept the suggestion
-     *        
-     * @return true if user may reject the suggestion
-     */
-    private boolean hasUserPermissionToRejectSuggestion(Annotation sugg, String userlogin) {
-
-        if (StringUtils.isEmpty(userlogin)) {
-            LOG.warn("No user name given for checking permission to reject suggestion");
-            return false;
-        }
-
-        // note: currently, any user of the group may reject a suggestion
-        User user = null;
-
-        if ((user = userService.findByLogin(userlogin)) == null) {
-            LOG.debug("No user registered yet with given user name: {}, so there cannot be any matches", userlogin);
-            return false;
-        }
-        return groupService.isUserMemberOfGroup(user, sugg.getGroup());
-    }
-
-    /**
-     * check if a given annotation belongs to a user
-     * 
-     * @param annot
-     *        the annotation to be checked
-     * @param userlogin
-     *        login of the user to be checked
-     *        
-     * @return true if user created the annotation
-     */
-    private boolean isAnnotationOfUser(Annotation annot, String userlogin) {
-
-        User user = userService.findByLogin(userlogin);
-
-        // verify that the user associated to the annotation is the given user
-        try {
-            return (annot.getUser().getId().equals(user.getId()));
-        } catch (Exception e) {
-            LOG.error("Error checking if annotation belongs to user", e);
-        }
-
-        return false;
+        return annots.stream().map(Annotation::getId).collect(Collectors.toList());
     }
 
 }

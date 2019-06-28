@@ -25,13 +25,21 @@
 2018-03-27 : GUID for article are random numbers (no more coming from the id of Formex)
 2018-03-27 : remove GUID for authorialNote and paragraph
 2018-04-12 : remove spaces and indentation (xml:output  indent="no" )
+2019-01-11 : correct recitalsIntro in recitals, formulas and signatory
+2019-06-07 : escape " and ' characters. Cleanup extra whitespace in texts elements.
 -->
-    <xsl:character-map name="special-spaces">
+    <xsl:character-map name="special-characters">
         <xsl:output-character character="&#160;" string=" "/>
+        <xsl:output-character character="&#34;" string="&amp;quot;"/>
+        <xsl:output-character character="&#39;" string="&amp;apos;"/>
     </xsl:character-map>
-    <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="no" exclude-result-prefixes="fn" use-character-maps="special-spaces"/>
+    <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="no" exclude-result-prefixes="fn" use-character-maps="special-characters"/>
     <xsl:template match="/">
         <xsl:apply-templates/>
+    </xsl:template>
+    <!-- -->
+    <xsl:template match="text()">
+        <xsl:value-of select="replace(replace(., '&#160;', ' '), '( +){2,}', ' ')"/>
     </xsl:template>
     <!-- -->
     <xsl:template match="ACT">
@@ -42,7 +50,7 @@
            <xsl:element name="bill">
                 <xsl:attribute name="name"/>
                 <meta>
-                    <identification source="">
+                    <identification source="~COM">
                         <FRBRWork>
                             <FRBRthis value=""/>
                             <FRBRuri value=""/>
@@ -124,7 +132,7 @@
     <!-- -->
     <xsl:template match="PREAMBLE.INIT">
         <xsl:element name="formula">
-            <xsl:attribute name="name">acting entity</xsl:attribute>
+            <xsl:attribute name="name">actingEntity</xsl:attribute>
             <xsl:element name="p">
                 <xsl:apply-templates/>
             </xsl:element>
@@ -146,26 +154,27 @@
     </xsl:template>
     <!-- -->
     <xsl:template match="GR.CONSID">
-        <xsl:element name="block">
-            <xsl:attribute name="name">recitalsIntro</xsl:attribute>
-            <xsl:apply-templates select="GR.CONSID.INIT"/>
-        </xsl:element>
         <xsl:element name="recitals">
-            <xsl:attribute name="GUID" select="concat('recs_',generate-id())"/><!-- specific for Leos -->
+            <xsl:attribute name="xml:id" select="concat('recs_',generate-id())"/><!-- specific for Leos -->
+            <xsl:element name="intro">
+                <xsl:element name="p">
+                    <xsl:apply-templates select="GR.CONSID.INIT"/>
+                </xsl:element>
+            </xsl:element>
             <xsl:apply-templates select="*[not(name()='GR.CONSID.INIT')]"/>
         </xsl:element>
     </xsl:template>
     <!-- -->
     <xsl:template match="CONSID">
         <xsl:element name="recital">
-            <xsl:attribute name="GUID" select="concat('rec_',generate-id())"/><!-- specific for Leos -->
+            <xsl:attribute name="xml:id" select="concat('rec_',generate-id())"/><!-- specific for Leos -->
             <xsl:apply-templates/>
         </xsl:element>
     </xsl:template>
     <!-- -->
     <xsl:template match="PREAMBLE.FINAL">
         <xsl:element name="formula">
-            <xsl:attribute name="name">enacting formula</xsl:attribute>
+            <xsl:attribute name="name">enactingFormula</xsl:attribute>
             <xsl:element name="p">
                 <xsl:apply-templates/>
             </xsl:element>
@@ -233,7 +242,7 @@
     <!-- -->
     <xsl:template match="ARTICLE">
         <xsl:element name="article">
-            <xsl:attribute name="GUID" select="concat('art_',generate-id())"/>
+            <xsl:attribute name="xml:id" select="concat('art_',generate-id())"/>
             <xsl:if test="descendant::QUOT.S or descendant::FORMULA.S or descendant::FORMULA or descendant::GR.SEQ[NP]">
 				<xsl:attribute name="leos:compliant">false</xsl:attribute>
             </xsl:if>
@@ -1039,7 +1048,7 @@
             <xsl:apply-templates select="PL.DATE"/>
             <xsl:if test="SIGNATORY">
                 <xsl:element name="block">
-                    <xsl:attribute name="name">signatureBlock</xsl:attribute>
+                    <xsl:attribute name="name">signatory</xsl:attribute>
                     <xsl:apply-templates select="SIGNATORY"/>
                 </xsl:element>
             </xsl:if>

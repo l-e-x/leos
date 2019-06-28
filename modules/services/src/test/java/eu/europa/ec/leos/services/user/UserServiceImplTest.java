@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -47,8 +47,9 @@ public class UserServiceImplTest extends LeosTest {
         String entity = "Entity";
 
         String userId = "smithj";
-        
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail);
+        List<String> roles= new ArrayList<String>();
+        roles.add("ADMIN");
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail,roles);
 
         when(usersClient.getUserByLogin(userId)).thenReturn(user1);
 
@@ -65,19 +66,23 @@ public class UserServiceImplTest extends LeosTest {
         String user1FirstName = "John";
         String user1LastName = "SMITH";
         String user1Login = "smithj";
+        List<String> user1Roles= new ArrayList<String>();
+        user1Roles.add("ADMIN");
         String user1Mail = "smithj@test.com";
 
         String user2FirstName = "Peter";
         String user2LastName = "SURRY";
         String user2Login = "surryp";
         String user2Mail = "surryp@test.com";
+        List<String> user2Roles= new ArrayList<String>();
+        user1Roles.add("ADMIN");
 
         String entity = "Entity";
 
         String searchKey = "smith";
         
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail);
-        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, entity, user2Mail);
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail,user1Roles);
+        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, entity, user2Mail,user2Roles);
 
         String key = searchKey;
         List<User> users = new ArrayList();

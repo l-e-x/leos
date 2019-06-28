@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,10 +13,9 @@
  */
 package eu.europa.ec.leos.services.document.util;
 
-import org.springframework.stereotype.Component;
-
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import org.springframework.stereotype.Component;
 
 @Component
 public class DocumentVOProvider {

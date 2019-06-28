@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,22 +13,36 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
+
 import javax.persistence.*;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
+@SuppressWarnings("PMD.GodClass")
 @Entity
 @Table(name = "ANNOTATIONS", indexes = {
         @Index(columnList = "USER_ID", name = "ANNOTATIONS_IX_USERS"),
-        @Index(columnList = "GROUP_ID", name = "ANNOTATIONS_IX_GROUPS"),
         @Index(columnList = "METADATA_ID", name = "ANNOTATIONS_IX_METADATA"),
-        @Index(columnList = "DOCUMENT_ID", name = "ANNOTATIONS_IX_DOCUMENTS")})
+        @Index(columnList = "STATUS, ROOT", name = "ANNOTATIONS_IX_STATUS_ROOT")})
 public class Annotation {
 
     /**
      *  class corresponding to the main annotation metadata
      */
+
+    // -------------------------------------
+    // collection of constants denoting the various types of annotations supported
+    // -------------------------------------
+
+    public static final String ANNOTATION_COMMENT = "comment";
+    public static final String ANNOTATION_SUGGESTION = "suggestion";
+    public static final String ANNOTATION_PAGENOTE = ""; // note: no tag is written for a page note
+    public static final String ANNOTATION_HIGHLIGHT = "highlight";
 
     // -------------------------------------
     // column definitions
@@ -37,6 +51,7 @@ public class Annotation {
     // URL-safe UUID
     @Id
     @Column(name = "ANNOTATION_ID", unique = true, nullable = false)
+    @SuppressWarnings("PMD.ShortVariable")
     private String id;
 
     // the text of the annotation
@@ -76,24 +91,6 @@ public class Annotation {
     @JoinColumn(name = "USER_ID")
     private User user;
 
-    // group ID column, filled by hibernate
-    @Column(name = "GROUP_ID", insertable = false, updatable = false, nullable = false)
-    private long groupId;
-
-    // associate group, mapped by hibernate using GROUPS.GROUP_ID column
-    @OneToOne
-    @JoinColumn(name = "GROUP_ID")
-    private Group group;
-
-    // document ID column, filled by hibernate
-    @Column(name = "DOCUMENT_ID", insertable = false, updatable = false, nullable = false)
-    private long documentId;
-
-    // associate document, mapped by hibernate using DOCUMENTS.DOCUMENT_ID column
-    @OneToOne
-    @JoinColumn(name = "DOCUMENT_ID")
-    private Document document;
-
     /** 
      * associate tags, mapped bidirectional by hibernate using Tag.annotation property
      * notes:
@@ -106,17 +103,116 @@ public class Annotation {
     // metadata ID column, filled by hibernate
     @Column(name = "METADATA_ID", insertable = false, updatable = false, nullable = false)
     private long metadataId;
-    
+
     // associate metadata, mapped by hibernate using METADATA.ID column
     @OneToOne
     @JoinColumn(name = "METADATA_ID")
     private Metadata metadata;
-    
+
+    // status column, denotes whether the annotation is existing/deleted/accepted/rejected
+    // see the {@link AnnotationStatus} for possible states
+    @Column(name = "STATUS")
+    @Enumerated(EnumType.ORDINAL)
+    private AnnotationStatus status = AnnotationStatus.NORMAL;
+
+    // track the datetime of modification of the status
+    // note: NOT auto-filled by DB trigger as this would require different implementations for Oracle and H2
+    @Column(name = "STATUS_UPDATED", nullable = true)
+    private LocalDateTime statusUpdated;
+
+    // track who modified the status (user id, but we don't create a foreign key as it might slow down things unintentionally)
+    @Column(name = "STATUS_UPDATED_BY", nullable = true)
+    private Long statusUpdatedBy;
+
     // -------------------------------------
     // constructor
     // -------------------------------------
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public Annotation() {
+        // default constructor required by JPA
+    }
+
+    // -----------------------------------------------------------
+    // Enums
+    // -----------------------------------------------------------
+
+    // represents the "existence status" of the annotation
+    public enum AnnotationStatus {
+
+        // probably not needed, but let's have it as a bit-mask
+        // maybe using https://stackoverflow.com/questions/1414755/can-enums-be-subclassed-to-add-new-elements we could design it nicer
+        NORMAL(0), DELETED(1), ACCEPTED(2), REJECTED(4), ALL(7);
+
+        private int enumValue;
+
+        AnnotationStatus(final int value) {
+            this.enumValue = value;
+        }
+
+        public int getEnumValue() {
+            return enumValue;
+        }
+
+        public void setEnumValue(final int enumValue) {
+            if (enumValue >= 0 && enumValue <= ALL.getEnumValue()) {
+                this.enumValue = enumValue;
+            }
+        }
+        
+        public static List<AnnotationStatus> getAllValues() {
+            final List<AnnotationStatus> allStatuses = new ArrayList<AnnotationStatus>();
+            allStatuses.add(NORMAL);
+            allStatuses.add(DELETED);
+            allStatuses.add(ACCEPTED);
+            allStatuses.add(REJECTED);
+            return allStatuses;
+        }
+        
+        public static List<AnnotationStatus> getDefaultStatus() {
+            final List<AnnotationStatus> allStatuses = new ArrayList<AnnotationStatus>();
+            allStatuses.add(NORMAL);
+            return allStatuses;
+        }
+    }
+
+    // -------------------------------------
+    // Help functions (partially) exceeding pure POJO getters and setters
+    // -------------------------------------
+    public List<String> getReferencesList() {
+        if (this.references == null || this.references.isEmpty()) {
+            return null;
+        } else {
+            // split by comma
+            return Arrays.asList(this.references.split(","));
+        }
+    }
+
+    @SuppressWarnings("PMD.NullAssignment")
+    public void setReferences(final List<String> references) {
+
+        if (references == null || references.isEmpty()) {
+            this.references = null;
+        } else {
+            this.references = String.join(",", references);
+        }
+    }
+
+    // help function stating whether the object denotes a reply to an annotation
+    @Transient
+    public boolean isReply() {
+        return this.getReferences() != null && !this.getReferences().isEmpty();
+    }
+
+    // checks if the associate metadata of the annotation has the response status set to "SENT"
+    @Transient
+    public boolean isResponseStatusSent() {
+
+        if (this.metadata == null) {
+            return false;
+        }
+
+        return this.metadata.isResponseStatusSent();
     }
 
     // -------------------------------------
@@ -127,15 +223,15 @@ public class Annotation {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(final String newId) {
+        this.id = newId;
     }
 
     public String getText() {
         return text;
     }
 
-    public void setText(String text) {
+    public void setText(final String text) {
         this.text = text;
     }
 
@@ -143,7 +239,7 @@ public class Annotation {
         return created;
     }
 
-    public void setCreated(LocalDateTime created) {
+    public void setCreated(final LocalDateTime created) {
         this.created = created;
     }
 
@@ -151,7 +247,7 @@ public class Annotation {
         return updated;
     }
 
-    public void setUpdated(LocalDateTime updated) {
+    public void setUpdated(final LocalDateTime updated) {
         this.updated = updated;
     }
 
@@ -159,7 +255,7 @@ public class Annotation {
         return shared;
     }
 
-    public void setShared(boolean shared) {
+    public void setShared(final boolean shared) {
         this.shared = shared;
     }
 
@@ -167,7 +263,7 @@ public class Annotation {
         return targetSelectors;
     }
 
-    public void setTargetSelectors(String targetSelectors) {
+    public void setTargetSelectors(final String targetSelectors) {
         this.targetSelectors = targetSelectors;
     }
 
@@ -175,78 +271,65 @@ public class Annotation {
         return userId;
     }
 
-    public void setUserId(Long userId) {
+    public void setUserId(final long userId) {
         this.userId = userId;
     }
 
-    public long getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(long groupId) {
-        this.groupId = groupId;
-    }
-
-    public long getDocumentId() {
-        return documentId;
-    }
-
-    public void setDocumentId(long documentId) {
-        this.documentId = documentId;
-    }
-
+    // shortcut to access the related document
+    @Transient
     public Document getDocument() {
-        return document;
-    }
-
-    public void setDocument(Document document) {
-        this.document = document;
+        if (this.metadata == null) {
+            return null;
+        }
+        return this.metadata.getDocument();
     }
 
     public User getUser() {
         return user;
     }
 
-    public void setUser(User user) {
+    public void setUser(final User user) {
         this.user = user;
     }
 
+    // shortcut to access the related group
+    @Transient
     public Group getGroup() {
-        return group;
-    }
-
-    public void setGroup(Group group) {
-        this.group = group;
+        if (this.metadata == null) {
+            return null;
+        }
+        return this.metadata.getGroup();
     }
 
     public List<Tag> getTags() {
         return tags;
     }
 
-    public void setTags(List<Tag> tags) {
+    public void setTags(final List<Tag> tags) {
         this.tags = tags;
     }
 
-    public void setMetadataId(long metadataId) {
+    public void setMetadataId(final long metadataId) {
         this.metadataId = metadataId;
     }
-    
+
     public long getMetadataId() {
         return metadataId;
     }
-    
-    public void setMetadata(Metadata meta) {
+
+    public void setMetadata(final Metadata meta) {
         this.metadata = meta;
     }
-    
+
     public Metadata getMetadata() {
         return this.metadata;
     }
+
     public String getRootAnnotationId() {
         return rootAnnotationId;
     }
 
-    public void setRootAnnotationId(String rootAnnotationId) {
+    public void setRootAnnotationId(final String rootAnnotationId) {
         this.rootAnnotationId = rootAnnotationId;
     }
 
@@ -254,47 +337,48 @@ public class Annotation {
         return references;
     }
 
-    public void setReferences(String references) {
+    public void setReferences(final String references) {
         this.references = references;
     }
 
-    public List<String> getReferencesList() {
-        if (this.references == null || this.references.isEmpty()) {
-            return null;
-        } else {
-            // split by comma
-            List<String> result = Arrays.asList(this.references.split(","));
-            return result;
-        }
+    public AnnotationStatus getStatus() {
+        return status;
     }
 
-    public void setReferences(List<String> references) {
-
-        if (references == null || references.size() == 0) {
-            this.references = null;
-        } else {
-            this.references = String.join(",", references);
-        }
+    public void setStatus(final AnnotationStatus status) {
+        this.status = status;
     }
 
-    @Transient
-    // help function stating whether the object denotes a reply to an annotation
-    public boolean isReply() {
-        return this.getReferences() != null && !this.getReferences().isEmpty();
+    public LocalDateTime getStatusUpdated() {
+        return statusUpdated;
+    }
+
+    public void setStatusUpdated(final LocalDateTime upd) {
+        this.statusUpdated = upd;
+    }
+
+    public Long getStatusUpdatedBy() {
+        return statusUpdatedBy;
+    }
+
+    public void setStatusUpdatedBy(final Long upd) {
+        this.statusUpdatedBy = upd;
     }
 
     // -------------------------------------
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(created, updated, id, documentId, groupId, userId, rootAnnotationId, shared, text, targetSelectors, references,
-                document, group, tags, user);
+        return Objects.hash(created, updated, id, userId, rootAnnotationId, shared, text, targetSelectors, references,
+                metadataId, metadata, tags, user, status, statusUpdated, statusUpdatedBy);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }
@@ -305,16 +389,17 @@ public class Annotation {
         return Objects.equals(this.id, other.id) &&
                 Objects.equals(this.created, other.created) &&
                 Objects.equals(this.updated, other.updated) &&
-                Objects.equals(this.documentId, other.documentId) &&
-                Objects.equals(this.groupId, other.groupId) &&
                 Objects.equals(this.userId, other.userId) &&
                 Objects.equals(this.rootAnnotationId, other.rootAnnotationId) &&
                 Objects.equals(this.references, other.references) &&
                 Objects.equals(this.shared, other.shared) &&
                 Objects.equals(this.text, other.text) &&
+                Objects.equals(this.status, other.status) &&
+                Objects.equals(this.statusUpdated, other.statusUpdated) &&
+                Objects.equals(this.statusUpdatedBy, other.statusUpdatedBy) &&
                 Objects.equals(this.targetSelectors, other.targetSelectors) &&
-                Objects.equals(this.document, other.document) &&
-                Objects.equals(this.group, other.group) &&
+                Objects.equals(this.metadataId, other.metadataId) &&
+                Objects.equals(this.metadata, other.metadata) &&
                 Objects.equals(this.user, other.user) &&
                 Objects.equals(this.tags, other.tags);
     }

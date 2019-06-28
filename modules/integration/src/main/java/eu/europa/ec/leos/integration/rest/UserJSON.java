@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,25 +15,25 @@ package eu.europa.ec.leos.integration.rest;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import eu.europa.ec.leos.domain.common.LeosAuthority;
 import eu.europa.ec.leos.model.user.User;
+import eu.europa.ec.leos.security.SecurityUser;
 
 import java.util.List;
 
-public class UserJSON extends User {
+public class UserJSON extends User implements SecurityUser {
 
     private String lastName;
     private String firstName;
-    private List<LeosAuthority> authorities;
+    private List<String> roles;
 
     @JsonCreator
     public UserJSON(@JsonProperty("login") String login, @JsonProperty("perId") Long perId, @JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("entity") String entity, @JsonProperty("email") String email, @JsonProperty("roles") List<LeosAuthority> authorities) {
-        super(perId, login,  lastName + " " + firstName, entity, email);
+            @JsonProperty("entity") String entity, @JsonProperty("email") String email, @JsonProperty("roles") List<String> roles) {
+        super(perId, login,  lastName + " " + firstName, entity, email,roles);
 
         this.lastName = lastName;
         this.firstName = firstName;
-        this.authorities = authorities;
+        this.roles = roles;
     }
     
     public String getLastName() {
@@ -44,7 +44,7 @@ public class UserJSON extends User {
         return firstName;
     }
 
-    public List<LeosAuthority> getAuthorities() {
-        return authorities;
+    public List<String> getRoles() {
+        return roles;
     }
 }

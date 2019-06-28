@@ -16,9 +16,9 @@ escape = (string) ->
 module.exports = class LeosSuggestionSelection
   HIGHLIGHT_TAG = "hypothesis-highlight"
 
-  constructor: (allowedSelectorTags, editableAttribute, notAllowedSuggestSelector) ->
+  constructor: (allowedSelectorTags, editableSelector, notAllowedSuggestSelector) ->
     @allowedSelectorTags = allowedSelectorTags
-    @editableAttribute = editableAttribute
+    @editableSelector = editableSelector
     @notAllowedSuggestSelector = notAllowedSuggestSelector
 
   #
@@ -34,27 +34,29 @@ module.exports = class LeosSuggestionSelection
       else
         NodeFilter.FILTER_ACCEPT
     }, false)
-    return (treeWalker.nextNode() == null and _isEditable(rangeCommonAncestorContainer, self.editableAttribute) and _isAllowed(rangeCommonAncestorContainer, self.notAllowedSuggestSelector))
+    return (treeWalker.nextNode() == null and _isEditable(rangeCommonAncestorContainer, self.editableSelector) and _isAllowed(rangeCommonAncestorContainer, self.notAllowedSuggestSelector))
 
   #
   # Returns true if selection is done on an editable part
   # @param element: range common ancestor
-  # @param editableAttribute: attribute name which define if an element is editable or not
+  # @param editableSelector: attribute name which define if an element is editable or not
   # @return: returns true if selection is done on an editable part.
   #
-  _isEditable = (element, editableAttribute) =>
-    if editableAttribute == ""
-      return true 
+  _isEditable = (element, editableSelector) =>
+    editableSelectors = editableSelector.split ","
 
-    try
-      editableElement = $(element).closest("[#{escape(editableAttribute)}]")
-    catch error
-      return false
+    for editIndex, editSelector of editableSelectors 
+      if editSelector == ""
+        return true 
 
-    if editableElement? and editableElement.length > 0 and editableElement.attr(editableAttribute) == "true"
-      return true
-    else
-      return false
+      try
+        editableElement = $(element).closest(editSelector)
+      catch error
+        console.log("Error: " + error)
+
+      if editableElement? and editableElement.length > 0
+        return true
+    return false
 
   #
   # Returns true if selection for suggestion is allowed - checks the parent's elements
@@ -94,7 +96,7 @@ module.exports = class LeosSuggestionSelection
         return
 
     rulesEngine.processElement selectionsRules, tmpDiv
-    return tmpDiv.innerHTML
+    return tmpDiv.textContent
 
   #
   # While accepting a suggestion (@param annot) it generates appropriated array of selectors to send to LEOS
@@ -133,6 +135,6 @@ module.exports = class LeosSuggestionSelection
     if (element? and element.id? and element.id != "")
       return element
     else if (element.parentElement?)
-      return _getClosestAncestorWithId(element)
+      return _getClosestAncestorWithId(element.parentElement)
     else
       return null

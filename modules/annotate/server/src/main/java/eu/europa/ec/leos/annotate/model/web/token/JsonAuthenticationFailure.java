@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,14 @@
  */
 package eu.europa.ec.leos.annotate.model.web.token;
 
+import eu.europa.ec.leos.annotate.Generated;
+
 import java.util.Objects;
 
 /**
  * JSON object returned in case of authentication problems or problems during token generation
  */
+@SuppressWarnings("PMD.LongVariable")
 public class JsonAuthenticationFailure {
 
     private String error;
@@ -51,7 +54,7 @@ public class JsonAuthenticationFailure {
         // default constructor required for JSON deserialisation
     }
 
-    private JsonAuthenticationFailure(String error, String description) {
+    private JsonAuthenticationFailure(final String error, final String description) {
         this.error = error;
         this.error_description = description;
     }
@@ -99,7 +102,7 @@ public class JsonAuthenticationFailure {
         return error;
     }
 
-    public void setError(String error) {
+    public void setError(final String error) {
         this.error = error;
     }
 
@@ -107,7 +110,7 @@ public class JsonAuthenticationFailure {
         return error_description;
     }
 
-    public void setError_description(String error_description) {
+    public void setError_description(final String error_description) {
         this.error_description = error_description;
     }
 
@@ -115,13 +118,15 @@ public class JsonAuthenticationFailure {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(error, error_description);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

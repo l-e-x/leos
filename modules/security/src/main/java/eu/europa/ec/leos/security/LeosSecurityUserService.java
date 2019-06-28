@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,9 +13,6 @@
  */
 package eu.europa.ec.leos.security;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.integration.UsersProvider;
-import eu.europa.ec.leos.integration.rest.UserJSON;
 import eu.europa.ec.leos.model.user.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -33,10 +30,10 @@ import java.util.List;
 @Service
 public class LeosSecurityUserService extends PreAuthenticatedGrantedAuthoritiesUserDetailsService {
 
-    final private UsersProvider userProvider;
+    final private SecurityUserProvider userProvider;
 
     @Autowired
-    public LeosSecurityUserService(UsersProvider userProvider) {
+    public LeosSecurityUserService(SecurityUserProvider userProvider) {
         this.userProvider = userProvider;
     }
 
@@ -46,22 +43,22 @@ public class LeosSecurityUserService extends PreAuthenticatedGrantedAuthoritiesU
      * @param authorities the pre-authenticated authorities.
      */
     @Override
-    protected UserDetails createUserDetails(Authentication token, Collection<? extends GrantedAuthority> authorities) {
+    protected UserDetails createUserDetails(Authentication token, Collection<? extends GrantedAuthority> roles) {
         try {
             User user = userProvider.getUserByLogin(token.getName());
             AuthenticatedUser authenticatedUser = new AuthenticatedUser(user);
-            List<GrantedAuthority> allAuthorities = new ArrayList<GrantedAuthority>();
+            List<GrantedAuthority> allRoles = new ArrayList<GrantedAuthority>();
             /*Add all the authorities {application specific + ecas specific} to the AuthenticatedUser object
              *as a collection of {GrantedAuthority}
             */
-            if(user instanceof UserJSON) {
-                List<LeosAuthority> leosAuthorities = ((UserJSON) user).getAuthorities();
-                leosAuthorities.forEach(auth -> {
-                    allAuthorities.add(new SimpleGrantedAuthority(auth.name()));   
+            if(user instanceof SecurityUser) {
+                List<String> leosRoles = ((SecurityUser) user).getRoles();
+                leosRoles.forEach(auth -> {
+                	allRoles.add(new SimpleGrantedAuthority(auth));
                 });
             }
-            allAuthorities.addAll(authorities);
-            authenticatedUser.setAuthorities(allAuthorities);
+            allRoles.addAll(roles);
+            authenticatedUser.setAuthorities(allRoles);
             return authenticatedUser;
         } catch (Exception ex) {
             throw new UsernameNotFoundException("Cannot retrieve the userDetails", ex);

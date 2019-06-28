@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,19 +14,18 @@
 package eu.europa.ec.leos.annotate.controllers;
 
 import eu.europa.ec.leos.annotate.aspects.NoAuthAnnotation;
-import eu.europa.ec.leos.annotate.model.entity.User;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.user.JsonGroupWithDetails;
 import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.GroupService;
-import eu.europa.ec.leos.annotate.services.UserService;
+import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletException;
@@ -50,10 +49,10 @@ public class GroupApiController {
     // Required services and repositories
     // -------------------------------------
     @Autowired
-    private AuthenticationService authenticationService;
+    private AuthenticatedUserStore authUser;
     
     @Autowired
-    private UserService userService;
+    private AuthenticationService authService;
     
     @Autowired
     private GroupService groupService;
@@ -84,24 +83,22 @@ public class GroupApiController {
     @RequestMapping(value = "/groups", method = RequestMethod.GET, produces = {MediaType.APPLICATION_JSON_VALUE})
     @ResponseBody
     @NoAuthAnnotation
-    public ResponseEntity<Object> getGroups(HttpServletRequest request, HttpServletResponse response,
-            @RequestParam(value = "authority", required = false) String authority,
-            @RequestParam(value = "document_uri", required = false) String documentUri,
-            @RequestParam(value = "expand", required = false) String expand)
+    public ResponseEntity<Object> getGroups(final HttpServletRequest request, final HttpServletResponse response,
+            @RequestParam(value = "authority", required = false) final String authority,
+            @RequestParam(value = "document_uri", required = false) final String documentUri,
+            @RequestParam(value = "expand", required = false) final String expand)
             throws IOException, ServletException {
 
         List<JsonGroupWithDetails> groups = null;
         String errorMsg = "";
 
         try {
-            String userlogin = authenticationService.getUserLogin(request);
-            User user = null;
-            
-            if(!StringUtils.isEmpty(userlogin)) {
-                user = userService.findByLogin(userlogin);
-            }
-            
-            groups = groupService.getUserGroupsAsJson(user);
+            // the /groups request does not require authentication, but we try to see if authentication is provided 
+            // (which is allowed and which is the default use case for annotate)
+            authService.getUserLogin(request);
+
+            final UserInformation userInfo = authUser.getUserInfo();
+            groups = groupService.getUserGroupsAsJson(userInfo);
             
             if(groups == null) {
                 groups = new ArrayList<JsonGroupWithDetails>();

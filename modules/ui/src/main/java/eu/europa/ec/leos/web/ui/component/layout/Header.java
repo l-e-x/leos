@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -26,15 +26,14 @@ import com.vaadin.ui.themes.ValoTheme;
 import com.vaadin.v7.shared.ui.label.ContentMode;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.ListSelect;
-import eu.europa.ec.leos.domain.common.InstanceContext;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NavigationUpdateEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.component.HeaderResizeEvent;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
@@ -43,7 +42,7 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nonnull;
 import java.util.Locale;
 
-public class Header extends CustomLayout {
+public abstract class Header extends CustomLayout implements HeaderComponent {
     private static final long serialVersionUID = 3924630817693865467L;
 
     private static final Logger LOG = LoggerFactory.getLogger(Header.class);
@@ -60,18 +59,17 @@ public class Header extends CustomLayout {
     private MessageHelper messageHelper;
     private EventBus eventBus;
     private SecurityContext securityContext;
-    private InstanceContext instanceContext;
 
-
-    public Header(final LanguageHelper langHelper, final MessageHelper msgHelper, final EventBus eventBus, final SecurityContext securityContext, final InstanceContext instanceContext) {
+    public Header(final LanguageHelper langHelper, final MessageHelper msgHelper, final EventBus eventBus, final SecurityContext securityContext) {
         this.langHelper = langHelper;
         this.messageHelper = msgHelper;
         this.eventBus = eventBus;
         this.securityContext = securityContext;
-        this.instanceContext = instanceContext;
         LOG.trace("Initializing header...");
         initLayout();
     }
+
+    @Nonnull protected abstract Component buildLogo();
 
     private void initLayout() {
         setTemplate();
@@ -96,15 +94,6 @@ public class Header extends CustomLayout {
         }			
 	}
 	
-    private @Nonnull Component buildLogo() {
-        // logo image
-        if(instanceContext.isCouncil()) {
-            return new Image(null, LeosTheme.LEOS_HEADER_LOGO_RESOURCE_COUNCIL);
-        } else {
-            return new Image(null, LeosTheme.LEOS_HEADER_LOGO_RESOURCE_NEW);
-        }
-    }
-
     private @Nonnull Component buildLanguageSelector() {
         final ListSelect langSelector = new ListSelect();
         langSelector.setNullSelectionAllowed(false);

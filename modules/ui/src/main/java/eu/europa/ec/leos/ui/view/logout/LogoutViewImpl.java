@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,10 +16,10 @@ package eu.europa.ec.leos.ui.view.logout;
 import com.vaadin.navigator.ViewChangeListener.ViewChangeEvent;
 import com.vaadin.spring.annotation.SpringView;
 import com.vaadin.ui.UI;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.VerticalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.ui.view.AbstractLeosView;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

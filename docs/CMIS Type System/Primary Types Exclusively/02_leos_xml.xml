@@ -618,7 +618,55 @@
         <cmis:orderable>true</cmis:orderable>
         <cmis:openChoice>false</cmis:openChoice>
         <cmis:defaultValue/>
-    </cmis:propertyStringDefinition>    
+    </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>leos:milestoneComments</cmis:id>
+        <cmis:localName>leos:milestoneComments</cmis:localName>
+        <cmis:displayName>LEOS milestone comments</cmis:displayName>
+        <cmis:queryName>leos:milestoneComments</cmis:queryName>
+        <cmis:description>This is LEOS milestone comment property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>multi</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>false</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+        <cmis:propertyStringDefinition>
+        <cmis:id>leos:initialCreatedBy</cmis:id>
+        <cmis:localName>leos:initialCreatedBy</cmis:localName>
+        <cmis:displayName>LEOS Initial Created By</cmis:displayName>
+        <cmis:queryName>leos:initialCreatedBy</cmis:queryName>
+        <cmis:description>This is LEOS Initial Created By property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+    <cmis:propertyDateTimeDefinition>
+        <cmis:id>leos:initialCreationDate</cmis:id>
+        <cmis:localName>leos:initialCreationDate</cmis:localName>
+        <cmis:displayName>LEOS Initial Creation Date</cmis:displayName>
+        <cmis:queryName>leos:initialCreationDate</cmis:queryName>
+        <cmis:description>This is LEOS Initial Creation Date property.</cmis:description>
+        <cmis:propertyType>datetime</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>true</cmis:orderable>
+        <cmis:openChoice>false</cmis:openChoice>
+        <cmis:defaultValue/>
+    </cmis:propertyDateTimeDefinition>
     <cmis:versionable>true</cmis:versionable>
     <cmis:contentStreamAllowed>allowed</cmis:contentStreamAllowed>
 </cmis:type>

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,10 +15,9 @@ package eu.europa.ec.leos.services.document;
 
 import com.google.common.base.Stopwatch;
 import cool.graph.cuid.Cuid;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
-import eu.europa.ec.leos.domain.document.LeosMetadata.MemorandumMetadata;
-import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.document.Memorandum;
+import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
 import eu.europa.ec.leos.repository.document.MemorandumRepository;
 import eu.europa.ec.leos.repository.store.PackageRepository;
 import eu.europa.ec.leos.services.document.util.DocumentVOProvider;
@@ -28,7 +27,6 @@ import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import eu.europa.ec.leos.services.validation.ValidationService;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.MemorandumTocItemType;
-
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +44,7 @@ public class MemorandumServiceImpl implements MemorandumService {
     private static final Logger LOG = LoggerFactory.getLogger(MemorandumServiceImpl.class);
 
     private static final String MEMORANDUM_NAME_PREFIX = "memorandum_";
+    private static final String MEMORANDUM_DOC_EXTENSION = ".xml";
 
     private final MemorandumRepository memorandumRepository;
     private final PackageRepository packageRepository;
@@ -78,6 +77,15 @@ public class MemorandumServiceImpl implements MemorandumService {
         Memorandum memorandum = memorandumRepository.createMemorandum(templateId, path, name, metadata);
         byte[] updatedBytes = updateDataInXml((content==null)? getContent(memorandum) : content, metadata);
         return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, updatedBytes,false, actionMsg);
+    }
+
+    @Override
+    public Memorandum createMemorandumFromContent(String path, MemorandumMetadata metadata, String actionMsg, byte[] content) {
+        LOG.trace("Creating Memorandum... [ path={}, metadata={}]", path, metadata);
+        String name = generateMemorandumName();
+        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
+        Memorandum memorandum = memorandumRepository.createMemorandumFromContent(path, name, metadata, content);
+        return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, content,false, actionMsg);
     }
 
     @Override
@@ -115,6 +123,12 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
+    public Memorandum updateMemorandum(String memorandumId, MemorandumMetadata updatedMetadata) {
+        LOG.trace("Updating Memorandum Xml Content... [id={}]", memorandumId);
+        return memorandumRepository.updateMemorandum(memorandumId, updatedMetadata);
+    }
+
+    @Override
     public Memorandum updateMemorandum(Memorandum memorandum, MemorandumMetadata updatedMetadata, boolean major, String comment) {
         LOG.trace("Updating Memorandum... [id={}, metadata={}]", memorandum.getId(), updatedMetadata);
         Stopwatch stopwatch = Stopwatch.createStarted();
@@ -130,11 +144,25 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
+    public Memorandum updateMemorandumWithMilestoneComments(Memorandum memorandum, List<String> milestoneComments, boolean major, String comment){
+        LOG.trace("Updating Memorandum... [id={}, milestoneComments={}, major={}, comment={}]", memorandum.getId(), milestoneComments, major, comment);
+        final byte[] updatedBytes = getContent(memorandum);
+        memorandum = memorandumRepository.updateMilestoneComments(memorandum.getId(), milestoneComments, updatedBytes, major, comment);
+        return memorandum;
+    }
+
+    @Override
+    public Memorandum updateMemorandumWithMilestoneComments(String memorandumId, List<String> milestoneComments){
+        LOG.trace("Updating Memorandum... [id={}, milestoneComments={}]", memorandumId, milestoneComments);
+        return memorandumRepository.updateMilestoneComments(memorandumId, milestoneComments);
+    }
+
+    @Override
     public List<TableOfContentItemVO> getTableOfContent(Memorandum memorandum) {
         Validate.notNull(memorandum, "Memorandum is required");
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
-        final byte[] memorandumContent = content.getSource().getByteString().toByteArray();
-        return xmlContentProcessor.buildTableOfContent("doc", MemorandumTocItemType::getTocItemTypeFromName, memorandumContent);
+        final byte[] memorandumContent = content.getSource().getBytes();
+        return xmlContentProcessor.buildTableOfContent("doc", MemorandumTocItemType::getTocItemTypeFromName, memorandumContent, false);
     }
 
     private byte[] updateDataInXml(final byte[] content, MemorandumMetadata dataObject) {
@@ -143,7 +171,7 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     private String generateMemorandumName() {
-        return MEMORANDUM_NAME_PREFIX + Cuid.createCuid();
+        return MEMORANDUM_NAME_PREFIX + Cuid.createCuid() + MEMORANDUM_DOC_EXTENSION;
     }
 
     @Override
@@ -159,12 +187,12 @@ public class MemorandumServiceImpl implements MemorandumService {
         final Memorandum memorandum = findMemorandum(id);
         final MemorandumMetadata metadata = memorandum.getMetadata().getOrError(() -> "Memorandum metadata is required!");
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
-        final byte[] contentBytes = content.getSource().getByteString().toByteArray();
+        final byte[] contentBytes = content.getSource().getBytes();
         return memorandumRepository.updateMemorandum(id, metadata, contentBytes, major, comment);
     }
 
     private byte[] getContent(Memorandum memorandum) {
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
-        return content.getSource().getByteString().toByteArray();
+        return content.getSource().getBytes();
     }
 }

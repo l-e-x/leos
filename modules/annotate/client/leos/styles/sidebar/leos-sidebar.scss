@@ -1,5 +1,5 @@
 //
-// Copyright 2018 European Commission
+// Copyright 2019 European Commission
 //
 // Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 // You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@
 @import '../leos-variables';
 @import './leos-compare';
 @import './leos-suggestion';
+@import './leos-annotation';
 
 .thread-list__card {
   padding: $layout-h-margin 10px;
@@ -52,4 +53,13 @@
 //LEOS change 2826
 .is-suggestion {
   background-color: lightgoldenrodyellow;
+}
+
+.annotation-header__entity{
+  max-width: 60px;
+  height: 17px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  font-size: 13px;
 }

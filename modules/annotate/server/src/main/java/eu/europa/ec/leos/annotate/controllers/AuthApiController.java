@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,15 +14,16 @@
 package eu.europa.ec.leos.annotate.controllers;
 
 import eu.europa.ec.leos.annotate.aspects.NoAuthAnnotation;
-import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Token;
-import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.token.JsonAuthenticationFailure;
 import eu.europa.ec.leos.annotate.model.web.token.JsonTokenResponse;
 import eu.europa.ec.leos.annotate.services.AuthenticationService;
 import eu.europa.ec.leos.annotate.services.UserService;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotStoreTokenException;
 import eu.europa.ec.leos.annotate.services.exceptions.TokenFromUnknownClientException;
 import eu.europa.ec.leos.annotate.services.exceptions.TokenInvalidForClientAuthorityException;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,8 +37,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * API functions related to authentication
@@ -70,7 +69,7 @@ public class AuthApiController {
     // note: custom constructor in order to ease testability by benefiting from dependency injection
     @NoAuthAnnotation
     @Autowired
-    public AuthApiController(UserService userService, AuthenticationService authService) {
+    public AuthApiController(final UserService userService, final AuthenticationService authService) {
         if (this.userService == null) {
             this.userService = userService;
         }
@@ -97,90 +96,50 @@ public class AuthApiController {
      */
     @NoAuthAnnotation
     @RequestMapping(value = {"/token"}, produces = {MediaType.APPLICATION_JSON_VALUE})
-    public ResponseEntity<Object> getToken(HttpServletRequest request, HttpServletResponse response) throws Exception, ServletException {
+    @SuppressWarnings("PMD.ConfusingTernary")
+    public ResponseEntity<Object> getToken(final HttpServletRequest request, final HttpServletResponse response) throws ServletException {
 
         // all responses are supposed to be without caching
         response.setHeader("Cache-Control", "no-store");
         response.setHeader("Pragma", "no-cache");
         JsonAuthenticationFailure errorResult = null;
 
-        String grantType = request.getParameter(GRANT_TYPE);
+        final String grantType = request.getParameter(GRANT_TYPE);
 
         if (!StringUtils.isEmpty(grantType)) {
 
             // request access token
             if (grantType.contains(BEARER_GRANT_TYPE)) {
 
-                User user = null;
-                UserDetails userDetails = null;
-                String login = null;
                 try {
-                    login = authService.getUserLoginFromToken(request.getParameter(BEARER_PARAMETER));
-
-                    LOG.debug("User '{}' requesting for login with jwt-token", login);
-
-                    // create the user in our database, if not yet existing
-                    try {
-                        user = userService.createUserIfNotExists(login);
-                    } catch (Exception ex) {
-                        LOG.warn("Exception occurred while creating user, cannot create user! {}", ex.getMessage());
+                    final Pair<Token, JsonAuthenticationFailure> result = getAccessToken(request);
+                    final Token token = result.getValue0();
+                    errorResult = result.getValue1();
+                    if (token != null) {
+                        return new ResponseEntity<Object>(new JsonTokenResponse(token), HttpStatus.OK);
                     }
 
-                    // check if user details are available in UD-REPO
-                    try {
-                        userDetails = userService.getUserDetailsFromUserRepo(login);
-                    } catch (Exception ex) {
-                        LOG.warn("Exception occurred while fetching user details from ud-repo: {}", ex.getMessage());
-                    }
-
-                    if (userDetails == null) {
-                        // user is not known in UD-REPO, so we deny access
-                        LOG.error("User '{}' was not found in UD-REPO, deny access!", login);
-                        errorResult = JsonAuthenticationFailure.getUnknownUserResult();
-                    } else {
-                        // user was found, generate tokens and allow access
-
-                        // add user to group identified by his entity
-                        userService.addUserToEntityGroup(user, userDetails);
-
-                        // store access token / refresh token in database
-                        Token token = authService.generateAndSaveTokensForUser(user);
-                        return new ResponseEntity<Object>(
-                                new JsonTokenResponse(token.getAccessToken(), token.getRefreshToken(), token.getAccessTokenLifetimeSeconds()),
-                                HttpStatus.OK);
-                    }
                 } catch (TokenFromUnknownClientException tfuce) {
                     LOG.error("Error decoding JWT token", tfuce);
                     errorResult = JsonAuthenticationFailure.getUnknownClientResult();
                 } catch (TokenInvalidForClientAuthorityException tifcae) {
                     LOG.error("JWT token received from authority not authorized to authenticate user", tifcae);
                     errorResult = JsonAuthenticationFailure.getTokenInvalidForClientAuthorityResult();
+                } catch (Exception e) {
+                    LOG.error("Unexpected error", e);
+                    errorResult = JsonAuthenticationFailure.getUnknownUserResult();
                 }
 
                 // request refresh of access token
             } else if (grantType.equals(REFRESH_GRANT_TYPE)) {
-                String refreshTokenParameter = request.getParameter(REFRESH_GRANT_PARAMETER);
 
-                // get user with matching refresh token
-                AtomicReference<Token> foundToken = new AtomicReference<Token>();
-                User user = authService.findUserByRefreshToken(refreshTokenParameter, foundToken);
-                if (user == null) {
-
-                    // note on test coverage: if token found and not expired, then a user is returned -> missed branch noted here cannot occur
-                    if (foundToken.get() != null && foundToken.get().isRefreshTokenExpired()) {
-                        // token found, but expired
-                        errorResult = JsonAuthenticationFailure.getRefreshTokenExpiredResult();
-                    } else {
-                        // no token found -> unknown token received
-                        errorResult = JsonAuthenticationFailure.getInvalidRefreshTokenResult();
-                    }
-                } else {
-
-                    // store access token / refresh token in database
-                    Token token = authService.generateAndSaveTokensForUser(user);
-                    return new ResponseEntity<Object>(new JsonTokenResponse(
-                            token.getAccessToken(), token.getRefreshToken(), token.getRefreshTokenLifetimeSeconds()), HttpStatus.OK);
+                final Pair<Token, JsonAuthenticationFailure> result = getRefreshToken(request);
+                final Token token = result.getValue0();
+                errorResult = result.getValue1();
+                if (token != null) {
+                    return new ResponseEntity<Object>(new JsonTokenResponse(token), HttpStatus.OK);
                 }
+
                 // grant type not supported
             } else {
                 errorResult = JsonAuthenticationFailure.getUnsupportedGrantTypeResult();
@@ -191,5 +150,100 @@ public class AuthApiController {
         }
 
         return new ResponseEntity<Object>(errorResult, HttpStatus.BAD_REQUEST);
+    }
+
+    private UserInformation populateUserInfo(final HttpServletRequest request) throws TokenFromUnknownClientException, TokenInvalidForClientAuthorityException {
+
+        final UserInformation userInfo = authService.getUserLoginFromToken(request.getParameter(BEARER_PARAMETER));
+        LOG.debug("User '{}' requesting for login with jwt-token", userInfo.getLogin());
+
+        // create the user in our database, if not yet existing
+        try {
+            userInfo.setUser(userService.createUserIfNotExists(userInfo.getLogin()));
+        } catch (Exception ex) {
+            LOG.warn("Exception occurred while creating user, cannot create user! {}", ex.getMessage());
+        }
+
+        // check if user details are available in UD-REPO
+        try {
+            userInfo.setUserDetails(userService.getUserDetailsFromUserRepo(userInfo.getLogin()));
+        } catch (Exception ex) {
+            LOG.warn("Exception occurred while fetching user details from ud-repo: {}", ex.getMessage());
+        }
+
+        return userInfo;
+    }
+
+    /**
+     * main logic for retrieval of a new access token for an incoming request
+     * 
+     * @param request incoming request
+     * @return pair of {@link Token} and error (whereas only one is set)
+     */
+    private Pair<Token, JsonAuthenticationFailure> getAccessToken(final HttpServletRequest request)
+            throws CannotStoreTokenException, TokenFromUnknownClientException, TokenInvalidForClientAuthorityException {
+
+        final UserInformation userInfo = populateUserInfo(request);
+        JsonAuthenticationFailure errorResult = null;
+        Token token = null;
+
+        if (userInfo.getUserDetails() == null) {
+            // user is not known in UD-REPO, so we deny access
+            LOG.error("User '{}' was not found in UD-REPO, deny access!", userInfo.getLogin());
+            errorResult = JsonAuthenticationFailure.getUnknownUserResult();
+        } else {
+            // user was found, generate tokens and allow access
+
+            // add user to group identified by his entity
+            userService.addUserToEntityGroup(userInfo);
+
+            // store access token / refresh token in database
+            token = authService.generateAndSaveTokensForUser(userInfo);
+            userInfo.setCurrentToken(token);
+        }
+        return new Pair<Token, JsonAuthenticationFailure>(token, errorResult);
+    }
+
+    /**
+     * main logic for retrieval of a new refresh token for an incoming request
+     * @param request incoming request
+     * @return pair of {@link Token} and error (whereas only one is set)
+     */
+    private Pair<Token, JsonAuthenticationFailure> getRefreshToken(final HttpServletRequest request) {
+
+        JsonAuthenticationFailure errorResult = null;
+        Token token = null;
+        final String refreshTokenParam = request.getParameter(REFRESH_GRANT_PARAMETER);
+
+        // get user with matching refresh token
+        final UserInformation userInfo = authService.findUserByRefreshToken(refreshTokenParam);
+        if (userInfo == null) {
+            // previous refresh token probably not provided -> error
+            errorResult = JsonAuthenticationFailure.getInvalidRefreshTokenResult();
+
+        } else {
+            if (userInfo.getCurrentToken() == null) {
+
+                // no token found -> unknown token received
+                errorResult = JsonAuthenticationFailure.getInvalidRefreshTokenResult();
+            } else {
+                // note on test coverage: if token found and not expired, then a user is returned -> missed branch noted here cannot occur
+                if (userInfo.getCurrentToken().isRefreshTokenExpired()) {
+                    // token found, but expired
+                    errorResult = JsonAuthenticationFailure.getRefreshTokenExpiredResult();
+                } else {
+                    // token found and still valid
+                    try {
+                        // store new access token / refresh token in database
+                        token = authService.generateAndSaveTokensForUser(userInfo);
+                    } catch (CannotStoreTokenException cste) {
+                        LOG.error("Unexpected error", cste);
+                        errorResult = JsonAuthenticationFailure.getUnknownUserResult();
+                    }
+                }
+            }
+        }
+
+        return new Pair<Token, JsonAuthenticationFailure>(token, errorResult);
     }
 }

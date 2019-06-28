@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -42,7 +42,7 @@ define(function aknDivisionPluginModule(require) {
         akn: "division",
         html: "div[data-akn-name=division]",
         attr: [{
-            akn: "GUID",
+            akn: "xml:id",
             html: "id"
         }, {
             akn : "leos:origin",
@@ -54,13 +54,25 @@ define(function aknDivisionPluginModule(require) {
             akn: "leos:deletable",
             html: "leos:deletable"
         }, {
+            akn : "leos:softaction",
+            html : "data-akn-attr-softaction"
+        }, {
+            akn : "leos:softactionroot",
+            html : "data-akn-attr-softactionroot"
+        }, {
+            akn : "leos:softuser",
+            html : "data-akn-attr-softuser"
+        }, {
+            akn : "leos:softdate",
+            html : "data-akn-attr-softdate"
+        }, {
             html: "data-akn-name=division"
         }],
         sub: [{
             akn: "content",
             html: "div[data-akn-name=division]",
             attr: [{
-                akn: "GUID",
+                akn: "xml:id",
                 html: "data-akn-content-id"
             }, {
                 akn : "leos:origin",

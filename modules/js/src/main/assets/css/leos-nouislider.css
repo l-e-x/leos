@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,55 @@
     background:#7ec6e3;
 }
 
+.noUi-base {
+    z-index: 0;
+}
+
 .noUi-value-sub,
 .noUi-pips {
     color: inherit;
+}
+
+.noUi-value {
+  --left-position:15px;
+}
+
+.noUi-value.leos-noUi-Milestone {
+  font-weight:bold;
+  z-index: 1;
+}
+
+.noUi-value.leos-noUi-Milestone:after {
+    font-family: "Vaadin-Icons";
+    content:'\e788';
+    font-size: 14px;
+    color:#0065A2;
+    position:absolute;
+    top: -61px;
+    left: 0;
+
+}
+
+.noUi-value.leos-noUi-Milestone:hover:before {
+  cursor: pointer;
+  visibility:visible;
+}
+
+.noUi-value.leos-noUi-Milestone:before {
+    content:attr(data-tooltip);
+    position:absolute;
+    top: -65px;
+    left:var(--left-position);
+    z-index:99999;
+    background-color: rgba(51, 51, 51, 0.9);
+    -webkit-box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+    color: white;
+    padding: 3px 7px;
+    font-size: 12px;
+    max-width: 500px;
+    min-width: 300px;
+    white-space: pre-line;
+    text-align: left;
+    visibility:hidden;
 }

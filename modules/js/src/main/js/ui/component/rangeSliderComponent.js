@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,6 +20,7 @@ define(function rangeSliderComponentModule(require) {
     var noUiSlider = require("nouislider");
     var wNumb = require("wnumb");
     var _ = require("lodash");
+    var $ = require("jquery");
 
     // handle slider initialization
     function _init(connector) {
@@ -68,6 +69,12 @@ define(function rangeSliderComponentModule(require) {
 
         log.debug("Registering slider change listener...");
         slider.on("change", function onChange(handleValues) {
+            var state = connector.getState();
+            var steps = _filterValues(state.stepValues);
+            if(state.disableInitialVersion && handleValues[0] === steps[0]) {
+                this.set(steps[1]);
+                handleValues[0] = steps[1];
+            }
             _sliderChangeListener(handleValues, connector);
         });
     }
@@ -109,7 +116,7 @@ define(function rangeSliderComponentModule(require) {
         log.debug("Range Slider component state changed called...");
         var state = connector.getState();
         var element = connector.getElement();
-        var steps = state.stepValues;
+        var steps = _filterValues(state.stepValues);
         var handleValues = state.handleValues;
 
         if (element.noUiSlider) {
@@ -139,6 +146,52 @@ define(function rangeSliderComponentModule(require) {
         else{
             _initSlider.apply(connector,[ element, steps, handleValues, state.colouredArea]);
         }
+        
+        _applyStyles(element, state.stepValues);
+    }
+    
+    function _filterValues(stepObjects) {
+       var stepValues = [];
+       for(var i = 0; i < stepObjects.length; i++) {
+           var valueObject = stepObjects[i];
+           stepValues.push(valueObject.stepValue);
+       }
+       return stepValues;
+    }
+    
+    function _applyStyles(element, stepObjects) {
+        var uiValue = element.querySelectorAll('.noUi-value');
+        for(var i = 0; i < stepObjects.length; i++) {
+            var valueObject = stepObjects[i];
+            if(valueObject.milestoneVersion) {
+                uiValue[i].classList.add('leos-noUi-Milestone');
+                uiValue[i].setAttribute('data-tooltip', valueObject.mileStoneComments);
+
+                uiValue[i].onmouseover = function(event) {
+                    var leftSideSpace = event.target.offsetLeft + 70;//offset for padding, label width and box-shadow
+                    var commentsLength = _getCommentsLength(event.target);
+                    if(leftSideSpace > commentsLength) {
+                        event.target.style.setProperty('--left-position', -commentsLength + 'px');
+                    } else {
+                        //if the remaining space in the left side is less than the commentsLength, it means we have to shift the div on the right side
+                        //in order to be fully visible. We shift the minimum indispensable + 5px for padding effect.
+                        var hiddenPart = commentsLength - leftSideSpace;
+                        event.target.style.setProperty('--left-position', -(commentsLength - hiddenPart - 5) + 'px');
+                    }
+                };
+            }
+        }
+    }
+    
+    function _getCommentsLength(element) {
+        var commentsWidth = window.getComputedStyle(element, ':before').width;
+        return (_parse(commentsWidth) + 14); //7px padding on both side
+    }
+    
+    function _parse(value) {
+        value = value.slice(0, value.length - 2);
+        value = parseInt(value, 10);
+        return value;
     }
     
     // handle slider change from client-side

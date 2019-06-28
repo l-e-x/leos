@@ -1,5 +1,5 @@
 
-REQUEST_TYPES = ["SecurityToken","UserPermissions","MergeSuggestion"]
+REQUEST_TYPES = ["SecurityToken","UserPermissions","MergeSuggestion","DocumentMetadata","SearchMetadata"]
 
 module.exports = class HostBridgeManager
   callbackManager: {}

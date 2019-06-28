@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,16 +16,14 @@ package eu.europa.ec.leos.services.importoj;
 import eu.europa.ec.leos.integration.ExternalDocumentProvider;
 import eu.europa.ec.leos.services.support.xml.NumberProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 
 @Service
 class ImportServiceImpl implements ImportService {
@@ -38,8 +36,8 @@ class ImportServiceImpl implements ImportService {
     private static final String ARTICLE = "article";
 
     @Autowired
-    ImportServiceImpl(ExternalDocumentProvider externalDocumentProvider, ConversionHelper conversionHelper, XmlContentProcessor xmlContentProcessor, 
-                      NumberProcessor numberProcessor) {
+    ImportServiceImpl(ExternalDocumentProvider externalDocumentProvider, ConversionHelper conversionHelper, XmlContentProcessor xmlContentProcessor,
+            NumberProcessor numberProcessor) {
         this.externalDocumentProvider = externalDocumentProvider;
         this.conversionHelper = conversionHelper;
         this.xmlContentProcessor = xmlContentProcessor;
@@ -47,8 +45,7 @@ class ImportServiceImpl implements ImportService {
     }
 
     @Autowired
-    @Qualifier("servicesMessageSource")
-    private MessageSource servicesMessageSource;
+    private MessageHelper messageHelper;
 
     @Override
     public String getFormexDocument(String type, int year, int number) {
@@ -79,22 +76,22 @@ class ImportServiceImpl implements ImportService {
             String[] element = xmlContentProcessor.getElementById(importedContent, id);
 
             // Get id of the last element in the document
-            String xPath = "//" + element[0] + "[last()]";
+            String xPath = "//" + element[1] + "[last()]";
             String elementId = xmlContentProcessor.getElementIdByPath(documentContent, xPath);
-            String elementType = element[0];
+            String elementType = element[1];
             if (elementId != null) {
                 // do pre-processing on the selected elements
-                String updatedElement = xmlContentProcessor.doImportedElementPreProcessing(element[1], elementType);
+                String updatedElement = xmlContentProcessor.doImportedElementPreProcessing(element[2], elementType);
                 if (elementType.equalsIgnoreCase(ARTICLE)) {
-                    updatedElement = numberProcessor.renumberImportedArticle(updatedElement);
+                    updatedElement = this.numberProcessor.renumberImportedArticle(updatedElement,language);
                 } else if (elementType.equalsIgnoreCase(RECITAL)) {
-                    updatedElement = numberProcessor.renumberImportedRecital(updatedElement);
+                    updatedElement = this.numberProcessor.renumberImportedRecital(updatedElement);
                 }
 
                 if (updatedElement != null) {
                     // insert selected element to the document
                     documentContent = xmlContentProcessor.insertElementByTagNameAndId(documentContent, updatedElement,
-                            element[0],
+                            element[1],
                             elementId, checkIfLastArticleIsEntryIntoForce(documentContent, element, elementId, language));
                 }
             } else {
@@ -102,10 +99,9 @@ class ImportServiceImpl implements ImportService {
             }
         }
         // renumber
-        documentContent = numberProcessor.renumberRecitals(documentContent);
-        documentContent = numberProcessor.renumberArticles(documentContent, language);
+        documentContent = this.numberProcessor.renumberRecitals(documentContent);
+        documentContent = this.numberProcessor.renumberArticles(documentContent, language);
         documentContent = xmlContentProcessor.doXMLPostProcessing(documentContent);
-
         return documentContent;
     }
 
@@ -113,9 +109,9 @@ class ImportServiceImpl implements ImportService {
     private boolean checkIfLastArticleIsEntryIntoForce(byte[] documentContent, String[] element, String elementId,
             String language) {
         boolean isLastElementEIF = false;
-        String lastElement = xmlContentProcessor.getElementByNameAndId(documentContent, element[0], elementId);
+        String lastElement = xmlContentProcessor.getElementByNameAndId(documentContent, element[1], elementId);
         String headingElementValue = xmlContentProcessor.getElementValue(lastElement.getBytes(StandardCharsets.UTF_8),
-                "//heading[1]", false); //Disable namespace parsing for VTD as xml fragment passed may not contain namespace information
+                "//heading[1]", false); // Disable namespace parsing for VTD as xml fragment passed may not contain namespace information
         if (checkIfHeadingIsEntryIntoForce(headingElementValue, language)) {
             isLastElementEIF = true;
         }
@@ -124,10 +120,9 @@ class ImportServiceImpl implements ImportService {
 
     // Gets the heading message from locale
     private boolean checkIfHeadingIsEntryIntoForce(String headingElementValue, String language) {
-        Locale locale = new Locale(language);
         boolean isHeadingMatched = false;
         if (headingElementValue != null && !headingElementValue.isEmpty()) {
-            isHeadingMatched = servicesMessageSource.getMessage("legaltext.article.entryintoforce.heading", null, locale).replaceAll("\\h+", "")
+            isHeadingMatched = messageHelper.getMessage("legaltext.article.entryintoforce.heading").replaceAll("\\h+", "")
                     .equalsIgnoreCase(StringUtils.trimAllWhitespace(headingElementValue.replaceAll("\\h+", "")));
         }
         return isHeadingMatched;

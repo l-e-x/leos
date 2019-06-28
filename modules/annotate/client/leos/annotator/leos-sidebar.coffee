@@ -16,8 +16,9 @@ module.exports = class LeosSidebar extends Sidebar
     @options.Document.leosDocumentRootNode = config.leosDocumentRootNode
     @options.Document.annotationContainer = config.annotationContainer
     @options.Document.allowedSelectorTags = config.allowedSelectorTags
-    @options.Document.editableAttribute = config.editableAttribute
+    @options.Document.editableSelector = config.editableSelector
     @options.Document.notAllowedSuggestSelector = config.notAllowedSuggestSelector
+    @options.Document.readOnly = config.readOnly
     #Set the scrollable element on which the bucket bar should be synced
     @options.BucketBar.scrollables = ["#{@options.Document.annotationContainer}"]
 
@@ -34,7 +35,7 @@ module.exports = class LeosSidebar extends Sidebar
     super
 
     @hostBridgeManager = new HostBridgeManager(@container[0].hostBridge, @crossframe)
-    @leosSuggestionSelection = new LeosSuggestionSelection(@options.Document.allowedSelectorTags, @options.Document.editableAttribute, @options.Document.notAllowedSuggestSelector)
+    @leosSuggestionSelection = new LeosSuggestionSelection(@options.Document.allowedSelectorTags, @options.Document.editableSelector, @options.Document.notAllowedSuggestSelector)
     @crossframe.on 'requestAnnotationAnchor', (annot, callback) =>
       suggestionPositionSelector = self.leosSuggestionSelection.getSuggestionSelectors(annot, self.anchors)
       if suggestionPositionSelector?
@@ -48,12 +49,34 @@ module.exports = class LeosSidebar extends Sidebar
       _setFrameStyling.call(this, element)
 
   _onSelection: (range) ->
+    if (@options.Document.readOnly == "true")
+      return
     isAllowed = @leosSuggestionSelection.isSelectionAllowedForSuggestion(range.cloneContents(), range.commonAncestorContainer)
     if (isAllowed)
       @adderCtrl.enableSuggestionButton()
     else
       @adderCtrl.disableSuggestionButton()
     super
+
+  getDocumentInfo: ->
+    self = this
+    getInfoPromise = super
+    return getInfoPromise.then (docInfo) ->
+      return self.plugins.Document.getLeosDocumentMetadata()
+        .then (leosMetadata) =>
+          if leosMetadata?
+            docInfo.metadata.metadata = leosMetadata
+          return {
+            uri: docInfo.uri,
+            metadata: docInfo.metadata,
+            frameIdentifier: docInfo.frameIdentifier
+          }
+        .catch (error) =>
+          return {
+            uri: docInfo.uri,
+            metadata: docInfo.metadata,
+            frameIdentifier: docInfo.frameIdentifier
+          }
 
   onSuggest = () ->
     range = @selectedRanges[0]
@@ -117,6 +140,7 @@ module.exports = class LeosSidebar extends Sidebar
       refreshAnnotations.forEach (annotation) ->
         @anchor(annotation)
       , self
+    
     self.crossframe?.call('reloadAnnotations')
 
   _cleanup = () ->

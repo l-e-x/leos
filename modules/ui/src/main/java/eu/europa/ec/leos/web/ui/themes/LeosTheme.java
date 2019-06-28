@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,8 +21,9 @@ public class LeosTheme extends BaseTheme {
     public static final String NAME="leos";
 
     // leos image resources
-    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_NEW =  new ThemeResource("img/logo_en.gif");
-    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_COUNCIL =  new ThemeResource("img/logo_council_en.gif");
+    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE =  new ThemeResource("img/logo_en.png");
+    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_PROPOSAL =  new ThemeResource("img/logo_proposal_en.gif");
+    public static final ThemeResource LEOS_HEADER_LOGO_RESOURCE_MANDATE =  new ThemeResource("img/logo_mandate_en.gif");
     public static final ThemeResource LEOS_HEADER_HOME_ICON =   new ThemeResource("img/house.png");
 
     // leos theme icons resources
@@ -43,5 +44,7 @@ public class LeosTheme extends BaseTheme {
     public static final ThemeResource TREE_TEMPLATE_ICON_16 = new ThemeResource("icons/16/tree-template.png");
     public static final ThemeResource LEOS_DAP_ICON_16 = new ThemeResource("icons/16/dap.png");
     public static final ThemeResource LEOS_INFO_YELLOW_16 = new ThemeResource("icons/16/info-yellow.png");
+    public static final ThemeResource LEOS_HAMBURGUER_16 = new ThemeResource("icons/16/hamburguer.png");
+    public static final ThemeResource LEOS_CHECKBOX_16 = new ThemeResource("icons/16/checkbox.png");
     
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,7 +14,6 @@
 package eu.europa.ec.leos.ui.wizard.document;
 
 import com.vaadin.server.AbstractErrorMessage;
-import com.vaadin.server.ErrorMessage;
 import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
 import com.vaadin.shared.ui.MarginInfo;
@@ -35,7 +34,7 @@ import com.vaadin.v7.ui.VerticalLayout;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.ui.wizard.WizardStep;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.converter.CatalogUtil;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.apache.commons.lang3.ObjectUtils;
@@ -300,7 +299,6 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
                 if (selectedItemId != null) {
                     Item item = catalogContainer.getItem(selectedItemId);
                     if (item != null) {
-                        CatalogItem.ItemType itemType = (CatalogItem.ItemType) item.getItemProperty(CatalogUtil.TYPE_PROPERTY).getValue();
                         Boolean enabled = (Boolean) item.getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue();
                         if (Boolean.TRUE.equals(enabled)) {
                             // handle item description
@@ -308,6 +306,7 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
                             if (StringUtils.isBlank(itemDesc)) {
                                 itemDesc = ObjectUtils.toString(item.getItemProperty(CatalogUtil.NAME_PROPERTY).getValue(), null);
                             }
+                            CatalogItem.ItemType itemType = (CatalogItem.ItemType) item.getItemProperty(CatalogUtil.TYPE_PROPERTY).getValue();
                             if (CatalogItem.ItemType.TEMPLATE == itemType) {
                                 // handle item languages
                                 itemLangs = (Map<String, String>) item.getItemProperty(CatalogUtil.LANG_PROPERTY).getValue();
@@ -367,7 +366,9 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
         boolean isValid = true;
 
         // in this state we validate that the name was filled in and that an item was selected from the tree
-        if (selectedItemId == null || Boolean.FALSE.equals(tree.getItem(selectedItemId).getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue())) {
+        if (selectedItemId == null || tree.getItem(selectedItemId) == null ||
+                CatalogItem.ItemType.CATEGORY.equals(tree.getItem(selectedItemId).getItemProperty(CatalogUtil.TYPE_PROPERTY).getValue()) ||
+                Boolean.FALSE.equals(tree.getItem(selectedItemId).getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue())) {
             tree.setComponentError(new UserError(messageHelper.getMessage("wizard.document.create.template.error.item"), AbstractErrorMessage.ContentMode.TEXT,
                     ErrorLevel.WARNING));
             isValid = false;

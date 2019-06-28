@@ -4,10 +4,26 @@ Document = require('../../../src/annotator/plugin/document')
 
 module.exports = class LeosDocument extends Document
   constructor: (element, config) ->
+    self = this
     # Make a definitive check for commentable area Or even better -> read from config
     @containerSelector = "#{config.annotationContainer}"
     @documentIdSelector = "#{config.annotationContainer} #{config.leosDocumentRootNode}"
     super(@getElement(), config)
+
+  getLeosDocumentMetadata: () ->
+    self = this
+    requestLeosMetadata = (resolve, reject) ->
+      promiseTimeout = setTimeout(() -> 
+        reject("timeout")
+      , 500);
+      if self.getElement().hostBridge?
+        self.getElement().hostBridge["responseDocumentMetadata"] = (metadata) ->
+          console.log("Received message from host for request DocumentMetadata")
+          leosMetadata = JSON.parse(metadata)
+          resolve(leosMetadata)
+        if self.getElement().hostBridge["requestDocumentMetadata"]?
+          self.getElement().hostBridge["requestDocumentMetadata"]()
+    return new Promise(requestLeosMetadata)
     
   pluginInit: ->
     @annotator.anchoring = require('../anchoring/leos')
@@ -25,3 +41,4 @@ module.exports = class LeosDocument extends Document
     leosDocument = $(@documentIdSelector)[0]
     return "uri://LEOS/#{leosDocument.id}" if leosDocument.id
     return super()
+

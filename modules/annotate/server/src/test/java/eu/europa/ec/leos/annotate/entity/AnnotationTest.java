@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,12 +14,13 @@
 package eu.europa.ec.leos.annotate.entity;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.entity.Metadata;
+import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.ArrayList;
@@ -27,8 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
-@ActiveProfiles("test")
 public class AnnotationTest {
 
     /**
@@ -43,7 +42,7 @@ public class AnnotationTest {
     @Test
     public void testNoReply() {
 
-        Annotation ann = new Annotation();
+        final Annotation ann = new Annotation();
         ann.setId("id");
 
         // no reply!
@@ -59,11 +58,11 @@ public class AnnotationTest {
     }
     
     // set empty values for the references -> annotation should not be considered being a reply
-    @SuppressFBWarnings(value = "NP_LOAD_OF_KNOWN_NULL_VALUE", justification = "by intention")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
     @Test
     public void testAnnotationEmptyReferences() {
         
-        Annotation ann = new Annotation();
+        final Annotation ann = new Annotation();
         ann.setId("id");
         
         List<String> referencesList = null;
@@ -82,12 +81,12 @@ public class AnnotationTest {
     @Test
     public void testAnnotationBecomesReply() {
         
-        Annotation ann = new Annotation();
+        final Annotation ann = new Annotation();
         ann.setId("id");
         Assert.assertFalse(ann.isReply());
         
         // now set references to other items
-        List<String> referencesList = Arrays.asList("ref1", "ref2");
+        final List<String> referencesList = Arrays.asList("ref1", "ref2");
         ann.setReferences(referencesList);
         
         // now it became a reply
@@ -96,5 +95,24 @@ public class AnnotationTest {
         Assert.assertEquals(2, ann.getReferencesList().size());
         Assert.assertTrue(ann.getReferencesList().contains("ref1"));
         Assert.assertTrue(ann.getReferencesList().contains("ref2"));
+    }
+    
+    // test that response status is correctly read
+    @Test
+    public void testResponseSent() {
+        
+        final Annotation ann = new Annotation();
+        
+        Assert.assertFalse(ann.isResponseStatusSent());
+        
+        final Metadata meta = new Metadata();
+        ann.setMetadata(meta);
+        Assert.assertFalse(ann.isResponseStatusSent());
+        
+        meta.setResponseStatus(ResponseStatus.IN_PREPARATION);
+        Assert.assertFalse(ann.isResponseStatusSent());
+        
+        meta.setResponseStatus(ResponseStatus.SENT);
+        Assert.assertTrue(ann.isResponseStatusSent());
     }
 }

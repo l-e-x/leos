@@ -18,6 +18,11 @@
       "method": "GET",
       "desc": "Search for annotations"
     },
+    "count": {
+      "url": "@annotate.server.url@/api/count",
+      "method": "GET",
+      "desc": "Count number of annotations"
+    },
     "groups": {
         "read": {
             "url": "@annotate.server.url@/api/groups",

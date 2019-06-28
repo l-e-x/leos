@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,13 @@
  */
 package eu.europa.ec.leos.web.event;
 
+import com.vaadin.ui.UI;
+
 import java.util.Arrays;
 
 public class NotificationEvent {
 
-    public static enum Type {
+    public enum Type {
         INFO, WARNING, ERROR, TRAY
     }
 
@@ -25,11 +27,13 @@ public class NotificationEvent {
     private final Type type;
     private final Object[] args;
     private String captionKey;
+    private UI targetedUI;
 
     public NotificationEvent(Type type, String messageKey, Object... args) {
         this.messageKey = messageKey;
         this.type = type;
         this.args = args;
+        this.targetedUI = UI.getCurrent();
     }
 
     public NotificationEvent(String captionKey, String messageKey, Type type, Object... args) {
@@ -37,10 +41,17 @@ public class NotificationEvent {
         this.captionKey = captionKey;
         this.type = type;
         this.args = args;
+        this.targetedUI = UI.getCurrent();
     }
 
-    public void setCaptionKey(String captionKey) {
-        this.captionKey=captionKey;
+    public NotificationEvent(UI targetedUI, Type type, String messageKey, Object... args) {
+        this(type, messageKey, args);
+        this.targetedUI = targetedUI;
+    }
+
+    public NotificationEvent(UI targetedUI, String captionKey, String messageKey, Type type, Object... args) {
+        this(captionKey, messageKey, type, args);
+        this.targetedUI = targetedUI;
     }
 
     public String getCaptionKey() {
@@ -55,6 +66,14 @@ public class NotificationEvent {
         return type;
     }
 
+    public UI getTargetedUI() {
+        return targetedUI;
+    }
+
+    public void setTargetedUI(UI targetedUI) {
+        this.targetedUI = targetedUI;
+    }
+
     public Object[] getArgs() {
         return args;
     }
@@ -63,15 +82,10 @@ public class NotificationEvent {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
         NotificationEvent that = (NotificationEvent) o;
-
-        // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if (!Arrays.equals(args, that.args)) return false;
         if (messageKey != null ? !messageKey.equals(that.messageKey) : that.messageKey != null) return false;
-        if (type != that.type) return false;
-
-        return true;
+        return (type == that.type);
     }
 
     @Override

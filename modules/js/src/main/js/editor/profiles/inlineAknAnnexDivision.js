@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -52,7 +52,8 @@ define(function aknInlineAnnexDivisionProfileModule(require) {
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
     plugins.push(require("plugins/leosManualRenumbering/leosManualRenumberingPlugin"));
     plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
-    
+    plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+
     var pluginNames=[];
     var specificConfig={};
     $.each(plugins, function( index, value ) {
@@ -92,6 +93,10 @@ define(function aknInlineAnnexDivisionProfileModule(require) {
         mathJaxLib: './webjars/MathJax/2.7.0/MathJax.js?config=default',
         // LEOS-2887 removing tooltip title 
         title: false,
+        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in annex division
+        blockedKeystrokes: [
+            CKEDITOR.CTRL + 65 //CTRL +A
+        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"
@@ -100,7 +105,7 @@ define(function aknInlineAnnexDivisionProfileModule(require) {
             groups : [ "clipboard", "undo" ]
         }, {
             name : "editing",
-            groups : [ "selection" ]
+            groups : [ "selection", "spellchecker" ]
         }, {
             name : "basicstyles",
             groups : [ "basicstyles", "cleanup" ]

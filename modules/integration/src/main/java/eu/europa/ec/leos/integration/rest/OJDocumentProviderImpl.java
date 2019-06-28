@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,14 @@
  */
 package eu.europa.ec.leos.integration.rest;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Stopwatch;
-import eu.europa.ec.leos.integration.ExternalDocumentProvider;
-import org.apache.jena.query.*;
+import java.io.ByteArrayOutputStream;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.jena.query.ParameterizedSparqlString;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.query.ResultSetFormatter;
 import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,8 +29,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
-import java.io.ByteArrayOutputStream;
-import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
+
+import eu.europa.ec.leos.integration.ExternalDocumentProvider;
 
 @Component
 class OJDocumentProviderImpl implements ExternalDocumentProvider {
@@ -88,18 +94,19 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
             final String uri = ojUrl + sparqlUri;
             QueryEngineHTTP qexec = QueryExecutionFactory.createServiceRequest(uri, query);
             try {
+                LOG.debug("OJ Sparql URL: "+ uri);
                 qexec.addDefaultGraph("");
                 qexec.addParam("debug", PARAM_DEBUG_VALUE);
                 qexec.addParam("timeout", String.valueOf(PARAM_TIMEOUT_VALUE));
                 qexec.addParam("format", PARAM_FORMAT_VALUE);
                 qexec.setTimeout(PARAM_TIMEOUT_VALUE, PARAM_TIMEOUT_VALUE);
-                LOG.debug("Query: {}", qexec.getQuery().toString(qexec.getQuery().getSyntax()));
+                LOG.debug("OJ Sparql Query: {}", qexec.getQuery().toString(qexec.getQuery().getSyntax()));
                 ResultSet results = qexec.execSelect();
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 ResultSetFormatter.outputAsJSON(outputStream, results);
                 String json = new String(outputStream.toByteArray());
-                LOG.debug("Response: {}", json);                
-                LOG.trace("Sparql query executed in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                LOG.debug("OJ Sparql Response: {}", json);                
+                LOG.trace("OJ Sparql query executed in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 return getDocumentUrl(json);
             } finally {
                 qexec.close();
@@ -129,6 +136,7 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
         String formexDocument = null;
         try {
             uriDocument = uriDocument + DOC_TYPE;
+            LOG.debug("OJ Formex document url: " + uriDocument);
             formexDocument = restTemplate.getForObject(uriDocument, String.class);
         } catch (Exception e) {
             throw new RuntimeException("Unable to perform the getOJFormexDocumentByUrl operation", e);

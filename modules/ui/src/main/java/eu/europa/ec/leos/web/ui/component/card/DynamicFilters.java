@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,7 +21,7 @@ import com.vaadin.v7.data.util.BeanItemContainer;
 import com.vaadin.v7.data.util.converter.Converter;
 import com.vaadin.v7.ui.AbstractSelect;
 import com.vaadin.v7.ui.OptionGroup;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

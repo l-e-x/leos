@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,11 +14,10 @@
 package eu.europa.ec.leos.services.validation.handlers;
 
 import com.google.common.base.Stopwatch;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.common.ErrorCode;
-import eu.europa.ec.leos.domain.document.LeosCategory;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.ErrorVO;
-import eu.europa.ec.leos.services.validation.handlers.util.LSInputImpl;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -55,7 +54,7 @@ public class AkomantosoXsdValidatorTest extends LeosTest {
         byte[] xmlContent = ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
                 "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\">"
                 + "<bill name=\"x\"><meta>"
-                + "<identification source=\"\">"
+                + "<identification source=\"~COM\">"
                 + "<FRBRWork>"
                 + "    <FRBRthis value=\"\"/>"
                 + "    <FRBRuri value=\"\"/>"
@@ -77,7 +76,7 @@ public class AkomantosoXsdValidatorTest extends LeosTest {
                 + "    <FRBRauthor href=\"\"/>"
                 + "</FRBRManifestation>"
                 + "</identification>"
-                + "</meta><body><article GUID=\"art486\"></article></body></bill>" +
+                + "</meta><body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>").getBytes(UTF_8);
         DocumentVO documentVO = new DocumentVO(LeosCategory.BILL);
         List<ErrorVO> result = new ArrayList<>();
@@ -119,7 +118,7 @@ public class AkomantosoXsdValidatorTest extends LeosTest {
                 + "    <FRBRauthor href=\"\"/>"
                 + "</FRBRManifestation>"
                 + "</identification>"
-                + "</meta><body><article GUID=\"art486\"></article></body></bill>" +
+                + "</meta><body><article xml:id=\"art486\"></article></body></bill>" +
                 "</akomaNtoso>").getBytes(UTF_8);
         DocumentVO documentVO = new DocumentVO(LeosCategory.BILL);
         List<ErrorVO> result = new ArrayList<>();

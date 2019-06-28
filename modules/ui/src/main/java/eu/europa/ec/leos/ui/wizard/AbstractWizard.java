@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,6 @@ package eu.europa.ec.leos.ui.wizard;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.server.AbstractErrorMessage;
-import com.vaadin.server.ErrorMessage;
 import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
 import com.vaadin.shared.ui.MarginInfo;
@@ -26,7 +25,7 @@ import com.vaadin.v7.shared.ui.label.ContentMode;
 import com.vaadin.v7.ui.HorizontalLayout;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.VerticalLayout;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.window.AbstractWindow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

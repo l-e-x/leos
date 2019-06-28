@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,7 +18,10 @@ import eu.europa.ec.leos.ui.shared.js.LeosJavaScriptComponentState;
 import java.util.Set;
 
 public class RangeSliderState extends LeosJavaScriptComponentState {
-    public Set<String> stepValues;
+    private static final long serialVersionUID = -5679888932125001394L;
+
+    public Set<RangeSliderStepVO> stepValues;
     public String[] handleValues;
     public String colouredArea;
+    public boolean disableInitialVersion;
 }

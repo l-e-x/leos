@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -141,6 +141,39 @@ function viewFilter(unicode) {
       value: ann => ann.user,
       match: (term, value) => value.indexOf(term) > -1,
     },
+
+    //LEOS changes as we need to search for DG/Entity
+    user_entity: {
+        autofalse: ann => typeof ann.user_info !== 'object' || typeof ann.user_info.entity_name !== 'string',
+        value: ann => ann.user_info.entity_name,
+        match: (term, value) => value.indexOf(term) > -1,
+    },
+
+    //LEOS changes as we may need to search for user's full name
+    user_name: {
+        autofalse: ann => typeof ann.user_info !== 'object' || typeof ann.user_info.display_name !== 'string',
+        value: ann => ann.user_info.display_name,
+        match: (term, value) => value.indexOf(term) > -1,
+    },
+
+    responseVersion: {
+      autofalse: ann => typeof ann.document.metadata !== 'object' || typeof ann.document.metadata["responseVersion"] !== 'string',
+      value: ann => ann.document.metadata["responseVersion"],
+      match: (term, value) => value.indexOf(term) > -1,
+    },
+
+    ISCReference: {
+      autofalse: ann => typeof ann.document.metadata !== 'object' || typeof ann.document.metadata["ISCReference"] !== 'string',
+      value: ann => ann.document.metadata["ISCReference"],
+      match: (term, value) => value.indexOf(term) > -1,
+    },
+
+    responseId: {
+      autofalse: ann => typeof ann.document.metadata !== 'object' || typeof ann.document.metadata["responseId"] !== 'string',
+      value: ann => ann.document.metadata["responseId"],
+      match: (term, value) => value.indexOf(term) > -1,
+    }
+
   };
 
   /**
@@ -160,7 +193,8 @@ function viewFilter(unicode) {
       var terms = filter.terms.map(normalize);
       var termFilters;
       if (field === 'any') {
-        var anyFields = ['quote', 'text', 'tag', 'user'];
+        //LEOS changes as we may need to search for user's DG/Entity and full name
+        var anyFields = ['quote', 'text', 'tag', 'user', 'user_entity', 'user_name','responseVersion','ISCReference','responseId'];
         termFilters = terms.map(term => new BinaryOpFilter('or', anyFields.map(field =>
           new TermFilter(field, term, this.fields[field])
         )));

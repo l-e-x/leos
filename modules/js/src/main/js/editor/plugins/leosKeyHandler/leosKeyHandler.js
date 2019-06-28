@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,6 +15,7 @@
 define(function leosKeyHandler(require) {
     "use strict";
 
+    var CKEDITOR = require("promise!ckEditor");
     var LOG = require("logger");
     var REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX = /\u200B/g;
 
@@ -41,11 +42,13 @@ define(function leosKeyHandler(require) {
     // Entry parameter of type: CKEDITOR.dom.node
     var getSelectedElement = function getSelectedElement(selection) {
         var selectedElement = selection.getStartElement();
-        while (CKEDITOR.dtd.$inline.hasOwnProperty(selectedElement.getName())) {
-            selectedElement = selectedElement.getParent();
+        if (selectedElement) {
+            while (CKEDITOR.dtd.$inline.hasOwnProperty(selectedElement.getName())) {
+                selectedElement = selectedElement.getParent();
+            }
         }
         return selectedElement;
-    }
+    };
 
     //Check that an element is empty or not: 
     // Empty means:
@@ -54,19 +57,18 @@ define(function leosKeyHandler(require) {
     // Entry parameter of type : CKEDITOR.dom.element or CKEDITOR.dom.text
     var isContentEmptyTextNode = function isContentEmptyTextNode(element) {
         if (element ) {
-            if (element instanceof CKEDITOR.dom.element) {
+            if (element instanceof CKEDITOR.dom.element || element instanceof CKEDITOR.dom.documentFragment) {
                 switch (element.getChildCount()) {
                     case 0:
                         return true;
-                        break;
-                    case 1: 
+                    case 1:
                         var childElement = element.getChild(0);
                         if ((childElement.type === CKEDITOR.NODE_TEXT) &&
                             (childElement.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') === "")) {
                             return true;
                         }
                         //If element contains only a "br" element, it should be considered as empty
-                        else if ((childElement.type != CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() === "br")) {
+                        else if ((childElement.type !== CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() === "br")) {
                             return true;
                         }
                         break;
@@ -81,7 +83,6 @@ define(function leosKeyHandler(require) {
                             }
                         }
                         return true;
-                        break;
                 }
             }
             else if (element instanceof CKEDITOR.dom.text) {

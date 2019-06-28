@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,14 +19,22 @@ import eu.europa.ec.leos.services.support.xml.ref.Ref;
 
 import java.util.List;
 
-interface ReferenceLabelProcessor {
+public interface ReferenceLabelProcessor {
     /**
      * generates the multi references label thanks to the list of references (separated format(id,ref) for a single multireference) {@param refs}, the VTD navigator {@param vtdNav} 
      * using a specific language code {@param language}.
      * @param refs
      * @param vtdNav
-     * @param language
      * @return: returns the label if mutil ref is valid or an error code if not.
      */
-    Result<String> generateLabel(List<Ref> refs, String referenceLocation, VTDNav vtdNav, String language) throws Exception;
+    Result<String> generateLabel(List<Ref> refs, String referenceLocation, VTDNav vtdNav) throws Exception;
+
+    /**
+     * generates the soft move label thanks to the reference (separated format(id,ref)) {@param ref}, the VTD navigator {@param vtdNav} 
+     * using a specific language code {@param language}.
+     * @param ref
+     * @param vtdNav
+     * @return: returns the label if ref is valid or an error code if not.
+     */
+    Result<String> generateSoftmoveLabel(Ref ref, String referenceLocation, VTDNav vtdNav, String direction) throws Exception;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,9 @@
  */
 package eu.europa.ec.leos.services.document;
 
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Bill;
-import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
+import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
 import java.util.HashMap;
@@ -24,6 +25,8 @@ public interface BillService {
 
     Bill createBill(String templateId, String path, BillMetadata metadata, String actionMsg, byte[] content);
 
+    Bill createBillFromContent(String path, BillMetadata metadata, String actionMsg, byte[] content);
+
     Bill findBill(String id);
 
     Bill findBillVersion(String id);
@@ -31,9 +34,15 @@ public interface BillService {
     // FIXME temporary workaround
     Bill findBillByPackagePath(String path);
 
-    Bill updateBill(Bill bill, BillMetadata metadata, String actionMsg);
+    Bill updateBill(Bill bill, BillMetadata metadata, boolean isMajor, String actionMsg);
 
     Bill updateBill(Bill bill, byte[] updatedBillContent, String comments);
+
+    Bill updateBill(String billId, BillMetadata metadata);
+
+    Bill updateBillWithMilestoneComments(Bill bill, List<String> milestoneComments, boolean major, String comment);
+
+    Bill updateBillWithMilestoneComments(String billId, List<String> milestoneComments);
 
     Bill addAttachment(Bill bill, String href, String showAs, String actionMsg);
 
@@ -45,9 +54,9 @@ public interface BillService {
 
     List<Bill> findVersions(String id);
 
-    List<TableOfContentItemVO> getTableOfContent(Bill bill);
+    List<TableOfContentItemVO> getTableOfContent(Bill bill, boolean simplified);
 
-    Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList, String actionMsg);
+    Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList, String actionMsg, User user);
 
     byte[] searchAndReplaceText(byte[] xmlContent, String searchText, String replaceText);
 

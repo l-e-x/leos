@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,11 +13,8 @@
  */
 package eu.europa.ec.leos.services.notification;
 
-import java.util.Locale;
-
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 import eu.europa.ec.leos.model.notification.EmailNotification;
@@ -27,20 +24,20 @@ import eu.europa.ec.leos.model.notification.validation.ValidationEmailNotificati
 public class ValidationNotificationProcessor implements EmailNotificationProcessor<ValidationEmailNotification> {
 
     @Autowired
-    @Qualifier("emailsMessageSource")
-    private MessageSource emailsMessageSource;
+    private MessageHelper messageHelper;
 
     private final FreemarkerNotificationProcessor processor;
 
     @Autowired
-    public ValidationNotificationProcessor(FreemarkerNotificationProcessor processor) {
+    public ValidationNotificationProcessor(FreemarkerNotificationProcessor processor, MessageHelper messageHelper) {
         this.processor = processor;
+        this.messageHelper = messageHelper;
     }
 
     @Override
-    public void process(Locale language, ValidationEmailNotification emailNotification) {
-        buildEmailBody(language, emailNotification);
-        buildEmailSubject(language, emailNotification);
+    public void process(ValidationEmailNotification emailNotification) {
+        buildEmailBody(emailNotification);
+        buildEmailSubject(emailNotification);
 
     }
 
@@ -53,13 +50,13 @@ public class ValidationNotificationProcessor implements EmailNotificationProcess
         }
     }
 
-    private void buildEmailBody(Locale language, ValidationEmailNotification validationEmailNotification) {
+    private void buildEmailBody(ValidationEmailNotification validationEmailNotification) {
         validationEmailNotification.setEmailBody(processor.processTemplate(validationEmailNotification));
     }
 
-    private void buildEmailSubject(Locale language, ValidationEmailNotification validationEmailNotification) {
+    private void buildEmailSubject(ValidationEmailNotification validationEmailNotification) {
         String title = validationEmailNotification.getTitle();
         validationEmailNotification
-                .setEmailSubject(emailsMessageSource.getMessage(validationEmailNotification.getEmailSubjectKey(), new Object[]{title}, language));
+                .setEmailSubject(messageHelper.getMessage(validationEmailNotification.getEmailSubjectKey(), new Object[]{title}));
     }
 }

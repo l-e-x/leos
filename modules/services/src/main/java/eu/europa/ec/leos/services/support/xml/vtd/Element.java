@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,8 @@
  */
 package eu.europa.ec.leos.services.support.xml.vtd;
 
+import java.util.List;
+
 public final class Element {
 
 	private final int navigationIndex;
@@ -20,21 +22,25 @@ public final class Element {
 	private final boolean hasTextChild;
 	private String tagIdentifier;
 	private String tagContent;
- private String tagName;
- private String fullContent;//only for text matching purpose
- 
-	public Element(int navigationIndex, String tagId, String tagContent, int nodeIndex, boolean hasTextChild) {
+ 	private String tagName;
+ 	private String fullContent;//only for text matching purpose
+	private Element parent;
+	private List<Element> children;
+
+	public Element(int navigationIndex, String tagId, String tagContent, int nodeIndex, boolean hasTextChild, List<Element> children) {
 		this.navigationIndex = navigationIndex;
 		this.nodeIndex = nodeIndex;
 		this.hasTextChild = hasTextChild;
 		this.tagContent = tagContent;
-		this.tagIdentifier = tagId!=null? tagId.replaceAll(" ", ""):null;
+		this.tagIdentifier = tagId != null ? tagId.replaceAll(" ", "") : null;
+		this.children = children;
+		this.children.forEach(child -> child.parent = this);
 //		if(hasTextChild) {
 //			this.tagIdentifier += "_" + nodeIndex;
 //		}
 	}
-	public Element(int navigationIndex, String tagId,String tagName, String tagContent, int nodeIndex, boolean hasTextChild, String fullContent) {
-	    this( navigationIndex,  tagId,  tagContent,  nodeIndex,  hasTextChild);
+	public Element(int navigationIndex, String tagId, String tagName, String tagContent, int nodeIndex, boolean hasTextChild, String fullContent, List<Element> children) {
+	    this(navigationIndex,  tagId,  tagContent,  nodeIndex,  hasTextChild, children);
 	    this.tagName=tagName;
 	    this.fullContent=fullContent.replaceAll("<.*?>|\\r\\n","");
 	}
@@ -67,6 +73,14 @@ public final class Element {
 		return hasTextChild;
 	}
 
+	public Element getParent() {
+		return parent;
+	}
+
+	public List<Element> getChildren() {
+		return children;
+	}
+
 	@Override
  public boolean equals(Object o) {
   if (this == o) return true;
@@ -91,7 +105,7 @@ public final class Element {
 		final StringBuilder sb = new StringBuilder();
 		sb.append("Element");
 		sb.append("{navigationIndex=").append(navigationIndex);
-  sb.append("{tagName=").append(tagName);
+  		sb.append("{tagName=").append(tagName);
 		sb.append(", nodeIndex=").append(nodeIndex);
 		sb.append(", tagIdentifier='").append(tagIdentifier).append('\'');
 		sb.append('}');

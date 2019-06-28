@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -42,7 +42,6 @@ article subparagraph {
 	padding: 5px;
 	height: 100%;
 	overflow: auto;
-	width: 250px;
 }
 
 .crContent {
@@ -81,7 +80,18 @@ article subparagraph {
 }
 
 .selectable-element:hover {
-	border: 1px #ADBDCE solid;
+	border-color: #ADBDCE;
+}
+
+.selectable-element-paragraph {
+	border-left: 7px transparent solid;
+	border-top: 1px transparent solid;
+	border-right: 1px transparent solid;
+	border-bottom: 1px transparent solid;
+}
+
+.selectable-element-paragraph:hover {
+    border-color: #ADBDCE;
 }
 
 .selectable-element-selected {

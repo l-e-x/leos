@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.annotate.services.impl;
 
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.web.user.JsonGroup;
@@ -32,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -50,15 +53,11 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
 
     private static final Logger LOG = LoggerFactory.getLogger(UserServiceImpl.class);
 
-    private final String HYPOTHESIS_ACCOUNT_PREFIX = "acct:";
+    private final static String HYPOTHESIS_ACCOUNT_PREFIX = "acct:";
 
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
-
-    // the authority name we set in case it is missing
-    @Value("${defaultauthority.name}")
-    private String DEFAULT_AUTHORITY;
 
     // URL to the external user repository
     @Value("${user.repository.url}")
@@ -83,7 +82,7 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     // -------------------------------------
     // note: use a custom constructor in order to ease testability by benefiting from dependency injection
     @Autowired
-    public UserServiceImpl(RestTemplate restOps) {
+    public UserServiceImpl(final RestTemplate restOps) {
         if (this.restOperations == null) {
             this.restOperations = restOps;
         }
@@ -93,27 +92,27 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     }
 
     // custom constructor in order to ease testability by benefiting from mock object injection via Mockito
-    public UserServiceImpl(UserRepository userRepos, GroupService groupService) {
+    public UserServiceImpl(final UserRepository userRepos, final GroupService groupService) {
         this.userRepository = userRepos;
         this.groupService = groupService;
     }
 
     // possibility to inject a custom RestTemplate - USED FOR TESTING, NOT CONTAINED IN PUBLIC SERVICE INTERFACE
     @Override
-    public void setRestTemplate(RestTemplate restOps) {
+    public void setRestTemplate(final RestTemplate restOps) {
         this.restOperations = restOps;
     }
 
     // possibility to cache a custom user entry - USED FOR TESTING, NOT CONTAINED IN PUBLIC SERVICE INTERFACE
     @Override
-    public void cacheUserDetails(String key, UserDetails details) {
+    public void cacheUserDetails(final String key, final UserDetails details) {
         this.userDetailsCache.cache(key, details);
     }
 
-    // possibility to inject a custom default authority value - USED FOR TESTING, NOT CONTAINED IN PUBLIC SERVICE INTERFACE
+    // possibility to inject a custom group service - USED FOR TESTING, NOT CONTAINED IN PUBLIC SERVICE INTERFACE
     @Override
-    public void setDefaultAuthority(String value) {
-        this.DEFAULT_AUTHORITY = value;
+    public void setGroupService(final GroupService grpServ) {
+        this.groupService = grpServ;
     }
 
     // -------------------------------------
@@ -129,16 +128,17 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @return saved {@link User} object, with properties like Id updated
      */
     @Override
-    public User createUser(User user) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
+    public User createUser(final User user) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
 
         // if the default user group is not available, we stop here
         groupService.throwIfNotExistsDefaultGroup();
 
         LOG.info("Save user with login '{}' in the database", user.getLogin());
 
+        User modifiedUser = null;
         try {
-            user = userRepository.save(user); // updates the ID
-            LOG.debug("User '{}' created with id {}", user.getLogin(), user.getId());
+            modifiedUser = userRepository.save(user); // updates the ID
+            LOG.debug("User '{}' created with id {}", modifiedUser.getLogin(), modifiedUser.getId());
         } catch (DataIntegrityViolationException dive) {
             LOG.error("The user '{}' already exists", user.getLogin());
             throw new UserAlreadyExistingException(dive);
@@ -148,9 +148,9 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
         }
 
         // assign to default group
-        groupService.assignUserToDefaultGroup(user);
+        groupService.assignUserToDefaultGroup(modifiedUser);
 
-        return user;
+        return modifiedUser;
     }
 
     /**
@@ -163,9 +163,9 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @return saved {@link User} object, with properties like Id updated
      */
     @Override
-    public User createUser(String login) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
+    public User createUser(final String login) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
 
-        User user = new User(login);
+        final User user = new User(login);
         return createUser(user);
     }
 
@@ -177,13 +177,11 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @throws DefaultGroupNotFoundException if the name of the default user group is not found, this exception is thrown
      */
     @Override
-    public User createUserIfNotExists(String login) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
+    public User createUserIfNotExists(final String login) throws UserAlreadyExistingException, DefaultGroupNotFoundException {
 
-        if (StringUtils.isEmpty(login)) {
-            throw new IllegalArgumentException("Cannot register user without valid login");
-        }
+        Assert.isTrue(!StringUtils.isEmpty(login), "Cannot register user without valid login");
 
-        User registeredUser = findByLogin(login);
+        final User registeredUser = findByLogin(login);
         if (registeredUser == null) {
             return createUser(login);
         } else {
@@ -195,23 +193,20 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     /**
      * add a user to a group if it has its associate entity property set
      * 
-     *  @param user the user of our database
-     *  @param userDetails a {@link UserDetails} object containing all relevant user information, retrieved from UD repo
+     *  @param userinfo the {@link UserInformation} collected about the user, contains info from our database and from UD repo
      *  
      *  @return flag indicating success or nothing to do; FALSE indicates a problem
      */
     @Override
-    public boolean addUserToEntityGroup(User user, UserDetails userDetails) {
+    public boolean addUserToEntityGroup(final UserInformation userInfo) {
 
-        if (user == null) {
-            LOG.warn("Received invalid user object when trying to assign user to entity-based group");
-            throw new IllegalArgumentException("user null!");
-        }
+        Assert.notNull(userInfo, "Received invalid user object when trying to assign user to entity-based group");
 
-        if (userDetails == null) {
-            LOG.warn("Received invalid user details object when trying to assign user to entity-based group");
-            throw new IllegalArgumentException("user details null!");
-        }
+        final User user = userInfo.getUser();
+        Assert.notNull(user, "Received invalid user object when trying to assign user to entity-based group");
+
+        final UserDetails userDetails = userInfo.getUserDetails();
+        Assert.notNull(userDetails, "Received invalid user details object when trying to assign user to entity-based group");
 
         if (StringUtils.isEmpty(userDetails.getEntity())) {
             LOG.debug("User '{}' does not have an entity assigned; won't assign to any further group though", userDetails.getLogin());
@@ -247,7 +242,7 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @return extracted user id
      */
     @Override
-    public String getUserIdFromHypothesisUserAccount(String hypoClientUser) {
+    public String getUserIdFromHypothesisUserAccount(final String hypoClientUser) {
 
         if (StringUtils.isEmpty(hypoClientUser)) {
             return null;
@@ -267,68 +262,63 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     }
 
     /**
-     * wrap an user id in the format expected by hypothesis client
+     * wrap a user name in the format expected by hypothesis client
      *
-     * @param userId the user id to be converted
-     * @return converted user id
+     * @param username the user name to be converted
+     * @return converted user name
      */
     @Override
-    public String getHypothesisUserAccountFromUserId(String userId) {
+    public String getHypothesisUserAccountFromUserName(final String username) {
 
-        if (StringUtils.isEmpty(userId)) {
+        if (StringUtils.isEmpty(username)) {
             return "";
         }
 
-        return HYPOTHESIS_ACCOUNT_PREFIX + userId;
+        return HYPOTHESIS_ACCOUNT_PREFIX + username;
     }
 
     /**
-     * retrieve the user id of a user and convert it for hypothes.is format
+     * retrieve the user login of a user and convert it for hypothes.is format
      *
      * @param user the user object for which to retrieve hypothes.is user id format
-     * @return converted user id
+     * @param authority the authority of the user
+     * @return converted user login
      */
     @Override
-    public String getHypothesisUserAccountFromUser(User user) {
+    public String getHypothesisUserAccountFromUser(final User user, final String authority) {
 
         if (user == null) {
+            LOG.error("Cannot determine annotate/hypothesis user account: no user given!");
+            return "";
+        }
+        if (StringUtils.isEmpty(authority)) {
+            LOG.error("Cannot determine annotate/hypothesis user account: no authority given!");
             return "";
         }
 
-        String userId;
-        UserDetails details = getUserDetailsFromUserRepo(user.getLogin());
-
-        if (details != null) {
-            if (!StringUtils.isEmpty(details.getAuthority())) {
-                userId = details.getLogin() + "@" + details.getAuthority();
-            } else {
-                userId = getDefaultUserAccountByLogin(details.getLogin());
-            }
-        } else {
-            LOG.error("Cannot determine user details for assembling annotate/hypothesis user account; concerns user with login '{}'; use fallback",
-                    user.getLogin());
-            userId = getDefaultUserAccountByLogin(user.getLogin());
-        }
-        return getHypothesisUserAccountFromUserId(userId);
+        final String userId = user.getLogin() + "@" + authority;
+        return getHypothesisUserAccountFromUserName(userId);
     }
 
     /**
-     * create a default user id based on the login
+     * retrieve the user login of a user and convert it for hypothes.is format
      *
-     * note: should be used as fallbacks only!
-     *
-     * @param login the user login
-     * @return (hypothes.is) user account assembled using login and default authority
+     * @param userId the internal database ID of the user for which to retrieve hypothes.is user id format
+     * @param authority the authority of the user
+     * @return converted user login
      */
-    private String getDefaultUserAccountByLogin(String login) {
-
-        if (StringUtils.isEmpty(login)) {
+    @Override
+    public String getHypothesisUserAccountFromUserId(final long userId, final String authority) {
+        
+        final User user = userRepository.findById(userId);
+        if(user == null) {
+            LOG.error("Cannot determine annotate/hypothesis user account: user not found in database!");
             return "";
         }
-
-        return login + "@" + DEFAULT_AUTHORITY;
+        
+        return getHypothesisUserAccountFromUser(user, authority);
     }
-
+    
     /**
      * search for a user given its login name
      *
@@ -336,50 +326,59 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @return found user, or {@literal null}
      */
     @Override
-    public User findByLogin(String login) {
+    public User findByLogin(final String login) {
 
-        User foundUser = userRepository.findByLogin(login);
-        LOG.debug("Found user based on login: {}", (foundUser != null));
+        final User foundUser = userRepository.findByLogin(login);
+        LOG.debug("Found user based on login: {}", foundUser != null);
         return foundUser;
     }
 
     /**
      * retrieve the full user profile for the hypothes.is client
      *
-     * @param userLogin the login of the user for which the profile is to be retrieved
-     * @param authority the authority under which the user is known
+     * @param userInfo the user for which the profile is to be retrieved
      *
      * @return {@link JsonUserProfile} containing all relevant information (preferences, groups, ...)
      */
     @Override
-    public JsonUserProfile getUserProfile(String userLogin, String authority) throws UserNotFoundException {
+    public JsonUserProfile getUserProfile(final UserInformation userInfo) throws UserNotFoundException {
+        
+        Assert.notNull(userInfo, "userInfo undefined");
 
-        User foundUser = userRepository.findByLogin(userLogin);
-        if (foundUser == null) {
-            LOG.error("User '" + userLogin + "' is unknown; cannot return its profile.");
-            throw new UserNotFoundException(userLogin);
+        final User user = userInfo.getUser();
+        if (user == null) {
+            LOG.error("User '" + userInfo.getLogin() + "' is unknown; cannot return its profile.");
+            throw new UserNotFoundException(userInfo.getLogin());
         }
 
-        JsonUserProfile profile = new JsonUserProfile();
-        profile.setAuthority(authority); // or use default authority?
+        final JsonUserProfile profile = new JsonUserProfile();
+        profile.setAuthority(userInfo.getAuthority());
 
-        profile.setUserid(getHypothesisUserAccountFromUser(foundUser));
+        profile.setUserid(userInfo.getAsHypothesisAccount());
 
-        UserDetails userInfoFromRepo = getUserDetailsFromUserRepo(userLogin);
+        final UserDetails userInfoFromRepo = getUserDetailsFromUserRepo(user.getLogin());
         if (userInfoFromRepo != null) {
             profile.setDisplayName(userInfoFromRepo.getDisplayName());
+            profile.setEntityName(userInfoFromRepo.getEntity());
         }
 
-        List<Group> groups = groupService.getGroupsOfUser(foundUser);
+        final List<Group> groups = groupService.getGroupsOfUser(user);
         if (groups != null) {
-            for (Group g : groups) {
+            
+            if(Authorities.isIsc(userInfo.getAuthority())) {
+                // for ISC, we should not return the default group -> filter out
+                LOG.debug("Remove default group for ISC user {}", user.getLogin());
+                groups.remove(groupService.findDefaultGroup());
+            }
+            
+            for (final Group g : groups) {
                 profile.addGroup(new JsonGroup(g.getDisplayName(), g.getName(), g.isPublicGroup()));
             }
         }
 
         // preferences
-        JsonUserShowSideBarPreference showSidebar = new JsonUserShowSideBarPreference();
-        showSidebar.setShow_sidebar_tutorial(!foundUser.isSidebarTutorialDismissed());
+        final JsonUserShowSideBarPreference showSidebar = new JsonUserShowSideBarPreference();
+        showSidebar.setShow_sidebar_tutorial(!user.isSidebarTutorialDismissed());
         profile.setPreferences(showSidebar);
 
         return profile;
@@ -394,13 +393,11 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @throws UserNotFoundException throws this exception when the given user is unknown
      */
     @Override
-    public User updateSidebarTutorialVisible(String userLogin, boolean visible) throws UserNotFoundException {
+    public User updateSidebarTutorialVisible(final String userLogin, final boolean visible) throws UserNotFoundException {
 
-        if (StringUtils.isEmpty(userLogin)) {
-            throw new IllegalArgumentException("Required user login missing");
-        }
+        Assert.isTrue(!StringUtils.isEmpty(userLogin), "Required user login missing");
 
-        User foundUser = userRepository.findByLogin(userLogin);
+        final User foundUser = userRepository.findByLogin(userLogin);
         if (foundUser == null) {
             LOG.error("User '" + userLogin + "' is unknown; cannot update its preferences.");
             throw new UserNotFoundException(userLogin);
@@ -421,22 +418,22 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      * @return {@link UserDetails} object containing all user properties
      */
     @Override
-    public UserDetails getUserDetailsFromUserRepo(String login) {
+    public UserDetails getUserDetailsFromUserRepo(final String login) {
 
         // check cache first - especially useful when returning search result with multiple annotations from save user!
-        UserDetails cachedDetails = userDetailsCache.getCachedUserDetails(login);
+        final UserDetails cachedDetails = userDetailsCache.getCachedUserDetails(login);
         if (cachedDetails != null) {
             LOG.debug("User details for user '{}' still cached, use cached info", login);
             return cachedDetails;
         }
 
-        Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new HashMap<String, String>();
         params.put("userId", login);
 
         // contact the ud-repo and cache the result
         try {
             LOG.debug("Searching for user '{}' in user repository", login);
-            UserDetails foundUser = restOperations.getForObject(repositoryUrl, UserDetails.class, params);
+            final UserDetails foundUser = restOperations.getForObject(repositoryUrl, UserDetails.class, params);
             userDetailsCache.cache(login, foundUser);
             return foundUser;
         } catch (RestClientException e) {

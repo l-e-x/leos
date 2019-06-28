@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -31,6 +31,14 @@ define(function listItemNumberModule(require) {
                 return this.format.replace('x', generateAlpha(idx));
             }
         }, {
+            type: "arabic",
+            inDefault: true,
+            format: "(x)",
+            name: 'Arabic',
+            generator: function generateSequenceForArabic(list, item, idx) {
+                return this.format.replace('x', idx + 1);
+            }
+        }, {
             type: "roman",
             inDefault: true,
             format: "(x)",
@@ -45,14 +53,6 @@ define(function listItemNumberModule(require) {
             name: 'IndentDash',
             generator: function generateSequenceForIndent(list, item, idx) {
                 return this.format.replace('x', '-');
-            }
-        }, {
-            type: "arabic",
-            inDefault: false,
-            format: "(x)",
-            name: 'Arabic',
-            generator: function generateSequenceForArabic(list, item, idx) {
-                return this.format.replace('x', idx + 1);
             }
         }
     ];
@@ -222,7 +222,7 @@ define(function listItemNumberModule(require) {
             } else {
                 sequence = seqNum;
             }
-            (UTILS.getElementOrigin(orderedList))
+            (UTILS.getElementOrigin(orderedList) && UTILS.getElementOrigin(orderedList) === 'ec')
                 ? _doMandateNum(orderedList, sequence)
                 : _doProposalNum(orderedList, sequence);
         }

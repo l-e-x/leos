@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -20,6 +20,10 @@ import com.vaadin.ui.AbstractField;
 import elemental.json.Json;
 import elemental.json.JsonObject;
 import eu.europa.ec.leos.ui.event.StateChangeEvent;
+import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataRequest;
+import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataResponse;
+import eu.europa.ec.leos.ui.event.metadata.SearchMetadataRequest;
+import eu.europa.ec.leos.ui.event.metadata.SearchMetadataResponse;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenRequest;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenResponse;
 import eu.europa.ec.leos.web.event.view.document.FetchUserPermissionsRequest;
@@ -41,8 +45,8 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
         this.eventBus = eventBus;
         registerServerSideAPI();
         getState().authority = cfgHelper.getProperty("annotate.authority");
-        getState().clientUrl = cfgHelper.getProperty("annotate.client.url");
-        getState().apiHost = cfgHelper.getProperty("annotate.api.host");
+        getState().anotClient = cfgHelper.getProperty("annotate.client.url");
+        getState().anotHost = cfgHelper.getProperty("annotate.server.url");
         getState().oauthClientId = cfgHelper.getProperty("annotate.jwt.issuer.client.id");
 
         getState().annotationContainer = cfgHelper.getProperty("annotation.container");
@@ -86,7 +90,9 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
 
     private void registerServerSideAPI() {
         addFunction("requestUserPermissions", arguments -> eventBus.post(new FetchUserPermissionsRequest()));
-        addFunction("requestSecurityToken", arguments -> eventBus.post(new SecurityTokenRequest(getState(false).clientUrl)));
+        addFunction("requestSecurityToken", arguments -> eventBus.post(new SecurityTokenRequest(getState(false).anotClient)));
+        addFunction("requestDocumentMetadata", arguments -> eventBus.post(new DocumentMetadataRequest()));
+        addFunction("requestSearchMetadata", arguments -> eventBus.post(new SearchMetadataRequest()));
         addFunction("requestMergeSuggestion", arguments -> {
             try {
                 JsonObject selector = arguments.getObject(0);
@@ -110,6 +116,16 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
     @Subscribe
     public void receiveTicket(SecurityTokenResponse event) {
         callFunction("receiveSecurityToken", event.getToken());
+    }
+
+    @Subscribe
+    public void receiveDocumentMetadata(DocumentMetadataResponse event) {
+        callFunction("receiveDocumentMetadata", event.getMetadata().toString());
+    }
+
+    @Subscribe
+    public void receiveSearchMetadata(SearchMetadataResponse event) {
+        callFunction("receiveSearchMetadata", event.getMetadataSets().toString());
     }
 
     @Subscribe

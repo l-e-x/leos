@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,9 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.Generated;
 
 import java.util.List;
+import java.util.Objects;
 
 public class JsonSearchResult {
 
@@ -27,18 +28,18 @@ public class JsonSearchResult {
     protected List<JsonAnnotation> rows;
 
     // the total lists the amount of annotations found (without replies in case replies are to be provided separately)
-    @SuppressFBWarnings
-    private int total;
+    private long total;
 
     // -------------------------------------
     // Constructors
     // -------------------------------------
-    // default constructor required for deserialisation
     public JsonSearchResult() {
+        // default constructor required for deserialisation
     }
 
-    public JsonSearchResult(List<JsonAnnotation> items) {
+    public JsonSearchResult(final List<JsonAnnotation> items, final long totalItems) {
         this.rows = items;
+        this.total = totalItems;
     }
 
     // -------------------------------------
@@ -48,15 +49,35 @@ public class JsonSearchResult {
         return rows;
     }
 
-    public void setRows(List<JsonAnnotation> rows) {
+    public void setRows(final List<JsonAnnotation> rows) {
         this.rows = rows;
     }
 
-    public int getTotal() {
-        if (this.rows == null) {
-            return 0;
-        }
-        return this.rows.size();
+    public long getTotal() {
+        return this.total;
     }
 
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(total, rows);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonSearchResult other = (JsonSearchResult) obj;
+        return Objects.equals(this.total, other.total) &&
+                Objects.equals(this.rows, other.rows);
+    }
 }

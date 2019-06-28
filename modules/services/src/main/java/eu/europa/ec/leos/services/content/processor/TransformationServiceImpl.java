@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,13 +14,14 @@
 package eu.europa.ec.leos.services.content.processor;
 
 import com.google.common.base.Stopwatch;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.services.support.xml.freemarker.XmlNodeModelHandler;
 import freemarker.ext.dom.NodeModel;
-import freemarker.template.*;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateHashModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +29,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -89,18 +94,24 @@ public class TransformationServiceImpl implements TransformationService {
     @Override
     public String formatToHtml(XmlDocument versionDocument, String contextPath, List<LeosPermission> permissions) {
         LOG.debug("formatToHtml service invoked for version id:{})", versionDocument.getId());
-        
-        try {
-            // 1. get document content
-            final Content content = versionDocument.getContent().getOrError(() -> "Version document content is required!");
-            final byte[] contentBytes = content.getSource().getByteString().toByteArray();
-            // 2. transform it
-            return transform(new ByteArrayInputStream(contentBytes), editableXHtmlTemplate, contextPath, permissions);
+        try (final ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream
+                (versionDocument.getContent().getOrError(() -> "Version document content is required!")
+                        .getSource().getBytes())) {
+            return transform(byteArrayInputStream, editableXHtmlTemplate, contextPath, permissions);
         } catch (Exception e) {
             throw new RuntimeException("Unable to format to HTML");
         }
     }
-
+    
+    @Override
+    public String formatToHtml(InputStream documentStream, String contextPath, List<LeosPermission> permissions) {
+        try {
+            return transform(documentStream, editableXHtmlTemplate, contextPath, permissions);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to format to HTML");
+        }
+    }
+    
     /**
      *  Transforms a documentStream using a freemarker template 
      * @param documentStream
@@ -133,6 +144,11 @@ public class TransformationServiceImpl implements TransformationService {
             LOG.error("Transformation error!", ex);
             throw new RuntimeException(ex);
         } finally {
+            try {
+                documentStream.close();
+            } catch (IOException ioe){
+                 //omitted
+            }
             stopwatch.stop();
             LOG.trace("Transformation finished! ({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         }

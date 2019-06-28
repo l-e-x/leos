@@ -1,6 +1,6 @@
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -17,20 +17,20 @@
   <!-- User -->
   <span ng-if="vm.user()">
     <!-- LEOS Changes: Added style to disable link -->
-    <a class="annotation-header__user"
+    <a title="{{vm.displayName()}}" class="annotation-header__user"
       target="_blank"
       ng-if="!vm.isThirdPartyUser()"
       ng-href="{{vm.serviceUrl('user',{user:vm.user()})}}"
       style="pointer-events: none;cursor: default;"
       >{{vm.displayName()}}</a>
     <!-- LEOS Changes: Added style to disable link -->
-    <a class="annotation-header__user"
+    <a title="{{vm.displayName()}}" class="annotation-header__user"
       target="_blank"
       ng-if="vm.isThirdPartyUser() && vm.thirdPartyUsernameLink()"
       href="{{ vm.thirdPartyUsernameLink() }}"
       style="pointer-events: none;cursor: default;"
       >{{vm.displayName()}}</a>
-    <span class="annotation-header__user"
+    <span title="{{vm.displayName()}}" class="annotation-header__user"
       ng-if="vm.isThirdPartyUser() && !vm.thirdPartyUsernameLink()"
       >{{vm.displayName()}}</span>
     <span class="annotation-collapsed-replies">
@@ -41,37 +41,14 @@
     </span>
     <br>
   </span>
+  &nbsp;<span title="{{vm.entityName()}}" ng-if="vm.entityName()" 
+          class="annotation-header__entity"
+          >{{vm.entityName()}}</span>
   &nbsp;(<timestamp
     class-name="'annotation-header__timestamp'"
     timestamp="vm.updated()"
     href="vm.htmlLink()"
     style="pointer-events: none;cursor: default;"
     ng-if="!vm.editing() && vm.updated()"></timestamp>)
-
-  <span class="u-flex-spacer"></span>
-  <div class="leos-annotation-actions" ng-if="!vm.isEditing && vm.id">
-    <div ng-show="vm.isSaving">Saving…</div>
-    <annotation-action-button
-      icon="'h-icon-annotation-edit'"
-      is-disabled="vm.isDeleted"
-      label="'Edit'"
-      ng-show="vm.authorize({action: 'update'}) && !vm.isSaving && vm.isSelected"
-      on-click="vm.edit()"
-    ></annotation-action-button>
-    <annotation-action-button
-      icon="'h-icon-annotation-delete'"
-      is-disabled="vm.isDeleted"
-      label="'Delete'"
-      ng-show="vm.authorize({action: 'delete'}) && !vm.isSaving && vm.isSelected"
-      on-click="vm.delete()"
-    ></annotation-action-button>
-    <annotation-action-button
-      icon="'h-icon-annotation-reply'"
-      is-disabled="vm.isDeleted"
-      ng-show="!vm.isSaving && vm.isSelected && !vm.isPrivate"
-      label="'Reply'"
-      on-click="vm.reply()"
-    ></annotation-action-button>
-  </div>
 
 </header>

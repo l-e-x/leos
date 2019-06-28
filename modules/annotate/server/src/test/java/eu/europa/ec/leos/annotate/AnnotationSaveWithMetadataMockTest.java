@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,11 @@
  */
 package eu.europa.ec.leos.annotate;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.DocumentRepository;
@@ -37,8 +40,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -47,31 +48,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.net.URI;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class AnnotationSaveWithMetadataMockTest {
-
-    @SuppressWarnings("unused")
-    private static Logger LOG = LoggerFactory.getLogger(AnnotationSaveTest.class);
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content before running new test
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        MockitoAnnotations.initMocks(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -103,21 +82,45 @@ public class AnnotationSaveWithMetadataMockTest {
     @Mock
     private DocumentService documentService;
 
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content before running new test
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        MockitoAnnotations.initMocks(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
 
     // test creation of an annotation when metadata service has internal failures - annotation creation should throw expected exception
-    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test(expected = CannotCreateAnnotationException.class)
     public void testCreateAnnotation_MetadataService_Failure() throws CannotCreateAnnotationException, CannotCreateMetadataException {
 
-        final String username = "acct:myusername@europa.eu", login = "demo";
+        final String login = "demo";
+        final String username = "acct:myusername@europa.eu";
+        final UserInformation userInfo = new UserInformation(login, Authorities.ISC);
 
         // add user to default group
-        User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User("demo"));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+        userInfo.setUser(theUser);
 
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
 
         // configure mocks; especially MetadataService should throw a custom exception
         Mockito.when(userService.findByLogin(Mockito.anyString())).thenReturn(theUser);
@@ -129,7 +132,7 @@ public class AnnotationSaveWithMetadataMockTest {
 
         // let the annotation be created - should not be successful
         try {
-            annotService.createAnnotation(jsAnnot, login);
+            annotService.createAnnotation(jsAnnot, userInfo);
             Assert.fail("Expected exception due to metadata service failure not received");
         } catch (CannotCreateAnnotationException ccae) {
             // OK
@@ -138,13 +141,6 @@ public class AnnotationSaveWithMetadataMockTest {
         }
 
         // test again, but now MetadataService returns non-custom exception
-        try {
-            annotService.createAnnotation(jsAnnot, login);
-            Assert.fail("Expected exception due to metadata service failure not received");
-        } catch (CannotCreateAnnotationException ccae) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
-        }
+        annotService.createAnnotation(jsAnnot, userInfo); // should throw CannotCreateAnnotationException
     }
 }

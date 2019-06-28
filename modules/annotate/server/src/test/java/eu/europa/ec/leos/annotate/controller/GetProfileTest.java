@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,7 +15,9 @@ package eu.europa.ec.leos.annotate.controller;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.helper.TestHelper;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -46,33 +48,12 @@ import org.springframework.web.context.WebApplicationContext;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class GetProfileTest {
 
     private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "re123";
-
-    private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content
-    // -------------------------------------
-    @Before
-    public void setupTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
-        this.mockMvc = builder.build();
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -85,7 +66,7 @@ public class GetProfileTest {
 
     @Autowired
     private UserGroupRepository userGroupRepos;
-    
+
     @Autowired
     private TokenRepository tokenRepos;
 
@@ -93,6 +74,27 @@ public class GetProfileTest {
     private WebApplicationContext wac;
 
     private MockMvc mockMvc;
+
+    private Group defaultGroup;
+
+    // -------------------------------------
+    // Cleanup of database content
+    // -------------------------------------
+    @Before
+    public void setupTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
+        this.mockMvc = builder.build();
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
 
     // -------------------------------------
     // Tests
@@ -102,35 +104,36 @@ public class GetProfileTest {
      * successfully retrieve the user profile for an existing user, expected HTTP 200 and the profile data
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetProfileOk() throws Exception {
 
-        final String login = "demo", authority = "myauthority";
+        final String login = "demo";
+        final String authority = "myauthority";
 
         // preparation: save a user and assign it to a group
-        User theUser = new User(login, true); // pretend sidebar tutorial was dismissed
+        final User theUser = new User(login, true); // pretend sidebar tutorial was dismissed
         userRepos.save(theUser);
-        tokenRepos.save(new Token(theUser, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
-        
-        UserGroup membership = new UserGroup();
+        tokenRepos.save(new Token(theUser, authority, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now()));
+
+        final UserGroup membership = new UserGroup();
         membership.setUserId(theUser.getId());
         membership.setGroupId(defaultGroup.getId());
         userGroupRepos.save(membership);
 
         // send profile retrieval request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/profile?authority=" + authority)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/profile?authority=" + authority)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 200
         result.andExpect(MockMvcResultMatchers.status().isOk());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // check that the expected profile was returned
-        JsonUserProfile jsResponse = SerialisationHelper.deserializeJsonUserProfile(responseString);
+        final JsonUserProfile jsResponse = SerialisationHelper.deserializeJsonUserProfile(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(authority, jsResponse.getAuthority());
         Assert.assertEquals(1, jsResponse.getGroups().size());
@@ -142,25 +145,25 @@ public class GetProfileTest {
      * failure retrieving the user profile for a non-existing user (i.e. not for the token used), expected HTTP 401 and failure response
      */
     @Test
-    @SuppressFBWarnings(value = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR", justification = "Initialisation is done in function that is run before each test")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     public void testGetProfileFailure() throws Exception {
 
         final String authority = "myauthority";
 
         // send profile retrieval request
-        MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/profile?authority=" + authority)
-                .header("authorization", "Bearer " + ACCESS_TOKEN);
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get("/api/profile?authority=" + authority)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
-        ResultActions result = this.mockMvc.perform(builder);
+        final ResultActions result = this.mockMvc.perform(builder);
 
         // expected: Http 401
         result.andExpect(MockMvcResultMatchers.status().isUnauthorized());
 
-        MvcResult resultContent = result.andReturn();
-        String responseString = resultContent.getResponse().getContentAsString();
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
 
         // failure response is received
-        JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
+        final JsonAuthenticationFailure jsResponse = SerialisationHelper.deserializeJsonAuthenticationFailure(responseString);
         Assert.assertNotNull(jsResponse);
         Assert.assertEquals(JsonAuthenticationFailure.getAuthenticationErrorResult(), jsResponse);
         Assert.assertTrue(!jsResponse.getError().isEmpty());

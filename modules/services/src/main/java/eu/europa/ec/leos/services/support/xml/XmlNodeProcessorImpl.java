@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -47,6 +47,7 @@ class XmlNodeProcessorImpl implements XmlNodeProcessor {
             vtdNav.toElement(VTDNav.ROOT);
             AutoPilot autoPilot = new AutoPilot(vtdNav);
             autoPilot.declareXPathNameSpace("leos", "urn:eu:europa:ec:leos");// required
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
 
             LOG.trace("Parsed xml in ({} milliseconds)", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             for (String key : keys) {
@@ -84,6 +85,7 @@ class XmlNodeProcessorImpl implements XmlNodeProcessor {
             XMLModifier xmlModifier = new XMLModifier(vtdNav);
             AutoPilot autoPilot = new AutoPilot(vtdNav);
             autoPilot.declareXPathNameSpace("leos", "urn:eu:europa:ec:leos");// required
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
 
             for (Map.Entry<String, String> entry : keyValue.entrySet()) {
                 try {

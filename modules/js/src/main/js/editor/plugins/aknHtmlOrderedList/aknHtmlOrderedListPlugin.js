@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -27,7 +27,7 @@ define(function aknHtmlOrderedListPluginModule(require) {
         akn: "ol",
         html: "ol",
         attr: [{
-            akn: "GUID",
+            akn: "xml:id",
             html: "id"
         }, {
             akn : "leos:origin",
@@ -37,7 +37,7 @@ define(function aknHtmlOrderedListPluginModule(require) {
             akn: "li",
             html: "ol/li",
             attr: [{
-                akn: "GUID",
+                akn: "xml:id",
                 html: "id"
             }, {
                 akn : "leos:origin",

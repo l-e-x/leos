@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -25,8 +25,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.time.LocalDateTime;
+
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class UserDetailsCacheTest {
 
@@ -69,14 +71,51 @@ public class UserDetailsCacheTest {
         Assert.assertEquals(0, userCache.size());
         Assert.assertNull(userCache.getCachedUserDetails(LOGIN));
 
-        UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
         userCache.cache(LOGIN, details);
         Assert.assertEquals(1, userCache.size());
 
-        UserDetails cachedItem = userCache.getCachedUserDetails(LOGIN);
+        final UserDetails cachedItem = userCache.getCachedUserDetails(LOGIN);
         Assert.assertEquals(details, cachedItem);
 
         userCache.clear();
+        Assert.assertNull(userCache.getCachedUserDetails(LOGIN));
+        Assert.assertEquals(0, userCache.size());
+    }
+
+    /**
+     * test work refusal when parameters are missing
+     */
+    @Test
+    public void testCacheWithoutName() {
+
+        // verify asking for invalid name returns null
+        Assert.assertNull(userCache.getCachedUserDetails(""));
+
+        // verify that no exception is thrown when trying to cache invalid value
+        userCache.cache("", null);
+    }
+
+    /**
+     * test that the cache cleanup works
+     */
+    @Test
+    public void testUserDetailsCacheCleanup() {
+
+        final String LOGIN = "someuser";
+
+        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        userCache.cache(LOGIN, details);
+        Assert.assertNotNull(userCache.getCachedUserDetails(LOGIN));
+
+        // set next cleanup time invalid -> no cleanup yet, item still present
+        userCache.setNextCacheCleanupTime(null);
+        Assert.assertNotNull(userCache.getCachedUserDetails(LOGIN));
+
+        // set next cleanup to be in the past -> should trigger upon next access
+        userCache.setNextCacheCleanupTime(LocalDateTime.now().minusMinutes(5));
+
+        // -> cache empty
         Assert.assertNull(userCache.getCachedUserDetails(LOGIN));
         Assert.assertEquals(0, userCache.size());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import eu.europa.ec.leos.annotate.Generated;
 
 import java.util.Objects;
 
@@ -35,7 +36,7 @@ public class JsonSuggestionAcceptSuccessResponse extends JsonSuccessResponseBase
         super();
     }
     
-    public JsonSuggestionAcceptSuccessResponse(String annotationId) {
+    public JsonSuggestionAcceptSuccessResponse(final String annotationId) {
         super(annotationId);
     }
 
@@ -51,13 +52,15 @@ public class JsonSuggestionAcceptSuccessResponse extends JsonSuccessResponseBase
     // equals and hashCode
     // -------------------------------------
     
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, accepted);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

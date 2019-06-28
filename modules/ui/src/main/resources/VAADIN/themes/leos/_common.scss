@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 //global variables
 $WHITE:#FFFFFF;
+$BLACK:#000000;
 $GREY:#EEEEEE;
 $DARK_GREY: #808080;
 $DARK_SLATE_GREY: #474747;
@@ -50,5 +51,15 @@ $G_BROWN_COLOR:#ee7c08;
 
 //To add on input prompt of vaadin text field component
 .v-textfield[class*="prompt"] {
+    font-style: italic;
+}
+
+.v-textfield::placeholder {
+    color: #a3a3a3;
+    font-style: italic;
+}
+
+.v-textfield:-ms-input-placeholder { /* IE 10+ */
+    color: #a3a3a3;
     font-style: italic;
 }

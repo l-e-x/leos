@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -69,8 +69,8 @@ class AttachmentProcessorImpl implements AttachmentProcessor {
         Map<String, String> attachmentsId = new HashMap();
         List<Map<String, String>> attrsElts = xmlContentProcessor.getElementsAttributesByPath(xmlContent, "//attachments/attachment/documentRef");
         attrsElts.forEach(element -> {
-            if (element.containsKey("GUID") && element.containsKey("href")) {
-                attachmentsId.put(element.get("href"), element.get("GUID"));
+            if (element.containsKey("xml:id") && element.containsKey("href")) {
+                attachmentsId.put(element.get("href"), element.get("xml:id"));
             }
         });
         return attachmentsId;
@@ -80,8 +80,8 @@ class AttachmentProcessorImpl implements AttachmentProcessor {
         return String.format("<attachment><documentRef href=\"%s\" showAs=\"%s\"/></attachment>", href, showAs);
     }
 
-    private String createDocumentRefTag(String guid, String href, String showAs) {
-        return String.format("<documentRef GUID=\"%s\" href=\"%s\" showAs=\"%s\"/>", guid, href, showAs);
+    private String createDocumentRefTag(String xmlid, String href, String showAs) {
+        return String.format("<documentRef xml:id=\"%s\" href=\"%s\" showAs=\"%s\"/>", xmlid, href, showAs);
     }
 
     @Override

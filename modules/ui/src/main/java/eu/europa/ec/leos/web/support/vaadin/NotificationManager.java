@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,8 +19,9 @@ import com.vaadin.server.Page;
 import com.vaadin.spring.annotation.UIScope;
 import com.vaadin.ui.Notification;
 import com.vaadin.ui.Notification.Type;
+import com.vaadin.ui.UI;
 import eu.europa.ec.leos.web.event.NotificationEvent;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +35,11 @@ public class NotificationManager {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationManager.class);
 
     private static final String NOTIFICATION_STYLE = "dark";
+    private static final int TRAY_MESSAGE_NOTIFICATION_DELAY = 5000;
+    private static final int MESSAGE_NOTIFICATION_DELAY = 3000;
 
-    private MessageHelper messageHelper;
-    private EventBus eventBus;
+    private final MessageHelper messageHelper;
+    private final EventBus eventBus;
 
     @Autowired
     public NotificationManager(MessageHelper messageHelper, EventBus eventBus) {
@@ -50,50 +53,61 @@ public class NotificationManager {
     }
 
     @Subscribe
-    public void showNotification(NotificationEvent notificationEvent) {
+    public void showNotification(final NotificationEvent notificationEvent) {
         // NOTE notification exceptions should not be propagated. We don't know how to handle them somewhere else.
         try {
-            switch (notificationEvent.getType()) {
-                case TRAY:
-                    handleTrayNotification(notificationEvent, Type.TRAY_NOTIFICATION);
-                    break;
-                case INFO:
-                    handleNotification(notificationEvent, Type.HUMANIZED_MESSAGE);
-                    break;
-                case WARNING:
-                    handleNotification(notificationEvent, Type.WARNING_MESSAGE);
-                    break;
-                case ERROR:
-                    handleErrorNotification(notificationEvent, Type.ERROR_MESSAGE);
-                    break;
-                default:
-                    handleNotification(notificationEvent, Type.ERROR_MESSAGE);
-                    break;
+            UI currentUI = UI.getCurrent();
+            if(notificationEvent.getTargetedUI() != null) {
+                currentUI =  notificationEvent.getTargetedUI();
+            } else if (currentUI != null) {
+                notificationEvent.setTargetedUI(currentUI);
+            }
+            if(currentUI != null){
+                currentUI.access(() -> {
+                    switch (notificationEvent.getType()) {
+                        case TRAY:
+                            handleTrayNotification(notificationEvent);
+                            break;
+                        case INFO:
+                            handleNotification(notificationEvent, Type.HUMANIZED_MESSAGE);
+                            break;
+                        case WARNING:
+                            handleNotification(notificationEvent, Type.WARNING_MESSAGE);
+                            break;
+                        case ERROR:
+                            handleErrorNotification(notificationEvent);
+                            break;
+                        default:
+                            handleNotification(notificationEvent, Type.ERROR_MESSAGE);
+                            break;
+                    }
+                });
             }
         } catch (Exception ex) {
             LOG.error("Unable to handle notification event!", ex);
         }
     }
 
-    private void handleTrayNotification(NotificationEvent notificationEvent, Notification.Type notificationType) {
+    private void handleTrayNotification(NotificationEvent notificationEvent) {
         String message = messageHelper.getMessage(notificationEvent.getMessageKey(), notificationEvent.getArgs());
         String caption = messageHelper.getMessage(notificationEvent.getCaptionKey());
-        Notification notfn = new Notification(caption, message, notificationType, true);
-        notfn.setStyleName(NOTIFICATION_STYLE);
-        notfn.setDelayMsec(5000);
-        notfn.show(Page.getCurrent());
+        Notification notification = new Notification(caption, message, Type.TRAY_NOTIFICATION, true);
+        notification.setStyleName(NOTIFICATION_STYLE);
+        notification.setDelayMsec(TRAY_MESSAGE_NOTIFICATION_DELAY);
+        notification.show(notificationEvent.getTargetedUI() != null ? notificationEvent.getTargetedUI().getPage() : Page.getCurrent());
     }
 
     private void handleNotification(NotificationEvent notificationEvent, Notification.Type notificationType) {
         String message = messageHelper.getMessage(notificationEvent.getMessageKey(), notificationEvent.getArgs());
-        Notification notfn = new Notification(message, null, notificationType, true);
-        notfn.setStyleName(NOTIFICATION_STYLE);
-        notfn.show(Page.getCurrent());
+        Notification notification = new Notification(message, null, notificationType, true);
+        notification.setStyleName(NOTIFICATION_STYLE);
+        notification.setDelayMsec(MESSAGE_NOTIFICATION_DELAY);
+        notification.show(notificationEvent.getTargetedUI() != null ? notificationEvent.getTargetedUI().getPage() : Page.getCurrent());
     }
 
-    private void handleErrorNotification(NotificationEvent notificationEvent, Notification.Type notificationType) {
+    private void handleErrorNotification(NotificationEvent notificationEvent) {
         String message = messageHelper.getMessage(notificationEvent.getMessageKey(), notificationEvent.getArgs());
-        Notification notfn = new Notification(message, null, notificationType, true);
-        notfn.show(Page.getCurrent());
+        Notification notification = new Notification(message, null, Type.ERROR_MESSAGE, true);
+        notification.show(notificationEvent.getTargetedUI() != null ? notificationEvent.getTargetedUI().getPage() : Page.getCurrent());
     }
 }

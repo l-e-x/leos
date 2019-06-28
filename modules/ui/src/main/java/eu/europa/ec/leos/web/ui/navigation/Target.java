@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,12 +13,13 @@
  */
 package eu.europa.ec.leos.web.ui.navigation;
 
-import eu.europa.ec.leos.domain.document.LeosCategory;
+
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.ui.view.annex.AnnexView;
+import eu.europa.ec.leos.ui.view.collection.CollectionView;
 import eu.europa.ec.leos.ui.view.document.DocumentView;
 import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.ui.view.memorandum.MemorandumView;
-import eu.europa.ec.leos.ui.view.proposal.ProposalView;
 import eu.europa.ec.leos.ui.view.repository.RepositoryView;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 public enum Target {
     REPOSITORY(RepositoryView.VIEW_ID),
-    PROPOSAL(ProposalView.VIEW_ID),
+    PROPOSAL(CollectionView.VIEW_ID),
     LEGALTEXT(DocumentView.VIEW_ID),
     MEMORANDUM(MemorandumView.VIEW_ID),
     ANNEX(AnnexView.VIEW_ID),

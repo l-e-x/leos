@@ -4,6 +4,8 @@ import org.apache.chemistry.opencmis.commons.definitions.PropertyDefinition;
 import org.apache.chemistry.opencmis.commons.enums.Updatability;
 import org.apache.chemistry.opencmis.inmemory.types.PropertyCreationHelper;
 
+import java.util.GregorianCalendar;
+
 import java.math.BigInteger;
 
 class LeosPropertyDefinition {
@@ -23,6 +25,18 @@ class LeosPropertyDefinition {
     static final PropertyDefinition<String> LEOS_METADATA_REF =
             PropertyCreationHelper.createStringDefinition("metadata:ref", "LEOS REF", Updatability.READWRITE);
 
+    static final PropertyDefinition<String> LEOS_MILESTONE_COMMENTS =
+            PropertyCreationHelper.createStringMultiDefinition("leos:milestoneComments", "LEOS milestone comments", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_JOB_ID =
+            PropertyCreationHelper.createStringDefinition("leos:jobId", "LEOS job id", Updatability.READWRITE);
+
+    static final PropertyDefinition<GregorianCalendar> LEOS_JOB_DATE =
+            PropertyCreationHelper.createDateTimeDefinition("leos:jobDate", "LEOS job date", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_STATUS =
+            PropertyCreationHelper.createStringDefinition("leos:status", "LEOS status", Updatability.READWRITE);
+    
     static final PropertyDefinition<String> LEOS_COLLABORATORS =
             PropertyCreationHelper.createStringMultiDefinition("leos:collaborators", "Document Collaborators", Updatability.READWRITE);
 
@@ -46,5 +60,11 @@ class LeosPropertyDefinition {
 
     static final PropertyDefinition<String> LEOS_ANNEX_DOC_TITLE =
             PropertyCreationHelper.createStringDefinition("annex:docTitle", "Annex Title", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_INITIAL_CREATED_BY =
+            PropertyCreationHelper.createStringDefinition("leos:initialCreatedBy", "LEOS Initial Created By", Updatability.READWRITE);
+
+    static final PropertyDefinition<GregorianCalendar> LEOS_INITIAL_CREATION_DATE =
+            PropertyCreationHelper.createDateTimeDefinition("leos:initialCreationDate", "LEOS Initial Creation Date", Updatability.READWRITE);
 
 }

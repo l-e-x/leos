@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="permissions" type="permissionList"/>
+    <xs:complexType name="permissionList">
+        <xs:sequence>
+            <xs:element name="permission" type="xs:string" maxOccurs="unbounded" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:element name="role" type="roleType"/>
+    <xs:complexType name="roleType">
+        <xs:all>
+            <xs:element name="permissions" type="permissionList"/>
+            <xs:element name="application-role" type="xs:string"/>
+            <xs:element name="collaborator" type="xs:boolean"/>
+            <xs:element name="default-doc-creation-role" type="xs:boolean"/>
+            <xs:element name="message-key" type="xs:string"/>
+        </xs:all>
+        <xs:attribute type="xs:string" name="name" use="optional"/>
+    </xs:complexType>
+
+    <xs:element name="roles" type="rolesList"/>
+    <xs:complexType name="rolesList">
+        <xs:sequence>
+            <xs:element name="role" type="roleType" maxOccurs="unbounded" minOccurs="0"/>
+        </xs:sequence>
+    </xs:complexType>
+
+</xs:schema>

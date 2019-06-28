@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -12,6 +12,10 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
 package eu.europa.ec.leos.annotate.model.web.user;
+
+import eu.europa.ec.leos.annotate.Generated;
+
+import java.util.Objects;
 
 /**
  * Class representing a group membership reported during user's group retrieval
@@ -28,12 +32,13 @@ public class JsonGroupWithDetails extends JsonGroup {
     // -----------------------------------------------------------
     // Constructors
     // -----------------------------------------------------------
-    
-    // default constructor required for JSON deserialisation
+
     public JsonGroupWithDetails() {
+        // default constructor required for JSON deserialisation
+        super();
     }
 
-    public JsonGroupWithDetails(String displayName, String internalName, boolean publicGroup) {
+    public JsonGroupWithDetails(final String displayName, final String internalName, final boolean publicGroup) {
 
         super(displayName, internalName, publicGroup);
         this.type = publicGroup ? PUBLIC_GROUP_INDICATOR : PRIVATE_GROUP_INDICATOR;
@@ -46,7 +51,7 @@ public class JsonGroupWithDetails extends JsonGroup {
         return scoped;
     }
 
-    public void setScoped(boolean scoped) {
+    public void setScoped(final boolean scoped) {
         this.scoped = scoped;
     }
 
@@ -54,8 +59,31 @@ public class JsonGroupWithDetails extends JsonGroup {
         return type;
     }
 
-    public void setType(String type) {
+    public void setType(final String type) {
         this.type = type;
     }
 
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(scoped, type);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonGroupWithDetails other = (JsonGroupWithDetails) obj;
+        return Objects.equals(this.scoped, other.scoped) &&
+                Objects.equals(this.type, other.type);
+    }
 }

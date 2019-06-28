@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,9 @@
  */
 package eu.europa.ec.leos.services.document;
 
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Memorandum;
-import eu.europa.ec.leos.domain.document.LeosMetadata.MemorandumMetadata;
+
+import eu.europa.ec.leos.domain.cmis.document.Memorandum;
+import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
 import java.util.List;
@@ -22,6 +23,8 @@ import java.util.List;
 public interface MemorandumService {
 
     Memorandum createMemorandum(String templateId, String path, MemorandumMetadata metadata, String actionMsg, byte[] content);
+
+    Memorandum createMemorandumFromContent(String path, MemorandumMetadata metadata, String actionMsg, byte[] content);
 
     Memorandum findMemorandum(String id);
     
@@ -33,6 +36,12 @@ public interface MemorandumService {
     Memorandum updateMemorandum(Memorandum memorandum, byte[] updatedMemorandumContent, boolean major, String comment);
 
     Memorandum updateMemorandum(Memorandum memorandum, MemorandumMetadata metadata, boolean major, String comment);
+
+    Memorandum updateMemorandum(String memorandumId, MemorandumMetadata metadata);
+
+    Memorandum updateMemorandumWithMilestoneComments(Memorandum memorandum, List<String> milestoneComments, boolean major, String comment);
+
+    Memorandum updateMemorandumWithMilestoneComments(String memorandumId, List<String> milestoneComments);
 
     List<TableOfContentItemVO> getTableOfContent(Memorandum document);
 

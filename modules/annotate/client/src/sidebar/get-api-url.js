@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -38,4 +38,21 @@ function getApiUrl(settings) {
   return settings.apiUrl;
 }
 
-module.exports = getApiUrl;
+function getWSApiUrl(settings) {
+    var service = serviceConfig(settings);
+
+    if (service) {
+        // If the host page contains a service setting then the client should default to
+        // using that websocketUrl.
+        if (service.websocketUrl) {
+            return service.websocketUrl;
+        } else {
+            throw new Error('Service should contain an websocketUrl value.');
+        }
+    }
+    return settings.websocketUrl;
+}
+module.exports = {
+  getApiUrl:getApiUrl,
+  getWSApiUrl:getWSApiUrl
+};

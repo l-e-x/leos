@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -33,7 +33,7 @@ public class AnnotateServiceImpl implements AnnotateService {
 	private final SecurityContext securityContext;
 	private final AnnotationProvider annotationProvider;
 
-	@Value("${annotate.api.host}")
+	@Value("${annotate.server.url}")
 	private String annotationHost;
 
 	@Autowired
@@ -45,7 +45,7 @@ public class AnnotateServiceImpl implements AnnotateService {
 	@Override
 	public String getAnnotations(String docName) {
 
-		URI uri = UriComponentsBuilder.fromHttpUrl(annotationHost + "search")
+		URI uri = UriComponentsBuilder.fromHttpUrl(annotationHost + "/api/search")
 				.queryParam("_separate_replies", true)
 				.queryParam("group", "__world__")
 				.queryParam("limit", -1)
@@ -55,9 +55,9 @@ public class AnnotateServiceImpl implements AnnotateService {
 				.queryParam("uri", "uri://LEOS/" + docName).build().encode().toUri();
 
 		try {
-			return annotationProvider.searchAnnotations(uri, securityContext.getToken(annotationHost + "token"));
+			return annotationProvider.searchAnnotations(uri, securityContext.getAnnotateToken(annotationHost + "/api/token"));
 		} catch (Exception exception) {
-			LOG.error("Error getting annotations: ", exception.getMessage());
+			LOG.error("Error getting annotations: ", exception);
 			throw new RuntimeException("Error Occured While Getting Annotation");
 		}
 	}

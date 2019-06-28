@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,7 +44,7 @@ define(function blockListTransformer(require) {
                 toChild: 'mp',
                 attrs: [{
                     from: DATA_AKN_MP_ID,
-                    to: "GUID",
+                    to: "xml:id",
                     action: "passAttributeTransformer"
                 },{
                     from: DATA_MP_ORIGIN,
@@ -134,7 +134,7 @@ define(function blockListTransformer(require) {
                                     this.mapToProducts(element, [{
                                         toPath: rootElementsPathForHtml,
                                         attrs: [{
-                                            from: "GUID",
+                                            from: "xml:id",
                                             to: "id",
                                             action: "passAttributeTransformer"
                                         },{
@@ -147,7 +147,7 @@ define(function blockListTransformer(require) {
                                     this.mapToProducts(element, {
                                         toPath: rootElementsPathForHtml,
                                         attrs: [{
-                                            from: "GUID",
+                                            from: "xml:id",
                                             to: DATA_AKN_NUM_ID,
                                             action: "passAttributeTransformer"
                                         },{
@@ -165,7 +165,7 @@ define(function blockListTransformer(require) {
                                     this.mapToProducts(element, {
                                         toPath: rootElementsPathForHtml,
                                         attrs: [{
-                                            from: "GUID",
+                                            from: "xml:id",
                                             to: DATA_AKN_MP_ID,
                                             action: "passAttributeTransformer"
                                         },{
@@ -195,7 +195,7 @@ define(function blockListTransformer(require) {
                                         toPath: rootElementsPathForAkn,
                                         attrs: [{
                                             from: "id",
-                                            to: "GUID",
+                                            to: "xml:id",
                                             action: "passAttributeTransformer"
                                         },{
                                             from: DATA_ORIGIN,
@@ -206,7 +206,7 @@ define(function blockListTransformer(require) {
                                         toPath: rootElementsWithNumPathForAkn,
                                         attrs: [{
                                             from: DATA_AKN_NUM_ID,
-                                            to: "GUID",
+                                            to: "xml:id",
                                             action: "passAttributeTransformer"
                                         },{
                                             from: DATA_NUM_ORIGIN,

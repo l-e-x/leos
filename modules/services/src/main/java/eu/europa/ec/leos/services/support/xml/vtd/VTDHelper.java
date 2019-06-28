@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,6 +19,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import eu.europa.ec.leos.services.compare.ContentComparatorContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,10 +33,16 @@ public class VTDHelper {
     //we can not assign the containing node name to text node as that is considered separate node and handled differently.  
     public static final String TEXT_NODE_NAME = "TextNode";
    
-    public static boolean isElementContentEqual(VTDNav oldContentNavigator, Element oldElement, VTDNav newContentNavigator, Element newElement) throws NavException {
-        byte[] oldContent = getFragment(oldContentNavigator, oldElement, FragmentType.ELEMENT);
-        byte[] newContent = getFragment(newContentNavigator, newElement, FragmentType.ELEMENT);
+    public static boolean isElementContentEqual(ContentComparatorContext context) throws NavException {
 
+        byte[] oldContent = getFragment(context.getOldContentNavigator(), context.getOldElement(), FragmentType.ELEMENT);
+        byte[] newContent = getFragment(context.getNewContentNavigator(), context.getNewElement(), FragmentType.ELEMENT);
+
+        if(context.getThreeWayDiff() && context.getIntermediateElement() != null) {
+            byte[] intermediateContent = getFragment(context.getIntermediateContentNavigator(), context.getIntermediateElement(), FragmentType.ELEMENT);
+            return (Arrays.equals(oldContent, newContent) && Arrays.equals(intermediateContent, newContent));
+        }
+        
         return Arrays.equals(oldContent, newContent);
     }
 
@@ -53,25 +60,30 @@ public class VTDHelper {
             }
             int offSetOldContent = (int) fragmentElementContent;
             int lengthOldContent = (int) (fragmentElementContent >> 32);
-
-            return contentNavigator.getXML().getBytes(offSetOldContent, lengthOldContent);
+            return (offSetOldContent != -1 && lengthOldContent != -1) ? contentNavigator.getXML().getBytes(offSetOldContent, lengthOldContent) 
+                    : new byte[0];
+        } catch(NavException e) {
+            LOG.debug("Navigation exception occured - " + e);
+            return new byte[0];
         } finally {
             contentNavigator.recoverNode(currentIndex);
         }
     }
 
     public static String updateElementAttribute(String content, String attrName, String attrValue) {
+        if(content.isEmpty()){
+            return content;
+        }
         byte[] elementContent = content.getBytes(Charset.forName("UTF-8"));
-        if (!attrValue.isEmpty() && !attrName.isEmpty()) {
+        if (attrValue != null && attrName != null) {
             try {
                 VTDNav fragmentNavigator = buildXMLNavigator(content);
                 int oldClassValIndex = fragmentNavigator.getAttrVal(attrName);
                 XMLModifier fragmentModifier = new XMLModifier(fragmentNavigator);
                 if (oldClassValIndex >= 0 && !fragmentNavigator.toRawString(oldClassValIndex).isEmpty()) {
-                    fragmentModifier.updateToken(oldClassValIndex,
-                            new StringBuilder(attrValue).append(" ").append(fragmentNavigator.toRawString(oldClassValIndex)).toString());
+                    fragmentModifier.updateToken(oldClassValIndex, attrValue.concat(" ").concat(fragmentNavigator.toRawString(oldClassValIndex)));
                 } else {
-                    fragmentModifier.insertAttribute(new StringBuilder(" ").append(attrName).append("=\"").append(attrValue).append("\"").toString());
+                    fragmentModifier.insertAttribute(" ".concat(attrName).concat("=\"").concat(attrValue).concat("\""));
                 }
                 ByteArrayOutputStream os = new ByteArrayOutputStream();
                 fragmentModifier.output(os);
@@ -94,30 +106,28 @@ public class VTDHelper {
         return new String(content, Charset.forName("UTF-8"));
     }
 
-    public static  List<Element> getAllChildElements(VTDNav contentNavigator) throws NavException {
-        TreeMap <Integer, Element> childElements = new TreeMap <Integer, Element>();//maintaining a sorted list as per order of elements in XML
+    private static  List<Element> getAllChildElements(VTDNav contentNavigator, Map<String, Element> elementsMap, Map<String, Integer> hmIndex) throws NavException {
+        Map<Integer, Element> childElements = new TreeMap<>();//maintaining a sorted list as per order of elements in XML
         int currentIndex = contentNavigator.getCurrentIndex();
-        HashMap<String, Integer> hmIndex= new HashMap<String, Integer>();
         try {
-            
             if (contentNavigator.toElement(VTDNav.FIRST_CHILD)) {
-                Element childElement = buildElement(contentNavigator, contentNavigator.getCurrentIndex(), hmIndex);
-                childElements.put(childElement.getNavigationIndex(),childElement);
-                
+                Element childElement = buildElement(contentNavigator, contentNavigator.getCurrentIndex(), hmIndex, elementsMap);
+                childElements.put(childElement.getNavigationIndex(), childElement);
+
                 while (contentNavigator.toElement(VTDNav.NEXT_SIBLING)) {
-                    childElement = buildElement(contentNavigator, contentNavigator.getCurrentIndex(), hmIndex);
-                    childElements.put(childElement.getNavigationIndex(),childElement);
+                    childElement = buildElement(contentNavigator, contentNavigator.getCurrentIndex(), hmIndex, elementsMap);
+                    childElements.put(childElement.getNavigationIndex(), childElement);
                 }
             }
         } finally {
             contentNavigator.recoverNode(currentIndex);
         }
-        return new ArrayList<Element>(childElements.values());
+        return new ArrayList<>(childElements.values());
     }
 
-    public static  Element buildElement(VTDNav contentNavigator, int currentIndex, HashMap<String, Integer> hmIndex) throws NavException {
+    public static  Element buildElement(VTDNav contentNavigator, int currentIndex, Map<String, Integer> hmIndex, Map<String, Element> elementsMap) throws NavException {
         int offset = (int) contentNavigator.getElementFragment();
-        long token = (long) contentNavigator.getContentFragment();
+        long token = contentNavigator.getContentFragment();
         int offsetContent = (int) token;
         int lengthContent = (int) (token >> 32);
         int tokenType=contentNavigator.getTokenType(currentIndex);
@@ -130,10 +140,15 @@ public class VTDHelper {
         if(tokenType==VTDNav.TOKEN_STARTING_TAG){
             tagName=contentNavigator.toString(currentIndex);
             
-            Matcher idMatcher = Pattern.compile("\\s(id)(\\s)*=(\\s)*\"(.+?)\"").matcher(tagContent);
+            Matcher idMatcher = Pattern.compile("\\s(xml:)*(id)(\\s)*=(\\s)*\"(.+?)\"").matcher(tagContent);
             tagId= idMatcher.find()
-                            ? tagName + tagContent.substring(idMatcher.start(), idMatcher.end())
+                            ? tagContent.substring(idMatcher.start(), idMatcher.end()).concat("_").concat(tagName)
                             : null ;
+            if(tagId != null){
+                int attrValStartPos = tagId.indexOf("\"") + 1; //pos + 2 to get the next index after ' or "
+                int attrValEndPos = tagId.indexOf("\"", attrValStartPos);
+                tagId = tagId.substring(attrValStartPos, attrValEndPos);
+            }
         }
         else if(tokenType==VTDNav.TOKEN_CHARACTER_DATA){//if textNode
             tagName=TEXT_NODE_NAME;
@@ -144,8 +159,17 @@ public class VTDHelper {
                 :1 + (hmIndex.get(tagName)) );//storing the last used index of tagName
         
         boolean hasText = hasChildTextNode(contentNavigator) != -1;
+        Integer nodeIndex = hmIndex.get(tagName);
         String innerText = getTextForSimilarityMatch(tagId, tagName, contentNavigator, offsetContent, lengthContent);
-        return new Element(currentIndex, tagId, tagName, tagContent, hmIndex.get(tagName), hasText, innerText);
+        List<Element> children = getAllChildElements(contentNavigator, elementsMap, hmIndex);
+        if(tagId == null){
+            tagId = !TEXT_NODE_NAME.equals(tagName) ? tagName.concat(nodeIndex.toString()) : null;
+        }
+        Element element = new Element(currentIndex, tagId, tagName, tagContent, nodeIndex, hasText, innerText, children);
+        if(tagId != null){
+            elementsMap.put(tagId, element);
+        }
+        return element;
     }
     
     public static VTDNav buildXMLNavigator(String xmlContent) throws ParseException {
@@ -160,7 +184,8 @@ public class VTDHelper {
 
         return vtdGen.getNav();
     }
-    public static int hasChildTextNode(VTDNav contentNavigator) throws NavException{
+    
+    private static int hasChildTextNode(VTDNav contentNavigator) throws NavException{
         int currentIndex= contentNavigator.getCurrentIndex();
         AutoPilot ap = new AutoPilot(contentNavigator);
         int textNodeIndex=-1; 
@@ -176,8 +201,8 @@ public class VTDHelper {
     }
     
     //tags which occur only one time in xml and contains lot of text.We avoid these tags for text similarity search by not setting the full text
-    public static final ArrayList<String>  excludedTags=
-            new ArrayList<String>(Arrays.asList("bill","preface","akomantoso","preamble","aknbody","conclusions","recitals","citations"));
+    private static final ArrayList<String>  excludedTags=
+            new ArrayList<>(Arrays.asList("bill","preface","akomantoso","preamble","aknbody","conclusions","recitals","citations"));
     
     private static String getTextForSimilarityMatch(String tagId, String tagName, VTDNav contentNavigator,int offsetContent, int lengthContent){
         String innerText ="";

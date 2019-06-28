@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -22,6 +23,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "TAGS", uniqueConstraints = @UniqueConstraint(columnNames = {"NAME", "ANNOTATION_ID"}))
+@SuppressWarnings("PMD.ShortClassName")
 public class Tag {
 
     /**
@@ -40,6 +42,7 @@ public class Tag {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "tagsSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     @Column(name = "NAME", nullable = false)
@@ -55,9 +58,10 @@ public class Tag {
     // -----------------------------------------------------------
 
     public Tag() {
+        // default constructor required by JPA
     }
 
-    public Tag(String name, Annotation annotation) {
+    public Tag(final String name, final Annotation annotation) {
         this.annotation = annotation;
         this.name = name;
     }
@@ -70,15 +74,15 @@ public class Tag {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(final Long newId) {
+        this.id = newId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
@@ -86,7 +90,7 @@ public class Tag {
         return annotation;
     }
 
-    public void setAnnotation(Annotation annot) {
+    public void setAnnotation(final Annotation annot) {
         this.annotation = annot;
     }
 
@@ -94,13 +98,15 @@ public class Tag {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, name, annotation);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

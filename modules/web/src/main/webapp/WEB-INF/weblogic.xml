@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 
-    Copyright 2018 European Commission
+    Copyright 2019 European Commission
 
     Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -18,17 +18,15 @@
     <weblogic-version>${project.weblogic.version}</weblogic-version>
 
     <description>${project.description}</description>
-    <context-root>${project.web.context.path}</context-root>
+    <context-root>/${leos.web.context.path}</context-root>
 
-    <!-- ECAS security -->
     <security-role-assignment>
-        <role-name>${leos.security.role.name}</role-name>
-        <principal-name>${ec.all.security.group.name}</principal-name>
-        <principal-name>${leos.security.group.name}</principal-name>
+        <role-name>**</role-name>
+        <principal-name>everyone</principal-name>
     </security-role-assignment>
 
     <session-descriptor>
-        <cookie-path>${project.web.context.path}</cookie-path>
+        <cookie-path>/${leos.web.context.path}</cookie-path>
     </session-descriptor>
 
     <container-descriptor>

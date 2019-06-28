@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -43,11 +43,11 @@ public class RangeSliderComponent extends LeosJavaScriptComponent {
         getState(false).colouredArea = colouredArea.name();
     }
 
-    public void setSteps(Set<String> values) {
+    public void setSteps(Set<RangeSliderStepVO> values) {
         getState().stepValues = values;
     }
 
-    public Set<String> getSteps() {
+    public Set<RangeSliderStepVO> getSteps() {
         // state read operation must not trigger a state change event
         return getState(false).stepValues;
     }
@@ -61,6 +61,14 @@ public class RangeSliderComponent extends LeosJavaScriptComponent {
         return getState(false).handleValues;
     }
 
+    public boolean isDisableInitialVersion() {
+        return getState(false).disableInitialVersion;
+    }
+    
+    public void setDisableInitialVersion(boolean disableInitialVersion) {
+        getState(false).disableInitialVersion = disableInitialVersion;
+    }
+    
     @Override
     protected RangeSliderState getState() {
         return (RangeSliderState) super.getState();

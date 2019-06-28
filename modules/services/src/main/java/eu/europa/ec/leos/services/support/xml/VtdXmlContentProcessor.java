@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,14 +14,19 @@
 package eu.europa.ec.leos.services.support.xml;
 
 import com.google.common.base.Stopwatch;
-import com.ximpleware.*;
+import com.ximpleware.AutoPilot;
+import com.ximpleware.ModifyException;
+import com.ximpleware.NavException;
+import com.ximpleware.TranscodeException;
+import com.ximpleware.VTDException;
+import com.ximpleware.VTDNav;
+import com.ximpleware.XMLModifier;
+import com.ximpleware.XPathEvalException;
+import com.ximpleware.XPathParseException;
 import eu.europa.ec.leos.domain.common.Result;
-import eu.europa.ec.leos.services.support.ByteArrayBuilder;
 import eu.europa.ec.leos.services.support.IdGenerator;
 import eu.europa.ec.leos.services.support.xml.ref.Ref;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.AnnexTocItemType;
-import eu.europa.ec.leos.vo.toctype.LegalTextTocItemType;
 import eu.europa.ec.leos.vo.toctype.TocItemType;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,44 +38,48 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.*;
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.EMPTY_STRING;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_EDITABLE_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.NON_BREAKING_SPACE;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.WHITESPACE;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.XMLID;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getElementAttributes;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getFragmentAsString;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.navigateToElementByNameAndId;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupVTDNav;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupXMLModifier;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.toByteArray;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.AUTHORIAL_NOTE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEOS_REF_BROKEN_ATTR;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.MARKER_ATTRIBUTE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.MREF;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.REF;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.determinePrefixForChildren;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.isExcludedNode;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.isParentEditableNode;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.skipNodeAndChildren;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.skipNodeOnly;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.getAllChildTableOfContentItems;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
-public class VtdXmlContentProcessor implements XmlContentProcessor {
-
-    public static final String BODY = "body";
-    public static final String RECITAL = "recital";
-    public static final String ARTICLE = "article";
-    public static final String AUTHORIAL_NOTE = "authorialNote";
-    public static final String MREF = "mref";
-    public static final String REF = "ref";
-    public static final String META = "meta";
-    public static final String MARKER_ATTRIBUTE = "marker";
-
-    private static final String HEADING = "heading";
-    private static final String NUM = "num";
-
-    private static final byte[] NUM_BYTES = "num".getBytes();
-    private static final byte[] HEADING_BYTES = "heading".getBytes();
-    private static final byte[] NUM_START_TAG = "<num>".getBytes();
-    private static final byte[] HEADING_START_TAG = "<heading>".getBytes();
-
-    private static final String LEOS_EDITABLE_ATTR = "leos:editable";
-    private static final String LEOS_REF_BROKEN_ATTR = "leos:broken";
+public abstract class VtdXmlContentProcessor implements XmlContentProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(VtdXmlContentProcessor.class);
 
     @Autowired
-    private ReferenceLabelProcessor referenceLabelProcessor;
+    ReferenceLabelProcessor referenceLabelProcessor;
 
     private enum EditableAttributeValue {
         TRUE, FALSE, UNDEFINED;
@@ -113,8 +122,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     }
 
     @Override
-    public String getParentElementId(byte[] xmlContent, String tagName, String idAttributeValue)
-    {
+    public String getParentElementId(byte[] xmlContent, String tagName, String idAttributeValue) {
         LOG.trace("Start extracting the tag {} with id {} from the document content", tagName, idAttributeValue);
         long startTime = System.currentTimeMillis();
         String elementId = null;
@@ -131,11 +139,10 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     }
 
     @Override
-    public String getParentElement(byte[] xmlContent, String tagName, String idAttributeValue)
-    {
+    public String[] getParentElement(byte[] xmlContent, String tagName, String idAttributeValue) {
         LOG.trace("Start extracting the tag {} with id {} from the document content", tagName, idAttributeValue);
         long startTime = System.currentTimeMillis();
-        String element = null;
+        String[] element = null;
         try {
             VTDNav vtdNav = setupVTDNav(xmlContent);
             if (navigateToElementByNameAndId(tagName, idAttributeValue, vtdNav)) {
@@ -145,6 +152,98 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             throw new RuntimeException("Unable to perform the search operation", e);
         }
         LOG.trace("Tag content extract completed in {} ms", (System.currentTimeMillis() - startTime));
+        return element;
+    }
+
+    @Override
+    public String[] getSiblingElement(byte[] xmlContent, String tagName, String idAttributeValue, List<String> elementTags, boolean before) {
+        LOG.trace("Start extracting the tag {} with id {} from the document content", tagName, idAttributeValue);
+        long startTime = System.currentTimeMillis();
+        String[] element = null;
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent);
+            if (navigateToElementByNameAndId(tagName, idAttributeValue, vtdNav)) {
+                element = getSiblingElement(vtdNav, elementTags, before);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the search operation", e);
+        }
+        LOG.trace("Tag content extract completed in {} ms", (System.currentTimeMillis() - startTime));
+        return element;
+    }
+
+    private String[] getSiblingElement(VTDNav vtdNav, List<String> elementTags, boolean before) throws Exception {
+        String[] element = null;
+        int currentIndex = vtdNav.getCurrentIndex();
+        try {
+            if (vtdNav.toElement(before ? VTDNav.PREV_SIBLING : VTDNav.NEXT_SIBLING)) {
+                String elementTagName = null;
+                do {
+                    currentIndex = vtdNav.getCurrentIndex();
+                    elementTagName = vtdNav.toString(currentIndex);
+                    if (elementTags.contains(elementTagName) || elementTags.isEmpty()) {
+                        String elementId = new String();
+                        int attrXMLIDIndex = vtdNav.getAttrVal(XMLID);
+                        if (attrXMLIDIndex != -1) {
+                            elementId = vtdNav.toString(attrXMLIDIndex);
+                        }
+                        String elementFragment = getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
+                        element = new String[]{elementId, elementTagName, elementFragment};
+                    }
+                }
+                while ((element == null) && (vtdNav.toElement(before ? VTDNav.PREV_SIBLING : VTDNav.NEXT_SIBLING)));
+            }
+        } finally {
+            vtdNav.recoverNode(currentIndex);
+        }
+        return element;
+    }
+
+    @Override
+    public String[] getChildElement(byte[] xmlContent, String tagName, String idAttributeValue, List<String> elementTags, int position) {
+        LOG.trace("Start extracting the tag {} with id {} from the document content", tagName, idAttributeValue);
+        long startTime = System.currentTimeMillis();
+        String[] element = null;
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent);
+            if (navigateToElementByNameAndId(tagName, idAttributeValue, vtdNav)) {
+                element = getChildElement(vtdNav, elementTags, position);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the search operation", e);
+        }
+        LOG.trace("Tag content extract completed in {} ms", (System.currentTimeMillis() - startTime));
+        return element;
+    }
+
+    private String[] getChildElement(VTDNav vtdNav, List<String> elementTags, int position) throws Exception {
+        String[] element = null;
+        int currentIndex = vtdNav.getCurrentIndex();
+        try {
+            if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
+                int childProcessed = 0;
+                String elementTagName = null;
+                do {
+                    currentIndex = vtdNav.getCurrentIndex();
+                    elementTagName = vtdNav.toString(currentIndex);
+                    if (elementTags.contains(elementTagName) || elementTags.isEmpty()) {
+                        childProcessed++;
+                        if (childProcessed == position) {
+                            String elementId = new String();
+                            int attrXMLIDIndex = vtdNav.getAttrVal(XMLID);
+                            if (attrXMLIDIndex != -1) {
+                                elementId = vtdNav.toString(attrXMLIDIndex);
+                            }
+                            String elementFragment = getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
+                            element = new String[]{elementId, elementTagName, elementFragment};
+                        }
+                    }
+                }
+                while ((childProcessed < position) && (vtdNav.toElement(VTDNav.NEXT_SIBLING)));
+            }
+        } finally {
+            vtdNav.recoverNode(currentIndex);
+        }
         return element;
     }
 
@@ -164,7 +263,6 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             ap.selectXPath(xPath);
             while (ap.evalXPath() != -1) {
                 elts.add(getElementAttributes(vtdNav, ap));
-
             }
         } catch (Exception e) {
             LOG.error("Unexpected error occured while getting elements", e);
@@ -173,66 +271,80 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return elts;
     }
 
-    private Map<String, String> getElementAttributes(VTDNav vtdNav, AutoPilot ap) {
-        Map<String, String> attrs = new HashMap<String, String>();
-        int i = -1;
+    @Override
+    public Map<String, String> getElementAttributesByPath(byte[] xmlContent, String xPath, boolean namespaceEnabled) {
+        Map<String, String> attributes = new HashMap<>();
         try {
-            ap.selectAttr("*");
-            while ((i = ap.iterateAttr()) != -1) {
-                attrs.put(vtdNav.toString(i), vtdNav.toString(i + 1));
-            }
-        } catch (Exception e) {
-            LOG.error("Unexpected error occured while getting elements", e);
-        }
-        return attrs;
-    }
-
-    public byte[] setOriginAttribute(byte[] xmlContent, String parentTag) throws Exception {
-        LOG.trace("Start setOriginAttribute");
-        VTDNav vtdNav = setupVTDNav(xmlContent);
-        AutoPilot autoPilot = new AutoPilot(vtdNav);
-        autoPilot.selectElement(parentTag);
-        XMLModifier xmlModifier = new XMLModifier(vtdNav);
-        while (autoPilot.iterate()) {
-            int currentIndex = vtdNav.getCurrentIndex();
-            if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
-                setOriginAttribute(vtdNav, xmlModifier);
-                while (vtdNav.toElement(VTDNav.NEXT_SIBLING)) {
-                    setOriginAttribute(vtdNav, xmlModifier);
+            VTDNav vtdNav = setupVTDNav(xmlContent, namespaceEnabled);
+            AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            autoPilot.selectXPath(xPath);
+            if (autoPilot.evalXPath() != -1) {
+                autoPilot.resetXPath();
+                autoPilot.selectAttr("*");
+                int numAttribute;
+                while ((numAttribute = autoPilot.iterateAttr()) != -1) {
+                    attributes.put(vtdNav.toString(numAttribute), vtdNav.toString(numAttribute + 1));
                 }
             }
-            vtdNav.recoverNode(currentIndex);
+        } catch (XPathParseException xPathParseException) {
+            throw new RuntimeException("Exception occured while selecting XPath expression", xPathParseException);
+        } catch (XPathEvalException xPathEvalException) {
+            throw new RuntimeException("Exception occured while evaluating Xpath", xPathEvalException);
+        } catch (NavException navException) {
+            throw new RuntimeException("Exception occured during navigation", navException);
         }
-        byte[] updatedContent = toByteArray(xmlModifier);
-        updatedContent = doXMLPostProcessing(updatedContent);
-
-        return updatedContent;
+        return attributes;
     }
 
-    private void setOriginAttribute(VTDNav vtdNav, XMLModifier xmlModifier) throws Exception {
-        String tagName = vtdNav.toString(vtdNav.getCurrentIndex());
-        if (tagName.equals(META)) {
-            return;
-        }
-
-        int currentIndex = vtdNav.getCurrentIndex();
-        int attIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
-        if (attIndex == -1) {
-            xmlModifier.insertAttribute(new StringBuilder(" ").append(LEOS_ORIGIN_ATTR).append("=\"ec\"").toString());
-        }
-        else {
-            xmlModifier.updateToken(attIndex, "ec");
-        }
-
-        if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
-            setOriginAttribute(vtdNav, xmlModifier);
-            while (vtdNav.toElement(VTDNav.NEXT_SIBLING)) {
-                setOriginAttribute(vtdNav, xmlModifier);
+    @Override
+    public String getElementContentFragmentByPath(byte[] xmlContent, String xPath, boolean namespaceEnabled) {
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent, namespaceEnabled);
+            AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            autoPilot.selectXPath(xPath);
+            if (autoPilot.evalXPath() != -1) {
+                return getFragmentAsString(vtdNav, vtdNav.getContentFragment(), false);
             }
+        } catch (XPathParseException xPathParseException) {
+            throw new RuntimeException("Exception occured while selecting XPath expression", xPathParseException);
+        } catch (XPathEvalException xPathEvalException) {
+            throw new RuntimeException("Exception occured while evaluating Xpath", xPathEvalException);
+        } catch (NavException navException) {
+            throw new RuntimeException("Exception occured during navigation", navException);
         }
-        vtdNav.recoverNode(currentIndex);
+        return null;
     }
 
+    @Override
+    public String getElementFragmentByPath(byte[] xmlContent, String xPath, boolean namespaceEnabled) {
+        try {
+            VTDNav vtdNav = setupVTDNav(xmlContent, namespaceEnabled);
+            AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            autoPilot.selectXPath(xPath);
+            if (autoPilot.evalXPath() != -1) {
+                return getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
+            }
+        } catch (XPathParseException xPathParseException) {
+            throw new RuntimeException("Exception occured while selecting XPath expression", xPathParseException);
+        } catch (XPathEvalException xPathEvalException) {
+            throw new RuntimeException("Exception occured while evaluating Xpath", xPathEvalException);
+        } catch (NavException navException) {
+            throw new RuntimeException("Exception occured during navigation", navException);
+        }
+        return null;
+    }
+
+    @Override
+    public byte[] setAttributeForAllChildren(byte[] xmlContent, String parentTag, List<String> elementTags, String attributeName, String value)
+            throws Exception {
+        byte[] updatedContent = setAttribute(xmlContent, parentTag, elementTags, attributeName, value);
+        return doXMLPostProcessing(updatedContent);
+    }
+
+    @Override
     public byte[] doXMLPostProcessing(byte[] xmlContent) {
         LOG.trace("Start doXMLPostProcessing ");
         try {
@@ -247,14 +359,16 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
 
             // modify Authnote markers
             modifyAuthorialNoteMarkers(xmlModifier, vtdNav, 1);
-            long authNoteTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);;
+            long authNoteTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
 
             // update refs
             updateMultiRefs(xmlModifier);
             long mrefUpdateTime = stopwatch.elapsed(TimeUnit.MILLISECONDS);
 
-            LOG.trace("Finished doXMLPostProcessing: Ids Injected at ={}, authNote Renumbering at={} ms, mref udpated at={}ms",
-                    injectIdTime, authNoteTime, mrefUpdateTime);
+            specificInstanceXMLPostProcessing(xmlModifier);
+
+            LOG.trace("Finished doXMLPostProcessing: Ids Injected at ={}, authNote Renumbering at={} ms, mref udpated at={}ms, Total time elapsed = {}ms",
+                    injectIdTime, authNoteTime, mrefUpdateTime, (System.currentTimeMillis() - startTime));
             return toByteArray(xmlModifier);
         } catch (Exception e) {
             throw new RuntimeException("Unable to perform the doXMLPostProcessing operation", e);
@@ -274,7 +388,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
                 List<Ref> refs = findReferences(vtdNav);
                 String updatedMrefContent;
                 if (!refs.isEmpty()) {
-                    Result<String> labelResult = referenceLabelProcessor.generateLabel(refs, getParentId(vtdNav), vtdNav, "en");
+                    Result<String> labelResult = referenceLabelProcessor.generateLabel(refs, getParentId(vtdNav), vtdNav);
                     vtdNav.recoverNode(currentIndex);
                     if (labelResult.isOk()) {
                         updatedMrefContent = labelResult.get();
@@ -284,13 +398,13 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
                         xmlModifier.insertBytesAt((int) token, updatedMrefContent.getBytes(VTDUtils.UTF_8));
 
                         AutoPilot ap = new AutoPilot(vtdNav);
-                        ap.selectAttr("broken");
+                        ap.selectAttr(LEOS_REF_BROKEN_ATTR);
                         int indexAttr = ap.iterateAttr();
                         if (indexAttr != -1) {
                             xmlModifier.removeAttribute(indexAttr);
                         }
                     } else {
-                        int brokenRefAttrIndex = vtdNav.getAttrVal("broken");
+                        int brokenRefAttrIndex = vtdNav.getAttrVal(LEOS_REF_BROKEN_ATTR);
                         if (brokenRefAttrIndex == -1) {// if leos:broken attr is present.
                             xmlModifier.insertAttribute(new StringBuilder(" ").append(LEOS_REF_BROKEN_ATTR).append("=\"true\"").toString());
                         }
@@ -342,6 +456,12 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return new ImmutableTriple<String, Integer, Integer>(matchingText, xmlStartIndex, xmlEndIndex);
     }
 
+    private String normalizeNewText(String origText, String newText) {
+        return new StringBuilder(origText.startsWith(WHITESPACE) ? WHITESPACE : EMPTY_STRING)
+                .append(StringUtils.normalizeSpace(newText))
+                .append(origText.endsWith(WHITESPACE) ? WHITESPACE : EMPTY_STRING).toString();
+    }
+
     @Override
     public byte[] replaceTextInElement(byte[] xmlContent, String origText, String newText, String elementId, int startOffset, int endOffset) {
         try {
@@ -350,7 +470,8 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             xmlModifier.bind(vtdNav);
             vtdNav.toElement(VTDNav.ROOT);
             AutoPilot autoPilot = new AutoPilot(vtdNav);
-            autoPilot.selectXPath("//*[@GUID = '" + elementId + "']");
+            autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            autoPilot.selectXPath("//*[@xml:id = '" + elementId + "']");
 
             String elementContent;
             if (autoPilot.evalXPath() != -1) {
@@ -362,8 +483,8 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             StringBuilder eltContent = new StringBuilder(elementContent);
             ImmutableTriple<String, Integer, Integer> result = getSubstringAvoidingTags(elementContent, startOffset, endOffset);
             String matchingText = result.left;
-            if (matchingText.equals(origText)) {
-                eltContent.replace(result.middle, result.right, newText);
+            if (matchingText.replace(NON_BREAKING_SPACE, WHITESPACE).equals(StringEscapeUtils.escapeXml10(origText.replace(NON_BREAKING_SPACE, WHITESPACE)))) {
+                eltContent.replace(result.middle, result.right, StringEscapeUtils.escapeXml10(normalizeNewText(origText, newText)));
                 long token = vtdNav.getContentFragment();
                 int len = (int) (token >> 32);
                 xmlModifier.removeContent((int) token, len);
@@ -397,14 +518,14 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return refs;
     }
 
-    private String getParentId(VTDNav vtdNav) throws Exception {
+    String getParentId(VTDNav vtdNav) throws Exception {
         String id = new String();
         int currentIndex = vtdNav.getCurrentIndex();
         try {
             if (vtdNav.toElement(VTDNav.PARENT)) {
-                int attrGUIDIndex = vtdNav.getAttrVal(GUID);
-                if (attrGUIDIndex != -1) {
-                    id = vtdNav.toString(attrGUIDIndex);
+                int attrXMLIDIndex = vtdNav.getAttrVal(XMLID);
+                if (attrXMLIDIndex != -1) {
+                    id = vtdNav.toString(attrXMLIDIndex);
                 }
             }
         } finally {
@@ -413,14 +534,19 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return id;
     }
 
-    private String getParentElement(VTDNav vtdNav) throws Exception {
-        String element = null;
+    String[] getParentElement(VTDNav vtdNav) throws Exception {
+        String[] element = null;
         int currentIndex = vtdNav.getCurrentIndex();
         try {
             if (vtdNav.toElement(VTDNav.PARENT)) {
-                
-                long elementFragment = vtdNav.getElementFragment();
-                element= getFragmentAsString(vtdNav, elementFragment, false);
+                String elementTagName = vtdNav.toString(vtdNav.getCurrentIndex());
+                String elementId = new String();
+                int attrXMLIDIndex = vtdNav.getAttrVal(XMLID);
+                if (attrXMLIDIndex != -1) {
+                    elementId = vtdNav.toString(attrXMLIDIndex);
+                }
+                String elementFragment = getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
+                element = new String[]{elementId, elementTagName, elementFragment};
             }
         } finally {
             vtdNav.recoverNode(currentIndex);
@@ -430,7 +556,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
 
     private Ref getRefElement(VTDNav vtdNav) throws Exception {
         String id = null, href = null;
-        int index = vtdNav.getAttrVal(GUID);
+        int index = vtdNav.getAttrVal(XMLID);
         if (index != -1) {
             id = vtdNav.toString(index);
         }
@@ -514,43 +640,25 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         throw new IllegalArgumentException("No tag found with name " + tagName);
     }
 
-    private boolean navigateToElementByNameAndId(String tagName, String idAttributeValue, VTDNav vtdNav) throws NavException {
-        AutoPilot autoPilot = new AutoPilot(vtdNav);
-
-        autoPilot.selectElement(tagName);
-        while (autoPilot.iterate()) {
-            if (idAttributeValue == null) {
-                return true;
-            }
-            int attIndex = vtdNav.getAttrVal(GUID);
-            String elementId;
-            if (attIndex != -1) {
-                elementId = vtdNav.toString(attIndex);
-                if (idAttributeValue.equals(elementId)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
     public byte[] replaceElementByTagNameAndId(byte[] xmlContent, String newContent, String tagName, String idAttributeValue) {
         LOG.trace("Start updating the tag {} having id {} with the updated content", tagName, idAttributeValue);
         long startTime = System.currentTimeMillis();
-        byte[] updatedContent;
+        byte[] updatedContent = null;
 
         try {
             VTDNav vtdNav = setupVTDNav(xmlContent);
             XMLModifier xmlModifier = setupXMLModifier(vtdNav, tagName, idAttributeValue);
-            xmlModifier.remove();
+            if (xmlModifier != null) {
+                xmlModifier.remove();
 
-            if (newContent != null) {
-                xmlModifier.insertBeforeElement(newContent.getBytes(UTF_8));
+                if (newContent != null) {
+                    xmlModifier.insertBeforeElement(newContent.getBytes(UTF_8));
+                }
+
+                updatedContent = toByteArray(xmlModifier);
+                updatedContent = doXMLPostProcessing(updatedContent);
             }
-
-            updatedContent = toByteArray(xmlModifier);
-            updatedContent = doXMLPostProcessing(updatedContent);
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error occoured during updation of element", e);
         }
@@ -608,7 +716,8 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
     }
 
     @Override
-    public List<TableOfContentItemVO> buildTableOfContent(String startingNode, Function<String, TocItemType> getTocItemType, byte[] xmlContent) {
+    public List<TableOfContentItemVO> buildTableOfContent(String startingNode, Function<String, TocItemType> getTocItemType, byte[] xmlContent,
+            boolean simplified) {
         LOG.trace("Start building the table of content");
         long startTime = System.currentTimeMillis();
         List<TableOfContentItemVO> itemVOList = new ArrayList<>();
@@ -616,7 +725,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             VTDNav contentNavigator = setupVTDNav(xmlContent);
 
             if (contentNavigator.toElement(VTDNav.FIRST_CHILD, startingNode)) {
-                itemVOList = getAllChildTableOfContentItems(getTocItemType, contentNavigator);
+                itemVOList = getAllChildTableOfContentItems(getTocItemType, contentNavigator, simplified);
             }
 
         } catch (Exception e) {
@@ -628,241 +737,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return itemVOList;
     }
 
-    private List<TableOfContentItemVO> getAllChildTableOfContentItems(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator)
-            throws NavException {
-        int currentIndex = contentNavigator.getCurrentIndex();
-        List<TableOfContentItemVO> itemVOList = new ArrayList<>();
-        try {
-
-            if (contentNavigator.toElement(VTDNav.FIRST_CHILD)) {
-                addTocItemVoToList(getTocItemType, contentNavigator, itemVOList);
-                while (contentNavigator.toElement(VTDNav.NEXT_SIBLING)) {
-                    addTocItemVoToList(getTocItemType, contentNavigator, itemVOList);
-                }
-            }
-        } finally {
-            contentNavigator.recoverNode(currentIndex);
-        }
-
-        return itemVOList;
-    }
-
-    private void addTocItemVoToList(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, List<TableOfContentItemVO> itemVOList)
-            throws NavException {
-        TableOfContentItemVO tableOfContentItemVO = buildTableOfContentsItemVO(getTocItemType, contentNavigator);
-        if (tableOfContentItemVO != null) {
-            if (tableOfContentItemVO.getType().isToBeDisplayed()) {
-                itemVOList.add(tableOfContentItemVO);
-                tableOfContentItemVO.addAllChildItems(getAllChildTableOfContentItems(getTocItemType, contentNavigator));
-            } else {
-                if (tableOfContentItemVO.getParentItem() != null) {
-                    tableOfContentItemVO.getParentItem().addAllChildItems(getAllChildTableOfContentItems(getTocItemType, contentNavigator));
-                } else {
-                    getAllChildTableOfContentItems(getTocItemType, contentNavigator).forEach(childItem -> itemVOList.add(childItem));
-                }
-            }
-        }
-    }
-
-    private TableOfContentItemVO buildTableOfContentsItemVO(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator) throws NavException {
-
-        int originalNavigationIndex = contentNavigator.getCurrentIndex();
-
-        // get the type
-        String tagName = contentNavigator.toString(contentNavigator.getCurrentIndex());
-        TocItemType type = getTocItemType.apply(tagName);
-
-        if (type == null) {
-            // unsupported tag name
-            return null;
-        }
-
-        // get the id
-        int attIndex = contentNavigator.getAttrVal(GUID);
-        String elementId = null;
-        if (attIndex != -1) {
-            elementId = contentNavigator.toString(attIndex);
-        }
-
-        //get the leos:origin attr
-        int originAttrIndex = contentNavigator.getAttrVal(LEOS_ORIGIN_ATTR);
-        String originAttr = originAttrIndex != -1 ? contentNavigator.toString(originAttrIndex) : null;
-        
-        // get the num
-        String number = null;
-        Integer numberTagIndex = null;
-        String originNumAttr = null;
-        if (contentNavigator.toElement(VTDNav.FIRST_CHILD, NUM)) {
-            numberTagIndex = contentNavigator.getCurrentIndex();
-            //get the leos:origin attr
-            int originNumAttrIndex = contentNavigator.getAttrVal(LEOS_ORIGIN_ATTR);
-            originNumAttr = originNumAttrIndex != -1 ? contentNavigator.toString(originNumAttrIndex) : null;
-            
-            long contentFragment = contentNavigator.getContentFragment();
-            number = extractNumber(getFragmentAsString(contentNavigator, contentFragment, true));
-            contentNavigator.recoverNode(originalNavigationIndex);
-        }
-
-        // get the heading
-        String heading = null;
-        Integer headingTagIndex = null;
-        if (contentNavigator.toElement(VTDNav.FIRST_CHILD, HEADING)) {
-            headingTagIndex = contentNavigator.getCurrentIndex();
-            long contentFragment = contentNavigator.getContentFragment();
-            heading = getFragmentAsString(contentNavigator, contentFragment, true);
-            contentNavigator.recoverNode(originalNavigationIndex);
-        }
-
-        // build the table of content item and return it
-        return new TableOfContentItemVO(type, elementId, originAttr, number, originNumAttr, heading, numberTagIndex, headingTagIndex, contentNavigator.getCurrentIndex());
-    }
-
     @Override
-    public byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, TocItemType type,
-            List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content) {
-        LOG.trace("Start building the document content for the new toc list");
-        long startTime = System.currentTimeMillis();
-        try {
-
-            ByteArrayBuilder mergedContent = new ByteArrayBuilder();
-            VTDNav contentNavigator = setupVTDNav(content);
-            int docLength = content.length;
-            int endOfContent = 0;
-            // LEOS-2082 we are rebuilding only body tag of document
-            if (navigateToElementByNameAndId(type.getName(), null, contentNavigator)) {
-                int index = contentNavigator.getCurrentIndex();
-
-                // append everything up until the body tag
-                long contentFragment = contentNavigator.getElementFragment();
-                int offset = (int) contentFragment;
-                int length = (int) (contentFragment >> 32);
-                mergedContent.append(contentNavigator.getXML().getBytes(0, offset));
-
-                TableOfContentItemVO body = findContentVoForType(tableOfContentItemVOs, type);
-                if (body != null) {
-                    mergedContent.append(buildTocItemContent(getTocItemType, contentNavigator, body));
-                }
-                contentNavigator.recoverNode(index);
-
-                // append everything after the content
-                endOfContent = offset + length;
-            }
-
-            mergedContent.append(contentNavigator.getXML().getBytes(endOfContent, docLength - (endOfContent)));
-
-            LOG.trace("Build the document content for the new toc list completed in {} ms", (System.currentTimeMillis() - startTime));
-            return mergedContent.getContent();
-
-        } catch (Exception e) {
-            LOG.error("Unable to save the Table of content item list", e);
-            throw new RuntimeException("Unable to save the Table of content item list", e);
-        }
-
-    }
-
-    private TableOfContentItemVO findContentVoForType(List<TableOfContentItemVO> tableOfContentItemVOs, TocItemType type) {
-        ListIterator<TableOfContentItemVO> iterator = tableOfContentItemVOs.listIterator();
-        while (iterator.hasNext()) {
-            TableOfContentItemVO nextVO = iterator.next();
-            if (nextVO.getType().equals(type)) {
-                return nextVO;
-            }
-        }
-        return null;
-    }
-
-    private byte[] buildTocItemContent(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO)
-            throws NavException, UnsupportedEncodingException {
-        ByteArrayBuilder tocItemContent = new ByteArrayBuilder();
-
-        tocItemContent.append(extractOrBuildNumElement(contentNavigator, tableOfContentItemVO));
-        tocItemContent.append(extractOrBuildHeaderElement(contentNavigator, tableOfContentItemVO));
-
-        for (TableOfContentItemVO child : tableOfContentItemVO.getChildItemsView()) {
-            tocItemContent.append(buildTocItemContent(getTocItemType, contentNavigator, child));
-        }
-
-        byte[] startTag = new byte[0];
-        String tocTagName = tableOfContentItemVO.getType().getName();
-
-        if (tableOfContentItemVO.getVtdIndex() != null) {
-            contentNavigator.recoverNode(tableOfContentItemVO.getVtdIndex());
-            startTag = updateOriginAttribute(getStartTag(contentNavigator), tableOfContentItemVO.getOriginAttr());
-            tocItemContent.append(extractLevelNonTocItems(getTocItemType, contentNavigator));
-        } else if (tableOfContentItemVO.getType().equals(LegalTextTocItemType.ARTICLE)) {
-            byte[] articleTag = XmlHelper.getArticleTemplate(tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading()).getBytes(UTF_8);
-            return updateOriginAttribute(articleTag, tableOfContentItemVO.getOriginAttr());
-        } else if (tableOfContentItemVO.getType().equals(AnnexTocItemType.DIVISION)) { // FIXME: Find better way to handle insertion of template
-            byte[] annexTag = XmlHelper.getAnnexTemplate().getBytes(UTF_8);
-            return updateOriginAttribute(annexTag, tableOfContentItemVO.getOriginAttr());
-        } else {
-            String startTagStr = "<" + tocTagName + " GUID=\"" + IdGenerator.generateId(tocTagName.substring(0, 3), 7) + "\">";
-            startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.getOriginAttr());
-        }
-        return XmlHelper.buildTag(startTag, tocTagName.getBytes(UTF_8), tocItemContent.getContent());
-    }
-
-    private byte[] extractLevelNonTocItems(Function<String, TocItemType> getTocItemType, VTDNav vtdNav) throws NavException {
-        ByteArrayBuilder nonTocItems = new ByteArrayBuilder();
-        if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
-            nonTocItems.append(extractNonTocItemExceptNumAndHeading(getTocItemType, vtdNav));
-            while (vtdNav.toElement(VTDNav.NEXT_SIBLING)) {
-                nonTocItems.append(extractNonTocItemExceptNumAndHeading(getTocItemType, vtdNav));
-            }
-        }
-
-        return nonTocItems.getContent();
-    }
-
-    private byte[] extractOrBuildNumElement(VTDNav contentNavigator, TableOfContentItemVO parentTOC) throws NavException, UnsupportedEncodingException {
-        byte[] element = new byte[0];
-        if (parentTOC.getNumber() != null) {
-            StringBuilder item = new StringBuilder(StringUtils.capitalize(parentTOC.getType().getName()));
-            byte[] numBytes = item.append(" ").append(extractNumber(parentTOC.getNumber())).toString().getBytes(UTF_8);
-
-            if (parentTOC.getNumTagIndex() != null) {
-                contentNavigator.recoverNode(parentTOC.getNumTagIndex());
-                byte[] numTag = getStartTag(contentNavigator);
-                numTag = updateOriginAttribute(numTag, parentTOC.getOriginNumAttr());
-                element = XmlHelper.buildTag(numTag, NUM_BYTES, numBytes);
-            } else {
-                byte[] numStartTag = updateOriginAttribute(NUM_START_TAG, parentTOC.getOriginNumAttr());
-                element = XmlHelper.buildTag(numStartTag, NUM_BYTES, numBytes);
-            }
-        }
-        return element;
-    }
-
-    private byte[] extractOrBuildHeaderElement(VTDNav contentNavigator, TableOfContentItemVO parentTOC) throws NavException, UnsupportedEncodingException {
-        byte[] element = new byte[0];
-        if (parentTOC.getHeading() != null) {
-            if (parentTOC.getHeadingTagIndex() != null) {
-                contentNavigator.recoverNode(parentTOC.getHeadingTagIndex());
-                byte[] headingTag = getStartTag(contentNavigator);
-                element = XmlHelper.buildTag(headingTag, HEADING_BYTES, parentTOC.getHeading().getBytes(UTF_8));
-            } else {
-                element = XmlHelper.buildTag(HEADING_START_TAG, HEADING_BYTES, parentTOC.getHeading().getBytes(UTF_8));
-            }
-        }
-        return element;
-    }
-
-    private byte[] extractNonTocItemExceptNumAndHeading(Function<String, TocItemType> getTocItemType, VTDNav vtdNav) throws NavException {
-
-        String tagName = vtdNav.toString(vtdNav.getCurrentIndex());
-        TocItemType type = getTocItemType.apply(tagName);
-        if (type == null && (!tagName.equals(NUM) && (!tagName.equals(HEADING)))) {
-            return getTagWithContent(vtdNav);
-        }
-
-        return new byte[0];
-    }
-
-    private byte[] getTagWithContent(VTDNav vtdNav) throws NavException {
-        long fragment = vtdNav.getElementFragment();
-        return vtdNav.getXML().getBytes((int) fragment, (int) (fragment >> 32));
-    }
-
     public byte[] injectTagIdsinXML(byte[] xmlContent) {
         LOG.trace("Start generateTagIds ");
         try {
@@ -918,7 +793,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
 
     private String updateNodewithId(VTDNav vtdNav, XMLModifier xmlModifier, String idPrefix) throws Exception {
         String idAttrValue = null;
-        int idIndex = vtdNav.getAttrVal(GUID);
+        int idIndex = vtdNav.getAttrVal(XMLID);
 
         if (idIndex != -1) {// get Id of current Node. If there is no id in root..generate a new id attribute Node.
             idAttrValue = vtdNav.toString(idIndex);
@@ -929,7 +804,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             }
         } else {
             idAttrValue = IdGenerator.generateId(idPrefix, 7);
-            String idAttributeNode = new StringBuilder(" ").append(GUID).append("=\"").append(idAttrValue).append("\" ").toString();
+            String idAttributeNode = new StringBuilder(" ").append(XMLID).append("=\"").append(idAttrValue).append("\" ").toString();
             xmlModifier.insertAttribute(idAttributeNode.getBytes(UTF_8));
         }
         return idAttrValue;
@@ -1015,7 +890,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return wrappedValue;
     }
 
-    // @Override
+    @Override
     public byte[] updateReferedAttributes(byte[] xmlContent, Map<String, String> referenceValueMap) {
         byte[] updatedContent = xmlContent;
         Stopwatch watch = Stopwatch.createStarted();
@@ -1048,11 +923,6 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         return updatedContent;
     }
 
-    /**Finds the first element with the id,if there are others, XML is incorrect
-     * @param xmlContent
-     * @param idAttributeValue id Attribute valyue
-     * @return complete Tag or null
-     */
     @Override
     public String[] getElementById(byte[] xmlContent, String idAttributeValue) {
         Validate.isTrue(idAttributeValue != null, "Id can not be null");
@@ -1068,14 +938,16 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
 
     private String[] getElementById(VTDNav vtdNav, String idAttributeValue) {
         Validate.isTrue(idAttributeValue != null, "Id can not be null");
-        String[] element = new String[2];
+        String[] element = new String[3];
         Stopwatch watch = Stopwatch.createStarted();
         try {
             AutoPilot ap = new AutoPilot(vtdNav);
-            ap.selectXPath("//*[@GUID = '" + idAttributeValue + "']");
+            ap.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            ap.selectXPath("//*[@xml:id = '" + idAttributeValue + "']");
             if (ap.evalXPath() != -1) {
-                element[0] = vtdNav.toString(vtdNav.getCurrentIndex());
-                element[1] = getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
+                element[0] = idAttributeValue;
+                element[1] = vtdNav.toString(vtdNav.getCurrentIndex());
+                element[2] = getFragmentAsString(vtdNav, vtdNav.getElementFragment(), false);
             } else {
                 LOG.debug("Element with Id {} not found", idAttributeValue);
             }
@@ -1095,7 +967,8 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         try {
             VTDNav vtdNav = setupVTDNav(xmlContent);
             AutoPilot ap = new AutoPilot(vtdNav);
-            ap.selectXPath("//*[@GUID = '" + idAttributeValue + "']");
+            ap.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");
+            ap.selectXPath("//*[@xml:id = '" + idAttributeValue + "']");
             if (ap.evalXPath() == -1) {
                 String errorMsg = String.format(
                         "Element with id: %s does not exists.",
@@ -1108,7 +981,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
                 return ancestorsIds;
             }
             do {
-                ap.selectAttr("GUID");
+                ap.selectAttr("xml:id");
                 int i = -1;
                 String idValue = "";
                 if ((i = ap.iterateAttr()) != -1) {
@@ -1181,13 +1054,11 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
         LOG.trace("Start import article preprocessing ");
         try {
             Stopwatch watch = Stopwatch.createStarted();
-            VTDNav vtdNav = setupVTDNav(xmlContent.getBytes(UTF_8));
+            VTDNav vtdNav = setupVTDNav(StringUtils.normalizeSpace(xmlContent).getBytes(UTF_8));
             XMLModifier xmlModifier = new XMLModifier(vtdNav);
-            if(elementType.equalsIgnoreCase(ARTICLE)) { 
-               String editableAttributes = new StringBuilder(" ").append("leos:editable=\"true\"  leos:deletable=\"true\"").toString();
-               xmlModifier.insertAttribute(editableAttributes.getBytes(UTF_8));
-            }
-            int idIndex = vtdNav.getAttrVal(GUID);
+            String editableAttributes = new StringBuilder(" ").append("leos:editable=\"true\"  leos:deletable=\"true\"").toString();
+            xmlModifier.insertAttribute(editableAttributes.getBytes(UTF_8));
+            int idIndex = vtdNav.getAttrVal(XMLID);
             String idAttrValue = vtdNav.toString(idIndex);
             String idPrefix = new StringBuilder("").append("imp_").append(idAttrValue).toString();
             String newIdAttrValue = IdGenerator.generateId(idPrefix, 7);
@@ -1209,7 +1080,7 @@ public class VtdXmlContentProcessor implements XmlContentProcessor {
             AutoPilot autoPilot = new AutoPilot(vtdNav);
             autoPilot.selectXPath(xPath);
             if (autoPilot.evalXPath() != -1) {
-                elementId = vtdNav.toString(vtdNav.getAttrVal(GUID));
+                elementId = vtdNav.toString(vtdNav.getAttrVal(XMLID));
             }
         } catch (Exception e) {
             LOG.error("Unexpected error occoured while finding the element id by path", e);

@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<roles>
+    <role name="OWNER">
+        <permissions>
+            <permission>CAN_READ</permission>
+            <permission>CAN_UPDATE</permission>
+            <permission>CAN_DELETE</permission>
+            <permission>CAN_COMMENT</permission>
+            <permission>CAN_SUGGEST</permission>
+            <permission>CAN_MERGE_SUGGESTION</permission>
+            <permission>CAN_SHARE</permission>
+            <permission>CAN_PRINT_LW</permission>
+            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_CREATE_MILESTONE</permission>
+            <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
+            <permission>CAN_ADD_REMOVE_COLLABORATOR</permission>
+            <permission>CAN_DOWNLOAD_PROPOSAL</permission>
+            <permission>CAN_UPLOAD</permission>
+        </permissions>
+        <application-role>false</application-role>
+        <collaborator>true</collaborator>
+        <default-doc-creation-role>true</default-doc-creation-role>
+        <message-key>leos.doc.collaborator.type1</message-key>
+    </role>
+    <role name="CONTRIBUTOR">
+        <permissions>
+            <permission>CAN_READ</permission>
+            <permission>CAN_UPDATE</permission>
+            <permission>CAN_SUGGEST</permission>
+            <permission>CAN_COMMENT</permission>
+            <permission>CAN_MERGE_SUGGESTION</permission>
+        </permissions>
+        <application-role>false</application-role>
+        <collaborator>true</collaborator>
+        <default-doc-creation-role>false</default-doc-creation-role>
+        <message-key>leos.doc.collaborator.type2</message-key>
+    </role>
+    <role name="REVIEWER">
+        <permissions>
+            <permission>CAN_SUGGEST</permission>
+            <permission>CAN_READ</permission>
+            <permission>CAN_COMMENT</permission>
+        </permissions>
+        <application-role>false</application-role>
+        <collaborator>true</collaborator>
+        <default-doc-creation-role>false</default-doc-creation-role>
+        <message-key>leos.doc.collaborator.type3</message-key>
+    </role>
+    <role name="SUPPORT">
+        <permissions>
+            <permission>CAN_READ</permission>
+            <permission>CAN_UPDATE</permission>
+            <permission>CAN_DELETE</permission>
+            <permission>CAN_COMMENT</permission>
+            <permission>CAN_SUGGEST</permission>
+            <permission>CAN_MERGE_SUGGESTION</permission>
+            <permission>CAN_SHARE</permission>
+            <permission>CAN_PRINT_LW</permission>
+            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_CREATE_MILESTONE</permission>
+            <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
+            <permission>CAN_DOWNLOAD_PROPOSAL</permission>
+            <permission>CAN_UPLOAD</permission>
+            <permission>CAN_SEE_SOURCE</permission>
+        </permissions>
+        <application-role>true</application-role>
+        <collaborator>false</collaborator>
+        <default-doc-creation-role>false</default-doc-creation-role>
+        <message-key>leos.doc.application.role.type1</message-key>
+    </role>
+    <role name="ADMIN">
+        <permissions>
+            <permission>CAN_READ</permission>
+            <permission>CAN_UPDATE</permission>
+            <permission>CAN_DELETE</permission>
+            <permission>CAN_COMMENT</permission>
+            <permission>CAN_SUGGEST</permission>
+            <permission>CAN_MERGE_SUGGESTION</permission>
+            <permission>CAN_SHARE</permission>
+            <permission>CAN_PRINT_LW</permission>
+            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_CREATE_MILESTONE</permission>
+            <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
+            <permission>CAN_DOWNLOAD_PROPOSAL</permission>
+            <permission>CAN_UPLOAD</permission>
+        </permissions>
+        <application-role>true</application-role>
+        <collaborator>false</collaborator>
+        <default-doc-creation-role>false</default-doc-creation-role>
+        <message-key>leos.doc.application.role.type2</message-key>
+    </role>
+</roles>

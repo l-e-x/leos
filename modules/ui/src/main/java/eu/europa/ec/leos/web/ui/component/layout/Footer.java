@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -16,10 +16,10 @@ package eu.europa.ec.leos.web.ui.component.layout;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.CustomComponent;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.VerticalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.web.support.LeosBuildInfo;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import javax.annotation.Nonnull;
 
 public class Footer extends CustomComponent {
 
-    private static final long serialVersionUID = -4244410110038968920L;
+    private static final long serialVersionUID = -424441011003896920L;
 
     private static final Logger LOG = LoggerFactory.getLogger(Footer.class);
 
@@ -45,6 +45,8 @@ public class Footer extends CustomComponent {
     private void initLayout() {
         // create footer layout
         final VerticalLayout footerLayout = new VerticalLayout();
+        footerLayout.setMargin(false);
+        footerLayout.setSpacing(false);
         footerLayout.addStyleName("leos-footer-layout");
         footerLayout.setHeight("20px");
 
@@ -63,7 +65,6 @@ public class Footer extends CustomComponent {
         final String infoMsg = msgHelper.getMessage(
                 "leos.ui.footer.info",
                 LeosBuildInfo.BUILD_VERSION,
-                LeosBuildInfo.BUILD_ENVIRONMENT,
                 LeosBuildInfo.SOURCE_REVISION,
                 LeosBuildInfo.BUILD_DATE);
 

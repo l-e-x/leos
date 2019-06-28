@@ -1,0 +1,54 @@
+//
+// Copyright 2019 European Commission
+//
+// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+// You may not use this work except in compliance with the Licence.
+// You may obtain a copy of the Licence at:
+//
+//     https://joinup.ec.europa.eu/software/page/eupl
+//
+// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the Licence for the specific language governing permissions and limitations under the Licence.
+//
+
+.leos-annotation-info {
+  padding-top: 7px;
+  font-weight: bold;
+}
+
+%leos-metadata-info {
+  border-left-style: solid;
+  border-left-color: grey;
+  border-left-width: 0.5px; 
+  border-right-style: solid;
+  border-right-color: grey;
+  border-right-width: 0.5px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.leos-metadata-info-0 {
+  @extend %leos-metadata-info;
+  color: blue;
+}
+
+.leos-metadata-info-1 {
+  @extend %leos-metadata-info;
+  color: purple;
+}
+
+.leos-metadata-info-2 {
+  @extend %leos-metadata-info;
+  color: green;
+}
+
+.leos-metadata-info-3 {
+  @extend %leos-metadata-info;
+  color: orangered;
+}
+
+.leos-metadata-info-4 {
+  @extend %leos-metadata-info;
+  color: violet;
+}

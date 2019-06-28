@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,40 +13,46 @@
  */
 package eu.europa.ec.leos.ui.view.document;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.Content.Source;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
-import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.Content.Source;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
-import eu.europa.ec.leos.services.content.processor.ArticleProcessor;
+import eu.europa.ec.leos.services.content.processor.BillProcessor;
+import eu.europa.ec.leos.services.content.processor.DocumentContentService;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
-import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.services.content.toc.TocRulesService;
 import eu.europa.ec.leos.services.document.BillService;
 import eu.europa.ec.leos.services.importoj.ImportService;
-import eu.europa.ec.leos.web.model.*;
-import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.test.support.model.ModelHelper;
 import eu.europa.ec.leos.test.support.web.presenter.LeosPresenterTest;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
 import eu.europa.ec.leos.ui.event.toc.EditTocRequestEvent;
+import eu.europa.ec.leos.ui.support.CoEditionHelper;
+import eu.europa.ec.leos.vo.coedition.CoEditionActionInfo;
+import eu.europa.ec.leos.vo.coedition.CoEditionActionInfo.Operation;
+import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.view.document.*;
 import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
+import eu.europa.ec.leos.web.model.DocType;
+import eu.europa.ec.leos.web.model.SearchCriteriaVO;
 import eu.europa.ec.leos.web.support.SessionAttribute;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.UuidHelper;
+import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import io.atlassian.fugue.Option;
-import okio.ByteString;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -54,8 +60,6 @@ import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
 
@@ -72,50 +76,68 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     private static final String ARTICLE_TAG = "article";
     private static final String CITATIONS_TAG = "citations";
     private static final String RECITALS_TAG = "recitals";
-    
-    @Mock
+
+    private static final String PRESENTER_ID = "ab51f419-c6b0-45cb-82ed-77a61099b58f";
+
     private SecurityContext securityContext;
+
+    private User contextUser;
+
+    private UuidHelper uuidHelper;
 
     @Mock
     private DocumentScreen documentScreen;
 
     @Mock
     private BillService billService;
-    
+
     @Mock
     private ImportService importService;
-    
+
     @Mock
     private UserHelper userHelper;
 
     @Mock
-    private ArticleProcessor articleProcessor;
+    private CoEditionHelper coEditionHelper;
 
     @Mock
-    private ElementProcessor<XmlDocument.Bill> elementProcessor;
+    private BillProcessor billProcessor;
 
     @Mock
-    private TransformationService transformationManager;
+    private ElementProcessor<Bill> elementProcessor;
+
+    @Mock
+    private DocumentContentService documentContentService;
 
     @Mock
     private TocRulesService tocRulesService;
 
     @InjectMocks
     private DocumentPresenter documentPresenter ;
-    
+
     @Mock
     private UrlBuilder urlBuilder;
-    
+
     @Mock
     private MessageHelper messageHelper;
 
     @Before
-    public void init() throws Exception {
+    public void setup(){
+        contextUser = ModelHelper.buildUser(45L, "login", "name");
+        securityContext = mock(SecurityContext.class);
+        when(securityContext.getUser()).thenReturn(contextUser);
+        uuidHelper = mock(UuidHelper.class);
+        when(uuidHelper.getRandomUUID()).thenReturn(PRESENTER_ID);
+        super.setup();
+    }
+
+    @Before
+    public void init() {
         when(httpSession.getId()).thenReturn(SESSION_ID);
     }
-    
+
     @Test
-    public void testEnterDocumentView() throws Exception {
+    public void testEnterDocumentView() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -126,16 +148,16 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String documentVersion="1.1";
         byte[] byteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
         Instant now = Instant.now();
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", now, "login", now,
+        Bill document = new Bill(docId, "Proposal", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                docName, collaborators,
+                docName, collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String displayableContent = "document displayable content";
@@ -145,34 +167,35 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         DocumentVO billVO = new DocumentVO(docId,"EN", LeosCategory.BILL, "login",  Date.from(now));;
         billVO.addCollaborators(collaborators);
         List<LeosPermission> permissions = Collections.emptyList();
+        List<CoEditionVO> coEditionVos = Collections.emptyList();
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
-        when(securityContext.getUser()).thenReturn(user);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
 
         when(billService.findBill(docId)).thenReturn(document);
         when(userHelper.getUser("login")).thenReturn(user);
         when(securityContext.getPermissions(document)).thenReturn(permissions);
-        when(transformationManager.toEditableXml(isA(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions))).thenReturn(displayableContent);
-        when(billService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
+        when(documentContentService.toEditableContent(isA(XmlDocument.class), any(), any())).thenReturn(displayableContent);
+        when(billService.getTableOfContent(document, true)).thenReturn(tableOfContentItemVoList);
 
         // DO THE ACTUAL CALL
         documentPresenter.enter();
 
         verify(billService).findBill(docId);
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions));
-        verify(billService).getTableOfContent(document);
-        
+        verify(documentContentService).toEditableContent(any(XmlDocument.class), any(), any());
+        verify(billService).getTableOfContent(document, true);
+
         verify(documentScreen).refreshContent(displayableContent);
         verify(documentScreen).setDocumentTitle(docName);
         verify(documentScreen).setDocumentVersionInfo(any());
         verify(documentScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
         verify(documentScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id")));
+        verify(documentScreen).updateUserCoEditionInfo(coEditionVos, PRESENTER_ID);
 
-        verifyNoMoreInteractions(billService, transformationManager, documentScreen);
+        verifyNoMoreInteractions(billService, documentContentService, documentScreen);
     }
 
     @Test
-    public void test_LoadCrossReferenceToc() throws Exception {
+    public void test_LoadCrossReferenceToc() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -182,29 +205,29 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         List<String> selectedNodeId = new ArrayList();
         selectedNodeId.add("xyz");
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         List<TableOfContentItemVO> tableOfContentItemVoList = Collections.emptyList();
         List<String> ancestorsIds = Collections.emptyList();
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
-        when(billService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
+        when(billService.getTableOfContent(document, true)).thenReturn(tableOfContentItemVoList);
         when(billService.getAncestorsIdsForElementId(document, selectedNodeId)).thenReturn(ancestorsIds);
 
         // DO THE ACTUAL CALL
         documentPresenter.fetchTocAndAncestors(new FetchCrossRefTocRequestEvent(selectedNodeId));
 
         verify(billService).findBill(docId);
-        verify(billService).getTableOfContent(document);
+        verify(billService).getTableOfContent(document, true);
         verify(billService).getAncestorsIdsForElementId(document, selectedNodeId);
         verify(documentScreen).setTocAndAncestors(argThat(sameInstance(tableOfContentItemVoList)), argThat(sameInstance(ancestorsIds)));
         verifyNoMoreInteractions(billService, documentScreen);
@@ -212,24 +235,21 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
     @Test
     @Ignore
-    public void testLeaveDocumentView() throws Exception {
+    public void testLeaveDocumentView() {
 
         String docId = "555";
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
-
-        User user = ModelHelper.buildUser(45L, "login", "name");
-        when(securityContext.getUser()).thenReturn(user);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
 
         // DO THE ACTUAL CALL
-//        documentPresenter.detachView();   // FIXME replace detach view with something else
+        //        documentPresenter.detachView();   // FIXME replace detach view with something else
 
-        verify(httpSession).removeAttribute(SessionAttribute.BILL_ID.name());
+        verify(httpSession).removeAttribute(anyString() + "." + SessionAttribute.BILL_ID.name());
     }
 
     @Test
     @Ignore
-    public void testEnterDocumentView_should_showWarningMessage_when_noIdOnSession() throws IOException {
+    public void testEnterDocumentView_should_showWarningMessage_when_noIdOnSession() {
 
         // DO THE ACTUAL CALL
         documentPresenter.enter();
@@ -243,13 +263,33 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     @Test
     public void testCloseDocument() {
 
+        Content content = mock(Content.class);
+        Source source = mock(Source.class);
+
+        String docId = "555";
+        String docName = "document name";
+        String documentVersion="1.1";
+        byte[] byteContent = new byte[]{1, 2, 3};
+        String url="AnyURL";
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+
+        Bill document = new Bill(docId, "Bill", "login", Instant.now(), "login", Instant.now(),
+                documentVersion, documentVersion, "", true, true,
+                docName, collaborators, Arrays.asList(""),
+                Option.some(content), Option.some(billMetadata));
+
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
+
         // DO THE ACTUAL CALL
         documentPresenter.closeDocument(new CloseScreenRequestEvent());
         verify(eventBus).post(argThat(Matchers.<NavigationRequestEvent>hasProperty("target", equalTo(Target.PREVIOUS))));
     }
 
     @Test
-    public void testRefreshDocument() throws Exception {
+    public void testRefreshDocument() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -260,16 +300,16 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         byte[] byteContent = new byte[]{1, 2, 3};
         String url="AnyURL";
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
         Instant now = Instant.now();
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", now, "login", now,
+        Bill document = new Bill(docId, "Bill", "login", now, "login", now,
                 documentVersion, documentVersion, "", true, true,
-                docName, collaborators,
+                docName, collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String displayableContent = "document displayable content";
@@ -278,107 +318,103 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         DocumentVO billVO = new DocumentVO(docId,"EN", LeosCategory.BILL, "login",  Date.from(now));
         billVO.addCollaborators(collaborators);
         List<LeosPermission> permissions = Collections.emptyList();
+        List<CoEditionVO> coEditionVos = Collections.emptyList();
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(userHelper.getUser("login")).thenReturn(user);
         when(securityContext.getPermissions(document)).thenReturn(permissions);
-        when(transformationManager.toEditableXml(any(ByteArrayInputStream.class),any(),eq(LeosCategory.BILL),eq(permissions))).thenReturn(displayableContent);
-        when(billService.getTableOfContent(document)).thenReturn(tableOfContentItemVoList);
+        when(documentContentService.toEditableContent(isA(XmlDocument.class), any(), any())).thenReturn(displayableContent);
+        when(billService.getTableOfContent(document, true)).thenReturn(tableOfContentItemVoList);
 
         // DO THE ACTUAL CALL
         documentPresenter.refreshDocument(new RefreshDocumentEvent());
 
         verify(billService).findBill(docId);
-        verify(billService).getTableOfContent(document);
-        verify(transformationManager).toEditableXml(any(ByteArrayInputStream.class), any(), eq(LeosCategory.BILL),eq(permissions));
-        
+        verify(billService).getTableOfContent(document, true);
+        verify(documentContentService).toEditableContent(any(XmlDocument.class), any(), any());
+
         verify(documentScreen).refreshContent(displayableContent);
         verify(documentScreen).setDocumentTitle(docName);
         verify(documentScreen).setDocumentVersionInfo(any());
         verify(documentScreen).setToc(argThat(sameInstance(tableOfContentItemVoList)));
         verify(documentScreen).setPermissions(argThat(org.hamcrest.Matchers.hasProperty("id")));
+        verify(documentScreen).updateUserCoEditionInfo(coEditionVos, PRESENTER_ID);
 
-        verifyNoMoreInteractions(billService, transformationManager, documentScreen);
+        verifyNoMoreInteractions(billService, documentContentService, documentScreen);
     }
 
     @Test
-    public void testEditArticle_should_showArticleEditor() throws Exception {
+    public void testEditArticle_should_showArticleEditor() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
-
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        String versionSeriesId = "1234";
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
-                "", "", "", true, true,
-                "title", collaborators,
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+                versionSeriesId, "", "", true, true,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String articleId = "7474";
         String articleContent = "article content";
+        CoEditionActionInfo actionInfo = new CoEditionActionInfo(true, Operation.STORE, null, new ArrayList<CoEditionVO>());
 
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(elementProcessor.getElement(document, ARTICLE_TAG, articleId)).thenReturn(articleContent);
+        when(coEditionHelper.getCurrentEditInfo(versionSeriesId)).thenReturn(actionInfo.getCoEditionVos());
         // DO THE ACTUAL CALL
         documentPresenter.editElement(new EditElementRequestEvent(articleId, ARTICLE_TAG));
 
         verify(billService).findBill(docId);
-        verify(documentScreen).showElementEditor(articleId, ARTICLE_TAG, articleContent);
+        verify(documentScreen).showElementEditor(articleId, ARTICLE_TAG, articleContent, "");
         verifyNoMoreInteractions(billService, documentScreen);
     }
 
     @Test
-    public void test_saveArticle_should_returnUpdatedDocument() throws Exception {
+    public void test_saveArticle_should_returnUpdatedDocument() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String articleId = "486";
         String newArticleText = "new article text";
 
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(elementProcessor.updateElement(originalDocument, newArticleText, ARTICLE_TAG, articleId)).thenReturn(updatedDocumentContent);
         when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + ARTICLE_TAG + ".updated"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
-        documentPresenter.saveElement(new SaveElementRequestEvent(articleId, ARTICLE_TAG, newArticleText));
+        documentPresenter.saveElement(new SaveElementRequestEvent(articleId, ARTICLE_TAG, newArticleText, false));
 
         verify(elementProcessor).updateElement(originalDocument, newArticleText, ARTICLE_TAG, articleId);
         verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + ARTICLE_TAG + ".updated"));
@@ -387,188 +423,178 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     }
 
     @Test
-    public void test_deleteArticle_should_returnUpdatedDocument() throws Exception {
+    public void test_deleteArticle_should_returnUpdatedDocument() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
+        User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
-        when(articleProcessor.deleteArticle(originalDocument, articleId)).thenReturn(updatedDocumentContent);
+        when(billProcessor.deleteElement(originalDocument, articleId, articleTag, user)).thenReturn(updatedDocumentContent);
         when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
-        verify(articleProcessor).deleteArticle(originalDocument, articleId);
+        verify(billProcessor).deleteElement(originalDocument, articleId, articleTag, user);
         verify(billService).findBill(docId);
         verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"));
         verifyNoMoreInteractions(billService, elementProcessor);
     }
 
     @Test
-    public void test_deleteArticle_should_NotDeleteArticle() throws Exception {
+    public void test_deleteArticle_should_NotDeleteArticle() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
+        User user = ModelHelper.buildUser(45L, "login", "name", "DIGIT");
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
-        when(articleProcessor.deleteArticle(originalDocument, articleId)).thenReturn(updatedDocumentContent);
+        when(billProcessor.deleteElement(originalDocument, articleId, articleTag, user)).thenReturn(updatedDocumentContent);
         when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.deleteElement(new DeleteElementRequestEvent(articleId, articleTag));
 
-        verify(articleProcessor).deleteArticle(originalDocument, articleId);
+        verify(billProcessor).deleteElement(originalDocument, articleId, articleTag, user);
         verify(billService).findBill(docId);
         verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("document." + ARTICLE_TAG + ".deleted"));
         verifyNoMoreInteractions(billService, elementProcessor);
     }
 
     @Test
-    public void test_insertArticle_Before() throws Exception {
+    public void test_insertArticle_Before() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         boolean before = true;
 
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-
         String articleTag = "article";
         String articleId = "486";
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
-        when(articleProcessor.insertNewArticle(originalDocument, articleId, before)).thenReturn(updatedDocumentContent);
-        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.article.inserted"))).thenReturn(savedDocument);
+        when(billProcessor.insertNewElement(originalDocument, articleId, before, articleTag)).thenReturn(updatedDocumentContent);
+        when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.element.inserted"))).thenReturn(savedDocument);
 
         // DO THE ACTUAL CALL
         documentPresenter.insertElement(new InsertElementRequestEvent(articleId, articleTag, InsertElementRequestEvent.POSITION.BEFORE));
 
-        verify(articleProcessor).insertNewArticle(originalDocument, articleId, before);
+        verify(billProcessor).insertNewElement(originalDocument, articleId, before, articleTag);
         verify(billService).findBill(docId);
-        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.article.inserted"));
+        verify(billService).updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation.element.inserted"));
 
         verifyNoMoreInteractions(billService);
     }
-    
+
     @Test
-    public void testEditToc() throws Exception {
+    public void testEditToc() {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         byte[] originalByteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill("test", "Proposal", "login", Instant.now(), "login", Instant.now(),
-                "", "", "", true, true,
-                "title", collaborators,
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill("test", "Proposal", "login", Instant.now(), "login", Instant.now(),
+                "test", "", "", true, true,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
+        CoEditionActionInfo actionInfo = new CoEditionActionInfo(true, Operation.STORE, null, new ArrayList<CoEditionVO>());
 
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn("test");
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn("test");
         when(billService.findBill("test")).thenReturn(originalDocument);
         List<TableOfContentItemVO> tocList = new ArrayList<TableOfContentItemVO>();
-        when(billService.getTableOfContent(originalDocument)).thenReturn(tocList);
+        when(billService.getTableOfContent(originalDocument, false)).thenReturn(tocList);
 
         Map<TocItemType, List<TocItemType>> tocRules = Collections.emptyMap();
         when(tocRulesService.getDefaultTableOfContentRules()).thenReturn(tocRules);
+        when(coEditionHelper.getCurrentEditInfo("test")).thenReturn(actionInfo.getCoEditionVos());
 
         // DO THE ACTUAL CALL
         documentPresenter.editToc(new EditTocRequestEvent());
 
         verify(billService).findBill("test");
-        verify(billService).getTableOfContent(originalDocument);
+        verify(billService).getTableOfContent(originalDocument, false);
         verify(documentScreen).showTocEditWindow(tocList, tocRules);
         verify(tocRulesService).getDefaultTableOfContentRules();
     }
 
     @Test
-    public void testEditCitations_should_showCitationsEditor() throws Exception {
+    public void testEditCitations_should_showCitationsEditor() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -576,30 +602,32 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
-                "", "", "", true, true,
-                "title", collaborators,
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+                "test", "", "", true, true,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String citationsId = "7474";
-        String citationsContent = "<citations GUID=\"7474\"><citation>testCit</citation></citations>";
+        String citationsContent = "<citations xml:id=\"7474\"><citation>testCit</citation></citations>";
+        CoEditionActionInfo actionInfo = new CoEditionActionInfo(true, Operation.STORE, null, new ArrayList<CoEditionVO>());
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(elementProcessor.getElement(document, CITATIONS_TAG, citationsId)).thenReturn(citationsContent);
+        when(coEditionHelper.getCurrentEditInfo("test")).thenReturn(actionInfo.getCoEditionVos());
 
         // DO THE ACTUAL CALL
         documentPresenter.editElement((new EditElementRequestEvent(citationsId, CITATIONS_TAG)));
 
         verify(billService).findBill(docId);
         verify(elementProcessor).getElement(document, CITATIONS_TAG, citationsId);
-        verify(documentScreen).showElementEditor(citationsId, CITATIONS_TAG, citationsContent);
+        verify(documentScreen).showElementEditor(citationsId, CITATIONS_TAG, citationsContent, "");
 
         verifyNoMoreInteractions(billService, documentScreen);
     }
@@ -607,63 +635,68 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     @Test
     public void testCloseCitationsEditor() {
         String docId = "555";
-
         String citationsId = "7474";
-        String citationsContent = "<citations GUID=\"7474\"><citation>testCit</citation></citations>";
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        Content content = mock(Content.class);
+        Source source = mock(Source.class);
+
+        String docName = "document name";
+        String documentVersion="1.1";
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+
+        Bill document = new Bill(docId, "Bill", "login", Instant.now(), "login", Instant.now(),
+                documentVersion, documentVersion, "", true, true,
+                docName, collaborators, Arrays.asList(""),
+                Option.some(content), Option.some(billMetadata));
+
+        when(billService.findBill(docId)).thenReturn(document);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
 
         // DO THE ACTUAL CALL
-        try {
-            documentPresenter.closeElementEditor(new CloseElementEditorEvent(citationsId));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        documentPresenter.closeElementEditor(new CloseElementEditorEvent(citationsId, "citation"));
         //verify(eventBus).post(argThat(Matchers.<RefreshDocumentEvent>hasProperty("messageKey", equalTo("document.content.updated"))));
     }
 
     @Test
-    public void test_saveCitations_should_saveUpdatedDocument() throws Exception {
+    public void test_saveCitations_should_saveUpdatedDocument() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
-
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
 
         String citationsId = "7474";
         String citationsTag = "citations";
-        String newCitationsContent = "<citations GUID=\"7474\"><citation>testCit</citation><citation>newtestCit</citation></citations>";
+        String newCitationsContent = "<citations xml:id=\"7474\"><citation>testCit</citation><citation>newtestCit</citation></citations>";
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(elementProcessor.updateElement(originalDocument, newCitationsContent, CITATIONS_TAG, citationsId)).thenReturn(updatedDocumentContent);
         when(billService.updateBill(originalDocument, updatedDocumentContent, messageHelper.getMessage("operation." + CITATIONS_TAG + ".updated"))).thenReturn(savedDocument);
         when(elementProcessor.getElement(savedDocument, CITATIONS_TAG, citationsId)).thenReturn(newCitationsContent);
 
         // DO THE ACTUAL CALL
-        documentPresenter.saveElement(new SaveElementRequestEvent(citationsId, CITATIONS_TAG, newCitationsContent));
+        documentPresenter.saveElement(new SaveElementRequestEvent(citationsId, CITATIONS_TAG, newCitationsContent, false));
 
         verify(elementProcessor).updateElement(originalDocument, newCitationsContent, CITATIONS_TAG, citationsId);
         verify(billService).findBill(docId);
@@ -676,7 +709,7 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
     @Ignore // FIXME: this test is not working as this behaviour is removed from presenters
     @Test
-    public void testSaveCitations_when_NoDocumentId_should_displayNotification() throws Exception {
+    public void testSaveCitations_when_NoDocumentId_should_displayNotification() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -684,38 +717,34 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
         byte[] updatedDocumentContent = new byte[]{1, 2};
 
         String citationsId = "7474";
-        String citationsContent = "<citations GUID=\"7474\"><citation>testCit</citation></citations>";
-        String newCitationsContent = "<citations GUID=\"7474\"><citation>testCit</citation><citation>newtestCit</citation></citations>";
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-
-        when(securityContext.getUser()).thenReturn(user);
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(null);
+        String citationsContent = "<citations xml:id=\"7474\"><citation>testCit</citation></citations>";
+        String newCitationsContent = "<citations xml:id=\"7474\"><citation>testCit</citation><citation>newtestCit</citation></citations>";
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(null);
         when(billService.findBill(docId)).thenReturn(null);
         when(elementProcessor.updateElement(document, newCitationsContent, CITATIONS_TAG, citationsId)).thenReturn(updatedDocumentContent);
 
         // DO THE ACTUAL CALL
-        documentPresenter.saveElement(new SaveElementRequestEvent(citationsId, CITATIONS_TAG, newCitationsContent));
+        documentPresenter.saveElement(new SaveElementRequestEvent(citationsId, CITATIONS_TAG, newCitationsContent, false));
 
         verify(elementProcessor).updateElement(null, newCitationsContent, CITATIONS_TAG, citationsId);
         verifyNoMoreInteractions(billService, elementProcessor);
     }
 
     @Test
-    public void testEditRecitals_should_showRecitalsEditor() throws Exception {
+    public void testEditRecitals_should_showRecitalsEditor() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
@@ -723,30 +752,32 @@ public class DocumentPresenterTest extends LeosPresenterTest {
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
-                "", "", "", true, true,
-                "title", collaborators,
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+                "test", "", "", true, true,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         String recitalsId = "7474";
-        String recitalsContent = "<recitals GUID=\"7474\"><recital>testCit</recital></recitals>";
+        String recitalsContent = "<recitals xml:id=\"7474\"><recital>testCit</recital></recitals>";
+        CoEditionActionInfo actionInfo = new CoEditionActionInfo(true, Operation.STORE, null, new ArrayList<CoEditionVO>());
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(elementProcessor.getElement(document, RECITALS_TAG, recitalsId)).thenReturn(recitalsContent);
+        when(coEditionHelper.getCurrentEditInfo("test")).thenReturn(actionInfo.getCoEditionVos());
 
         // DO THE ACTUAL CALL
         documentPresenter.editElement((new EditElementRequestEvent(recitalsId, RECITALS_TAG)));
 
         verify(billService).findBill(docId);
         verify(elementProcessor).getElement(document, RECITALS_TAG, recitalsId);
-        verify(documentScreen).showElementEditor(recitalsId, RECITALS_TAG, recitalsContent);
+        verify(documentScreen).showElementEditor(recitalsId, RECITALS_TAG, recitalsContent, "");
 
         verifyNoMoreInteractions(billService, documentScreen);
     }
@@ -754,63 +785,70 @@ public class DocumentPresenterTest extends LeosPresenterTest {
     @Test
     public void testCloseRecitalsEditor() {
         String docId = "555";
-
         String recitalsId = "7474";
-        String recitalsContent = "<recitals GUID=\"7474\"><recital>testCit</recital></recitals>";
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        String recitalsContent = "<recitals xml:id=\"7474\"><recital>testCit</recital></recitals>";
+        Content content = mock(Content.class);
+        Source source = mock(Source.class);
+
+        String docName = "document name";
+        String documentVersion="1.1";
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+
+        Bill document = new Bill(docId, "Bill", "login", Instant.now(), "login", Instant.now(),
+                documentVersion, documentVersion, "", true, true,
+                docName, collaborators, Arrays.asList(""),
+                Option.some(content), Option.some(billMetadata));
+
+        when(billService.findBill(docId)).thenReturn(document);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
 
         // DO THE ACTUAL CALL
-        try {
-            documentPresenter.closeElementEditor(new CloseElementEditorEvent("7474"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        documentPresenter.closeElementEditor(new CloseElementEditorEvent("7474", "recital"));
 
         //verify(eventBus).post(argThat(Matchers.<RefreshDocumentEvent>hasProperty("messageKey", equalTo("document.content.updated"))));
     }
 
     @Test
-    public void test_saveRecitals_should_saveUpdatedDocument() throws Exception {
+    public void test_saveRecitals_should_saveUpdatedDocument() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
-
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
 
         String recitalsId = "7474";
         String recitalsTag = "recitals";
-        String newRecitalsContent = "<recitals GUID=\"7474\"><recital>testCit</recital><recital>newtestCit</recital></recitals>";
+        String newRecitalsContent = "<recitals xml:id=\"7474\"><recital>testCit</recital><recital>newtestCit</recital></recitals>";
 
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(document);
         when(elementProcessor.updateElement(document, newRecitalsContent, RECITALS_TAG, recitalsId)).thenReturn(updatedDocumentContent);
         when(billService.updateBill(document, updatedDocumentContent, messageHelper.getMessage("operation." + RECITALS_TAG + ".updated"))).thenReturn(savedDocument);
         when(elementProcessor.getElement(savedDocument, RECITALS_TAG, recitalsId)).thenReturn(newRecitalsContent);
 
         // DO THE ACTUAL CALL
-        documentPresenter.saveElement(new SaveElementRequestEvent(recitalsId, RECITALS_TAG, newRecitalsContent));
+        documentPresenter.saveElement(new SaveElementRequestEvent(recitalsId, RECITALS_TAG, newRecitalsContent, false));
 
         verify(elementProcessor).updateElement(document, newRecitalsContent, RECITALS_TAG, recitalsId);
         verify(billService).findBill(docId);
@@ -823,99 +861,91 @@ public class DocumentPresenterTest extends LeosPresenterTest {
 
     @Ignore // FIXME: this test is not working as this behaviour is removed from presenters
     @Test
-    public void testSaveRecitals_when_NoDocumentId_should_displayNotification() throws Exception {
+    public void testSaveRecitals_when_NoDocumentId_should_displayNotification() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
 
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill document = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill document = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] updatedDocumentContent = new byte[]{1, 2, 3};
 
         String recitalsId = "7474";
-        String recitalsContent = "<recitals GUID=\"7474\"><recital>testCit</recital></recitals>";
-        String newRecitalsContent = "<recitals GUID=\"7474\"><recital>testCit</recital><recital>newtestCit</recital></recitals>";
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        
-        when(securityContext.getUser()).thenReturn(user);
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(null);
+        String recitalsContent = "<recitals xml:id=\"7474\"><recital>testCit</recital></recitals>";
+        String newRecitalsContent = "<recitals xml:id=\"7474\"><recital>testCit</recital><recital>newtestCit</recital></recitals>";
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(null);
         when(elementProcessor.updateElement(document, newRecitalsContent, CITATIONS_TAG, recitalsId)).thenReturn(updatedDocumentContent);
 
         // DO THE ACTUAL CALL
-        documentPresenter.saveElement(new SaveElementRequestEvent(recitalsId, RECITALS_TAG, newRecitalsContent));
+        documentPresenter.saveElement(new SaveElementRequestEvent(recitalsId, RECITALS_TAG, newRecitalsContent, false));
 
         verify(elementProcessor).updateElement(null, newRecitalsContent, RECITALS_TAG, recitalsId);
         verifyNoMoreInteractions(billService, elementProcessor);
     }
-    
+
     @Test
-    public void test_importElement() throws Exception {
+    public void test_importElement() {
 
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
         String docId = "555";
         String aknDocument = "<!--This AkomaNtoso document was created via a LegisWrite export.-->"
-                + "<akomaNtoso GUID=\"akn\">" +
-                "<article GUID=\"art486\">" +
-                "<num GUID=\"aknum\">Article 486</num>" +
-                "<heading GUID=\"aknhead\">1st article</heading>" +
+                + "<akomaNtoso xml:id=\"akn\">" +
+                "<article xml:id=\"art486\">" +
+                "<num xml:id=\"aknum\">Article 486</num>" +
+                "<heading xml:id=\"aknhead\">1st article</heading>" +
                 "</article>" +
-                "<article GUID=\"art486\">" +
-                "<num GUID=\"aknnum2\"></num>" +
-                "<heading GUID=\"aknhead2\">2th articl<authorialNote marker=\"101\" GUID=\"a1\"><p GUID=\"p1\">TestNote1</p></authorialNote>e</heading>" +
+                "<article xml:id=\"art486\">" +
+                "<num xml:id=\"aknnum2\"></num>" +
+                "<heading xml:id=\"aknhead2\">2th articl<authorialNote marker=\"101\" xml:id=\"a1\"><p xml:id=\"p1\">TestNote1</p></authorialNote>e</heading>" +
                 "</article>" +
-                "<article GUID=\"art486\">" +
-                "<heading GUID=\"aknhead3\">3th article<authorialNote marker=\"90\" GUID=\"a2\"><p GUID=\"p2\">TestNote2</p></authorialNote></heading>" +
+                "<article xml:id=\"art486\">" +
+                "<heading xml:id=\"aknhead3\">3th article<authorialNote marker=\"90\" xml:id=\"a2\"><p xml:id=\"p2\">TestNote2</p></authorialNote></heading>" +
                 "</article>" +
-                "<article GUID=\"art486\">" +
+                "<article xml:id=\"art486\">" +
                 "</article>" +
                 "</akomaNtoso>";
-        
+
         String articleId = "001";
         String articleTag = "article";
         String article = "<article>Text...</article>";
-        
+
         SearchCriteriaVO searchCriteria = new SearchCriteriaVO(DocType.REGULATION, "2015", "25");
         List<String> elementIdList = new ArrayList<String>();
         elementIdList.add(articleId);
-        
-        when(source.getByteString()).thenReturn(ByteString.of(new byte[]{1, 2, 3}));
+
+        when(source.getBytes()).thenReturn(new byte[]{1, 2, 3});
         when(content.getSource()).thenReturn(source);
 
-        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        BillMetadata billMetadata =new BillMetadata("", "REGULATION", "", "BL-000.xml", "EN", "", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
+        Bill originalDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
         byte[] originalDocumentContent = new byte[]{1, 2, 3};
         byte[] updatedDocumentContent = new byte[]{4, 5, 6};
 
-        XmlDocument.Bill savedDocument = new XmlDocument.Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
+        Bill savedDocument = new Bill(docId, "Proposal", "login", Instant.now(), "login", Instant.now(),
                 "", "", "", true, true,
-                "title", collaborators,
+                "title", collaborators, Arrays.asList(""),
                 Option.some(content), Option.some(billMetadata));
 
-        String userLogin="login";
-        User user = ModelHelper.buildUser(45L, userLogin, "name");
-        when(securityContext.getUser()).thenReturn(user);
-
-        when(httpSession.getAttribute(SessionAttribute.BILL_ID.name())).thenReturn(docId);
+        when(httpSession.getAttribute(anyString() + "." + SessionAttribute.BILL_ID.name())).thenReturn(docId);
         when(billService.findBill(docId)).thenReturn(originalDocument);
         when(importService.getAknDocument("reg", 2015, 25)).thenReturn(aknDocument);
         when(importService.insertSelectedElements(originalDocumentContent, aknDocument.getBytes(), elementIdList, "EN")).thenReturn(updatedDocumentContent);

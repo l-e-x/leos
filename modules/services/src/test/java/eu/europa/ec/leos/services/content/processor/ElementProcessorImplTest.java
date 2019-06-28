@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,28 +13,27 @@
  */
 package eu.europa.ec.leos.services.content.processor;
 
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.domain.document.Content;
-import eu.europa.ec.leos.domain.document.Content.Source;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument.Bill;
-import eu.europa.ec.leos.domain.document.LeosMetadata.BillMetadata;
+
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.Content.Source;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.test.support.LeosTest;
 import io.atlassian.fugue.Option;
-import okio.ByteString;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.mockito.Mockito.*;
+import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 
 public class ElementProcessorImplTest extends LeosTest {
 
@@ -52,17 +51,17 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         byte[] byteContent = new byte[]{1, 2, 3};
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill document = new Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "7474";
@@ -81,19 +80,19 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
         byte[] updatedByteContent = new byte[]{4, 5, 6};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill originalDocument = new Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
@@ -112,19 +111,19 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
         byte[] updatedByteContent = new byte[]{4, 5, 6};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill originalDocument = new Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String articleTag = "article";
         String articleId = "486";
@@ -142,20 +141,20 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         byte[] byteContent = new byte[]{1, 2, 3, 4};
         String tagName = "citations";
         String tagId = "cits";
         String contentString = "citations content";
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill document = new Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         when(xmlContentProcessor.getElementByNameAndId(byteContent, tagName, tagId)).thenReturn(contentString);
 
@@ -174,19 +173,19 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
         byte[] updatedByteContent = new byte[]{4, 5, 6};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill originalDocument = new Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String tagName = "citations";
         String tagId = "cits";
@@ -209,20 +208,20 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         byte[] byteContent = new byte[]{1, 2, 3, 4};
         String tagName = "recitals";
         String tagId = "recs";
         String contentString = "recitals content";
 
-        when(source.getByteString()).thenReturn(ByteString.of(byteContent));
+        when(source.getBytes()).thenReturn(byteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill document = new XmlDocument.Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill document = new Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         when(xmlContentProcessor.getElementByNameAndId(byteContent, tagName, tagId)).thenReturn(contentString);
 
@@ -240,19 +239,19 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
         byte[] updatedByteContent = new byte[]{4, 5, 6};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill originalDocument = new Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String tagName = "recitals";
         String tagId = "recs";
@@ -275,20 +274,20 @@ public class ElementProcessorImplTest extends LeosTest {
         Content content = mock(Content.class);
         Source source = mock(Source.class);
 
-        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id");
-        Map<String, LeosAuthority> collaborators = new HashMap<String, LeosAuthority>();
-        collaborators.put("login", LeosAuthority.OWNER);
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill-id", "");
+        Map<String, String> collaborators = new HashMap<String, String>();
+        collaborators.put("login", "OWNER");
 
         String docId = "555";
         byte[] originalByteContent = new byte[]{1, 2, 3};
         byte[] updatedByteContent = new byte[]{4, 5, 6};
         byte[] renumberdContent = new byte[]{14, 15, 16};
 
-        when(source.getByteString()).thenReturn(ByteString.of(originalByteContent));
+        when(source.getBytes()).thenReturn(originalByteContent);
         when(content.getSource()).thenReturn(source);
 
-        XmlDocument.Bill originalDocument = new XmlDocument.Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
-                "", "Version 1.0", "", true, true, "title", collaborators, Option.some(content), Option.some(billMetadata));
+        Bill originalDocument = new Bill(docId, "Legaltext", "login", Instant.now(), "login", Instant.now(), 
+                "", "Version 1.0", "", true, true, "title", collaborators, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
 
         String elementTag = "article";
         String elementId = "486";

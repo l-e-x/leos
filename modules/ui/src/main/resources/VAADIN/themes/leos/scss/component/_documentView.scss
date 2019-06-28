@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -28,7 +28,8 @@
 
     .leos-viewdoc-docbar,
     .leos-viewdoc-tocbar,
-    .leos-markedtext-bar {
+    .leos-markedtext-bar,
+    .leos-doubleComparison-bar {
         background: $GREY;
         border-top: 1px solid lighten($MENU_BORDER_COLOR, 30%);
         border-bottom: 1px solid lighten($MENU_BORDER_COLOR, 45%);
@@ -40,7 +41,7 @@
 
     .leos-toolbar-button {
         padding: 0 5px;
-        color: $MAIN_BLUE; //#474747;
+        color: $MAIN_BLUE;
         .v-icon {
             font-size: 16px;
         }
@@ -56,6 +57,33 @@
 
     .leos-toolbar-button.v-disabled {
         color: $DARK_GREY;
+    }
+
+    .text-refresh-note {
+        padding: 0;
+        color: $MAIN_BLUE;
+        background: $GREY !important;
+        .v-icon {
+            font-size: 16px;
+        }
+    }
+
+    .text-refresh-note.v-disabled {
+        color: $MAIN_BLUE;
+        opacity: inherit;
+    }
+
+    .v-caption-leos-toolbar-user-coedition {
+        padding: 2px 5px;
+        color: $HEADER_BLUE;
+        user-select: none;
+        .v-icon {
+            font-size: 16px;
+        }
+    }
+
+    .v-caption-leos-toolbar-user-coedition-self-user {
+        color: $GREY_COLOUR;
     }
 
     .leos-viewdoc-toctree-panel {
@@ -92,7 +120,7 @@
             font-family: "Vaadin-Icons";
         }
         &.displayed {
-            width:105px;
+            width:200px;
             display: block;
             opacity:1;
             padding:5px;

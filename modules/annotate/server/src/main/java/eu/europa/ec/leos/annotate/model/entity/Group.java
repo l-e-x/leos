@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -40,6 +41,7 @@ public class Group {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "groupsSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     // internal ID of the group
@@ -63,17 +65,18 @@ public class Group {
     // -------------------------------------------------
 
     public Group() {
+        // default constructor required for JPA
     }
     
     // simple constructor, reuse name for other properties
-    public Group(String name, boolean isPublic) {
+    public Group(final String name, final boolean isPublic) {
         this.name = name;
         this.displayName = name;
         this.description = name;
         this.publicGroup = isPublic;
     }
 
-    public Group(String name, String displayName, String description, boolean isPublic) {
+    public Group(final String name, final String displayName, final String description, final boolean isPublic) {
         this.name = name;
         this.displayName = displayName;
         this.description = description;
@@ -88,15 +91,15 @@ public class Group {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(final Long newId) {
+        this.id = newId;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
@@ -104,7 +107,7 @@ public class Group {
         return displayName;
     }
 
-    public void setDisplayName(String displayName) {
+    public void setDisplayName(final String displayName) {
         this.displayName = displayName;
     }
 
@@ -112,7 +115,7 @@ public class Group {
         return description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
@@ -120,7 +123,7 @@ public class Group {
         return publicGroup;
     }
 
-    public void setPublicGroup(boolean publicGroup) {
+    public void setPublicGroup(final boolean publicGroup) {
         this.publicGroup = publicGroup;
     }
 
@@ -128,13 +131,15 @@ public class Group {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, name, displayName, description);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

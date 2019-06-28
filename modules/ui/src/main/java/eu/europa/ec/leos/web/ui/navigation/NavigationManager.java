@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -83,6 +83,11 @@ public class NavigationManager implements Serializable {
     }
 
     private NavigationRequestEvent resolveDestination(NavigationRequestEvent destination) {
+        String viewId = destination.getTarget().getViewId();
+        NavigationRequestEvent current = navigationStack.peek();
+        if(current != null && current.getTarget().getViewId().equalsIgnoreCase(viewId)) {
+            navigationStack.pop();
+        }
         if (Target.PREVIOUS.equals(destination.getTarget())) {
             navigationStack.pop();              // Discard the current view, as this is current displayed view
             destination = navigationStack.pop();// Previous view from current

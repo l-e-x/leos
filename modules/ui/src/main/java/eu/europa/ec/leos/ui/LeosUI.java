@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,19 +21,19 @@ import com.vaadin.spring.annotation.EnableVaadinNavigation;
 import com.vaadin.spring.annotation.SpringUI;
 import com.vaadin.ui.UI;
 import com.vaadin.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.common.InstanceContext;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.vaadin.LeosVaadinErrorHandler;
 import eu.europa.ec.leos.web.ui.component.Banner;
 import eu.europa.ec.leos.web.ui.component.layout.Footer;
-import eu.europa.ec.leos.web.ui.component.layout.Header;
+import eu.europa.ec.leos.web.ui.component.layout.HeaderComponent;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 
 /**
@@ -57,9 +57,6 @@ public class LeosUI extends UI {
     private EventBus eventBus;
 
     @Autowired
-    private InstanceContext instanceContext;
-
-    @Autowired
     private SecurityContext securityContext;
 
     @Autowired
@@ -74,6 +71,12 @@ public class LeosUI extends UI {
     @Autowired
     private LeosVaadinErrorHandler leosErrorHandler;
 
+    @Autowired
+    private HeaderComponent header;
+
+    @Value("${leos.pollingInterval}")
+    protected int pollInterval;
+
     @Override
     protected void init(VaadinRequest request) {
         LOG.trace("Leos UI initializing...");
@@ -83,6 +86,8 @@ public class LeosUI extends UI {
 
         // initialize error handler
         initErrorHandler();
+
+        setPollInterval();
 
         LOG.trace("Leos UI is initialized!");
     }
@@ -105,8 +110,6 @@ public class LeosUI extends UI {
         final Banner banner = new Banner(messageHelper);
         leosLayout.addComponent(banner);
 
-        // classic header/body(viewDisplay)/footer layout
-        final Header header =  new Header(langHelper, messageHelper, eventBus, securityContext, instanceContext);
         leosLayout.addComponent(header);
 
         leosLayout.addComponent(viewDisplay);
@@ -122,5 +125,10 @@ public class LeosUI extends UI {
     private void initErrorHandler() {
         // Override the DefaultErrorHandler
         setErrorHandler(leosErrorHandler);
+    }
+
+    private void setPollInterval() {
+        LOG.trace("Setting Leos UI poll interval: {} millis", pollInterval);
+        setPollInterval(pollInterval);
     }
 }

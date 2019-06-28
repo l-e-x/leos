@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -14,12 +14,12 @@
 package eu.europa.ec.leos.annotate.services;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.entity.Document;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationDocument;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationDocumentLink;
 import eu.europa.ec.leos.annotate.repository.DocumentRepository;
-import eu.europa.ec.leos.annotate.services.DocumentService;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateDocumentException;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteDocumentException;
 import org.junit.After;
@@ -38,8 +38,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings({"PMD.TooManyMethods", "PMD.EmptyCatchBlock"})
 public class DocumentServiceTest {
 
     // -------------------------------------
@@ -51,17 +52,20 @@ public class DocumentServiceTest {
     @Autowired
     private DocumentRepository documentRepos;
 
+    private final static String UNEXP_EXC = "Received unexpected exception";
+    private final static String MISSING_EXC = "Expected exception for creating invalid document not received";
+    
     // -------------------------------------
     // Cleanup of database content
     // -------------------------------------
     @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
+    public void cleanDatabaseBeforeTests() {
 
         TestDbHelper.cleanupRepositories(this);
     }
 
     @After
-    public void cleanDatabaseAfterTests() throws Exception {
+    public void cleanDatabaseAfterTests() {
 
         TestDbHelper.cleanupRepositories(this);
     }
@@ -74,9 +78,11 @@ public class DocumentServiceTest {
      * Test that finding an invalid document does not produce a meaningful value 
      */
     @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
     public void testFindNullDocument() {
 
-        Assert.assertNull(documentService.findDocumentByUri(null));
+        final URI uri = null;
+        Assert.assertNull(documentService.findDocumentByUri(uri));
     }
 
     /**
@@ -85,10 +91,10 @@ public class DocumentServiceTest {
     @Test
     public void testFindExistingDocument() throws URISyntaxException {
 
-        String url = "http://www.doc.eu";
-        URI uri = new URI(url);
+        final String url = "http://www.doc.eu";
+        final URI uri = new URI(url);
 
-        Document doc = new Document();
+        final Document doc = new Document();
         doc.setUri(url);
         documentRepos.save(doc);
 
@@ -101,10 +107,10 @@ public class DocumentServiceTest {
     @Test
     public void testDontFindNonExistingDocument() throws URISyntaxException {
 
-        String url = "http://www.doc.eu";
-        URI anotherUri = new URI("www.this.is.another_uri.com");
+        final String url = "http://www.doc2.eu";
+        final URI anotherUri = new URI("www.this.is.another_uri.com");
 
-        Document doc = new Document();
+        final Document doc = new Document();
         doc.setUri(url);
         documentRepos.save(doc);
 
@@ -117,10 +123,10 @@ public class DocumentServiceTest {
     @Test
     public void testCreateDocumentByUri() throws URISyntaxException, CannotCreateDocumentException {
 
-        String url = "http://www.doc.eu";
-        URI uri = new URI(url);
+        final String url = "http://www.doc3.eu";
+        final URI uri = new URI(url);
 
-        Document doc = documentService.createNewDocument(uri);
+        final Document doc = documentService.createNewDocument(uri);
         Assert.assertNotNull(doc);
         Assert.assertEquals(uri.toString(), doc.getUri());
 
@@ -131,18 +137,18 @@ public class DocumentServiceTest {
      * Test creating a document by a given invalid URI fails 
      */
     @Test
-    @SuppressFBWarnings(value = "NP_LOAD_OF_KNOWN_NULL_VALUE", justification = "Intended; had to be done this way to call the correct function requiring a parameter of given type")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
     public void testCreateDocumentByInvalidUri() throws URISyntaxException {
 
-        URI uri = null;
+        final URI uri = null;
 
         try {
             documentService.createNewDocument(uri);
-            Assert.fail("Expected exception for creating invalid document not received");
+            Assert.fail(MISSING_EXC);
         } catch (CannotCreateDocumentException ccde) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
 
         Assert.assertEquals(0, documentRepos.count());
@@ -154,10 +160,10 @@ public class DocumentServiceTest {
     @Test
     public void testDontCreateDocumentsForSameUri() throws URISyntaxException, CannotCreateDocumentException {
 
-        String url = "http://www.doc.eu";
-        URI uri = new URI(url);
+        final String url = "http://www.doc4.eu";
+        final URI uri = new URI(url);
 
-        Document firstDoc = documentService.createNewDocument(uri);
+        final Document firstDoc = documentService.createNewDocument(uri);
         Assert.assertNotNull(firstDoc);
 
         try {
@@ -167,7 +173,7 @@ public class DocumentServiceTest {
         } catch (CannotCreateDocumentException ccde) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
 
         // make sure document is contained only once
@@ -178,18 +184,18 @@ public class DocumentServiceTest {
      * Test document is not created by a null JSON-serialized object 
      */
     @Test
-    @SuppressFBWarnings(value = "NP_LOAD_OF_KNOWN_NULL_VALUE", justification = "Intended; had to be done this way to call the correct function requiring a parameter of given type")
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
     public void testCreateDocumentByNullJson() {
 
-        JsonAnnotationDocument jsDoc = null;
+        final JsonAnnotationDocument jsDoc = null;
 
         try {
             documentService.createNewDocument(jsDoc);
-            Assert.fail("Expected exception for creating invalid document not received");
+            Assert.fail(MISSING_EXC);
         } catch (CannotCreateDocumentException ccde) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
 
         Assert.assertEquals(0, documentRepos.count());
@@ -201,31 +207,31 @@ public class DocumentServiceTest {
     @Test
     public void testCreateDocumentByJsonWithoutUri() {
 
-        JsonAnnotationDocument jsDoc = new JsonAnnotationDocument();
+        final JsonAnnotationDocument jsDoc = new JsonAnnotationDocument();
         jsDoc.setLink(null);
 
         try {
             documentService.createNewDocument(jsDoc);
-            Assert.fail("Expected exception for creating invalid document not received");
+            Assert.fail(MISSING_EXC);
         } catch (CannotCreateDocumentException ccde) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
 
         Assert.assertEquals(0, documentRepos.count());
 
         // same again, but now set an empty link list
-        List<JsonAnnotationDocumentLink> links = new ArrayList<JsonAnnotationDocumentLink>();
+        final List<JsonAnnotationDocumentLink> links = new ArrayList<JsonAnnotationDocumentLink>();
         jsDoc.setLink(links);
 
         try {
             documentService.createNewDocument(jsDoc);
-            Assert.fail("Expected exception for creating invalid document not received");
+            Assert.fail(MISSING_EXC);
         } catch (CannotCreateDocumentException ccde) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
 
         Assert.assertEquals(0, documentRepos.count());
@@ -238,21 +244,21 @@ public class DocumentServiceTest {
     @Test
     public void testCreateDocumentByJson() throws URISyntaxException, CannotCreateDocumentException {
 
-        URI uri = new URI("http://www.link.eu");
-        URI anotherUri = new URI("http://this.is.another.uri");
+        final URI uri = new URI("http://www.link.eu");
+        final URI anotherUri = new URI("http://this.is.another.uri");
 
-        JsonAnnotationDocument jsDoc = new JsonAnnotationDocument();
+        final JsonAnnotationDocument jsDoc = new JsonAnnotationDocument();
         jsDoc.setLink(null);
 
         // same again, but now set an empty link list
-        List<JsonAnnotationDocumentLink> links = new ArrayList<JsonAnnotationDocumentLink>();
+        final List<JsonAnnotationDocumentLink> links = new ArrayList<JsonAnnotationDocumentLink>();
 
         // insert two (!) links into the list - only first should be taken into account
-        JsonAnnotationDocumentLink firstLink = new JsonAnnotationDocumentLink();
+        final JsonAnnotationDocumentLink firstLink = new JsonAnnotationDocumentLink();
         firstLink.setHref(uri);
         links.add(firstLink);
 
-        JsonAnnotationDocumentLink secondLink = new JsonAnnotationDocumentLink();
+        final JsonAnnotationDocumentLink secondLink = new JsonAnnotationDocumentLink();
         secondLink.setHref(anotherUri);
         links.add(secondLink);
         jsDoc.setLink(links);
@@ -272,10 +278,10 @@ public class DocumentServiceTest {
     @Test
     public void testDeleteDocument() throws URISyntaxException, CannotCreateDocumentException, CannotDeleteDocumentException {
 
-        String url = "http://www.doc.eu";
-        URI uri = new URI(url);
+        final String url = "http://www.thedoc.eu";
+        final URI uri = new URI(url);
 
-        Document firstDoc = documentService.createNewDocument(uri);
+        final Document firstDoc = documentService.createNewDocument(uri);
         Assert.assertNotNull(firstDoc);
 
         documentService.deleteDocument(firstDoc);
@@ -287,24 +293,17 @@ public class DocumentServiceTest {
         try {
             documentService.deleteDocument(firstDoc);
         } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
+            Assert.fail(UNEXP_EXC);
         }
     }
 
     /**
      * Test deletion of a document being null
      */
-    @Test
-    public void testDeleteNullDocument() {
+    @Test(expected = CannotDeleteDocumentException.class)
+    public void testDeleteNullDocument() throws CannotDeleteDocumentException {
 
         // trying to delete an invalid document should throw exception
-        try {
-            documentService.deleteDocument(null);
-            Assert.fail("Expected exception for deleting invalid document not received");
-        } catch (CannotDeleteDocumentException ccde) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
-        }
+        documentService.deleteDocument(null);
     }
 }

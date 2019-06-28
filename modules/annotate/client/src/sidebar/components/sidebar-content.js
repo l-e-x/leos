@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -47,7 +47,7 @@ function groupIDFromSelection(selection, results) {
 
 // @ngInject
 function SidebarContentController(
-  $scope, analytics, store, annotationMapper, api, drafts, features, frameSync,
+  $scope, analytics, bridge, store, annotationMapper, api, drafts, features, frameSync,
   groups, rootThread, settings, streamer, streamFilter
 ) {
   var self = this;
@@ -158,7 +158,19 @@ function SidebarContentController(
         }
       });
     });
-    searchClient.get({uri: uris, group: group});
+    // LEOS Change
+    requestSearchMetadata().then( function([metadatasets]) {
+      if (metadatasets != null) {
+        var leosMetadata = JSON.parse(metadatasets);
+        searchClient.get({uri: uris, group: group, metadatasets: JSON.stringify(leosMetadata)});
+      }
+      else {
+        searchClient.get({uri: uris, group: group});
+      }
+    }).catch( function(error) {
+      searchClient.get({uri: uris, group: group});
+    });
+    // ---------------
   }
 
   function isLoading() {
@@ -346,6 +358,29 @@ function SidebarContentController(
     store.clearSelectedAnnotations();
     store.selectTab(selectedTab);
   };
+
+  // LEOS Change
+
+  $scope.$on('reloadAnnotations', function () {
+    store.clearSelectedAnnotations();
+    loadAnnotations();
+  });
+
+  function requestSearchMetadata() {
+    return new Promise( function(resolve, reject) {
+      var promiseTimeout = setTimeout(() => reject('timeout'), 500);
+      bridge.call('requestSearchMetadata', function (error, result) {
+        clearTimeout(promiseTimeout);
+        if (error) {
+          return reject(error);
+        } else {
+          return resolve(result);
+        }
+      })
+    });
+  }
+
+  // -----------
 }
 
 module.exports = {

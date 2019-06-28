@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -31,13 +31,13 @@ import java.time.ZoneId;
 public class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
 
     @Override
-    public LocalDateTime deserialize(JsonParser jp, 
-            DeserializationContext dc) throws IOException, JsonProcessingException {
-        ObjectCodec codec = jp.getCodec();
-        TextNode node = (TextNode)codec.readTree(jp);
-        String dateString = node.textValue();
-        Instant instant = Instant.parse(dateString);
-        LocalDateTime dateTime = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-        return dateTime;
-    } 
+    public LocalDateTime deserialize(final JsonParser jsonparser,
+            final DeserializationContext desercont) throws IOException, JsonProcessingException {
+
+        final ObjectCodec codec = jsonparser.getCodec();
+        final TextNode node = (TextNode) codec.readTree(jsonparser);
+        final String dateString = node.textValue();
+        final Instant instant = Instant.parse(dateString);
+        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+    }
 }

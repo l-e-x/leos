@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.model.web.user;
 
+import eu.europa.ec.leos.annotate.Generated;
+
+import java.util.Objects;
+
 /**
  * Class representing user information, e.g. display name (or more information in the future) 
  */
@@ -20,11 +24,13 @@ public class JsonUserInfo {
 
     // simple property representing the display name for a user
     private String display_name;
+    private String entity_name;
 
     // -----------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------
     public JsonUserInfo() {
+        // default constructor required by JSON deserialisation
     }
 
     // -----------------------------------------------------------
@@ -34,7 +40,39 @@ public class JsonUserInfo {
         return display_name;
     }
 
-    public void setDisplay_name(String display_name) {
+    public void setDisplay_name(final String display_name) {
         this.display_name = display_name;
+    }
+
+    public String getEntity_name() {
+        return entity_name;
+    }
+
+    public void setEntity_name(final String entity_name) {
+        this.entity_name = entity_name;
+    }
+
+    // -------------------------------------
+    // equals and hashCode
+    // -------------------------------------
+
+    @Generated
+    @Override
+    public int hashCode() {
+        return Objects.hash(display_name, entity_name);
+    }
+
+    @Generated
+    @Override
+    public boolean equals(final Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        final JsonUserInfo other = (JsonUserInfo) obj;
+        return Objects.equals(this.display_name, other.display_name) &&
+                Objects.equals(this.entity_name, other.entity_name);
     }
 }

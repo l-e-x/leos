@@ -1,0 +1,125 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
+
+$LIGHT_GREY: #A7A7A7;
+
+@mixin borderStyle($width, $pattern) {
+    border: $width $pattern !important;
+}
+
+%softRemoved {
+    text-decoration: line-through;
+    color: $LIGHT_GREY;
+}
+
+%softAdded {
+    font-weight: bolder;
+}
+
+%softMovedTo {
+    @extend %softRemoved;
+}
+
+%softMovedFrom {
+    font-weight: normal;
+}
+
+%soft {
+    span.leos-content-soft-removed {
+        @extend %softRemoved;
+    }
+
+    span.leos-content-soft-new {
+        @extend %softAdded;
+    }
+
+    [leos\:softaction="del"] {
+        & {
+            *:not([leos\:origin="cn"]), num[leos\:origin="cn"] {
+               @extend %softRemoved; 
+            } 
+        }    
+    }    
+
+    [leos\:softaction="add"] {
+        & {
+            *:not([leos\:origin="ec"]), num[leos\:origin="ec"] {
+                @extend %softAdded;
+            }
+        }
+        
+    }
+
+    [leos\:softaction="move_to"] {
+        & {
+            *:not([leos\:origin="cn"]), num[leos\:origin="ec"] {
+                @extend %softMovedTo; 
+            }
+        
+            num[leos\:origin="cn"], num[leos\:origin="ec"] {
+                padding-bottom: 0;
+            }
+        }    
+    }
+
+    [leos\:softaction="move_from"] {
+        & {
+            *:not([leos\:origin="cn"]):not(heading) {
+                @extend %softMovedFrom; 
+            }
+
+            num[leos\:origin="cn"], num[leos\:origin="ec"] {
+                padding-bottom: 0;
+            }
+
+            num[leos\:origin="cn"] {
+                @extend %softAdded;
+            }
+        }   
+    }
+
+    //--------------------------------Soft IMG-----------------------------------/
+    .leos-content-soft-new img, [leos\:softaction="add"] img,
+    [leos\:softaction="move_from"] img {
+        @include borderStyle(3px, solid);
+    }
+
+    .leos-content-soft-removed img, [leos\:softaction="del"] img,
+    [leos\:softaction="move_to"] img {
+        @include borderStyle(1px, dotted);
+    }
+    //--------------------------------Soft TABLE-----------------------------------/
+    table, tr, td, th {
+        &.leos-content-soft-new, &[leos\:softaction="add"],
+        &[leos\:softaction="move_from"] {
+            @include borderStyle(3px, solid);
+        }
+    
+        &.leos-content-soft-removed, &[leos\:softaction="del"], 
+        &[leos\:softaction="move_to"] {
+            @include borderStyle(1px, dotted);
+        }
+    }
+
+    .leos-content-soft-removed table, [leos\:softaction="del"] table,
+    [leos\:softaction="move_to"] table {
+        @include borderStyle(1px, dotted);
+    }
+
+    .leos-content-soft-new table, [leos\:softaction="add"] table,
+     [leos\:softaction="move_from"] table {
+        @include borderStyle(3px, solid);
+    }
+}

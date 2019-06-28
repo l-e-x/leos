@@ -8,7 +8,7 @@
    document title and 3 buttons (depending of your profile) -
          Export - Used to export document (disabled)
          Download - Used to download the LEG format file
-         Delete - Used to export document (only available to document author)
+         Delete - Used to export document (only available to document author)         
 
 3. Lower section of the viewer is divided into 2 areas.
 

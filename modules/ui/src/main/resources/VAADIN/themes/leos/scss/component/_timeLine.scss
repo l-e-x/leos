@@ -6,9 +6,21 @@ $DIMENSION: 23px;
         border: 1px solid $GREY;
     }
 
-    .leos-version-info-label {
+    .leos-version-info-column {
         padding-right: 26px;
-    }    
+    }
+
+    .leos-version-info-label {
+        max-width: 142px;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+
+    .leos-version-restore-button {
+        font-size: 15px;
+        padding: 0px 0px 0px 10px;
+        margin-top: -2px;
+    }
 
     .leos-intermediate-version-compare {
         margin-right: 20px;        

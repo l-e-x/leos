@@ -1,52 +1,69 @@
-//
-// Copyright 2018 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
 
 $LIST_SPACING: 40px;
 
-//--------------------------------XML list------------------------------------/
-%xmlList {
-    list {
+%padList {
+    display: block;
+    position: relative;
 
-        point,
-        indent {
+    & > num {
+        @extend %paddedText;
+        display: block;
+        min-width: $LIST_SPACING;
+        float: left;
+    }
+
+    & > content {
+        & > table {
+            @extend %tableMargin;
+        }
+        & > p {
+            @extend %paddedText;
+            display: block;
+        }
+        & > aknP {
+            @extend %paddedText;
             display: block;
             padding-left: $LIST_SPACING;
-            position: relative;
-
-            & > num {
-                @extend %paddedText;
-                display: block;
-                min-width: $LIST_SPACING;
-                margin-left: -$LIST_SPACING;
-                float: left;
-            }
-
-            & > content {
-                & > table {
-                    @extend %tableMargin;         
-                }
-                & > aknP, & > p {
-                    @extend %paddedText;
-                    display: block;
-                }
-            }
         }
     }
 }
 
+//--------------------------------XML list------------------------------------/
+%xmlList {
+    list {
+        point,
+        indent {
+            padding-left: $LIST_SPACING;
+            @extend %padList;
+        }
+    }
+}
+
+point {
+    @extend %padList;
+}
+
+
 //--------------------------------Editor list---------------------------------/
 %editorList {
+    ol[data-akn-name=aknPointMandateOrderedList],
+    ol[data-akn-name=aknAlineaMandate],
+    ol[data-akn-name=aknNumberedParagraphMandate],
+    ol[data-akn-name=aknSubParagraphMandate],
     li > ol,
     li > ul {
         list-style-type: none;
@@ -55,22 +72,51 @@ $LIST_SPACING: 40px;
 
         & > li {
             @extend %paddedText;
-            padding-left: $LIST_SPACING;
+        }
+
+        & > li[data-akn-num] {
             position: relative;
 
             &:before {
                 color: $GREY_COLOR;
                 content: attr(data-akn-num);
                 min-width: $LIST_SPACING;
-                margin-left: -$LIST_SPACING;
                 float: left;
             }
         }
     }
+    li[data-akn-name=aknNumberedParagraph] > ol[data-akn-name=aknOrderedList],
+    ol[data-akn-name=aknPointMandateOrderedList],
+    ol[data-akn-name=aknPointMandateOrderedList] > li,
+    ol[data-akn-name=aknAlineaMandate],
+    li > ol > li[data-akn-num] {
+        padding-left: $LIST_SPACING;
+    }
+
+    ol[data-akn-name=aknPointMandateOrderedList],
+    li > ol{
+        & > li[data-akn-num] {
+           &:before {
+               margin-left: -$LIST_SPACING;
+           }
+       }
+    }
+
 }
+
+// pad all subparagraphs of numbered paragraphs, except the first one which is already padded by the number tag
+num ~ div > ol[data-akn-name=aknSubParagraphMandate] > li::before {
+    content: '';
+    margin-right: 40px;
+}
+num + div > ol[data-akn-name=aknSubParagraphMandate] > li::before {
+    display: none;
+}
+
 
 //--------------------------------Showblock list------------------------------/
 %showblockList {
+    ol[data-akn-name=aknPointMandateOrderedList],
     li > ol {
         & li {
             @include blockOutline("POINT", $LIST_SPACING);

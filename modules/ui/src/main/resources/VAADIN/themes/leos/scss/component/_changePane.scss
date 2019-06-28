@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,7 +17,8 @@ $CHANGE-PANE-TEXT-COLOR: #4D4848;
 
 @mixin changePane($type) {
 
-    .leos-marked-content {
+    .leos-marked-content,
+    .leos-double-comparison-content {
         overflow: auto;
         position: relative;
         akomaNtoso #{$type} {

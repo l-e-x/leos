@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,20 +13,23 @@
  */
 package eu.europa.ec.leos.security;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import eu.europa.ec.leos.domain.common.LeosAuthority;
-import eu.europa.ec.leos.domain.document.LeosDocument.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.model.user.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+
 @Component class XmlDocumentVoter implements AccessDecisionVoter<XmlDocument> {
+
+    @Autowired
+    LeosPermissionAuthorityMap authorityMap;
 
     @Override
     public boolean supports(ConfigAttribute attribute) {
@@ -40,14 +43,14 @@ import org.springframework.stereotype.Component;
 
     @Override
     public int vote(Authentication authentication, XmlDocument xmlDocument, Collection<ConfigAttribute> attributes) {
-        LeosAuthority authority = retrieveAuthority(authentication, xmlDocument);
+        String authority = retrieveAuthority(authentication, xmlDocument);
         LeosPermission permission = retrievePermission(attributes);
 
         if (authority == null || permission == null) {
             return ACCESS_DENIED;
         }
 
-        Set<LeosPermission> authorityPermissions = LeosPermissionAuthorityMap.getPermissions(authority);
+        Set<LeosPermission> authorityPermissions = authorityMap.getPermissions(authority);
         if (authorityPermissions != null && authorityPermissions.contains(permission)) {
             return ACCESS_GRANTED;
         } else {
@@ -55,9 +58,9 @@ import org.springframework.stereotype.Component;
         }
     }
 
-    private LeosAuthority retrieveAuthority(Authentication authentication, XmlDocument xmlDocument) {
+    private String retrieveAuthority(Authentication authentication, XmlDocument xmlDocument) {
         String userLogin = ((User) authentication.getPrincipal()).getLogin();
-        Map<String, LeosAuthority> collaborators = xmlDocument.getCollaborators();
+        Map<String, String> collaborators = xmlDocument.getCollaborators();
         return collaborators.get(userLogin);
     }
 

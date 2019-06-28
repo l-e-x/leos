@@ -1,5 +1,5 @@
-﻿@REM
-@REM Copyright 2018 European Commission
+@REM
+@REM Copyright 2019 European Commission
 @REM
 @REM Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
 @REM You may not use this work except in compliance with the Licence.
@@ -14,8 +14,8 @@
 
 call mvn clean install
 
-if not exist target\server-local.war goto EndWithError
-copy target\server-local.war "C:\Tomcat 8.5\webapps\annotate.war"
+if not exist target\annotate.war goto EndWithError
+copy target\annotate.war "C:\Tomcat 8.5\webapps\annotate.war"
 goto TotalEnd
 
 

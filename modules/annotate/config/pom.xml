@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    Copyright 2019 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>eu.europa.ec.digit.leos.pilot.annotate</groupId>
+    <artifactId>anot-config</artifactId>
+    <packaging>pom</packaging>
+
+    <parent>
+        <groupId>eu.europa.ec.digit.leos.pilot</groupId>
+        <artifactId>annotate</artifactId>
+        <version>2.1.0</version>
+    </parent>
+
+    <name>anot-config</name>
+    <description>Annotate Config</description>
+
+
+    <properties>
+        <!-- Project -->
+        <project.output.directory>target/generated-config</project.output.directory>
+    </properties>
+
+    <build>
+        <filters>
+            <filter>src/main/filters/common.properties</filter>
+            <filter>src/main/filters/${build.env}.properties</filter>
+        </filters>
+        <plugins>
+            <!-- CLEAN -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-resources</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.output.directory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <!-- Filtered resource files. -->
+                                    <filtering>true</filtering>
+                                    <directory>src/main/resources</directory>
+                                    <includes>
+                                        <include>**/*.properties</include>
+                                        <include>**/*.xml</include>
+                                    </includes>
+                                </resource>
+                                <resource>
+                                    <!-- Non-filtered resource files. -->
+                                    <filtering>false</filtering>
+                                    <directory>src/main/resources</directory>
+                                    <excludes>
+                                        <exclude>**/*.properties</exclude>
+                                        <exclude>**/*.xml</exclude>
+                                    </excludes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        <extensions>
+            <!-- Enabling the use of FTP for deployment -->
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ftp</artifactId>
+                <version>${wagon-ftp-extension.version}</version>
+            </extension>
+        </extensions>
+    </build>
+</project>

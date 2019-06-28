@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -44,6 +44,23 @@ function Streamer($rootScope, annotationMapper, store, auth,
   // Client configuration messages, to be sent each time a new connection is
   // established.
   var configMessages = {};
+  // LEOS: Fix: start
+  // weblogic: bringing access-token message as first
+  var configOrder = function (a, b){
+    return a === 'do-auth' ? -1 : 1;
+  };
+
+  //Fix fot timeout in weblogic
+  var pingService; //LEOS:keeping WLS socket alive needs a message every 30 sec
+  function startPingService() {
+    var pingCall = function(clientId){ socket.send({"id": clientId, "type": "ping"});};
+    pingService = setInterval(pingCall, 25000, clientId);//Weblogic1213 close the socket in 30 sec.
+  }
+
+  function stopPingService() {
+    clearInterval(pingService);
+  }
+  // LEOS: Fix: end
 
   // The streamer maintains a set of pending updates and deletions which have
   // been received via the WebSocket but not yet applied to the contents of the
@@ -142,14 +159,17 @@ function Streamer($rootScope, annotationMapper, store, auth,
         if (message.userid !== userid) {
           console.warn('WebSocket user ID "%s" does not match logged-in ID "%s"', message.userid, userid);
         }
-      } else {
+      } else if (message.type === 'pong') {
+        //Do Nothing
+      }
+      else {
         console.warn('received unsupported notification', message.type);
       }
     });
   }
 
   function sendClientConfig () {
-    Object.keys(configMessages).forEach(function (key) {
+    Object.keys(configMessages).sort(configOrder).forEach(function (key) {
       if (configMessages[key]) {
         socket.send(configMessages[key]);
       }
@@ -193,8 +213,19 @@ function Streamer($rootScope, annotationMapper, store, auth,
       socket = new Socket(url);
 
       socket.on('open', sendClientConfig);
+      socket.on('open', startPingService);
       socket.on('error', handleSocketOnError);
+      socket.on('error', stopPingService);
+      socket.on('close', stopPingService);
       socket.on('message', handleSocketOnMessage);
+
+      //LEOS Change start
+      // Configure the token in case it is not picked from uri for weblogic 12.1.3
+      setConfig('do-auth', {
+        type: 'access-token',
+        value: token
+      });
+      //LEOS Change end
 
       // Configure the client ID
       setConfig('client-id', {
@@ -242,6 +273,7 @@ function Streamer($rootScope, annotationMapper, store, auth,
   function reconnect() {
     if (socket) {
       socket.close();
+      stopPingService();
     }
 
     return _connect();

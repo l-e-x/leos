@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -63,6 +63,13 @@ public class NumFormatterTest extends LeosTest {
         TreeNode testNode = new TreeNode("paragraph", 0, 1, "id", "", 100, null);
         assertEquals("first", NumFormatter.formatUnnumbered(testNode, new Locale("en")));
     }
+    
+    @Test
+    public void formatUnnumbered_first_fr() {
+        //setup
+        TreeNode testNode = new TreeNode("paragraph", 0, 1, "id", "", 100, null);
+        assertEquals("un", NumFormatter.formatUnnumbered(testNode, new Locale("fr")));
+    }
 
     @Test
     public void formatUnnumbered_eighth_en() {
@@ -85,5 +92,19 @@ public class NumFormatterTest extends LeosTest {
         TreeNode testNode = new TreeNode("paragraph", 0, 3, "id", "", 100, null);
         //Need to define spellout/ordinal rules for french. as of now using simple representation
         assertEquals("third", NumFormatter.formatUnnumbered(testNode, new Locale("en")));
+    }
+    
+    @Test
+    public void formatPlural_multiple_paragraph() {
+        //setup
+        TreeNode testNode = new TreeNode("paragraph", 0, 1, "id", "", 100, null);
+        assertEquals("paragraphs", NumFormatter.formatPlural(testNode, 0, new Locale("en")));
+    }
+    
+    @Test
+    public void formatPlural_single_paragraph() {
+        //setup
+        TreeNode testNode = new TreeNode("paragraph", 0, 1, "id", "", 100, null);
+        assertEquals("paragraph", NumFormatter.formatPlural(testNode, 1, new Locale("en")));
     }
 }

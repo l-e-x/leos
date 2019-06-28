@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -15,9 +15,11 @@ package eu.europa.ec.leos.annotate.services;
 
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.repository.GroupRepository;
 import eu.europa.ec.leos.annotate.repository.UserRepository;
+import eu.europa.ec.leos.annotate.services.exceptions.DefaultGroupNotFoundException;
 import eu.europa.ec.leos.annotate.services.exceptions.GroupAlreadyExistingException;
 import eu.europa.ec.leos.annotate.services.exceptions.UserAlreadyExistingException;
 import eu.europa.ec.leos.annotate.services.impl.UserServiceImpl;
@@ -37,7 +39,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
 @ActiveProfiles("test")
 public class UserServiceWithMockedUserRepositoryTest {
@@ -45,20 +47,6 @@ public class UserServiceWithMockedUserRepositoryTest {
     /**
      * Test cases on the UserService; executed using mocked UserRepository to simulate desired internal behavior 
      */
-
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        TestDbHelper.cleanupRepositories(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -78,6 +66,20 @@ public class UserServiceWithMockedUserRepositoryTest {
     @Mock
     private GroupService groupService;
 
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -85,25 +87,18 @@ public class UserServiceWithMockedUserRepositoryTest {
     /**
      * test that an expected exception is given when persisting a User internally throws an unexpected exception
      */
-    @Test
-    public void testSavingUserThrowsExceptionInternally() {
+    @Test(expected = UserAlreadyExistingException.class)
+    public void testSavingUserThrowsExceptionInternally() throws UserAlreadyExistingException, DefaultGroupNotFoundException {
 
         final String login = "evil";
 
-        User evilUser = new User(login);
+        final User evilUser = new User(login);
         Mockito.when(userRepos.save(evilUser)).thenThrow(new RuntimeException());
 
         // save default group
         TestDbHelper.insertDefaultGroup(groupRepos);
 
-        try {
-            userService.createUser(login);
-            Assert.fail("Expected exception from UserService not received");
-        } catch (UserAlreadyExistingException ccge) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception from UserService when user repos throws exception");
-        }
+        userService.createUser(login);
     }
 
     /**
@@ -113,16 +108,17 @@ public class UserServiceWithMockedUserRepositoryTest {
     @Test
     public void testAddingUserToEntityGroupThrowsExceptionInternally() throws GroupAlreadyExistingException {
 
-        final String entity = "entity", login = "evil";
+        final String entity = "entity";
+        final String login = "evil";
 
-        User evilUser = new User(login);
-        UserDetails details = new UserDetails(login, Long.valueOf(8), "first", "last", entity, "", null);
+        final User evilUser = new User(login);
+        final UserDetails details = new UserDetails(login, Long.valueOf(8), "first", "last", entity, "", null);
 
         Mockito.when(groupService.findGroupByName(entity)).thenReturn(null);
         Mockito.when(groupService.createGroup(entity, false)).thenThrow(new RuntimeException());
 
         // verify that adding a user to the entity group simply returns false,
         // even though exceptions are thrown internally
-        Assert.assertFalse(userService.addUserToEntityGroup(evilUser, details));
+        Assert.assertFalse(userService.addUserToEntityGroup(new UserInformation(evilUser, details)));
     }
 }

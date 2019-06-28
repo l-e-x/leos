@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -22,8 +22,8 @@ import com.vaadin.v7.ui.HorizontalLayout;
 import com.vaadin.ui.TextField;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.MetadataVO;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 
 import java.util.Objects;
 
@@ -32,7 +32,6 @@ class MetadataInputForm extends FormLayout {
     private static final long serialVersionUID = 2636423615350597957L;
 
     private static final String EMPTY_TEMPLATE = "&nbsp;";
-
     private final DocumentVO document;
     private MessageHelper messageHelper;
     private LanguageHelper languageHelper;
@@ -73,7 +72,8 @@ class MetadataInputForm extends FormLayout {
     private Component buildPurpose() {
         purposeField = new  TextField(messageHelper.getMessage("wizard.document.create.metadata.purpose.caption"));
         purposeField.setWidth(100, Unit.PERCENTAGE);
-        formBinder.forField(purposeField).asRequired(messageHelper.getMessage("wizard.document.create.metadata.purpose.error")).bind( MetadataVO::getDocPurpose, MetadataVO::setDocPurpose);
+        formBinder.forField(purposeField).asRequired(messageHelper.getMessage("wizard.document.create.metadata.purpose.error"))
+                .bind( MetadataVO::getDocPurpose, MetadataVO::setDocPurpose);
         return purposeField;
     }
 

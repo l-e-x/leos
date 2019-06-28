@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,13 +13,15 @@
  */
 package eu.europa.ec.leos.annotate;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteAnnotationException;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationServiceImpl;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,9 +29,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -37,7 +38,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class AnnotationDeleteWithMockTest {
 
@@ -45,26 +46,7 @@ public class AnnotationDeleteWithMockTest {
      * test that expected exceptions are thrown when internal errors occur
      */
 
-    @SuppressWarnings("unused")
-    private static Logger LOG = LoggerFactory.getLogger(AnnotationSaveTest.class);
     private Group defaultGroup;
-
-    // -------------------------------------
-    // Cleanup of database content before running new test
-    // -------------------------------------
-    @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        MockitoAnnotations.initMocks(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -85,78 +67,90 @@ public class AnnotationDeleteWithMockTest {
     private UserGroupRepository userGroupRepos;
 
     @Mock
-    private AnnotationRepository annotRepos;
+    @Qualifier("annotationTestRepos")
+    private AnnotationTestRepository annotRepos;
 
     @Autowired
+    @Qualifier("annotationRepos")
     private AnnotationRepository realAnnotRepos;
 
     @Autowired
     private MetadataRepository metadataRepos;
 
     // -------------------------------------
+    // Cleanup of database content before running new test
+    // -------------------------------------
+    @Before
+    public void cleanDatabaseBeforeTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+
+        MockitoAnnotations.initMocks(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    // -------------------------------------
     // Tests
     // -------------------------------------
 
     // test deletion of an annotation when annotation repository has internal failures - annotation deletion should throw expected exception
-    @Test
-    public void testDeleteAnnotation_ReposFailure() {
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test(expected = CannotDeleteAnnotationException.class)
+    public void testDeleteAnnotation_ReposFailure() throws Exception {
 
         final String login = "demo";
 
         // add user to default group
-        User theUser = userRepos.save(new User(login));
+        final User theUser = userRepos.save(new User(login));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
 
+        final UserInformation userInfo = new UserInformation(login, Authorities.EdiT);
+        
         // save simple annotation
-        Document d = new Document();
-        d.setTitle("title");
-        d.setUri("http://www.a.com");
-        documentRepos.save(d);
+        final Document doc = new Document();
+        doc.setTitle("title");
+        doc.setUri("http://www.a.com");
+        documentRepos.save(doc);
 
-        User u = new User();
-        u.setLogin("login");
-        userRepos.save(u);
+        final User user = new User();
+        user.setLogin("login");
+        userRepos.save(user);
 
-        Group g = new Group();
-        g.setName("groupname");
-        g.setDisplayName("display");
-        g.setDescription("description");
-        groupRepos.save(g);
+        final Group group = new Group();
+        group.setName("groupname");
+        group.setDisplayName("display");
+        group.setDescription("description");
+        groupRepos.save(group);
 
-        Tag t = new Tag();
-        t.setName("thetag");
+        final Tag tag = new Tag();
+        tag.setName("thetag");
 
-        Metadata m = new Metadata(d, g, "sys");
-        metadataRepos.save(m);
+        final Metadata meta = new Metadata(doc, group, "sys");
+        metadataRepos.save(meta);
 
-        Annotation a = new Annotation();
-        a.setCreated(LocalDateTime.now());
-        a.setUpdated(LocalDateTime.now());
-        a.setId("theid");
-        a.setUser(u);
-        a.setGroup(g);
-        a.setTargetSelectors("a");
-        a.setDocument(d);
-        a.setMetadata(m);
+        Annotation annot = new Annotation();
+        annot.setCreated(LocalDateTime.now());
+        annot.setUpdated(LocalDateTime.now());
+        annot.setId("theid");
+        annot.setUser(user);
+        annot.setTargetSelectors("a");
+        annot.setMetadata(meta);
 
-        t.setAnnotation(a);
-        a.getTags().add(t);
+        tag.setAnnotation(annot);
+        annot.getTags().add(tag);
 
-        a = realAnnotRepos.save(a);
+        annot = realAnnotRepos.save(annot);
 
-        Mockito.when(annotRepos.findById(a.getId())).thenReturn(a);
+        Mockito.when(annotRepos.findById(annot.getId())).thenReturn(annot);
         Mockito.doThrow(new RuntimeException()).when(annotRepos).delete(Mockito.any(Annotation.class));
 
         // try to delete the annotation - should not be successful
-        try {
-            annotService.deleteAnnotationById(a.getId(), login);
-            Assert.fail("Expected exception due to document service failure not received");
-        } catch (CannotDeleteAnnotationException ccae) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception");
-        }
-
+        annotService.deleteAnnotationById(annot.getId(), userInfo);
     }
 
 }

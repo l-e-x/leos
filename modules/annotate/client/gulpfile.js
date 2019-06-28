@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -113,6 +113,19 @@ var appBundles = [{
   entry: './src/boot/index',
   transforms: ['babel'],
 },{
+  // LEOS Change
+  // The entry point for both the Sent API
+  // application. 
+  name: 'boot.sentapi',
+  entry: './leos/sentapi/boot/index',
+  transforms: ['babel'],
+},{
+  // LEOS Change
+  // The sentapi application for displaying popup to change status.
+  name: 'sentapi',
+  transforms: ['babel', 'coffee'],
+  entry: './leos/sentapi/index',
+},{
   // The sidebar application for displaying and editing annotations.
   name: 'sidebar',
   transforms: ['babel', 'coffee'],
@@ -159,6 +172,9 @@ var styleFiles = [
   './src/styles/annotator/annotator.scss',
   './src/styles/annotator/pdfjs-overrides.scss',
   './src/styles/sidebar/sidebar.scss',
+
+  // SENTAPI
+  './leos/styles/sentapi/sentapi.scss',   // LEOS Change
 
   // Vendor
   './src/styles/vendor/angular-csp.css',
@@ -233,6 +249,10 @@ gulp.task('watch-templates', function () {
   gulp.watch(cfg.src.templates + '/*.html', function (file) {
     liveReloadServer.notifyChanged([file.path]);
   });
+  // LEOS Change
+  gulp.watch(cfg.src.sentapiTemplates + '/*.html', function (file) {
+    liveReloadServer.notifyChanged([file.path]);
+  });
 });
 
 var MANIFEST_SOURCE_FILES = cfg.dest.base +'/@(fonts|images|scripts|styles)/*.@(js|css|woff|jpg|png|svg)';
@@ -280,8 +300,6 @@ function packageServerHostname() {
   return process.env.PACKAGE_SERVER_HOSTNAME || 'localhost';
 }
 
-var isFirstBuild = true;
-
 /**
  * Generates the `build/boot.js` script which serves as the entry point for
  * the Hypothesis client.
@@ -291,29 +309,31 @@ var isFirstBuild = true;
 function generateBootScript(manifest) {
   var { version } = require('./package.json');
 
-  var defaultSidebarAppUrl = cfg.apiHost + '/app.html';
-  var defaultAssetRoot = cfg.assetHost;
-
   //if (process.env.NODE_ENV === 'production') {
   //  defaultAssetRoot = `https://cdn.hypothes.is/hypothesis/${version}/`;
   //} else {
   //  defaultAssetRoot = `http://${packageServerHostname()}:3001/hypothesis/${version}/`;
   //}
 
-  if (isFirstBuild) {
-    gulpUtil.log(`Sidebar app URL: ${defaultSidebarAppUrl}`);
-    gulpUtil.log(`Client asset root URL: ${defaultAssetRoot}`);
-    isFirstBuild = false;
-  }
-
   gulp.src(cfg.dest.scripts +'/boot.bundle.js')
     .pipe(replace('__MANIFEST__', JSON.stringify(manifest)))
-    .pipe(replace('__ASSET_ROOT__', defaultAssetRoot))
-    .pipe(replace('__SIDEBAR_APP_URL__', defaultSidebarAppUrl))
     // Strip sourcemap link. It will have been invalidated by the previous
     // replacements and the bundle is so small that it isn't really valuable.
     .pipe(replace(/^\/\/# sourceMappingURL=[^ ]+$/m,''))
     .pipe(rename('boot.js'))
+    .pipe(gulp.dest(cfg.dest.base +'/'));
+}
+
+// LEOS Change
+function generateBootSentAPIScript(manifest) {
+  var { version } = require('./package.json');
+
+  gulp.src(cfg.dest.scripts +'/boot.sentapi.bundle.js')
+    .pipe(replace('__MANIFEST__', JSON.stringify(manifest)))
+    // Strip sourcemap link. It will have been invalidated by the previous
+    // replacements and the bundle is so small that it isn't really valuable.
+    .pipe(replace(/^\/\/# sourceMappingURL=[^ ]+$/m,''))
+    .pipe(rename('bootSentAPI.js'))
     .pipe(gulp.dest(cfg.dest.base +'/'));
 }
 
@@ -333,6 +353,7 @@ function generateManifest() {
 
       // Expand template vars in boot script bundle
       generateBootScript(newManifest);
+      generateBootSentAPIScript(newManifest);  // LEOS Change
 
       this.push(file);
       callback();
@@ -361,7 +382,6 @@ gulp.task('serve-package', function () {
 });
 
 gulp.task('build', ['build-js',
-                    'test',
                     'derequire',
                     'build-css',
                     'build-fonts',

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,7 +18,6 @@ import java.util.Date;
 public class LeosBuildInfo {
     // immutable values that will be replaced at project build time
     public static final String BUILD_TIMESTAMP_STR = "${leos.build.timestamp}";
-    public static final String BUILD_ENVIRONMENT = "${leos.build.env}";
     public static final String BUILD_VERSION = "${leos.build.version}";
     public static final String SOURCE_STATUS = "${leos.source.status}";
     public static final String SOURCE_REVISION = "${leos.source.revision}";

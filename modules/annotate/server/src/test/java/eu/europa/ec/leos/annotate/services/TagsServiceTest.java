@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,8 +13,10 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
 import eu.europa.ec.leos.annotate.model.entity.Tag;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -37,10 +39,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest
+@SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
 public class TagsServiceTest {
 
+    private User user;
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -63,15 +67,16 @@ public class TagsServiceTest {
     // Cleanup of database content
     // -------------------------------------
     @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
+    public void cleanDatabaseBeforeTests() {
 
         TestDbHelper.cleanupRepositories(this);
         TestDbHelper.insertDefaultGroup(groupRepos);
-        userRepos.save(new User("demo"));
+        user = new User("demo");
+        userRepos.save(user);
     }
 
     @After
-    public void cleanDatabaseAfterTests() throws Exception {
+    public void cleanDatabaseAfterTests() {
         TestDbHelper.cleanupRepositories(this);
     }
 
@@ -84,32 +89,32 @@ public class TagsServiceTest {
     @Test
     public void testStringsToTags() {
 
-        Annotation annot = new Annotation();
+        final Annotation annot = new Annotation();
 
         // generate a list of a random number of strings representing tags
-        java.util.Random r = new java.util.Random();
-        int numberOfTags = r.nextInt(100) + 1;
+        final java.util.Random rand = new java.util.Random();
+        final int numberOfTags = rand.nextInt(100) + 1;
 
-        List<String> tagStrings = new ArrayList<String>();
+        final List<String> tagStrings = new ArrayList<String>();
         for (int i = 0; i < numberOfTags; i++) {
             tagStrings.add("tag" + i);
         }
 
         // let the list be generated to tag objects associated to a given annotation
-        List<Tag> tagList = tagsService.getTagList(tagStrings, annot);
+        final List<Tag> tagList = tagsService.getTagList(tagStrings, annot);
 
         // verify assignment to annotation and that the tag is part of the initial list
         Assert.assertNotNull(tagList);
         Assert.assertEquals(numberOfTags, tagList.size());
 
-        for (Tag t : tagList) {
+        for (final Tag t : tagList) {
             Assert.assertEquals(annot, t.getAnnotation());
             Assert.assertTrue(tagStrings.contains(t.getName()));
         }
 
         // retrieve all tag names generated
-        List<String> generatedTagNames = new ArrayList<String>();
-        tagList.stream().forEach(t -> generatedTagNames.add(t.getName()));
+        final List<String> generatedTagNames = new ArrayList<String>();
+        tagList.stream().forEach(tag -> generatedTagNames.add(tag.getName()));
 
         // check if this list is identical to the original list
         Assert.assertTrue(generatedTagNames.removeAll(tagStrings));
@@ -122,10 +127,10 @@ public class TagsServiceTest {
     @Test
     public void testEmptyStringListToTags() {
 
-        Annotation annot = new Annotation();
+        final Annotation annot = new Annotation();
 
         // empty list of Strings should not produce any result
-        List<String> tagStrings = new ArrayList<String>();
+        final List<String> tagStrings = new ArrayList<String>();
 
         List<Tag> tagList = tagsService.getTagList(tagStrings, annot);
         Assert.assertNull(tagList);
@@ -142,10 +147,10 @@ public class TagsServiceTest {
     public void testMissingAnnotationDoesNotProduceTags() {
 
         // empty list of Strings should not produce any result
-        List<String> tagStrings = new ArrayList<String>();
+        final List<String> tagStrings = new ArrayList<String>();
         tagStrings.add("mytag");
 
-        List<Tag> tagList = tagsService.getTagList(tagStrings, null);
+        final List<Tag> tagList = tagsService.getTagList(tagStrings, null);
         Assert.assertNull(tagList);
     }
 
@@ -158,14 +163,15 @@ public class TagsServiceTest {
         final String userlogin = "demo";
 
         // save an annotation with two tags
-        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(userlogin);
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(userlogin);
 
-        List<String> tagStrings = new ArrayList<String>();
+        final List<String> tagStrings = new ArrayList<String>();
         tagStrings.add("mytag");
         tagStrings.add("mysecondtag");
 
         jsAnnot.setTags(tagStrings);
-        annotService.createAnnotation(jsAnnot, userlogin); // use the service in order to save effort...
+        
+        annotService.createAnnotation(jsAnnot, new UserInformation(user, Authorities.ISC)); // use the service in order to save effort...
 
         Assert.assertEquals(2, tagRepos.count());
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,11 +21,11 @@ public class CannotDeleteAnnotationException extends Exception {
 
     private static final long serialVersionUID = 3865224602513892064L;
 
-    public CannotDeleteAnnotationException(String msg) {
+    public CannotDeleteAnnotationException(final String msg) {
         super(msg);
     }
     
-    public CannotDeleteAnnotationException(Throwable e) {
-        super(e);
+    public CannotDeleteAnnotationException(final Throwable exc) {
+        super(exc);
     }
 }

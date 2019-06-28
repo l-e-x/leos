@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,18 +18,19 @@ public abstract class JsonSuccessResponseBase {
     /**
      * Base class representing the simple structure transmitted as response in case of successful execution of requests
      */
-    
+
+    @SuppressWarnings("PMD.ShortVariable")
     protected String id;
 
     // -------------------------------------
     // Constructor
     // -------------------------------------
-    
-    // default constructor required for deserialisation
+
     public JsonSuccessResponseBase() {
+        // default constructor required for deserialisation
     }
-    
-    public JsonSuccessResponseBase(String annotationId) {
+
+    public JsonSuccessResponseBase(final String annotationId) {
 
         this.id = annotationId;
     }
@@ -37,20 +38,21 @@ public abstract class JsonSuccessResponseBase {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
-    
+
     public String getId() {
         return id;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setId(final String newId) {
+        this.id = newId;
     }
 
     // -------------------------------------
     // equals and hashCode
     // (need to be defined in sub classes)
     // -------------------------------------
-    
+
     public abstract int hashCode();
+
     public abstract boolean equals(Object obj);
 }

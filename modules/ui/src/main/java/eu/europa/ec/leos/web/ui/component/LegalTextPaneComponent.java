@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,38 +18,39 @@ import com.vaadin.data.TreeData;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.HorizontalSplitPanel;
 import com.vaadin.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.document.LeosCategory;
-import eu.europa.ec.leos.domain.document.LeosDocument;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.ui.component.LeosDisplayField;
 import eu.europa.ec.leos.ui.component.toc.TableOfContentComponent;
+import eu.europa.ec.leos.ui.extension.UserCoEditionExtension;
 import eu.europa.ec.leos.ui.view.ScreenLayoutHelper;
+import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
-import eu.europa.ec.leos.web.support.user.UserHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /*------------------------------------------------------------------------
 
 View
 
 ---------------------------------------------------------------------------------------
-| MarkedTextComponent       ||   LegalTextComponent      ||  TableOfContentComponent  |
-| Optional                  ||   mandatory               ||  Mandatory                |
-|                           ||                           ||                           |
-|                           ||                           ||                           |
-|        contentSplitter--> ||             tocSplitter-->||                           |
+| TableOfContentComponent   ||   LegalTextComponent      ||  MarkedTextComponent      ||
+| Mandatory                 ||   mandatory               ||  Optional                 ||
+|                           ||                           ||                           ||
+|                           ||                           ||                           ||
+|            tocSplitter--> ||         contentSplitter-->||                           ||
 ---------------------------------------------------------------------------------------
 
 ComponentArrangement in horizontal split panel
-[ [MarkedTextComponent|LegalTextComponent] | TableOfContentComponent]
+[ [TableOfContentComponent|LegalTextComponent] | MarkedTextComponent]
 -------------------------------------------------------------------------*/
 public class LegalTextPaneComponent extends CustomComponent {
 
@@ -58,36 +59,37 @@ public class LegalTextPaneComponent extends CustomComponent {
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
-    private ScreenLayoutHelper screenLayoutHelper;
-    private UserHelper userHelper;
     private ConfigurationHelper cfgHelper;
     private SecurityContext securityContext;
 
     private LegalTextComponent legalTextComponent;
     private TableOfContentComponent tableOfContentComponent;
-    private MarkedTextComponent<LeosDocument.XmlDocument.Bill> markedTextComponent;
+    
+    
+    public ScreenLayoutHelper screenLayoutHelper;
 
     private HorizontalSplitPanel tocSplitter = new HorizontalSplitPanel();
     private HorizontalSplitPanel contentSplitter = new HorizontalSplitPanel();
 
-    public LegalTextPaneComponent(EventBus eventBus, MessageHelper messageHelper, UserHelper userHelper, ConfigurationHelper cfgHelper, SecurityContext securityContext) {
+    public LegalTextPaneComponent(EventBus eventBus, MessageHelper messageHelper, ConfigurationHelper cfgHelper, SecurityContext securityContext) {
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
-        this.userHelper = userHelper;
         this.cfgHelper = cfgHelper;
         this.screenLayoutHelper = new ScreenLayoutHelper(eventBus, new ArrayList<>(Arrays.asList(contentSplitter, tocSplitter)));
         this.securityContext = securityContext;
-
+        
         buildLegalTextPane();
     }
 
-    @Override public void attach() {
+    @Override
+    public void attach() {
         super.attach();
         eventBus.register(this);
         eventBus.register(screenLayoutHelper);
     }
 
-    @Override public void detach() {
+    @Override
+    public void detach() {
         eventBus.unregister(this);
         eventBus.unregister(screenLayoutHelper);
         super.detach();
@@ -113,10 +115,8 @@ public class LegalTextPaneComponent extends CustomComponent {
         legalTextComponent.populateContent(docContent);
     }
 
-    public void populateMarkedContent(final String markedContent) {
-        if (componentEnabled(MarkedTextComponent.class)) {
-            markedTextComponent.populateMarkedContent(markedContent, LeosCategory.BILL);
-        }
+    public LeosDisplayField getContent() {
+        return legalTextComponent.getContent();
     }
 
     public void setTableOfContent(final TreeData<TableOfContentItemVO> treeTocData) {
@@ -133,28 +133,33 @@ public class LegalTextPaneComponent extends CustomComponent {
         return screenLayoutHelper.isPaneEnabled(className);
     }
 
-    private void createChildComponents(){
+    private void createChildComponents() {
         // initialize the child components
-        legalTextComponent = new LegalTextComponent(eventBus, messageHelper, cfgHelper);
+        legalTextComponent = new LegalTextComponent(eventBus, messageHelper, cfgHelper, securityContext);
         screenLayoutHelper.addPane(legalTextComponent, 1, true);
 
-        tableOfContentComponent = new TableOfContentComponent(messageHelper, eventBus);
+        tableOfContentComponent = new TableOfContentComponent(messageHelper, eventBus, securityContext, cfgHelper);
         screenLayoutHelper.addPane(tableOfContentComponent, 0, true);
-
-        markedTextComponent = new MarkedTextComponent<>(eventBus, messageHelper, userHelper);
-        screenLayoutHelper.addPane(markedTextComponent, 2, false);
         screenLayoutHelper.layoutComponents();
     }
 
-    public void setPermissions(DocumentVO bill){
+    public UserCoEditionExtension getUserCoEditionExtension() {
+        return legalTextComponent.getUserCoEditionExtension();
+    }
+
+    public void setPermissions(DocumentVO bill, String instanceType){
         boolean enableUpdate = securityContext.hasPermission(bill, LeosPermission.CAN_UPDATE);
         tableOfContentComponent.setPermissions(enableUpdate);
-        legalTextComponent.setPermissions(enableUpdate);
+        legalTextComponent.setPermissions(enableUpdate, instanceType);
     }
     
-    public void scrollToMarkedChange(String elementId) {
-        if (componentEnabled(MarkedTextComponent.class)) {
-            markedTextComponent.scrollToMarkedChange(elementId);
+    public void updateTocUserCoEditionInfo(List<CoEditionVO> coEditionVos, String presenterId) {
+        if (componentEnabled(TableOfContentComponent.class)) {
+            tableOfContentComponent.updateUserCoEditionInfo(coEditionVos, presenterId);
         }
+    }
+    
+    public void displayDocumentUpdatedByCoEditorWarning() {
+        legalTextComponent.displayDocumentUpdatedByCoEditorWarning();
     }
 }

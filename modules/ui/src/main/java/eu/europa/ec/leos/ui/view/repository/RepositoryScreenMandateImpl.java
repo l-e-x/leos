@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,28 +17,29 @@ import com.google.common.eventbus.EventBus;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
 import com.vaadin.ui.UI;
-import eu.europa.ec.leos.domain.common.InstanceContext;
+import eu.europa.ec.leos.domain.common.InstanceType;
+import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.security.SecurityContext;
-import eu.europa.ec.leos.services.support.flow.Workflow;
+import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.ui.wizard.document.CreateMandateWizard;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.web.event.view.repository.MandateCreateWizardRequestEvent;
-import eu.europa.ec.leos.web.support.i18n.LanguageHelper;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
 @ViewScope
 @SpringComponent
-@Workflow(InstanceContext.Type.COUNCIL)
+@Instance(InstanceType.COUNCIL)
 public class RepositoryScreenMandateImpl extends RepositoryScreenImpl {
 
     private static final long serialVersionUID = 1L;
 
     @Autowired
-    RepositoryScreenMandateImpl(SecurityContext securityContext, EventBus eventBus, MessageHelper messageHelper, LanguageHelper langHelper) {
-        super(securityContext, eventBus, messageHelper, langHelper);
+    RepositoryScreenMandateImpl(SecurityContext securityContext, EventBus eventBus, MessageHelper messageHelper, LanguageHelper langHelper, LeosPermissionAuthorityMapHelper authorityMapHelper) {
+        super(securityContext, eventBus, messageHelper, langHelper, authorityMapHelper);
         initSpecificStaticData();
         initSpecificListeners();
     }

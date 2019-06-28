@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -19,7 +19,7 @@ define(function testLeosMathematicalFormulaPlugin(require) {
     describe(
             "Unit tests for plugins/leosMathematicalFormulaPlugin",
             function() {
-                var transformationConfigForCitation = '{"akn":"inline[name=math-tex]","html":"span[class=math-tex]","attr":[{"akn":"GUID","html":"id"},{"akn":"leos:origin","html":"data-origin"},{"akn":"name=math-tex","html":"class=math-tex"}],"sub":{"akn":"text","html":"span/text"}}';
+                var transformationConfigForCitation = '{"akn":"inline[name=math-tex]","html":"span[class=math-tex]","attr":[{"akn":"xml:id","html":"id"},{"akn":"leos:origin","html":"data-origin"},{"akn":"name=math-tex","html":"class=math-tex"}],"sub":{"akn":"text","html":"span/text"}}';
 
                 it("Tests if transformation config is valid.", function() {
                     expect(JSON.stringify(leosMathematicalFormulaPluginToTest.transformationConfig)).toEqual(transformationConfigForCitation);

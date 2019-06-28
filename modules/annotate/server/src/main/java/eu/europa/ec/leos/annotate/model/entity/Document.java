@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.entity;
 
+import eu.europa.ec.leos.annotate.Generated;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Parameter;
 
@@ -42,6 +43,7 @@ public class Document {
             @Parameter(name = "increment_size", value = "1")
     })
     @GeneratedValue(generator = "documentsSequenceGenerator")
+    @SuppressWarnings("PMD.ShortVariable")
     private long id;
 
     @Column(name = "TITLE")
@@ -55,9 +57,10 @@ public class Document {
     // -----------------------------------------------------------
 
     public Document() {
+        // default constructor required by JPA
     }
 
-    public Document(URI uri, String title) {
+    public Document(final URI uri, final String title) {
         this.uri = uri.toASCIIString();
         this.title = title;
     }
@@ -70,15 +73,15 @@ public class Document {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public void setId(final Long newId) {
+        this.id = newId;
     }
 
     public String getTitle() {
         return title;
     }
 
-    public void setTitle(String title) {
+    public void setTitle(final String title) {
         this.title = title;
     }
 
@@ -86,7 +89,7 @@ public class Document {
         return uri;
     }
 
-    public void setUri(String uri) {
+    public void setUri(final String uri) {
         this.uri = uri;
     }
 
@@ -94,13 +97,15 @@ public class Document {
     // equals and hashCode
     // -------------------------------------
 
+    @Generated
     @Override
     public int hashCode() {
         return Objects.hash(id, title, uri);
     }
 
+    @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

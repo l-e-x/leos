@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -17,10 +17,10 @@ package eu.europa.ec.leos.vo.toctype;
 public enum MemorandumTocItemType implements TocItemType {
     
 
-    PREFACE ("PREFACE", true, false,true,false,false,false, true, false),
-    TITLE("TITLE", false, true,true,false,false,true, true, false),
-    MAINBODY ("MAINBODY", true, false, false,false,false,true, true, false),
-    TBLOCK ("TBLOCK", false, false,true,false,false,true, false, false);
+    PREFACE ("PREFACE", true, false,true,false,false,false, true, false, false, false, false, true),
+    TITLE("TITLE", false, true,true,false,false,true, true, false, false, true, false, true),
+    MAINBODY ("MAINBODY", true, false, false,false,false,true, true, false, false, false, false, true),
+    TBLOCK ("TBLOCK", false, false,true,false,false,true, false, false, false, true, false, true);
 
     protected String name;
     protected boolean isRoot;
@@ -31,10 +31,15 @@ public enum MemorandumTocItemType implements TocItemType {
     protected boolean childrenAllowed;
     protected boolean hasItemDescription;
     protected boolean isNumberEditable;
-    
-    private final String NUM_HEADING_SEPERATOR = " ";
+    protected boolean isContentDisplayed;
+    protected boolean isDeletable;
+    protected boolean hasNumWithType;
+    protected boolean isExpandedByDefault;
+    protected boolean isSameParentAsChild;
 
-     MemorandumTocItemType(String name, boolean isRoot, boolean draggable, boolean toBeDisplayed,boolean hasItemNumber, boolean hasItemHeading, boolean childrenAllowed,boolean hasItemDescription, boolean isNumberEditable) {
+     MemorandumTocItemType(String name, boolean isRoot, boolean draggable, boolean toBeDisplayed,boolean hasItemNumber, boolean hasItemHeading, 
+             boolean childrenAllowed,boolean hasItemDescription, boolean isNumberEditable, boolean isContentDisplayed, boolean isDeletable,
+             boolean hasNumWithType, boolean isExpandedByDefault) {
         this.name = name;
         this.isRoot = isRoot;
         this.draggable = draggable;
@@ -44,10 +49,12 @@ public enum MemorandumTocItemType implements TocItemType {
         this.childrenAllowed = childrenAllowed;
         this.hasItemDescription = hasItemDescription;
         this.isNumberEditable = isNumberEditable;
-    }
-
-    public static TocItemType[] getValues() {
-        return MemorandumTocItemType.values();
+        this.isContentDisplayed = isContentDisplayed;
+        this.isDeletable = isDeletable;
+        this.hasNumWithType = hasNumWithType;
+        this.isExpandedByDefault = isExpandedByDefault;
+        
+        this.isSameParentAsChild = false;
     }
 
     public static TocItemType getTocItemTypeFromName(String name) {
@@ -66,52 +73,81 @@ public enum MemorandumTocItemType implements TocItemType {
 
     @Override
     public String getNumHeadingSeparator() {
-        return NUM_HEADING_SEPERATOR;
+        return " ";
     }
 
-	@Override
-	public boolean isRoot() {
-		return isRoot;
-	}
+    @Override
+    public String getContentSeparator() {
+        return CONTENT_SEPARATOR;
+    }
+    
+    @Override
+    public boolean isRoot() {
+        return isRoot;
+    }
 
-	@Override
-	public boolean isDraggable() {
-		return draggable;
-	}
+    @Override
+    public boolean isDraggable() {
+        return draggable;
+    }
 
-	@Override
-	public boolean isToBeDisplayed() {
-		return toBeDisplayed;
-	}
+    @Override
+    public boolean isToBeDisplayed() {
+        return toBeDisplayed;
+    }
 
-	@Override
-	public boolean hasItemNumber() {
-		return hasItemNumber;
-	}
+    @Override
+    public boolean hasItemNumber() {
+        return hasItemNumber;
+    }
 
-	@Override
-	public boolean hasItemHeading() {
-		return hasItemHeading;
-	}
+    @Override
+    public boolean hasItemHeading() {
+        return hasItemHeading;
+    }
 
-	@Override
-	public String getName() {
-		return name;
-	}
+    @Override
+    public String getName() {
+        return name;
+    }
 
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
+    @Override
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	@Override
-	public boolean hasItemDescription() {
-		return hasItemDescription;
-	}
+    @Override
+    public boolean hasItemDescription() {
+        return hasItemDescription;
+    }
 
     @Override
     public boolean isNumberEditable() {
         return isNumberEditable;
     }
 
+    @Override
+    public boolean isContentDisplayed() {
+        return isContentDisplayed;
+    }
+
+    @Override
+    public boolean isDeletable() {
+        return isDeletable;
+    }
+
+    @Override
+    public boolean hasNumWithType() {
+        return hasNumWithType;
+    }
+
+    @Override
+    public boolean isExpandedByDefault() {
+        return isExpandedByDefault;
+    }
+    
+    @Override
+    public boolean isSameParentAsChild() {
+        return isSameParentAsChild;
+    }
 }

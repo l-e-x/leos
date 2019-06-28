@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 European Commission
+ * Copyright 2019 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -18,13 +18,14 @@ import com.google.common.eventbus.Subscribe;
 import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.JavaScript;
 import com.vaadin.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.document.LeosDocument;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
 import eu.europa.ec.leos.ui.extension.MathJaxExtension;
 import eu.europa.ec.leos.ui.extension.SliderPinsExtension;
 import eu.europa.ec.leos.web.event.component.ComparisonResponseEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
-import eu.europa.ec.leos.web.support.i18n.MessageHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.component.TimeLineHeaderComponent;
 
@@ -33,12 +34,15 @@ import java.util.List;
 import java.util.Map;
 
 @com.vaadin.annotations.JavaScript({"vaadin://../js/lib/legacy/versionCompare.js" + LeosCacheToken.TOKEN})
-public class TimeLineWindow<T extends LeosDocument.XmlDocument> extends AbstractWindow {
+public class TimeLineWindow<T extends XmlDocument> extends AbstractWindow {
 
     private static final long serialVersionUID = 638705322911001557L;
 
     private UserHelper userHelper;
     private HorizontalLayout contentCompareResult;
+    private SecurityContext securityContext;
+
+    private TimeLineHeaderComponent<T> header;
 
     final static int SINGLE_COLUMN_MODE = 1;
     final static int TWO_COLUMN_MODE = 2;
@@ -46,11 +50,16 @@ public class TimeLineWindow<T extends LeosDocument.XmlDocument> extends Abstract
     final static String SINGLE_COLUMN_WIDTH = "27.0cm";
     final static String TWO_COLUMN_WIDTH = "37.5cm";
 
-    public TimeLineWindow(final MessageHelper messageHelper, final EventBus eventBus, final UserHelper userHelper,
-            List documentVersions) {
+    public TimeLineWindow(final MessageHelper messageHelper, final EventBus eventBus) {
+        super(messageHelper, eventBus);
+    }
+
+    public TimeLineWindow(final SecurityContext securityContext, final MessageHelper messageHelper, final EventBus eventBus, final UserHelper userHelper,
+            List<T> documentVersions) {
 
         super(messageHelper, eventBus);
         this.userHelper = userHelper;
+        this.securityContext= securityContext;
 
         setCaption(messageHelper.getMessage("document.versions.caption.window"));
         prepareWindow(documentVersions);
@@ -68,7 +77,7 @@ public class TimeLineWindow<T extends LeosDocument.XmlDocument> extends Abstract
         eventBus.unregister(this);
     }
 
-    public void prepareWindow(List documentVersions) {
+    public void prepareWindow(List<T> documentVersions) {
         setWidth(TWO_COLUMN_WIDTH); // default setting for two column mode
         setHeight(95, Unit.PERCENTAGE);
 
@@ -81,8 +90,12 @@ public class TimeLineWindow<T extends LeosDocument.XmlDocument> extends Abstract
         fillLayout(windowLayout, documentVersions);
     }
 
-    private void fillLayout(VerticalLayout windowLayout, List documentVersions) {
-        TimeLineHeaderComponent header = new TimeLineHeaderComponent<T>(messageHelper, eventBus, userHelper, documentVersions);
+    public void updateVersions(List<T> documentVersions) {
+        header.updateVersions(documentVersions);
+    }
+
+    private void fillLayout(VerticalLayout windowLayout, List<T> documentVersions) {
+        header = new TimeLineHeaderComponent<T>(securityContext, messageHelper, eventBus, userHelper, documentVersions);
         windowLayout.addComponent(header);
 
         contentCompareResult = new HorizontalLayout();
