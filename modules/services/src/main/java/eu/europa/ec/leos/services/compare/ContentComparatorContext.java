@@ -48,6 +48,11 @@ public class ContentComparatorContext {
     private String attrName;
     private String removedValue;
     private String addedValue;
+    private String removedOriginalValue;
+    private String addedOriginalValue;
+    private String removedIntermediateValue;
+    private String addedIntermediateValue;
+    private String retainOriginalValue;
     private Boolean displayRemovedContentAsReadOnly = Boolean.FALSE;
     private Boolean threeWayDiff = Boolean.FALSE;
     private final String[] comparedVersions;
@@ -286,6 +291,51 @@ public class ContentComparatorContext {
         return this;
     }
 
+    public String getRemovedOriginalValue() {
+        return removedOriginalValue;
+    }
+
+    public ContentComparatorContext setRemovedOriginalValue(String removedOriginalValue) {
+        this.removedOriginalValue = removedOriginalValue;
+        return this;
+    }
+
+    public String getAddedOriginalValue() {
+        return addedOriginalValue;
+    }
+
+    public ContentComparatorContext setAddedOriginalValue(String addedOriginalValue) {
+        this.addedOriginalValue = addedOriginalValue;
+        return this;
+    }
+
+    public String getRemovedIntermediateValue() {
+        return removedIntermediateValue;
+    }
+
+    public ContentComparatorContext setRemovedIntermediateValue(String removedIntermediateValue) {
+        this.removedIntermediateValue = removedIntermediateValue;
+        return this;
+    }
+
+    public String getAddedIntermediateValue() {
+        return addedIntermediateValue;
+    }
+
+    public ContentComparatorContext setAddedIntermediateValue(String addedIntermediateValue) {
+        this.addedIntermediateValue = addedIntermediateValue;
+        return this;
+    }
+    
+    public ContentComparatorContext setRetainOriginalValue(String retainOriginalValue) {
+        this.retainOriginalValue = retainOriginalValue;
+        return this;
+    }
+    
+    public String getRetainOriginalValue() {
+        return retainOriginalValue;
+    }
+
     public Boolean getDisplayRemovedContentAsReadOnly() {
         return displayRemovedContentAsReadOnly;
     }
@@ -310,10 +360,8 @@ public class ContentComparatorContext {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         ContentComparatorContext that = (ContentComparatorContext) o;
         return Objects.equals(leftResultBuilder.toString(), that.leftResultBuilder.toString()) &&
                 Objects.equals(rightResultBuilder.toString(), that.rightResultBuilder.toString()) &&
@@ -340,6 +388,11 @@ public class ContentComparatorContext {
                 Objects.equals(attrName, that.attrName) &&
                 Objects.equals(removedValue, that.removedValue) &&
                 Objects.equals(addedValue, that.addedValue) &&
+                Objects.equals(removedOriginalValue, that.removedOriginalValue) &&
+                Objects.equals(addedOriginalValue, that.addedOriginalValue) &&
+                Objects.equals(removedIntermediateValue, that.removedIntermediateValue) &&
+                Objects.equals(addedIntermediateValue, that.addedIntermediateValue) &&
+                Objects.equals(retainOriginalValue, that.retainOriginalValue) &&
                 Objects.equals(displayRemovedContentAsReadOnly, that.displayRemovedContentAsReadOnly) &&
                 Objects.equals(threeWayDiff, that.threeWayDiff) &&
                 Arrays.equals(comparedVersions, that.comparedVersions);
@@ -353,13 +406,14 @@ public class ContentComparatorContext {
                         intermediateElement, startTagAttrName, startTagAttrValue, ignoreElements, oldContentNavigator, oldContentRoot, oldContentElements,
                         newContentNavigator, newContentRoot, newContentElements, intermediateContentNavigator, intermediateContentRoot,
                         intermediateContentElements,
-                        resultBuilder.toString(), ignoreRenumbering, attrName, removedValue, addedValue, displayRemovedContentAsReadOnly, threeWayDiff);
+                        resultBuilder.toString(), ignoreRenumbering, attrName, removedValue, addedValue,
+                        removedOriginalValue, addedOriginalValue, removedIntermediateValue, addedIntermediateValue,
+                        retainOriginalValue, displayRemovedContentAsReadOnly, threeWayDiff);
         result = 31 * result + Arrays.hashCode(comparedVersions);
         return result;
     }
 
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return "ContentComparatorContext{" +
                 "leftResultBuilder=" + leftResultBuilder +
                 ", rightResultBuilder=" + rightResultBuilder +
@@ -386,6 +440,11 @@ public class ContentComparatorContext {
                 ", attrName='" + attrName + '\'' +
                 ", removedValue='" + removedValue + '\'' +
                 ", addedValue='" + addedValue + '\'' +
+                ", removedOriginalValue='" + removedOriginalValue + '\'' +
+                ", addedOriginalValue='" + addedOriginalValue + '\'' +
+                ", removedIntermediateValue='" + removedIntermediateValue + '\'' +
+                ", addedIntermediateValue='" + addedIntermediateValue + '\'' +
+                ", retainOriginalValue='" + retainOriginalValue + '\'' +
                 ", displayRemovedContentAsReadOnly=" + displayRemovedContentAsReadOnly +
                 ", threeWayDiff=" + threeWayDiff +
                 ", comparedVersions=" + Arrays.toString(comparedVersions) +
@@ -419,6 +478,11 @@ public class ContentComparatorContext {
         private String attrName;
         private String removedValue;
         private String addedValue;
+        private String removedOriginalValue;
+        private String addedOriginalValue;
+        private String removedIntermediateValue;
+        private String addedIntermediateValue;
+        private String retainOriginalValue;
         private Boolean displayRemovedContentAsReadOnly = Boolean.FALSE;
         private Boolean threeWayDiff = Boolean.FALSE;
         private final String[] comparedVersions;
@@ -449,6 +513,11 @@ public class ContentComparatorContext {
             this.attrName = anotherContext.attrName;
             this.removedValue = anotherContext.removedValue;
             this.addedValue = anotherContext.addedValue;
+            this.removedOriginalValue = anotherContext.removedOriginalValue;
+            this.addedOriginalValue = anotherContext.addedOriginalValue;
+            this.removedIntermediateValue = anotherContext.removedIntermediateValue;
+            this.addedIntermediateValue = anotherContext.addedIntermediateValue;
+            this.retainOriginalValue = anotherContext.retainOriginalValue;
             this.displayRemovedContentAsReadOnly = anotherContext.displayRemovedContentAsReadOnly;
             this.threeWayDiff = anotherContext.threeWayDiff;
             this.comparedVersions = anotherContext.comparedVersions;
@@ -589,6 +658,31 @@ public class ContentComparatorContext {
             return this;
         }
 
+        public Builder withRemovedOriginalValue(String removedOriginalValue) {
+            this.removedOriginalValue = removedOriginalValue;
+            return this;
+        }
+
+        public Builder withAddedOriginalValue(String addedOriginalValue) {
+            this.addedOriginalValue = addedOriginalValue;
+            return this;
+        }
+
+        public Builder withRemovedIntermediateValue(String removedIntermediateValue) {
+            this.removedIntermediateValue = removedIntermediateValue;
+            return this;
+        }
+
+        public Builder withAddedIntermediateValue(String addedIntermediateValue) {
+            this.addedIntermediateValue = addedIntermediateValue;
+            return this;
+        }
+        
+        public Builder withRetainOriginalValue(String retainOriginalValue) {
+            this.retainOriginalValue = retainOriginalValue;
+            return this;
+        }
+        
         public Builder withDisplayRemovedContentAsReadOnly(Boolean displayRemovedContentAsReadOnly) {
             this.displayRemovedContentAsReadOnly = displayRemovedContentAsReadOnly;
             return this;
@@ -626,6 +720,11 @@ public class ContentComparatorContext {
             context.ignoreRenumbering = this.ignoreRenumbering;
             context.attrName = this.attrName;
             context.removedValue = this.removedValue;
+            context.removedOriginalValue = this.removedOriginalValue;
+            context.addedOriginalValue = this.addedOriginalValue;
+            context.removedIntermediateValue = this.removedIntermediateValue;
+            context.addedIntermediateValue = this.addedIntermediateValue;
+            context.retainOriginalValue = this.retainOriginalValue;
             context.addedValue = this.addedValue;
             context.displayRemovedContentAsReadOnly = this.displayRemovedContentAsReadOnly;
             context.threeWayDiff = this.threeWayDiff;

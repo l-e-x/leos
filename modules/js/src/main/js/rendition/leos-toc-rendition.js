@@ -17,11 +17,11 @@ if (typeof jQuery == 'undefined') {
     document.write('<script src="js/jquery.js"></' + 'script>');
     document.write('<script src="js/jqtree.js"></' + 'script>');
 } else if (jQuery.fn.jquery >= "1.9") {
-    console.log("Compatible jquery v:" + jQuery.fn.jquery + " found on the host. Compatible versions: 1.9+, 2.x or 3.x");
+    _log("Compatible jquery v:" + jQuery.fn.jquery + " found on the host. Compatible versions: 1.9+, 2.x or 3.x");
     document.write('<script src="js/jqtree.js"></' + 'script>');
 } else {
     showToc = false;
-    console.log("Hiding the TOC! NOT compatible jquery v:" + jQuery.fn.jquery + " found on the host. Required: 1.9+, 2.x or 3.x");
+    _log("Hiding the TOC! NOT compatible jquery v:" + jQuery.fn.jquery + " found on the host. Required: 1.9+, 2.x or 3.x");
 }
 
 function buildTree(tree, toc_data) {
@@ -34,10 +34,15 @@ function buildTree(tree, toc_data) {
         'tree.click',
         function (e) {
             var selected_node = e.node;
-            console.log('selected_node: ' + selected_node.name + ", links to :" + selected_node.href);
-            document.location.href = selected_node.href;
+            _log('selected_node: ' + selected_node.name + ", links to :" + selected_node.href);
+            $(".renditionAkomaNtosoContent").scrollTop(0); // Need to come back to div top before using element offset
+       		$(".renditionAkomaNtosoContent").scrollTop($(selected_node.href).offset().top);
         }
     );
+}
+
+function _log(msg){
+    window.console && console.log(msg);
 }
 
 //Wait until the dom is completely loaded to be able tp access the div

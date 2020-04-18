@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.leos.usecases.document;
 
+import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Annex;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
@@ -68,12 +70,12 @@ public class AnnexContext {
         this.actionMsgMap = new HashMap<>();
     }
 
-    public void useTemplate(String name) {
-        Validate.notNull(name, "Template name is required!");
+    public void useTemplate(String template) {
+        Validate.notNull(template, "Template name is required!");
 
-        this.annex = (Annex) templateService.getTemplate(name);
-        Validate.notNull(annex, "Template not found! [name=%s]", name);
-
+        this.annex = (Annex) templateService.getTemplate(template);
+        Validate.notNull(annex, "Template not found! [name=%s]", template);
+        this.template = template;
         LOG.trace("Using {} template... [id={}, name={}]", annex.getCategory(), annex.getId(), annex.getName());
     }
 
@@ -144,6 +146,14 @@ public class AnnexContext {
         Validate.notNull(milestoneComment, "milestoneComment is required!");
         this.milestoneComment = milestoneComment;
     }
+    
+    public void useActionMessage(ContextAction action, String actionMsg) {
+        Validate.notNull(actionMsg, "Action message is required!");
+        Validate.notNull(action, "Context Action not found! [name=%s]", action);
+
+        LOG.trace("Using action message... [action={}, name={}]", action, actionMsg);
+        actionMsgMap.put(action, actionMsg);
+    }
 
     public Annex executeCreateAnnex() {
         LOG.trace("Executing 'Create Annex' use case...");
@@ -163,7 +173,7 @@ public class AnnexContext {
         annex = annexService.createAnnex(annex.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.ANNEX_METADATA_UPDATED), null);
         annex = securityService.updateCollaborators(annex.getId(), collaborators, Annex.class);
 
-        return annex;
+        return annexService.createVersion(annex.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public Annex executeImportAnnex() {
@@ -187,7 +197,7 @@ public class AnnexContext {
                 annexDocument.getSource());
         annex = securityService.updateCollaborators(annex.getId(), collaborators, Annex.class);
 
-        return annex;
+        return annexService.createVersion(annex.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeUpdateAnnexMetadata() {
@@ -201,7 +211,7 @@ public class AnnexContext {
 
         // Updating only purpose at this time. other metadata needs to be set, if needed
         AnnexMetadata annexMetadata = metadataOption.get().withPurpose(purpose);
-        annexService.updateAnnex(annex, annexMetadata, false, actionMsgMap.get(ContextAction.METADATA_UPDATED));
+        annexService.updateAnnex(annex, annexMetadata, VersionType.MINOR, actionMsgMap.get(ContextAction.METADATA_UPDATED));
     }
 
     public void executeUpdateAnnexIndex() {
@@ -215,18 +225,37 @@ public class AnnexContext {
         Validate.isTrue(metadataOption.isDefined(), "Annex metadata is required!");
         AnnexMetadata metadata = metadataOption.get();
         AnnexMetadata annexMetadata = metadata.withIndex(index).withNumber(annexNumber);
-        annex = annexService.updateAnnex(annex, annexMetadata, false, actionMsgMap.get(ContextAction.ANNEX_METADATA_UPDATED));
+        annex = annexService.updateAnnex(annex, annexMetadata, VersionType.MINOR, actionMsgMap.get(ContextAction.ANNEX_METADATA_UPDATED));
     }
 
+    public void executeUpdateAnnexStructure() {
+        byte[] xmlContent = getContent(annex); //Use the content from template
+        annex = annexService.findAnnex(annexId); //Get the existing annex document
+        
+        Option<AnnexMetadata> metadataOption = annex.getMetadata();
+        Validate.isTrue(metadataOption.isDefined(), "Annex metadata is required!");
+        AnnexMetadata metadata = metadataOption.get();
+        AnnexMetadata annexMetadata = metadata.withPurpose(metadata.getPurpose()).
+                    withType(metadata.getType()).withTitle(metadata.getTitle()).withTemplate(template).
+                    withDocVersion(metadata.getDocVersion()).withDocTemplate(template);
+        
+        annex = annexService.updateAnnexWithMetadata(annex, xmlContent, annexMetadata, VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.ANNEX_STRUCTURE_UPDATED));
+    }
+    
+    private byte[] getContent(Annex annex) {
+        final Content content = annex.getContent().getOrError(() -> "Annex content is required!");
+        return content.getSource().getBytes();
+    }
+    
     public void executeCreateMilestone() {
         annex = annexService.findAnnex(annexId);
         List<String> milestoneComments = annex.getMilestoneComments();
         milestoneComments.add(milestoneComment);
-        if (annex.isMajorVersion()) {
+        if (annex.getVersionType().equals(VersionType.MAJOR)) {
             annex = annexService.updateAnnexWithMilestoneComments(annex.getId(), milestoneComments);
             LOG.info("Major version {} already present. Updated only milestoneComment for [annex={}]", annex.getVersionLabel(), annex.getId());
         } else {
-            annex = annexService.updateAnnexWithMilestoneComments(annex, milestoneComments, true, versionComment);
+            annex = annexService.updateAnnexWithMilestoneComments(annex, milestoneComments, VersionType.MAJOR, versionComment);
             LOG.info("Created major version {} for [annex={}]", annex.getVersionLabel(), annex.getId());
         }
     }

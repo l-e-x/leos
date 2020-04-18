@@ -81,7 +81,7 @@ public abstract class ProposalConverterServiceImpl implements ProposalConverterS
         proposal.setId(PROPOSAL_FILE);
         proposal.setCategory(LeosCategory.PROPOSAL);
         // unzip file
-        Map<String, Object> unzippedFiles = ZipPackageUtil.unzipFiles(file);
+        Map<String, Object> unzippedFiles = ZipPackageUtil.unzipFiles(file, "/unzip/");
         try {
             templatesCatalog = templateService.getTemplatesCatalog();
             if (unzippedFiles.containsKey(PROPOSAL_FILE)) {

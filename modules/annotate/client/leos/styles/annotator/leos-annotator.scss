@@ -1,19 +1,108 @@
-//
-// Copyright 2019 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-
 @import './leos-adder';
+
+%leos-layout-style {
+  background-color: transparent;
+  border-style: none;
+}
+
+%leos-border-style {
+  border-style: solid;
+  border-width: 0px $highlight-border-size 0px $highlight-border-size;
+}
 
 .annotator-frame.leos-sidebar {
   z-index: 10;
+}
+
+.annotator-highlights-always-on {
+  .annotator-hl {
+    cursor: pointer;
+    border-style: solid;
+    border-width: 0px $highlight-border-size 0px $highlight-border-size;
+    border-color: $highlight-border-color;
+
+    .annotator-hl {
+      border-color: $highlight-border-color-second;
+      .annotator-hl {
+        border-color: $highlight-border-color-third;
+        .annotator-hl {
+            border-color: $highlight-border-color-fourth;
+        }
+      }
+    }
+  }
+}
+
+.annotator-hl.annotator-hl-focused {
+  @extend %leos-border-style;
+  background-color: $highlight-color-focus;
+  border-color: $highlight-border-color-focus;
+
+  .annotator-hl {
+    @extend %leos-layout-style;
+  }
+}
+
+.annotator-hl.annotator-hl-selected {
+  @extend %leos-border-style;
+  background-color: $highlight-color-select !important;
+  border-color: $highlight-color-select !important;
+
+  .annotator-hl {
+    @extend %leos-layout-style;
+  }
+}
+
+.transparent-bg {
+  background-color: transparent !important;
+}
+
+.no-pointer-events {
+  pointer-events: none;
+}
+
+.annotator-highlights-always-on {
+  .leos-annotator-highlight {
+    @extend %leos-border-style;
+    background-color: $leos-highlight-color;
+    border-color: $leos-highlight-border-color;
+  }
+}
+
+.leos-annotator-highlight.annotator-hl-focused {
+  @extend %leos-border-style;
+  background-color: $highlight-color-focus !important;
+  border-color: $highlight-border-color-focus;
+
+  .leos-annotator-highlight {
+    @extend %leos-layout-style;
+  }
+}
+
+.leos-guideline-canvas {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 999;
+  pointer-events: none;
+}
+
+.show-guidelines-icon:before {
+    content: url(../images/icons/Showguidelines.png);
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	border:none;
+	cursor: pointer;
+}
+  
+.hide-guidelines-icon:before {
+    content: url(../images/icons/Hideguidelines.png);
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	border:none;
+	cursor: pointer;
 }

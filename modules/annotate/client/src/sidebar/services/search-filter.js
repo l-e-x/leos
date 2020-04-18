@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 /**
@@ -140,6 +127,9 @@ function generateFacetedFilter(searchtext) {
   var text = [];
   var uri = [];
   var user = [];
+  //LEOS change
+  var group = [];
+  var status = [];
 
   if (searchtext) {
     terms = tokenize(searchtext);
@@ -202,6 +192,9 @@ function generateFacetedFilter(searchtext) {
       case 'text': text.push(term.slice(5)); break;
       case 'uri': uri.push(term.slice(4)); break;
       case 'user': user.push(term.slice(5)); break;
+      //LEOS change
+      case 'group': group.push(term.slice(6)); break;
+      case 'status': status.push(term.slice(7)); break;
       default: any.push(term);
       }
     }
@@ -238,6 +231,15 @@ function generateFacetedFilter(searchtext) {
     },
     user: {
       terms: user,
+      operator: 'or',
+    },
+    //LEOS change
+    group: {
+      terms: group,
+      operator: 'or',
+    },
+    status: {
+      terms: status,
       operator: 'or',
     },
   };

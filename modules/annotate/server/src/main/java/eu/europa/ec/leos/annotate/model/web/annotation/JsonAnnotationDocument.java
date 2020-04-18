@@ -16,6 +16,7 @@ package eu.europa.ec.leos.annotate.model.web.annotation;
 import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,29 +31,53 @@ public class JsonAnnotationDocument {
     private SimpleMetadata metadata;
 
     // -------------------------------------
+    // Constructors
+    // -------------------------------------
+    public JsonAnnotationDocument() {
+        // default constructor
+    }
+    
+    public JsonAnnotationDocument(final JsonAnnotationDocument orig) {
+        this.title = orig.title;
+        if (orig.link != null) {
+            this.link = new ArrayList<JsonAnnotationDocumentLink>();
+            orig.link.forEach(jadl -> this.link.add(new JsonAnnotationDocumentLink(jadl)));
+        }
+        if(orig.metadata != null) {
+            this.metadata = new SimpleMetadata(orig.metadata);
+        }
+    }
+
+    // -------------------------------------
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public String getTitle() {
         return title;
     }
 
+    @Generated
     public void setTitle(final String title) {
         this.title = title;
     }
 
+    @Generated
     public List<JsonAnnotationDocumentLink> getLink() {
         return link;
     }
 
+    @Generated
     public void setLink(final List<JsonAnnotationDocumentLink> link) {
         this.link = link;
     }
 
+    @Generated
     public SimpleMetadata getMetadata() {
         return metadata;
     }
 
+    @Generated
     public void setMetadata(final SimpleMetadata metadata) {
         this.metadata = metadata;
     }

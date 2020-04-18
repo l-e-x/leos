@@ -41,7 +41,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfProposalMetadata() {
         //setup
         ProposalMetadata proposalMetadata = new ProposalMetadata(METADATA_STAGE_VALUE, METADATA_TYPE_VALUE, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(proposalMetadata);
@@ -54,7 +54,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfProposalMetadata_whenSomeFieldsNull() {
         //setup
         ProposalMetadata proposalMetadata = new ProposalMetadata(METADATA_STAGE_VALUE, null, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(proposalMetadata);
@@ -68,7 +68,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfMemorandumMetadata() {
         //setup
         MemorandumMetadata memorandumMetadata = new MemorandumMetadata(METADATA_STAGE_VALUE, METADATA_TYPE_VALUE, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(memorandumMetadata);
@@ -81,7 +81,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfMemorandumMetadata_whenSomeFieldsNull() {
         //setup
         MemorandumMetadata memorandumMetadata = new MemorandumMetadata(METADATA_STAGE_VALUE, null, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(memorandumMetadata);
@@ -95,7 +95,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfBillMetadata() {
         //setup
         BillMetadata billMetadata = new BillMetadata(METADATA_STAGE_VALUE, METADATA_TYPE_VALUE, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(billMetadata);
@@ -108,7 +108,7 @@ public class LeosMetadataExtensionsTest {
     public void toCmisProperties_IfBillMetadata_whenSomeFieldsNull() {
         //setup
         BillMetadata billMetadata = new BillMetadata(METADATA_STAGE_VALUE, null, METADATA_PURPOSE_VALUE,
-                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE);
+                DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(billMetadata);
@@ -126,7 +126,7 @@ public class LeosMetadataExtensionsTest {
         String annexTitle = "annexTitle";
         AnnexMetadata annexMetadata = new AnnexMetadata(METADATA_STAGE_VALUE, METADATA_TYPE_VALUE, METADATA_PURPOSE_VALUE,
                 DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, METADATA_REF_VALUE, annexIndex,
-                annexNumber, annexTitle, DOCUMENT_OBJECT_ID_VALUE);
+                annexNumber, annexTitle, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(annexMetadata);
@@ -146,7 +146,7 @@ public class LeosMetadataExtensionsTest {
         String annexTitle = "annexTitle";
         AnnexMetadata annexMetadata = new AnnexMetadata(METADATA_STAGE_VALUE, null, METADATA_PURPOSE_VALUE,
                 DOCUMENT_TEMPLATE_VALUE, DOCUMENT_LANGUAGE_VALUE, METADATA_DOCTEMPLATE_VALUE, null, annexIndex,
-                annexNumber, annexTitle, DOCUMENT_OBJECT_ID_VALUE);
+                annexNumber, annexTitle, DOCUMENT_OBJECT_ID_VALUE, "0.1.0");
 
         //make call
         Map<String, ? extends Object> metadata = LeosMetadataExtensions.toCmisProperties(annexMetadata);

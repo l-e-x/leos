@@ -42,29 +42,48 @@ public class JsonAnnotationTargets {
     // -------------------------------------
     // Constructors
     // -------------------------------------
-
+    public JsonAnnotationTargets() {
+        // default constructor
+    }
+    
     @JsonCreator
     public JsonAnnotationTargets(@JsonProperty("selector") final Object selectors) {
 
         this.selector = selectors;
+    }
+    
+    public JsonAnnotationTargets copy() {
+        
+        final JsonAnnotationTargets newInstance = new JsonAnnotationTargets();
+        if(this.source != null) {
+            newInstance.source = URI.create(this.source.toString());
+        }
+        if(this.selector != null) {
+            newInstance.selector = this.selector;
+        }
+        return newInstance;
     }
 
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public URI getSource() {
         return source;
     }
 
+    @Generated
     public void setSource(final URI source) {
         this.source = source;
     }
 
+    @Generated
     public Object getSelector() {
         return selector;
     }
 
+    @Generated
     public void setSelector(final Object selector) {
         this.selector = selector;
     }
@@ -72,7 +91,8 @@ public class JsonAnnotationTargets {
     /**
      * Deserialize a given String representing the target selectors list and the source
      * 
-     * @param serialized serialized string
+     * @param serialized 
+     *        serialized string
      */
     @JsonIgnore
     public void setDeserializedSelectors(final String serialized) {

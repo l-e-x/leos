@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /**
- * Copyright 2019 European Commission
+ * Copyright 2017 European Commission
  *
  * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
@@ -21,20 +21,37 @@
         background:$GREY;
         text-align:center;
         border-top:1px solid $G_BORDER_COLOR;
-        
+
         &.successful {
             color:$GREEN_COLOR;
         }
-    
+
         &.error {
             color:$RED_COLOR;
-        }        
+        }
+    }
+
+    .leos-toc-editor {
+        padding: 0px 7px 7px 7px;
+        color: $DARK_SLATE_GREY;
+
+        .v-panel-caption {
+            box-shadow: none;
+        }
+
+        [class*="margin-top"] > tbody > [class*="firstrow"] > td {
+        	padding-top: 0px;
+        }
+
+        [class*="margin-bottom"] > tbody > [class*="lastrow"] > td {
+            padding-bottom: 0px;
+        }
     }
 
     .leos-toc-panel {
         .v-panel-caption {
             box-shadow: none;
-        }       
+        }
     }
 
     .leos-toc-user-coedition {
@@ -68,6 +85,36 @@
     }
 
     .leos-toc-no-expander-icon .collapsed {
-        visibility: hidden;  
+        visibility: hidden;
+    }
+
+    .v-treegrid-row-drag-top:before{
+        font-family: "Vaadin-Icons";
+        content:'\e7b2';
+        font-weight: bold;
+        display: block;
+        position: absolute;
+        height: 2px;
+        width: 100%;
+        background-color: #1d9dff;
+        pointer-events: none;
+        border: 1px solid #1d9dff;
+        color: #1d9dff;
+        z-index: 10;
+    }
+
+    .v-treegrid-row-drag-bottom:after {
+        font-family: "Vaadin-Icons";
+        content:'\e7af';
+        font-weight: bold;
+        display: block;
+        position: absolute;
+        height: 2px;
+        width: 100%;
+        background-color: #0066A5;
+        pointer-events: none;
+        border: 1px solid #0066A5;
+        color: #0066A5;
+        z-index: 10;
     }
 }

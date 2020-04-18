@@ -21,12 +21,14 @@ import com.vaadin.ui.Label;
 import com.vaadin.ui.TreeGrid;
 import com.vaadin.ui.components.grid.TreeGridDropEvent;
 import com.vaadin.ui.components.grid.TreeGridDropListener;
-import eu.europa.ec.leos.services.support.TableOfContentHelper;
-import eu.europa.ec.leos.ui.event.toc.TocStatusUpdateEvent;
-import eu.europa.ec.leos.ui.window.TocEditor;
-import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
 import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.action.ActionType;
+import eu.europa.ec.leos.model.action.CheckinElement;
+import eu.europa.ec.leos.services.support.TableOfContentHelper;
+import eu.europa.ec.leos.ui.event.toc.TocChangedEvent;
+import eu.europa.ec.leos.ui.window.toc.TocEditor;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+import eu.europa.ec.leos.vo.toc.TocItem;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,14 +41,14 @@ public class EditTocDropHandler implements TreeGridDropListener<TableOfContentIt
     private final TreeGrid<TableOfContentItemVO> tocTree;
     private final MessageHelper messageHelper;
     private final EventBus eventBus;
-    private final Map<TocItemType, List<TocItemType>> tableOfContentRules;
+    private final Map<TocItem, List<TocItem>> tocRules;
     private final TocEditor tocEditor;
 
-    public EditTocDropHandler(TreeGrid<TableOfContentItemVO> tocTree, MessageHelper messageHelper, EventBus eventBus, Map<TocItemType, List<TocItemType>> tableOfContentRules, TocEditor tocEditor) {
+    public EditTocDropHandler(TreeGrid<TableOfContentItemVO> tocTree, MessageHelper messageHelper, EventBus eventBus, Map<TocItem, List<TocItem>> tocRules, TocEditor tocEditor) {
         this.tocTree = tocTree;
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
-        this.tableOfContentRules = tableOfContentRules;
+        this.tocRules = tocRules;
         this.tocEditor = tocEditor;
     }
 
@@ -59,15 +61,23 @@ public class EditTocDropHandler implements TreeGridDropListener<TableOfContentIt
         List<TableOfContentItemVO> droppedItems = new ArrayList<>(droppedItemCollection);
         TableOfContentItemVO targetItem = dropEvent.getDropTargetRow().orElse(null);
         TocEditor.ItemPosition position = getPositionFromLocation(dropEvent.getDropLocation());
+        
+        final List<CheckinElement> checkinElements = new ArrayList<>();
         if (position != null) {
-            boolean isAdd = dropEvent.getDragSourceComponent().orElse(null) instanceof Label;
-            TocDropResult tocDropResult = tocEditor.addOrMoveItems(isAdd, tocTree, tableOfContentRules, droppedItems, targetItem, position);
+            final boolean isAdd = dropEvent.getDragSourceComponent().orElse(null) instanceof Label;
+            final TocDropResult tocDropResult = tocEditor.addOrMoveItems(isAdd, tocTree, tocRules, droppedItems, targetItem, position);
             if (tocDropResult.isSuccess()) {
                 scrollToDroppedItem(tocTree.getTreeData(), droppedItems.get(0));
+                
+                droppedItems.stream().forEach(tocItem -> {
+                    ActionType actionType = isAdd ? ActionType.INSERTED : ActionType.MOVED;
+                    checkinElements.add(new CheckinElement(actionType, tocItem.getId(), tocItem.getTocItem().getAknTag().name()));
+                });
             }
-            setStatusMessage(tocDropResult);
+            
+            fireTocChange(tocDropResult, checkinElements);
         } else {
-            setStatusMessage(new TocDropResult(false, "toc.edit.window.drop.error.message", droppedItems.get(0), targetItem));
+            fireTocChange(new TocDropResult(false, "toc.edit.window.drop.error.message", droppedItems.get(0), targetItem), checkinElements);
         }
     }
 
@@ -83,17 +93,17 @@ public class EditTocDropHandler implements TreeGridDropListener<TableOfContentIt
         }
     }
 
-    private void setStatusMessage(TocDropResult tocDropResult) {
-        String message;
-        String srcItemType = TableOfContentHelper.getDisplayableItemType(tocDropResult.getSourceItem().getType(), messageHelper);
+    private void fireTocChange(TocDropResult tocDropResult, List<CheckinElement> checkinElements) {
+        final TableOfContentItemVO sourceItem = tocDropResult.getSourceItem();
+        final String srcItemType = TableOfContentHelper.getDisplayableTocItem(sourceItem.getTocItem(), messageHelper);
         if (tocDropResult.getTargetItem() != null) {
-            String targetItemType = TableOfContentHelper.getDisplayableItemType(tocDropResult.getTargetItem().getType(), messageHelper);
-            message = messageHelper.getMessage(tocDropResult.getMessageKey(), srcItemType, targetItemType);
-            eventBus.post(new TocStatusUpdateEvent(message, tocDropResult.isSuccess() ? TocStatusUpdateEvent.Result.SUCCESSFUL :
-                    TocStatusUpdateEvent.Result.ERROR));
+            final String targetItemType = TableOfContentHelper.getDisplayableTocItem(tocDropResult.getTargetItem().getTocItem(), messageHelper);
+            final TocChangedEvent.Result result = tocDropResult.isSuccess() ? TocChangedEvent.Result.SUCCESSFUL : TocChangedEvent.Result.ERROR;
+            final String message = messageHelper.getMessage(tocDropResult.getMessageKey(), srcItemType, targetItemType);
+            eventBus.post(new TocChangedEvent(message, result, checkinElements));
         } else {
-            message = messageHelper.getMessage("toc.edit.window.drop.error.root.message", srcItemType);
-            eventBus.post(new TocStatusUpdateEvent(message, TocStatusUpdateEvent.Result.ERROR));
+            final String message = messageHelper.getMessage("toc.edit.window.drop.error.root.message", srcItemType);
+            eventBus.post(new TocChangedEvent(message, TocChangedEvent.Result.ERROR, checkinElements));
         }
     }
 

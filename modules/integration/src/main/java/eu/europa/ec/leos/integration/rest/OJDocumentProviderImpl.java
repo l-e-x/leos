@@ -13,9 +13,11 @@
  */
 package eu.europa.ec.leos.integration.rest;
 
-import java.io.ByteArrayOutputStream;
-import java.util.concurrent.TimeUnit;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Stopwatch;
+import eu.europa.ec.leos.integration.ExternalDocumentProvider;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -29,11 +31,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestOperations;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Stopwatch;
-
-import eu.europa.ec.leos.integration.ExternalDocumentProvider;
+import java.io.ByteArrayOutputStream;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.util.concurrent.TimeUnit;
 
 @Component
 class OJDocumentProviderImpl implements ExternalDocumentProvider {
@@ -44,7 +45,16 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
 
     @Value("#{integrationProperties['leos.import.oj.sparql.uri']}")
     private String sparqlUri;
-
+    
+    @Value("#{integrationProperties['leos.proxy.username']}")
+    private String proxyUsername;
+    @Value("#{integrationProperties['leos.proxy.password']}")
+    private String proxyPassword;
+    @Value("#{integrationProperties['leos.proxy.host']}")
+    private String proxyHost;
+    @Value("#{integrationProperties['leos.proxy.port']}")
+    private String proxyPort;
+    
     private static final String DOC_TYPE = "/DOC_2";
     private static final String PARAM_DEBUG_VALUE = "on";
     private static final long PARAM_TIMEOUT_VALUE = 60000;
@@ -55,17 +65,14 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
 
     @Override
     public String getFormexDocument(String type, int year, int number) {
-        String formexDocument = null;
-        try {
-            String uriDocument = getOJFormexDocumentUrl(type, year, number);
-            formexDocument =  uriDocument != null ? getOJFormexDocumentByUrl(uriDocument) : null;
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to get the document in formex format", e);
-        }
+        final String uriDocument = getOJFormexDocumentUrl(type, year, number);
+        final String formexDocument = uriDocument != null ? getOJFormexDocumentByUrl(uriDocument) : null;
         return formexDocument;
     }
 
     String getOJFormexDocumentUrl(String type, int year, int number) {
+        setProxy();
+        final String uri = ojUrl + sparqlUri;
         try {
             Stopwatch stopwatch=Stopwatch.createStarted();
             ParameterizedSparqlString queryStr = new ParameterizedSparqlString();
@@ -91,7 +98,6 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
             queryStr.append("cdm:manifestation_type ?type filter(regex(str(?type),'fmx4'))");
             queryStr.append("}");
             Query query = queryStr.asQuery();
-            final String uri = ojUrl + sparqlUri;
             QueryEngineHTTP qexec = QueryExecutionFactory.createServiceRequest(uri, query);
             try {
                 LOG.debug("OJ Sparql URL: "+ uri);
@@ -107,15 +113,17 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
                 String json = new String(outputStream.toByteArray());
                 LOG.debug("OJ Sparql Response: {}", json);                
                 LOG.trace("OJ Sparql query executed in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
+                unsetProxy();
+                
                 return getDocumentUrl(json);
             } finally {
                 qexec.close();
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unable to perform the getOJFormexDocumentUrl operation", e);
+            throw new RuntimeException("Unable to perform the getOJFormexDocumentUrl operation. Failed calling: " + uri, e);
         }
     }
-
+    
     String getDocumentUrl(String json) {
         String uriDocument = null;
         try {
@@ -135,12 +143,35 @@ class OJDocumentProviderImpl implements ExternalDocumentProvider {
     String getOJFormexDocumentByUrl(String uriDocument) {
         String formexDocument = null;
         try {
+            setProxy();
             uriDocument = uriDocument + DOC_TYPE;
             LOG.debug("OJ Formex document url: " + uriDocument);
             formexDocument = restTemplate.getForObject(uriDocument, String.class);
+            unsetProxy();
         } catch (Exception e) {
-            throw new RuntimeException("Unable to perform the getOJFormexDocumentByUrl operation", e);
+            throw new RuntimeException("Unable to perform the getOJFormexDocumentByUrl operation. Failed calling: " + uriDocument, e);
         }
         return formexDocument;
+    }
+    
+    /**
+     * The proxy is added only if the parameters leos.proxy.* are set in the property file
+     */
+    private void setProxy() {
+        if (!StringUtils.isEmpty(proxyHost)) {
+            System.setProperty("http.proxyHost", proxyHost);
+            System.setProperty("http.proxyPort", proxyPort);
+            Authenticator.setDefault(new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(proxyUsername, proxyPassword.toCharArray());
+                }
+            });
+        }
+    }
+    
+    private void unsetProxy(){
+        System.setProperty("http.proxyHost", "");
+        System.setProperty("http.proxyPort", "");
+        Authenticator.setDefault(null);
     }
 }

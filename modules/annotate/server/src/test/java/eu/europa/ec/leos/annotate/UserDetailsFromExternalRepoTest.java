@@ -17,6 +17,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -42,8 +43,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
@@ -102,27 +105,38 @@ public class UserDetailsFromExternalRepoTest {
     @Test
     public void testRestUdRepoCalls() {
 
+        final String login = "login";
+        final String orga = "DIGIT";
+
         // mock the RestTemplate and inject it into the UserService
         final RestTemplate restOperations = Mockito.mock(RestTemplate.class);
         final UserService userService = new UserServiceImpl(restOperations);
 
-        final Map<String, String> params = new HashMap<String, String>();
-        params.put("userId", "login");
+        final Map<String, String> params = new ConcurrentHashMap<String, String>();
+        params.put("userId", login);
 
         // prepare Mockito to return the desired user details
-        final UserDetails details = new UserDetails("login", (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final List<UserEntity> entitiesDigit = Arrays.asList(new UserEntity("2", orga, orga));
+        final UserDetails details = new UserDetails(login, (long) 47, "Santa", "Clause", entitiesDigit, "santa@clause.europa.eu", null);
+        final UserEntity[] entities = new UserEntity[3];
+        entities[0] = new UserEntity("1", orga + ".B.2", orga);
+        entities[1] = new UserEntity("2", orga + ".B", orga);
+        entities[2] = new UserEntity("2", orga, orga);
         Mockito.when(restOperations.getForObject(null, UserDetails.class, params)).thenReturn(details);
+        Mockito.when(restOperations.getForObject(null, UserEntity[].class, params)).thenReturn(entities);
 
-        // verify that the RestTemplate was called - should return the object specified for Mockito
-        UserDetails result = userService.getUserDetailsFromUserRepo("login");
+        // verify that the RestTemplate was called - should return the objects specified for Mockito
+        UserDetails result = userService.getUserDetailsFromUserRepo(login);
         Assert.assertEquals(details, result);
+        Assert.assertEquals(entities.length, result.getAllEntities().size());
 
         // call again - there should not be a second call for the ud-repo via the REST template (i.e. cached value is used)
-        userService.getUserDetailsFromUserRepo("login");
+        userService.getUserDetailsFromUserRepo(login);
         Mockito.verify(restOperations, Mockito.times(1)).getForObject(null, UserDetails.class, params);
+        Mockito.verify(restOperations, Mockito.times(1)).getForObject(null, UserEntity[].class, params);
 
         // query another user - there should be one call for ud-repo again
-        final Map<String, String> secondCallParams = new HashMap<String, String>();
+        final Map<String, String> secondCallParams = new ConcurrentHashMap<String, String>();
         secondCallParams.put("userId", "anotheruser");
 
         result = userService.getUserDetailsFromUserRepo("anotheruser");
@@ -144,16 +158,17 @@ public class UserDetailsFromExternalRepoTest {
         userService.setRestTemplate(restOperations);
 
         final String userLogin = "login";
-        final String userEntity = "DIGIT";
+        final String userEntityName = "DIGIT";
+        final List<UserEntity> entities = Arrays.asList(new UserEntity("2", userEntityName, userEntityName));
 
         final User theUser = userRepos.save(new User(userLogin));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
 
-        final Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new ConcurrentHashMap<String, String>();
         params.put("userId", userLogin);
 
         // prepare Mockito to return the desired user details
-        final UserDetails details = new UserDetails(userLogin, (long) 47, "Santa", "Clause", userEntity, "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(userLogin, (long) 47, "Santa", "Clause", entities, "santa@clause.europa.eu", null);
         Mockito.when(restOperations.getForObject(repositoryUrl, UserDetails.class, params)).thenReturn(details);
 
         // retrieve user profile and expect that display name is provided therein
@@ -161,7 +176,7 @@ public class UserDetailsFromExternalRepoTest {
         Assert.assertNotNull(profile);
         Assert.assertNotNull(profile.getUser_info());
         Assert.assertEquals("Clause Santa", profile.getUser_info().getDisplay_name());
-        Assert.assertEquals(userEntity, profile.getUser_info().getEntity_name());
+        Assert.assertEquals(userEntityName, profile.getUser_info().getEntity_name());
     }
 
 }

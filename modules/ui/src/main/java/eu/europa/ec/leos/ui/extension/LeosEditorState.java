@@ -18,14 +18,20 @@ import eu.europa.ec.leos.web.model.UserVO;
 
 public class LeosEditorState extends LeosJavaScriptExtensionState {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	public UserVO user;
-	public String[] permissions;
+    public UserVO user;
+    public String[] permissions;
 
-	public boolean isImplicitSaveEnabled;
-	public boolean isSpellCheckerEnabled;
-	public String spellCheckerServiceUrl;
-	public String spellCheckerSourceUrl;
+    public boolean isImplicitSaveEnabled;
+    public boolean isSpellCheckerEnabled;
+    public String spellCheckerServiceUrl;
+    public String spellCheckerSourceUrl;
+
+    public String tocItemsJsonArray;
+    public String numberingConfigsJsonArray;
+    public String listNumberConfigJsonArray;
+    public String documentsMetadataJsonArray;
+    public String documentRef;
 
 }

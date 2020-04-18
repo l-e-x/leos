@@ -20,31 +20,35 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
-
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
 
 @Component
 @Instance(InstanceType.COUNCIL)
 public class MandateNumberingProcessor implements NumberProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(MandateNumberingProcessor.class);
-    
-    @Autowired
+
     ElementNumberingHelper elementNumberingHelper;
+
+    @Autowired
+    public MandateNumberingProcessor(ElementNumberingHelper elementNumberingHelper) {
+        this.elementNumberingHelper = elementNumberingHelper;
+    }
 
     @Override
     public String renumberImportedArticle(String xmlContent, String language) {
-    	String elementNumber = "Article ";
-    	String updatedElements = null;
-		elementNumberingHelper.setImportAticleDefaultProperties();
-		try {
-			updatedElements = new String(elementNumberingHelper.renumberElements(ARTICLE, elementNumber, xmlContent));
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to perform the renumberArticles operation", e);
-		} finally {
-			elementNumberingHelper.resetImportAticleDefaultProperties();
-		}
-    	return updatedElements; 
+        String updatedElements;
+        elementNumberingHelper.setImportAticleDefaultProperties();
+        try {
+            updatedElements = new String(elementNumberingHelper.renumberElements(ARTICLE, xmlContent, false));
+        } catch (Exception e) {
+            LOG.error("Unable to perform the renumberArticles operation", e);
+            throw new RuntimeException("Unable to perform the renumberArticles operation", e);
+        } finally {
+            elementNumberingHelper.resetImportAticleDefaultProperties();
+        }
+        return updatedElements; 
     }
 
     @Override
@@ -54,12 +58,12 @@ public class MandateNumberingProcessor implements NumberProcessor {
     }
 
     @Override
-    public byte[] renumberArticles(byte[] xmlContent, String language) {
+    public byte[] renumberArticles(byte[] xmlContent) {
         LOG.trace("Start renumbering Articles");
-        String elementNumber = "Article ";
         try {
-        	return elementNumberingHelper.renumberElements(ARTICLE,  elementNumber, xmlContent);
+        	return elementNumberingHelper.renumberElements(ARTICLE, xmlContent, true);
         } catch (Exception e) {
+            LOG.error("Unable to perform the renumber Articles operation", e);
             throw new RuntimeException("Unable to perform the renumber Articles operation", e);
         }
     }
@@ -67,12 +71,17 @@ public class MandateNumberingProcessor implements NumberProcessor {
     @Override
     public byte[] renumberRecitals(byte[] xmlContent) {
         LOG.trace("Start renumbering Recitals");
-        String elementNumber = "";
         try {
-            return elementNumberingHelper.renumberElements(RECITAL, elementNumber , xmlContent);
+            return elementNumberingHelper.renumberElements(RECITAL, xmlContent, true);
         } catch (Exception e) {
+            LOG.error("Unable to perform the renumber Recitals operation", e);
             throw new RuntimeException("Unable to perform the renumber Recitals operation", e);
         }
     }
-    
+
+    @Override
+    public byte[] renumberLevel(byte[] xmlContent) {
+        return xmlContent;
+    }
+
 }

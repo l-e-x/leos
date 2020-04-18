@@ -13,12 +13,18 @@
  */
 package eu.europa.ec.leos.ui.extension;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.JavaScript;
 import com.vaadin.ui.AbstractComponent;
+import eu.europa.ec.leos.vo.toc.TocItem;
 import eu.europa.ec.leos.web.event.view.document.CancelActionElementRequestEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
+
+import java.util.List;
 
 @JavaScript({"vaadin://../js/ui/extension/actionManagerConnector.js" + LeosCacheToken.TOKEN })
 public class ActionManagerExtension<T extends AbstractComponent> extends LeosJavaScriptExtension {
@@ -26,9 +32,10 @@ public class ActionManagerExtension<T extends AbstractComponent> extends LeosJav
     private static final long serialVersionUID = 1L;
     private EventBus eventBus;
 
-    public ActionManagerExtension(T target, String instanceType, EventBus eventBus) {
+    public ActionManagerExtension(T target, String instanceType, EventBus eventBus, List<TocItem> tocItemList) {
         super();
-        getState(false).instanceType = instanceType;
+        getState().instanceType = instanceType;
+        getState().tocItemsJsonArray = toJsonString(tocItemList);
         this.eventBus = eventBus;
         extend(target);
     }
@@ -45,9 +52,24 @@ public class ActionManagerExtension<T extends AbstractComponent> extends LeosJav
         super.detach();
     }
 
+    @Override
+    protected ActionManagerState getState() {
+        return (ActionManagerState)super.getState();
+    }
+
     @Subscribe
     public void cancelActionElement(CancelActionElementRequestEvent event) {
     	LOG.trace("Cancel action element...");
         callFunction("enableActions", event.getElementId());
+    }
+
+    private String toJsonString(Object o) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
+            return mapper.writeValueAsString(o);
+        } catch (JsonProcessingException e) {
+            return "null";
+        }
     }
 }

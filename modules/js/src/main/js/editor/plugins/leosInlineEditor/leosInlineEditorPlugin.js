@@ -41,18 +41,22 @@ define(function leosInlineEditorPluginModule(require) {
             		return editorElem.getBoundingClientRect().height;
             	} else {
             		return 0;
-            	} 
+            	}
             }
 
             editor.on('blur', function (evt) {
-                if (evt.editor.LEOS.implicitSaveEnabled) {
+                if (evt.editor.LEOS.implicitSaveEnabled && !evt.editor.LEOS.bookmarkNavigatorClicked) {
                     if (evt.editor.checkDirty()) {
-                        editor.fire("save", {
+                        var isSaved = editor.fire("save", {
                             data: editor.getData()
                         });
+                        
+                        if (isSaved) {
+                            editor.fire("close");
+                        }
                     }
-                    editor.fire("close");
                 } else {
+                    evt.editor.LEOS.bookmarkNavigatorClicked = false;
                     evt.editor.element.removeClass('leos-editor-focus');
                     evt.editor.element.addClass('leos-editor-blur');
                 }

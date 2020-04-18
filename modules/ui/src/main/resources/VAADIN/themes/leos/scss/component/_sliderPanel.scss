@@ -1,0 +1,64 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin sliderPanel {
+
+    .leos-slider-toolbar {
+        background: #0066A5;
+        padding-top: 2px;
+        height: 28px;
+        color: $WHITE;
+        text-align: center;
+    }
+
+    .leos-left-slider-panel {
+        background: rgba($WHITE, 0.4);
+        border-bottom-right-radius: 10px;
+        border-bottom: 1px solid lighten($MENU_BORDER_COLOR, 30%);
+        border-right: 1px solid lighten($MENU_BORDER_COLOR, 30%);
+    }
+
+    .leos-bottom-slider-panel {
+        background: $SLIDER_BACKGROUND_COLOR;
+    }
+
+    .v-sliderpanel-tab {
+        display: none;
+    }
+
+    .v-sliderpanel-content {
+        background: transparent;
+    }
+
+    .leos-drag-item {
+        background-color: #fafafa;
+        color: $HEADER_BLUE;
+        border: 1px solid #1d9dff;
+        border-radius: 4px;
+        margin: 5px 2px 5px -2px;
+        padding-top: 3px;
+        text-align: center;
+        width: 90px;
+        height: 30px;
+    }
+
+    .leos-left-slider-gridlayout {
+        padding: 5px 0px 5px 0px;
+    }
+
+    .v-sliderpanel-wrapper.layout-vertical.mode-left .v-sliderpanel-content {
+        left: 0;
+    }
+}

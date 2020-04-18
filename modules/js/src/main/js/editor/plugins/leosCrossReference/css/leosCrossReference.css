@@ -1,7 +1,7 @@
 /**
  * Copyright 2019 European Commission
  *
- * Licensed under the EUPL, Version 1.2 or â€“ as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -41,35 +41,53 @@ article subparagraph {
 	border-style: solid;
 	padding: 5px;
 	height: 100%;
-	overflow: auto;
 }
+
+.crTableOfContent .leos-soft-move-label{
+	color: #FFFFFF;
+	padding-left: 2px;
+	padding-right: 2px;
+	margin-left: 2px;
+	margin-right: 2px;
+	font-style: normal;
+	font-weight: normal;
+	font-family: "Times New Roman", Times, serif;
+	font-size: 15px;
+	border-radius: 4px;
+	text-decoration: none;
+	display: inline;
+	background-color: #808080;
+	cursor: pointer;
+	padding: 0 5px;
+}	
 
 .crContent {
 	height: 100%;
 }
 
-.crContent #contentContainer {
+.crContent [id^=contentContainer] {
 	border: 2px;
 	border-style: solid;
 	padding: 5px;
 	height: 80%;
 	max-height: 465px;
+	overflow-y: scroll;
 }
 
-.crContent #lblRefAsValue {
+.crContent [id^=lblRefAsValue] {
 	border: 1px;
 	border-style: solid;
 }
 
-.crContent #referenceElement {
+.crContent [id^=referenceElement] {
 	padding: 10px 0 5px 0;
 }
 
-.crContent #refAs {
+.crContent [id^=refAs] {
 	padding: 10px 0;
 }
 
-.crContent #refrenceTextLabel {
+.crContent [id^=refrenceTextLabel] {
 	width: 80%;
 	font-size: inherit;
 	padding-left: 2px;
@@ -121,19 +139,27 @@ article subparagraph {
 	text-align: center;
 }
 
-.crDialogbox #brokenRefLabel   {
+.crDialogbox [id^=brokenRefLabel]   {
     padding-top : 16px;
 }
 
-.crDialogbox #brokenRefLabel  mref[leos\:broken] {
+.crDialogbox [id^=brokenRefLabel]  mref[leos\:broken] {
     font-style: italic;
 }
 
-.crDialogbox #brokenRefLabel  mref[leos\:broken]:after {
+.crDialogbox [id^=brokenRefLabel]  mref[leos\:broken]:after {
     color: red;
     display: inline;
     font-style: normal;
     font-family: "Vaadin-Icons";
     content: "warning";
     vertical-align: bottom;
+}
+
+.cke_dialog {
+	font: normal normal normal 12px Arial,Helvetica,Tahoma,Verdana,Sans-Serif;
+}
+
+.cke_dialog_tab {
+	text-decoration: none;
 }

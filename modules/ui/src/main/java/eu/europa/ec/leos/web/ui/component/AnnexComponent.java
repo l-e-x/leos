@@ -17,8 +17,4 @@ import com.vaadin.ui.VerticalLayout;
 
 public class AnnexComponent extends VerticalLayout implements ContentPane {
 
-    @Override
-    public Class getChildClass() {
-        return null;
-    }
 }

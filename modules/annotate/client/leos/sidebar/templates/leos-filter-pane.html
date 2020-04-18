@@ -1,0 +1,90 @@
+<!--
+
+    Copyright 2019 European Commission
+
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    You may not use this work except in compliance with the Licence.
+    You may obtain a copy of the Licence at:
+
+        https://joinup.ec.europa.eu/software/page/eupl
+
+    Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the Licence for the specific language governing permissions and limitations under the Licence.
+
+-->
+<div ng-show="leosFilterPaneVisible" class="leos-filter-pane">
+  <div class="leos-filter-pane__selected-filters">
+    <multiple-autocomplete id="filter-summary" ng-model="selectedFilters">
+    </multiple-autocomplete>
+  </div>
+  <ol class="leos-filter-pane__list">
+    <li class="leos-filter-pane__list-item">
+      <span class="leos-filter-pane__list-item-lbl">By type</span>
+      <div class="leos-filter-pane__list-item-value">
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="type" value="All" ng-change="onTypeSelect(type)"/>
+          <span>All</span>
+        </div>
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="type" value="Comments" ng-change="onTypeSelect(type)"/>
+          <span>Comments</span>
+        </div>
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="type" value="Suggestions" ng-change="onTypeSelect(type)"/>
+          <span>Suggestions</span>
+        </div>
+      </div>
+    </li>
+    <li class="leos-filter-pane__list-item" ng-show="showStatusFilter()">
+      <span class="leos-filter-pane__list-item-lbl">By status</span>
+      <div class="leos-filter-pane__list-item-value">
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="status" value="All" ng-change="onStatusSelect(status)"/>
+          <span>All</span>
+        </div>
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="status" value="Processed" ng-change="onStatusSelect(status)"/>
+          <span>Processed</span>
+        </div>
+        <div class="leos-input-option leos-radio-option">
+          <input type="radio" ng-model="status" value="Non-Processed" ng-change="onStatusSelect(status)"/>
+          <span>Non-Processed</span>
+        </div>
+      </div>
+    </li>
+    <li class="leos-filter-pane__list-item">
+      <span class="leos-filter-pane__list-item-lbl">By group</span>
+      <div class="leos-filter-pane__list-item-value">
+        <multiple-autocomplete id="filter-groups"
+                               ng-model="selectedGroups"
+                               object-property="name"
+                               suggestions-arr="groupsList"
+                               after-select-item="afterSelectGroup"
+                               after-remove-item="afterRemoveGroup">
+        </multiple-autocomplete>
+      </div>
+    <li class="leos-filter-pane__list-item">
+      <span class="leos-filter-pane__list-item-lbl">By authors</span>
+      <div class="leos-filter-pane__list-item-value">
+        <multiple-autocomplete id="filter-authors"
+                               ng-model="selectedAuthors"
+                               object-property="name"
+                               suggestions-arr="authorsList"
+                               after-select-item="afterSelectAuthor"
+                               after-remove-item="afterRemoveAuthor">
+        </multiple-autocomplete>
+      </div>
+    </li>
+    <li class="leos-filter-pane__list-item">
+      <span class="leos-filter-pane__list-item-lbl">By text</span>
+      <div class="leos-filter-pane__list-item-value leos-input-option">
+        <input type="text"
+               class="leos-text-input"
+               ng-model="customText"
+               ng-change="onCustomTextInput(customText)"/>
+      </div>
+    </li>
+  </ol>
+</div>
+

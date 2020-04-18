@@ -8,9 +8,8 @@
             <permission>CAN_COMMENT</permission>
             <permission>CAN_SUGGEST</permission>
             <permission>CAN_MERGE_SUGGESTION</permission>
-            <permission>CAN_SHARE</permission>
-            <permission>CAN_PRINT_LW</permission>
-            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_EXPORT_LW</permission>
+            <permission>CAN_EXPORT_DW</permission>
             <permission>CAN_CREATE_MILESTONE</permission>
             <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
             <permission>CAN_ADD_REMOVE_COLLABORATOR</permission>
@@ -54,14 +53,15 @@
             <permission>CAN_COMMENT</permission>
             <permission>CAN_SUGGEST</permission>
             <permission>CAN_MERGE_SUGGESTION</permission>
-            <permission>CAN_SHARE</permission>
-            <permission>CAN_PRINT_LW</permission>
-            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_EXPORT_LW</permission>
+            <permission>CAN_EXPORT_DW</permission>
             <permission>CAN_CREATE_MILESTONE</permission>
             <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
+            <permission>CAN_ADD_REMOVE_COLLABORATOR</permission>
             <permission>CAN_DOWNLOAD_PROPOSAL</permission>
             <permission>CAN_UPLOAD</permission>
             <permission>CAN_SEE_SOURCE</permission>
+            <permission>CAN_SEE_ALL_DOCUMENTS</permission>
         </permissions>
         <application-role>true</application-role>
         <collaborator>false</collaborator>
@@ -76,13 +76,14 @@
             <permission>CAN_COMMENT</permission>
             <permission>CAN_SUGGEST</permission>
             <permission>CAN_MERGE_SUGGESTION</permission>
-            <permission>CAN_SHARE</permission>
-            <permission>CAN_PRINT_LW</permission>
-            <permission>CAN_PRINT_DW</permission>
+            <permission>CAN_EXPORT_LW</permission>
+            <permission>CAN_EXPORT_DW</permission>
             <permission>CAN_CREATE_MILESTONE</permission>
             <permission>CAN_RESTORE_PREVIOUS_VERSION</permission>
+            <permission>CAN_ADD_REMOVE_COLLABORATOR</permission>
             <permission>CAN_DOWNLOAD_PROPOSAL</permission>
             <permission>CAN_UPLOAD</permission>
+            <permission>CAN_SEE_ALL_DOCUMENTS</permission>
         </permissions>
         <application-role>true</application-role>
         <collaborator>false</collaborator>

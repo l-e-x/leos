@@ -17,33 +17,39 @@ import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.i18n.MessageHelper;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Aggregates the tocItems and the ancestors ids for selected toc item
  */
 public class TocAndAncestorsVO {
 
-    private List<TocItemVO> tocItems;
+    private Map<String, List<TocItemVO>> tocItemsMap;
     private List<String> elementAncestorsIds;
 
-    public TocAndAncestorsVO(List<TableOfContentItemVO> tocItemList,
-            List<String> elementAncestorsIds, MessageHelper messageHelper) {
-        tocItems = new ArrayList<TocItemVO>(tocItemList.size());
-        for (TableOfContentItemVO tableOfContentItemVO : tocItemList) {
-            TocItemVO tocItemVO = new TocItemVO(tableOfContentItemVO,
-                    messageHelper);
-            tocItems.add(tocItemVO);
+    public TocAndAncestorsVO(Map<String, List<TableOfContentItemVO>> tocItemList,
+                             List<String> elementAncestorsIds, MessageHelper messageHelper) {
+        tocItemsMap = new HashMap<>(tocItemList.size());
+        for (String ref : tocItemList.keySet()) {
+            List<TocItemVO> tocItems = new ArrayList<>();
+            for (TableOfContentItemVO tableOfContentItemVO : tocItemList.get(ref)) {
+                TocItemVO tocItemVO = new TocItemVO(tableOfContentItemVO,
+                        messageHelper);
+                tocItems.add(tocItemVO);
+            }
+            tocItemsMap.put(ref, tocItems);
         }
         this.elementAncestorsIds = elementAncestorsIds;
     }
 
-    public List<TocItemVO> getTocItems() {
-        return tocItems;
+    public Map<String, List<TocItemVO>> getTocItemsMap() {
+        return tocItemsMap;
     }
 
-    public void setTocItems(List<TocItemVO> tocItems) {
-        this.tocItems = tocItems;
+    public void setTocItemsMap(Map<String, List<TocItemVO>> tocItemsMap) {
+        this.tocItemsMap = tocItemsMap;
     }
 
     public List<String> getElementAncestorsIds() {

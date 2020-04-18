@@ -45,14 +45,18 @@ public class JsonSearchResult {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
     public List<JsonAnnotation> getRows() {
         return rows;
     }
 
+    @Generated
     public void setRows(final List<JsonAnnotation> rows) {
         this.rows = rows;
     }
 
+    @Generated
     public long getTotal() {
         return this.total;
     }

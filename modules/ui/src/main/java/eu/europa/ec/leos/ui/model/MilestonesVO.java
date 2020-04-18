@@ -29,9 +29,7 @@ public class MilestonesVO {
     private static final DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
     public MilestonesVO(List<String> titles, Date createdDate, Date updatedDate, String status, String legDocumentName) {
-        StringBuffer titleBuffer = new StringBuffer();
-        titles.forEach(title -> titleBuffer.append(title).append(", "));
-        this.title = titleBuffer.deleteCharAt(titleBuffer.lastIndexOf(",")).toString();
+        this.title = String.join(",", titles);
         this.updatedDate = updatedDate;
         this.createdDate = dateFormat.format(createdDate);
         this.status = status;

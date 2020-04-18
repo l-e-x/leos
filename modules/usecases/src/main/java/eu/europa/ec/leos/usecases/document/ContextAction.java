@@ -14,9 +14,11 @@
 package eu.europa.ec.leos.usecases.document;
 
 public enum ContextAction {
+    DOCUMENT_CREATED,
     METADATA_UPDATED,
     ANNEX_BLOCK_UPDATED,
+    ANNEX_STRUCTURE_UPDATED,
     ANNEX_ADDED,
     ANNEX_METADATA_UPDATED,
-    ANNEX_DELETED,
+    ANNEX_DELETED
 }

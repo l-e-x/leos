@@ -23,4 +23,7 @@ public class AnnotateState extends LeosJavaScriptExtensionState {
     public String anotClient;
     public String anotHost;
     public String annotationContainer;
+    public String operationMode;
+    public boolean showStatusFilter;
+    public boolean showGuideLinesButton;
 }

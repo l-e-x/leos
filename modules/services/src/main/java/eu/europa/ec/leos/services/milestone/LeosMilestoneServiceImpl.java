@@ -18,15 +18,14 @@ import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.services.export.ExportOptions;
-import eu.europa.ec.leos.services.export.ExportResource;
+import eu.europa.ec.leos.services.export.LegPackage;
+import eu.europa.ec.leos.services.store.LegService;
 import eu.europa.ec.leos.services.store.PackageService;
-import io.atlassian.fugue.Pair;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 
 @Service
@@ -34,19 +33,19 @@ import java.io.IOException;
 public class LeosMilestoneServiceImpl extends AbstractMilestoneService {
 
     @Autowired
-    public LeosMilestoneServiceImpl(PackageService packageService) {
-        super(packageService);
+    public LeosMilestoneServiceImpl(LegService legService) {
+        super(legService);
     }
 
     @Override
     @Nonnull
-    public LegDocument createLegDocument(String proposalId, String milestoneComment, Pair<File, ExportResource> legPackage) throws IOException {
-        Validate.notNull(packageService, "Package Service is not available!!");
-        return packageService.createLegDocument(proposalId, PackageService.NOT_AVAILABLE, milestoneComment, legPackage.left(), LeosLegStatus.FILE_READY);
+    public LegDocument createLegDocument(String proposalId, LegPackage legPackage) throws IOException {
+        Validate.notNull(legService, "Leg Service is not available!!");
+        return legService.createLegDocument(proposalId, PackageService.NOT_AVAILABLE, legPackage, LeosLegStatus.FILE_READY);
     }
 
     @Override
-    protected Pair<File, ExportResource> createLegPackage(String proposalId) throws IOException {
-        return packageService.createLegPackage(proposalId, ExportOptions.TO_WORD_MILESTONE_DW);
+    protected LegPackage createLegPackage(String proposalId) throws IOException {
+        return legService.createLegPackage(proposalId, ExportOptions.TO_WORD_MILESTONE_DW);
     }
 }

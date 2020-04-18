@@ -17,12 +17,19 @@ package eu.europa.ec.leos.services.content.processor;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.model.xml.Element;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.vo.toc.OptionsType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.inject.Provider;
 import java.util.Collections;
 import java.util.List;
+
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.HEADING;
 
 @Service
 public class ElementProcessorImpl<T extends XmlDocument> implements ElementProcessor<T> {
@@ -30,14 +37,16 @@ public class ElementProcessorImpl<T extends XmlDocument> implements ElementProce
     @Autowired
     private XmlContentProcessor xmlContentProcessor;
 
+    @Autowired
+    private Provider<StructureContext> structureContextProvider;
+
     @Override
-    public String getElement(T document, String elementName, String elementId) {
+    public String getElement(XmlDocument document, String elementName, String elementId) {
         Validate.notNull(document, "Document is required.");
         Validate.notNull(elementId, "Element id is required.");
 
         String element;
-        element = xmlContentProcessor.getElementByNameAndId(document.getContent().get().getSource().getBytes(),
-                    elementName, elementId);
+        element = xmlContentProcessor.getElementByNameAndId(document.getContent().get().getSource().getBytes(), elementName, elementId);
         return element;
     }
 
@@ -68,6 +77,8 @@ public class ElementProcessorImpl<T extends XmlDocument> implements ElementProce
         Validate.notNull(document, "Document is required.");
         Validate.notNull(elementId, "Element id is required.");
 
+        List<TocItem> tocItems = structureContextProvider.get().getTocItems();
+        elementContent = removeEmptyHeading(document.getContent().get().getSource().getBytes(), elementContent, elementName, elementId, tocItems);
         // merge the updated content with the actual document and return updated document
         byte[] updatedXmlContent = xmlContentProcessor.replaceElementByTagNameAndId(document.getContent().get().getSource().getBytes(),
                     elementContent, elementName, elementId);
@@ -94,4 +105,19 @@ public class ElementProcessorImpl<T extends XmlDocument> implements ElementProce
         byte[] byteXmlContent = document.getContent().get().getSource().getBytes();
         return xmlContentProcessor.replaceTextInElement(byteXmlContent, origText, newText, elementId, startOffset, endOffset);
     }
+
+    private String removeEmptyHeading(byte[] xmlContent, String newContent, String tagName, String idAttributeValue, List<TocItem> tocItems) {
+        String elementTagName;
+        if (tagName.equals(HEADING)) {
+            elementTagName = xmlContentProcessor.getParentElement(xmlContent, tagName, idAttributeValue)[1];
+        } else {
+            elementTagName = tagName;
+        }
+        TocItem tocItem = TocItemUtils.getTocItemByName(tocItems, elementTagName);
+        if (tocItem.getItemHeading() == OptionsType.OPTIONAL) {
+            newContent = xmlContentProcessor.removeEmptyHeading(newContent);
+        }
+        return newContent;
+    }
+
 }

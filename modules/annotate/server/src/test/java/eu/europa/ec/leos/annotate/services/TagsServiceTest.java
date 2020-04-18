@@ -41,6 +41,7 @@ import java.util.List;
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class TagsServiceTest {
 
     private User user;
@@ -184,5 +185,69 @@ public class TagsServiceTest {
 
         // removing empty list should not throw error
         tagsService.removeTags(null);
+    }
+    
+    @Test
+    public void testIsSuggestion() {
+        
+        final Annotation annot = new Annotation();
+        final List<Tag> tagList = new ArrayList<Tag>();
+        tagList.add(new Tag(Annotation.ANNOTATION_SUGGESTION, annot));
+        
+        Assert.assertTrue(tagsService.hasSuggestionTag(tagList));
+    }
+    
+    @Test
+    public void testIsNoSuggestion() {
+        
+        final Annotation annot = new Annotation();
+        final List<Tag> tagList = new ArrayList<Tag>();
+        tagList.add(new Tag("something", annot));
+        
+        Assert.assertFalse(tagsService.hasSuggestionTag(tagList));
+    }
+    
+    @Test
+    public void testIsSuggestion_NoTags() {
+        
+        Assert.assertFalse(tagsService.hasSuggestionTag(null));
+    }
+    
+    @Test
+    public void testIsSuggestion_EmptyTagList() {
+        
+        Assert.assertFalse(tagsService.hasSuggestionTag(new ArrayList<Tag>()));
+    }
+    
+    @Test
+    public void testIsHighlight() {
+        
+        final Annotation annot = new Annotation();
+        final List<Tag> tagList = new ArrayList<Tag>();
+        tagList.add(new Tag(Annotation.ANNOTATION_HIGHLIGHT, annot));
+        
+        Assert.assertTrue(tagsService.hasHighlightTag(tagList));
+    }
+    
+    @Test
+    public void testIsNoHighlight() {
+        
+        final Annotation annot = new Annotation();
+        final List<Tag> tagList = new ArrayList<Tag>();
+        tagList.add(new Tag("whatever", annot));
+        
+        Assert.assertFalse(tagsService.hasHighlightTag(tagList));
+    }
+    
+    @Test
+    public void testIsHighlight_NoTags() {
+        
+        Assert.assertFalse(tagsService.hasHighlightTag(null));
+    }
+    
+    @Test
+    public void testIsHighlight_EmptyTagList() {
+        
+        Assert.assertFalse(tagsService.hasHighlightTag(new ArrayList<Tag>()));
     }
 }

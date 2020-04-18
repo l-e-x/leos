@@ -33,7 +33,7 @@ public class AnnotateServiceImpl implements AnnotateService {
 	private final SecurityContext securityContext;
 	private final AnnotationProvider annotationProvider;
 
-	@Value("${annotate.server.url}")
+	@Value("${annotate.server.internal.url}")
 	private String annotationHost;
 
 	@Autowired

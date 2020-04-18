@@ -13,21 +13,23 @@
  */
 package eu.europa.ec.leos.services.content;
 
-import java.util.List;
+import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.domain.common.Result;
+import eu.europa.ec.leos.services.support.xml.ref.Ref;
+
+import java.util.List;
 
 public interface ReferenceLabelService {
-    /**
-     * Generates the multi references label based on:
-     * - element id being edited {@param referenceLocation}
-     * - list of references, element ids chosen by the user {@param refs}
-     * - byte content being edited {@param xmlBytes}
-     *
-     *
-     * @param refs element ids chosen by the user
-     * @param xmlBytes byte content being edited
-     * @param referenceLocation element id being edited
-     * @return: returns the label if multi ref is valid or an error code otherwise.
-     */
-    Result<String> generateLabel(List<String> refs, String referenceLocation, byte[] xmlBytes) throws Exception;
+    
+    Result<String> generateLabel(List<Ref> refs, byte[] sourceBytes);
+    Result<String> generateLabelStringRef(List<String> refs, String sourceDocumentRef, byte[] sourceBytes);
+    
+    Result<String> generateLabel(List<Ref> refs, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes);
+    Result<String> generateLabelStringRef(List<String> refsString, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes);
+    
+    Result<String> generateLabel(List<Ref> refs, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes, byte[] targetBytes, String targetDocType, boolean withAnchor);
+    Result<String> generateLabelStringRef(List<String> refs, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes, String targetDocumentRef, boolean withAnchor);
+    
+    Result<String> generateSoftmoveLabel(Ref ref, String referenceLocation, XMLModifier xmlModifier, String direction, String documentRefSource) throws Exception;
+    
 }

@@ -56,6 +56,7 @@ define(function bookmarkHandlerModule(require) {
     }
 
     function _navigateToEditor(editor, element) {
+        editor.LEOS.bookmarkNavigatorClicked = true; // keep trace in order to skip Save & Close operation
         function _setFocus() {
             this.focus();
         }

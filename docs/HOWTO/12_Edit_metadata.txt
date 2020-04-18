@@ -1,0 +1,14 @@
+                        EDIT METADATA - HOWTO
+--------------------------------------------------------------------------------
+
+1.  Open the proposal by clicking on the 'Open' button or on the proposal card 
+	in the repository browser. The document will open for editing in the 
+	proposal viewer.
+
+2.  The only meta data that can be changed for the moment are :
+
+	- the proposal title . Click in it to edit it.
+	- the annexe(s) title(s) . Click in it to edit it.
+   
+3. For both element, a "V" and a "X" is available to the right of the editing field
+   in order to 'Save' or 'Cancel' the change.

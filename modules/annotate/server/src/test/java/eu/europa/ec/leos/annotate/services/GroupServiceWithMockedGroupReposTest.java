@@ -19,7 +19,6 @@ import eu.europa.ec.leos.annotate.repository.GroupRepository;
 import eu.europa.ec.leos.annotate.services.exceptions.GroupAlreadyExistingException;
 import eu.europa.ec.leos.annotate.services.impl.GroupServiceImpl;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,7 +31,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
 @WebAppConfiguration
@@ -42,20 +40,6 @@ public class GroupServiceWithMockedGroupReposTest {
     /**
      * Test cases on the GroupService; executed using mocked GroupRepository to simulate desired internal behavior 
      */
-
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        TestDbHelper.cleanupRepositories(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
 
     // -------------------------------------
     // Required services and repositories
@@ -68,6 +52,20 @@ public class GroupServiceWithMockedGroupReposTest {
     @InjectMocks
     private GroupServiceImpl groupService;
 
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -75,22 +73,15 @@ public class GroupServiceWithMockedGroupReposTest {
     /**
      * test that an expected exception is given when persisting a Group internally throws an unexpected exception
      */
-    @Test
-    public void testSavingGroupThrowsExceptionInternally() {
+    @Test(expected = GroupAlreadyExistingException.class)
+    public void testSavingGroupThrowsExceptionInternally() throws GroupAlreadyExistingException {
 
         final String login = "evil";
 
-        Group evilGroup = new Group(login, true);
+        final Group evilGroup = new Group(login, true);
 
         Mockito.when(groupRepos.save(evilGroup)).thenThrow(new RuntimeException());
 
-        try {
-            groupService.createGroup(login, true);
-            Assert.fail("Expected exception from GroupService not received");
-        } catch (GroupAlreadyExistingException ccge) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception from GroupService when group repos throws exception");
-        }
+        groupService.createGroup(login, true);
     }
 }

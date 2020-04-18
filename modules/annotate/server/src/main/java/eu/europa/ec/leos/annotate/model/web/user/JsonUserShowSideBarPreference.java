@@ -42,10 +42,12 @@ public class JsonUserShowSideBarPreference {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public boolean isShow_sidebar_tutorial() {
         return show_sidebar_tutorial;
     }
 
+    @Generated
     public void setShow_sidebar_tutorial(final boolean show_sidebar_tutorial) {
         this.show_sidebar_tutorial = show_sidebar_tutorial;
     }

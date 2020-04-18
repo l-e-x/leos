@@ -34,12 +34,13 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
+
 public class ImportWindow extends AbstractWindow {
 
     private static final long serialVersionUID = -7318940290911926353L;
     private EventBus eventBus;
-    public static final String ARTICLE = "article";
-    public static final String RECITAL = "recital";
     
     private Label content;
     private Button importBtn;

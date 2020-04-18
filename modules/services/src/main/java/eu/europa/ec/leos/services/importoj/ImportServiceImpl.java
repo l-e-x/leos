@@ -13,10 +13,12 @@
  */
 package eu.europa.ec.leos.services.importoj;
 
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.integration.ExternalDocumentProvider;
 import eu.europa.ec.leos.services.support.xml.NumberProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
-import eu.europa.ec.leos.i18n.MessageHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,11 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITALS;
+
 @Service
 class ImportServiceImpl implements ImportService {
 
@@ -32,8 +39,6 @@ class ImportServiceImpl implements ImportService {
     private ConversionHelper conversionHelper;
     private XmlContentProcessor xmlContentProcessor;
     private NumberProcessor numberProcessor;
-    private static final String RECITAL = "recital";
-    private static final String ARTICLE = "article";
 
     @Autowired
     ImportServiceImpl(ExternalDocumentProvider externalDocumentProvider, ConversionHelper conversionHelper, XmlContentProcessor xmlContentProcessor,
@@ -49,29 +54,18 @@ class ImportServiceImpl implements ImportService {
 
     @Override
     public String getFormexDocument(String type, int year, int number) {
-        String formexDocument = null;
-        try {
-            formexDocument = externalDocumentProvider.getFormexDocument(type, year, number);
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to get the document in formex format", e);
-        }
-        return formexDocument;
+        return externalDocumentProvider.getFormexDocument(type, year, number);
     }
 
     @Override
     @Cacheable(value = "aknCache", cacheManager = "cacheManager")
     public String getAknDocument(String type, int year, int number) {
-        String aknDocument = null;
-        try {
-            aknDocument = conversionHelper.convertFormexToAKN(getFormexDocument(type, year, number));
-        } catch (Exception e) {
-            throw new RuntimeException("Unable to convert to AKN", e);
-        }
-        return aknDocument;
+        return conversionHelper.convertFormexToAKN(getFormexDocument(type, year, number));
     }
 
     @Override
-    public byte[] insertSelectedElements(byte[] documentContent, byte[] importedContent, List<String> elementIds, String language) {
+    public byte[] insertSelectedElements(Bill bill, byte[] importedContent, List<String> elementIds, String language) {
+        byte[] documentContent = getContent(bill);
         for (String id : elementIds) {
             String[] element = xmlContentProcessor.getElementById(importedContent, id);
 
@@ -79,28 +73,28 @@ class ImportServiceImpl implements ImportService {
             String xPath = "//" + element[1] + "[last()]";
             String elementId = xmlContentProcessor.getElementIdByPath(documentContent, xPath);
             String elementType = element[1];
-            if (elementId != null) {
-                // do pre-processing on the selected elements
-                String updatedElement = xmlContentProcessor.doImportedElementPreProcessing(element[2], elementType);
-                if (elementType.equalsIgnoreCase(ARTICLE)) {
-                    updatedElement = this.numberProcessor.renumberImportedArticle(updatedElement,language);
-                } else if (elementType.equalsIgnoreCase(RECITAL)) {
-                    updatedElement = this.numberProcessor.renumberImportedRecital(updatedElement);
-                }
 
-                if (updatedElement != null) {
-                    // insert selected element to the document
-                    documentContent = xmlContentProcessor.insertElementByTagNameAndId(documentContent, updatedElement,
-                            element[1],
-                            elementId, checkIfLastArticleIsEntryIntoForce(documentContent, element, elementId, language));
-                }
-            } else {
-                // TODO:handle case when no desired element exists in the document.
+            // Do pre-processing on the selected elements
+            String updatedElement = xmlContentProcessor.doImportedElementPreProcessing(element[2], elementType);
+            if (elementType.equalsIgnoreCase(ARTICLE)) {
+                updatedElement = this.numberProcessor.renumberImportedArticle(updatedElement, language);
+            } else if (elementType.equalsIgnoreCase(RECITAL)) {
+                updatedElement = this.numberProcessor.renumberImportedRecital(updatedElement);
+            }
+
+            // Insert selected element to the document
+            if (elementId != null) {
+                documentContent = xmlContentProcessor.insertElementByTagNameAndId(documentContent, updatedElement,
+                        element[1], elementId, checkIfLastArticleIsEntryIntoForce(documentContent, element, elementId, language));
+            } else if (elementType.equalsIgnoreCase(ARTICLE)) {
+                documentContent = xmlContentProcessor.appendElementToTag(documentContent, BODY, updatedElement, true);
+            } else if (elementType.equalsIgnoreCase(RECITAL)) {
+                documentContent = xmlContentProcessor.appendElementToTag(documentContent, RECITALS, updatedElement, true);
             }
         }
-        // renumber
+        // Renumber
         documentContent = this.numberProcessor.renumberRecitals(documentContent);
-        documentContent = this.numberProcessor.renumberArticles(documentContent, language);
+        documentContent = this.numberProcessor.renumberArticles(documentContent);
         documentContent = xmlContentProcessor.doXMLPostProcessing(documentContent);
         return documentContent;
     }
@@ -127,4 +121,10 @@ class ImportServiceImpl implements ImportService {
         }
         return isHeadingMatched;
     }
+
+    private byte[] getContent(Bill bill) {
+        final Content content = bill.getContent().getOrError(() -> "Document content is required!");
+        return content.getSource().getBytes();
+    }
+
 }

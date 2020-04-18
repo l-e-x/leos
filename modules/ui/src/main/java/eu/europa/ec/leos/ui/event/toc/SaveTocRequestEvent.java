@@ -14,19 +14,35 @@
 package eu.europa.ec.leos.ui.event.toc;
 
 
-import java.util.List;
-
+import eu.europa.ec.leos.model.action.CheckinElement;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
+
+import java.util.List;
+import java.util.Set;
 
 public class SaveTocRequestEvent {
     private List<TableOfContentItemVO> tableOfContentItemVOs;
-
-    public SaveTocRequestEvent(List<TableOfContentItemVO> list) {
-        tableOfContentItemVOs = list;
+    
+    private Set<CheckinElement> saveElements;
+    
+    public SaveTocRequestEvent(List<TableOfContentItemVO> tocVOs, Set<CheckinElement> saveElements) {
+        this.tableOfContentItemVOs = tocVOs;
+        this.saveElements = saveElements;
     }
-
+    
     public List<TableOfContentItemVO> getTableOfContentItemVOs() {
         return tableOfContentItemVOs;
     }
-
+    
+    public void setTableOfContentItemVOs(List<TableOfContentItemVO> tableOfContentItemVOs) {
+        this.tableOfContentItemVOs = tableOfContentItemVOs;
+    }
+    
+    public Set<CheckinElement> getSaveElements() {
+        return saveElements;
+    }
+    
+    public void setSaveElements(Set<CheckinElement> saveElements) {
+        this.saveElements = saveElements;
+    }
 }

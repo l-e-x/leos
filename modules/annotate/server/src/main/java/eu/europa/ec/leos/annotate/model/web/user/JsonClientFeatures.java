@@ -46,90 +46,113 @@ public class JsonClientFeatures {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public boolean isDefer_realtime_updates() {
         return defer_realtime_updates;
     }
 
+    @Generated
     public void setDefer_realtime_updates(final boolean defer_realtime_updates) {
         this.defer_realtime_updates = defer_realtime_updates;
     }
 
+    @Generated
     public boolean isFlag_action() {
         return flag_action;
     }
 
+    @Generated
     public void setFlag_action(final boolean flag_action) {
         this.flag_action = flag_action;
     }
 
+    @Generated
     public boolean isEmbed_cachebuster() {
         return embed_cachebuster;
     }
 
+    @Generated
     public void setEmbed_cachebuster(final boolean embed_cachebuster) {
         this.embed_cachebuster = embed_cachebuster;
     }
 
+    @Generated
     public boolean isTotal_shared_annotations() {
         return total_shared_annotations;
     }
 
+    @Generated
     public void setTotal_shared_annotations(final boolean total_shared_annotations) {
         this.total_shared_annotations = total_shared_annotations;
     }
 
+    @Generated
     public boolean isSearch_for_doi() {
         return search_for_doi;
     }
 
+    @Generated
     public void setSearch_for_doi(final boolean search_for_doi) {
         this.search_for_doi = search_for_doi;
     }
 
+    @Generated
     public boolean isClient_oauth() {
         return client_oauth;
     }
 
+    @Generated
     public void setClient_oauth(final boolean client_oauth) {
         this.client_oauth = client_oauth;
     }
 
+    @Generated
     public boolean isApi_render_user_info() {
         return api_render_user_info;
     }
 
+    @Generated
     public void setApi_render_user_info(final boolean api_render_user_info) {
         this.api_render_user_info = api_render_user_info;
     }
 
+    @Generated
     public boolean isOrphans_tab() {
         return orphans_tab;
     }
 
+    @Generated
     public void setOrphans_tab(final boolean orphans_tab) {
         this.orphans_tab = orphans_tab;
     }
 
+    @Generated
     public boolean isFilter_highlights() {
         return filter_highlights;
     }
 
+    @Generated
     public void setFilter_highlights(final boolean filter_highlights) {
         this.filter_highlights = filter_highlights;
     }
 
+    @Generated
     public boolean isOverlay_highlighter() {
         return overlay_highlighter;
     }
 
+    @Generated
     public void setOverlay_highlighter(final boolean overlay_highlighter) {
         this.overlay_highlighter = overlay_highlighter;
     }
 
+    @Generated
     public boolean isClient_display_names() {
         return client_display_names;
     }
 
+    @Generated
     public void setClient_display_names(final boolean client_display_names) {
         this.client_display_names = client_display_names;
     }

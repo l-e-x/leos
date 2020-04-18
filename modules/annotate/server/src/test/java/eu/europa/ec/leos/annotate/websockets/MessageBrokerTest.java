@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.europa.ec.leos.annotate.Authorities;
+import eu.europa.ec.leos.annotate.model.UserDetails;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
@@ -24,9 +25,11 @@ import eu.europa.ec.leos.annotate.model.web.websocket.Clause;
 import eu.europa.ec.leos.annotate.model.web.websocket.Filter;
 import eu.europa.ec.leos.annotate.model.web.websocket.SubscriptionRequest;
 import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
+import eu.europa.ec.leos.annotate.services.AnnotationPermissionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
 import eu.europa.ec.leos.annotate.services.UserService;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationConversionServiceImpl;
+import eu.europa.ec.leos.annotate.services.impl.AnnotationPermissionServiceImpl;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,10 +43,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -151,6 +151,7 @@ public class MessageBrokerTest {
         Mockito.when(subscriber.getId()).thenReturn("s1");
         final UserInformation userInformation = new UserInformation("login", Authorities.EdiT); // subscribing user is EdiT user
         userInformation.setClientId("x1");
+        userInformation.setUserDetails(new UserDetails("login", Long.valueOf(8), "f", "n", null, "", Arrays.asList("author")));
         final WebSocketSession subscriber2 = Mockito.mock(WebSocketSession.class);
         Mockito.when(subscriber2.getId()).thenReturn("s2");
         final UserInformation userInformation2 = Mockito.mock(UserInformation.class);
@@ -177,7 +178,9 @@ public class MessageBrokerTest {
         Mockito.when(userService.getHypothesisUserAccountFromUser(Mockito.any(User.class), Mockito.anyString())).thenReturn("acct:user@" + Authorities.EdiT);
         
         // let the published annotation be created - should be anonymised (LEOS user is seeing SENT ISC annotation) 
-        final AnnotationConversionService realConvService = new AnnotationConversionServiceImpl(userService);
+        final AnnotationPermissionService realPermService = new AnnotationPermissionServiceImpl();
+        final AnnotationConversionService realConvService = new AnnotationConversionServiceImpl(userService, realPermService);
+        
         final JsonAnnotation jsAnnot = realConvService.convertToJsonAnnotation(annotation1, userInformation);
         Mockito.when(conversionService.convertToJsonAnnotation(Mockito.any(Annotation.class), Mockito.any(UserInformation.class))).thenReturn(jsAnnot);
 
@@ -460,14 +463,16 @@ public class MessageBrokerTest {
 
     @SuppressWarnings("unchecked")
     private String getId(final TextMessage textMessage) throws JsonParseException, JsonMappingException, IOException {
-        final Map<String, Object> message = (new ObjectMapper()).readValue(textMessage.getPayload(), Map.class);
+        final ObjectMapper objMapper = new ObjectMapper();
+        final Map<String, Object> message = objMapper.readValue(textMessage.getPayload(), Map.class);
         final Map<String, Object> annotation = (HashMap<String, Object>) ((ArrayList<Map<String, Object>>) (message.get("payload"))).get(0);
         return (String) annotation.get("id");
     }
     
     @SuppressWarnings("unchecked")
     private Map<String, String> getUserInfo(final TextMessage textMessage) throws JsonParseException, JsonMappingException, IOException {
-        final Map<String, Object> message = (new ObjectMapper()).readValue(textMessage.getPayload(), Map.class);
+        final ObjectMapper objMapper = new ObjectMapper();
+        final Map<String, Object> message = objMapper.readValue(textMessage.getPayload(), Map.class);
         final Map<String, Object> annotation = (HashMap<String, Object>) ((ArrayList<Map<String, Object>>) (message.get("payload"))).get(0);
         return (Map<String, String>) annotation.get("user_info");
     }

@@ -16,27 +16,31 @@ package eu.europa.ec.leos.domain.cmis.metadata;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 
 public final class MemorandumMetadata extends LeosMetadata {
-    public MemorandumMetadata(String stage, String type, String purpose, String template, String language, String docTemplate, String ref, String objectId) {
-        super(LeosCategory.MEMORANDUM, stage, type, purpose, template, language, docTemplate, ref, objectId);
+    public MemorandumMetadata(String stage, String type, String purpose, String template, String language, String docTemplate, String ref, String objectId, String docVersion) {
+        super(LeosCategory.MEMORANDUM, stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final MemorandumMetadata withPurpose(String purpose) {
-        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final MemorandumMetadata withRef(String ref) {
-        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final MemorandumMetadata withObjectId(String objectId) {
-        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final MemorandumMetadata withType(String type) {
-        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final MemorandumMetadata withTemplate(String template) {
-        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
+    }
+    
+    public final MemorandumMetadata withDocVersion(String docVersion) {
+        return new MemorandumMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 }

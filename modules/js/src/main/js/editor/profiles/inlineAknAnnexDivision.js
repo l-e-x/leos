@@ -53,6 +53,7 @@ define(function aknInlineAnnexDivisionProfileModule(require) {
     plugins.push(require("plugins/leosManualRenumbering/leosManualRenumberingPlugin"));
     plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
     plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+    plugins.push(require("plugins/leosPreventSelectAll/leosPreventSelectAllPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -93,10 +94,6 @@ define(function aknInlineAnnexDivisionProfileModule(require) {
         mathJaxLib: './webjars/MathJax/2.7.0/MathJax.js?config=default',
         // LEOS-2887 removing tooltip title 
         title: false,
-        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in annex division
-        blockedKeystrokes: [
-            CKEDITOR.CTRL + 65 //CTRL +A
-        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"

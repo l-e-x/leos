@@ -13,6 +13,8 @@
  */
 package eu.europa.ec.leos.services.importoj;
 
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+
 import java.util.List;
 
 public interface ImportService {
@@ -20,6 +22,6 @@ public interface ImportService {
     
     String getAknDocument(String type, int year, int number);
     
-    byte[] insertSelectedElements(byte[] originalContent, byte[] importedContent, List<String> elementIds, String language);
+    byte[] insertSelectedElements(Bill bill, byte[] importedContent, List<String> elementIds, String language);
     
 }

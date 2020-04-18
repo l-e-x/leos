@@ -25,10 +25,12 @@ public class SubscriptionRequest {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public Filter getFilter() {
         return filter;
     }
 
+    @Generated
     public void setFilter(final Filter filter) {
         this.filter = filter;
     }
@@ -45,7 +47,7 @@ public class SubscriptionRequest {
 
     @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

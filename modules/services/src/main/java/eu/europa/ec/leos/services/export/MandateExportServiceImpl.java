@@ -18,8 +18,11 @@ import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.integration.DocuWriteService;
 import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.content.processor.TransformationService;
+import eu.europa.ec.leos.services.document.AnnexService;
+import eu.europa.ec.leos.services.document.BillService;
+import eu.europa.ec.leos.services.store.LegService;
 import eu.europa.ec.leos.services.store.PackageService;
-import io.atlassian.fugue.Pair;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,9 +41,11 @@ public class MandateExportServiceImpl extends ExportServiceImpl {
     protected final DocuWriteService docuwriteService;
     
     @Autowired
-    MandateExportServiceImpl(PackageService packageService, SecurityContext securityContext,
-            ExportHelper exportHelper, DocuWriteService docuwriteService) {
-        super(packageService, securityContext, exportHelper);
+    MandateExportServiceImpl(LegService legService, PackageService packageService, SecurityContext securityContext,
+                             ExportHelper exportHelper, DocuWriteService docuwriteService,
+                             BillService billService, AnnexService annexService,
+                             TransformationService transformationService) {
+        super(legService, packageService, securityContext, exportHelper, billService, annexService, transformationService);
         this.docuwriteService = docuwriteService;
     }
     
@@ -52,20 +57,26 @@ public class MandateExportServiceImpl extends ExportServiceImpl {
         Validate.notNull(exportOptions);
         Validate.notNull(documentId);
         FileOutputStream fileOuputStream = null;
+        LegPackage legPackage = null;
         try {
-            Pair<File, ExportResource> legPackage = packageService.createLegPackage(documentId, exportOptions, versionToCompare.orElse(null));
-            File legFile = createZipFile(legPackage, jobFileName, exportOptions);
-            byte[] docuwriteResponse = docuwriteService.convert(legFile);
-            File outputFile = File.createTempFile("Proposal_" + documentId + "_" + System.currentTimeMillis(), ".zip");
+            legPackage = legService.createLegPackage(documentId, exportOptions, versionToCompare.orElse(null));
+            File zipFile = createZipFile(legPackage, jobFileName, exportOptions);
+            byte[] docuwriteResponse = docuwriteService.convert(zipFile);
+            File outputFile = File.createTempFile("Proposal_" + documentId + "_AKN2DW_" + System.currentTimeMillis(), ".zip");
             fileOuputStream = new FileOutputStream(outputFile);
             fileOuputStream.write(docuwriteResponse);
             return outputFile;
         } catch(Exception e) {
-            LOG.error("An exception occoured while using the Docuwrite service: ", e);
+            LOG.error("An exception occurred while using the Docuwrite service: ", e);
             throw e;
         } finally {
             if(fileOuputStream != null) {
                 fileOuputStream.close();
+            }
+            // removal of the leg file only, the zip file will be kept in temp folder in case the converter fails and we need manual run.
+            if(legPackage.getFile() != null && legPackage.getFile() .exists())
+            {
+                legPackage.getFile().delete();
             }
             LOG.trace("createDocuWritePackage() end....");
         }

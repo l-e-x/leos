@@ -1,6 +1,6 @@
 PROJECT: LEOS
-Joinup Release: 2.1.0-SNAPSHOT
-Date: 2019-06-25
+Joinup Release: 3.0.0
+Date: 2020-03-23
 
 INTRODUCTION
 ============
@@ -117,16 +117,22 @@ There are two options for running CMIS repository.
 B5. RUNNING LEOS
 ================
 
-Note: User database and repository must already be running.
+Notes:
+    - User database and repository must already be running.
+    - LEOS can use SAML protocol to authenticate with an IDP.
+    - To use SAML it is needed modify SAML configuration defined in "securityContext.xml" file inside module "security-saml".
 
 You must run LEOS on the command line.
 
     1) Traverse to folder {LEOS}
     2) Execute the following command to compile source code.
-            mvn clean install
+        - For default authentication: mvn clean install
+        - For SAML authentication: mvn clean install -Dsaml
     3) Traverse to folder {LEOS}/modules/web
     4) Execute the following command to run LEOS.
-            mvn jetty:run-war
+        - For default authentication: mvn jetty:run-war
+        - For SAML authentication: mvn jetty:run-war -Dsaml
+            
 
 Open the browser and navigate to the LEOS web interface available at the following URL:
 

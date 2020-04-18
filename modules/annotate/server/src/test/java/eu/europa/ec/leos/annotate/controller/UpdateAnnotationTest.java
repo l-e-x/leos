@@ -17,11 +17,8 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.*;
 import eu.europa.ec.leos.annotate.model.UserInformation;
-import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
-import eu.europa.ec.leos.annotate.model.entity.Metadata;
-import eu.europa.ec.leos.annotate.model.entity.Token;
-import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
@@ -58,6 +55,8 @@ import java.util.Arrays;
 @ActiveProfiles("test")
 public class UpdateAnnotationTest {
 
+    private static final String API_URL = "/api/annotations/";
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -78,6 +77,9 @@ public class UpdateAnnotationTest {
     @Autowired
     private UserRepository userRepos;
 
+    @Autowired
+    private UserGroupRepository userGroupRepos;
+    
     @Autowired
     private MetadataRepository metadataRepos;
     
@@ -146,7 +148,7 @@ public class UpdateAnnotationTest {
         // send
         final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
 
-        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/annotations/" + annotId)
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch(API_URL + annotId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedAnnotation)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
@@ -186,7 +188,7 @@ public class UpdateAnnotationTest {
     }
 
     /**
-     * update an annotation that has response status SENT
+     * update an annotation that has response status SENT (by ISC user not being part of the group to which the annotation belongs)
      * expected HTTP 400
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -215,14 +217,14 @@ public class UpdateAnnotationTest {
         // send
         final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
 
-        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/annotations/" + annotId)
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch(API_URL + annotId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedAnnotation)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
         final ResultActions result = this.mockMvc.perform(builder);
 
-        // expected: Http 200
+        // expected: Http 400
         result.andExpect(MockMvcResultMatchers.status().isBadRequest());
 
         final MvcResult resultContent = result.andReturn();
@@ -240,6 +242,66 @@ public class UpdateAnnotationTest {
     }
     
     /**
+     * update an annotation that has response status SENT (by ISC user being part of the group to which the annotation belongs)
+     * expected HTTP 200 and a new annotation be returned
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testUpdateSentAnnotationOk() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = "acct:user@" + authority;
+
+        final UserInformation userInfo = new UserInformation(user, authority);
+
+        // preparation: save an annotation that can be updated later on
+        JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final String initialText = jsAnnot.getText();
+        jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
+        final String annotId = jsAnnot.getId();
+
+        // update the metadata in the database
+        final Metadata savedMetadata = annotService.findAnnotationById(annotId).getMetadata();
+        savedMetadata.setResponseStatus(ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+        
+        // add user to the group
+        final Group group = groupRepos.findByName(jsAnnot.getGroup());
+        userGroupRepos.save(new UserGroup(user.getId(), group.getId()));
+        
+        // modify the annotation
+        jsAnnot.setText(initialText + " new text");
+
+        // send
+        final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
+
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch(API_URL + annotId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(serializedAnnotation)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 200
+        result.andExpect(MockMvcResultMatchers.status().isOk());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // response is a new annotation with different ID, but linked to the original
+        final JsonAnnotation jsResponse = SerialisationHelper.deserializeJsonAnnotation(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertNotEquals(jsResponse.getId(), jsAnnot.getId());
+        Assert.assertEquals(jsResponse.getLinkedAnnotationId(), jsAnnot.getId());
+        Assert.assertTrue(jsResponse.getDocument().getMetadata().containsValue(Metadata.ResponseStatus.IN_PREPARATION.toString()));
+
+        // check that original annotation now is linked to the new one in the database
+        final Annotation ann = annotRepos.findById(annotId);
+        Assert.assertNotNull(ann);
+        Assert.assertEquals(jsResponse.getId(), ann.getLinkedAnnotationId());
+    }
+    
+    /**
      * failure upon updating a non-existing annotation, expected HTTP 404 and failure response
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -254,7 +316,7 @@ public class UpdateAnnotationTest {
         // send update request
         final String serializedAnnotation = SerialisationHelper.serialize(jsAnnot);
 
-        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/annotations/" + annotId)
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch(API_URL + annotId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(serializedAnnotation)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);

@@ -13,11 +13,26 @@
  */
 package eu.europa.ec.leos.services.document;
 
+import static eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper.createValueMap;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+
 import com.google.common.base.Stopwatch;
+
 import cool.graph.cuid.Cuid;
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
 import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
 import eu.europa.ec.leos.repository.document.ProposalRepository;
@@ -26,17 +41,6 @@ import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
 import io.atlassian.fugue.Option;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import static eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper.createValueMap;
 
 @Service
 public class ProposalServiceImpl implements ProposalService {
@@ -67,9 +71,9 @@ public class ProposalServiceImpl implements ProposalService {
     public Proposal createProposal(String templateId, String path, ProposalMetadata metadata, byte[] content) {
         LOG.trace("Creating Proposal... [templateId={}, path={}, metadata={}]", templateId, path, metadata);
         String name = generateProposalName();
-        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
+        metadata = metadata.withRef(name.replaceAll(PROPOSAL_DOC_EXTENSION + "$", ""));//FIXME: a better scheme needs to be devised
         Proposal proposal = proposalRepository.createProposal(templateId, path, name, metadata);
-        byte[] updatedBytes = updateDataInXml((content==null)? getContent(proposal) : content, metadata);
+        byte[] updatedBytes = updateDataInXml((content == null) ? getContent(proposal) : content, metadata);
         return proposalRepository.updateProposal(proposal.getId(), updatedBytes);
     }
 
@@ -77,8 +81,8 @@ public class ProposalServiceImpl implements ProposalService {
     public Proposal createProposalFromContent(String path, ProposalMetadata metadata, byte[] content) {
         LOG.trace("Creating Proposal From Content... [path={}, metadata={}]", path, metadata);
         String name = generateProposalName();
-        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
-        return proposalRepository.createProposalFromContent(path, name, metadata, content);
+        metadata = metadata.withRef(name.replaceAll(PROPOSAL_DOC_EXTENSION + "$", ""));//FIXME: a better scheme needs to be devised
+        return proposalRepository.createProposalFromContent(path, name, metadata, updateDataInXml(content, metadata));
     }
 
     @Override
@@ -88,10 +92,10 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     @Override
-    public Proposal updateProposal(Proposal proposal, ProposalMetadata updatedMetadata, boolean major, String comment) {
-        LOG.trace("Updating Proposal... [id={}, metadata={}, major={}, comment={}]", proposal.getId(), updatedMetadata, major, comment);
+    public Proposal updateProposal(Proposal proposal, ProposalMetadata updatedMetadata, VersionType versionType, String comment) {
+        LOG.trace("Updating Proposal... [id={}, metadata={}, versionType={}, comment={}]", proposal.getId(), updatedMetadata, versionType, comment);
         byte[] updatedBytes = updateDataInXml(getContent(proposal), updatedMetadata);
-        proposal = proposalRepository.updateProposal(proposal.getId(), updatedMetadata, updatedBytes, major, comment);
+        proposal = proposalRepository.updateProposal(proposal.getId(), updatedMetadata, updatedBytes, versionType, comment);
         return proposal;
     }
 
@@ -102,10 +106,10 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     @Override
-    public Proposal updateProposalWithMilestoneComments(Proposal proposal, List<String> milestoneComments, boolean major, String comment) {
-        LOG.trace("Updating Proposal... [id={}, milestoneComments={}, major={}, comment={}]", proposal.getId(), milestoneComments, major, comment);
+    public Proposal updateProposalWithMilestoneComments(Proposal proposal, List<String> milestoneComments, VersionType versionType, String comment) {
+        LOG.trace("Updating Proposal... [id={}, milestoneComments={}, major={}, comment={}]", proposal.getId(), milestoneComments, versionType, comment);
         final byte[] updatedBytes = getContent(proposal);
-        proposal = proposalRepository.updateProposal(proposal.getId(), milestoneComments, updatedBytes, major, comment);
+        proposal = proposalRepository.updateProposal(proposal.getId(), milestoneComments, updatedBytes, versionType, comment);
         return proposal;
     }
 
@@ -132,10 +136,14 @@ public class ProposalServiceImpl implements ProposalService {
     public void updateProposalAsync(String documentId, String comment) {
         LeosPackage leosPackage = packageRepository.findPackageByDocumentId(documentId);
         Proposal proposal = this.findProposalByPackagePath(leosPackage.getPath());
-        if(proposal != null){
+        if (proposal != null) {
             Option<ProposalMetadata> metadataOption = proposal.getMetadata();
             ProposalMetadata metadata = metadataOption.get();
-            proposalRepository.updateProposal(proposal.getId(), metadata, getContent(proposal), false, comment);
+            if (StringUtils.isEmpty(comment)) {                                // Comment will be stored in cmis:checkinComment property.
+                proposalRepository.updateProposal(proposal.getId(), metadata); // This property only can be updated with a document checkout/checkin (creating new version).
+            } else {                                                           // Then a new proposal version is created only when a comment is received.
+                proposalRepository.updateProposal(proposal.getId(), metadata, getContent(proposal), VersionType.MINOR, comment);
+            }
         }
     }
 
@@ -189,5 +197,21 @@ public class ProposalServiceImpl implements ProposalService {
     private byte[] getContent(Proposal proposal) {
         final Content content = proposal.getContent().getOrError(() -> "Proposal content is required!");
         return content.getSource().getBytes();
+    }
+
+    @Override
+    public Proposal createVersion(String id, VersionType versionType, String comment) {
+        LOG.trace("Creating Proposal version... [id={}, versionType={}, comment={}]", id, versionType, comment);
+        final Proposal proposal = findProposal(id);
+        final ProposalMetadata metadata = proposal.getMetadata().getOrError(() -> "Proposal metadata is required!");
+        final Content content = proposal.getContent().getOrError(() -> "Proposal content is required!");
+        final byte[] contentBytes = content.getSource().getBytes();
+        return proposalRepository.updateProposal(id, metadata, contentBytes, versionType, comment);
+    }
+
+    @Override
+    public Proposal findProposalByRef(String ref) {
+        LOG.trace("Finding Proposal by ref... [ref=" + ref + "]");
+        return proposalRepository.findProposalByRef(ref);
     }
 }

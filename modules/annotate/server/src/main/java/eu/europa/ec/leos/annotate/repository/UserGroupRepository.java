@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate.repository;
 
 import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
@@ -47,4 +48,13 @@ public interface UserGroupRepository extends CrudRepository<UserGroup, Long> {
      * @return all {@link UserGroup} objects denoting the group's user memberships
      */
     List<UserGroup> findByGroupId(long groupId);
+    
+    /**
+     * remove a particular group membership of a user
+     * 
+     * @param userId the user ID
+     * @param groupId the group ID
+     */
+    @Modifying
+    void deleteByUserIdAndGroupId(long userId, long groupId);
 }

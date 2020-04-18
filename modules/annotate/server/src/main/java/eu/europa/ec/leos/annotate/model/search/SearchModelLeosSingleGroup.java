@@ -29,7 +29,7 @@ public class SearchModelLeosSingleGroup extends SearchModel {
     // -------------------------------------
 
     public SearchModelLeosSingleGroup(final ResolvedSearchOptions rso, final List<MetadataIdsAndStatuses> metadataIds) {
-        super(rso, metadataIds);
+        super(rso, metadataIds, Consts.SearchModelMode.StandardSearch);
     }
 
 }

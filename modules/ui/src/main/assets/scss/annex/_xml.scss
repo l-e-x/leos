@@ -15,11 +15,12 @@
 
 @mixin xml {
     @include printUI;
+    @include exportPdf;
 
     akomaNtoso {
         @extend %defaultBoxSizing;
         @extend %pageFont;
-        doc[name="ANNEX"] {
+        doc[name="ANNEX" i] {
             @extend %xmlCoverPage;
             @extend %xmlSecondPage;
         }
@@ -29,11 +30,11 @@
     }
     
     // AKN styles
-    doc[name="ANNEX"] {
+    doc[name="ANNEX" i] {
         @extend %xmlAuthorialNote;
         @extend %elementActions;
         @extend %elementUserCoEdition;
-        @extend %xmlDivision;
+        @extend %xmlLevel;
         @extend %xmlParagraph;
         @extend %xmlLongTitle;
         @extend %xmlList;
@@ -43,17 +44,24 @@
         @extend %xmlHigherElements;
         @extend %xmlImage;
         @extend %documentFooter;
+        @extend %xmlLevelSubParagraph;
+
+        @extend %xmlArticle;
+        @extend %xmlArticleParagraph;
+        @extend %xmlArticleSubParagraph;
+        @extend %xmlArticleAlinea;
+        @extend %xmlReference;
 
         @include editor;
         
         display: block;
     }
 
-    div.leos-annex-view div.leos-doc-content doc[name="ANNEX"] {
+    div.leos-annex-view div.leos-doc-content doc[name="ANNEX" i] {
         @extend %soft;
     }
 
-    div.leos-annex-view div.leos-double-comparison-content doc[name="ANNEX"] {
+    div.leos-annex-view div.leos-double-comparison-content doc[name="ANNEX" i] {
         @extend %doubleCompare;
     }
 }

@@ -47,9 +47,4 @@ public class ComparisonComponent<T extends XmlDocument> extends Panel implements
         }//end switch
         return featureWidth;
     }
-
-    @Override
-    public Class getChildClass() {
-        return getContent().getClass();
-    }
 }

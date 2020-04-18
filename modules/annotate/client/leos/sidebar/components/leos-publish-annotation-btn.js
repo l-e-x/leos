@@ -16,10 +16,13 @@
 var publishAnnotation = require('../../../src/sidebar/components/publish-annotation-btn');
 var serviceConfig = require('../../../src/sidebar/service-config');
 var SYSTEMIDS = require('../../../leos/shared/systemId');
+var OPERATION_MODES = require('../../../leos/shared/operationMode');
 
 // @ngInject
 function LeosPublishAnnotationController($injector, groups, settings) {
-    $injector.invoke(publishAnnotation.controller, this, {groups: groups});
+    var svc = serviceConfig(settings);
+    var groupsToLoad = (svc && svc.authority && svc.authority === SYSTEMIDS.ISC) ? [] : groups;
+    $injector.invoke(publishAnnotation.controller, this, {groups: groupsToLoad});
 
     this.groupCategory = function (group) {
         return group.type === 'open' ? 'public' : 'group';
@@ -27,23 +30,25 @@ function LeosPublishAnnotationController($injector, groups, settings) {
 
     this.getAllGroups = function () {
         var searchBarSelectGroup = groups.focused();
-        if (searchBarSelectGroup.type == 'open') {
-          return groups.all();
-        }
-        else {
+        if (settings.operationMode === OPERATION_MODES.PRIVATE) {
+            //on private mode, annotations cannot be published to any group, only to self
+            return [];
+        } else if (searchBarSelectGroup.type === 'open') {
+            return groups.all();
+        } else {
           return [searchBarSelectGroup];
         }
-    }
+    };
     
     this.isAuthorityVisible = function() {
-    	var svc = serviceConfig(settings);
-    	var isVisible = true;
-    	if(svc && svc.authority && svc.authority === SYSTEMIDS.ISC) {
-    		isVisible = false;
-    	}
-    	return isVisible;
+        var svc = serviceConfig(settings);
+        var isVisible = true;
+        if(svc && svc.authority && svc.authority === SYSTEMIDS.ISC) {
+            isVisible = false;
+        }
+        return isVisible;
     };
-};
+}
 
 module.exports = {
     controller: LeosPublishAnnotationController,
@@ -54,7 +59,7 @@ module.exports = {
       isShared: '<',
       onCancel: '&',
       onSave: '&',
-      onSetPrivacy: '&',
+      onSetPrivacy: '&'
     },
     controllerAs: 'vm',
     template: require('../templates/leos-publish-annotation-btn.html')

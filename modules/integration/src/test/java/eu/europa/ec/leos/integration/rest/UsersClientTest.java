@@ -22,6 +22,7 @@ import static org.mockito.Mockito.when;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import eu.europa.ec.leos.model.user.Entity;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.junit.Before;
@@ -68,14 +69,15 @@ public class UsersClientTest extends LeosTest{
         String user2Login = "surryp";
         String user2Mail = "surryp@test.com";
 
-        String entity = "Entity";
+        List<Entity> entities = new ArrayList<>();
+        entities.add(new Entity("1", "EXT.A1", "Ext"));
 
         String searchKey = "smith";
         
         List<String> roles = new ArrayList<>();
 
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, roles);
-        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, entity, user2Mail, roles);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entities, user1Mail, roles);
+        UserJSON user2 = new UserJSON(user2Login, 0l, user2FirstName, user2LastName, entities, user2Mail, roles);
 
         List<UserJSON> users = new ArrayList<UserJSON>();
         users.add(user1);
@@ -96,12 +98,12 @@ public class UsersClientTest extends LeosTest{
         assertThat(result.size(), is(2));
         assertEquals(result.get(0).getLogin(),user1Login);
         assertEquals(result.get(0).getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.get(0).getEntity(), entity);
+        assertEquals(result.get(0).getEntities(), entities);
         assertEquals(result.get(0).getId(), Long.valueOf(1));
         assertEquals(((UserJSON) result.get(0)).getRoles(), roles);
         assertEquals(result.get(1).getLogin(),user2Login);
         assertEquals(result.get(1).getName(), user2LastName + " " + user2FirstName);
-        assertEquals(result.get(1).getEntity(), entity);
+        assertEquals(result.get(1).getEntities(), entities);
         assertEquals(result.get(1).getId(), Long.valueOf(0));
         assertEquals(((UserJSON) result.get(1)).getRoles(), roles);
     }
@@ -113,13 +115,14 @@ public class UsersClientTest extends LeosTest{
         String user1Login = "smithj";
         String user1Mail = "smithj@test.com";
 
-        String entity = "Entity";
+        List<Entity> entities = new ArrayList<>();
+        entities.add(new Entity("1", "EXT.A1", "Ext"));
 
         String userId = "smithj";
 
         List<String> roles = new ArrayList<>();
         
-        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entity, user1Mail, roles);
+        UserJSON user1 = new UserJSON(user1Login, 1l, user1FirstName, user1LastName, entities, user1Mail, roles);
 
         String uri = testServerUrl + "/users/{userId}";
 
@@ -134,7 +137,7 @@ public class UsersClientTest extends LeosTest{
         assertEquals(result.getLogin(),user1Login);
         assertEquals(result.getId(), Long.valueOf(1));
         assertEquals(result.getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.getEntity(), entity);
+        assertEquals(result.getEntities(), entities);
         assertEquals(((UserJSON) result).getRoles(), roles);
     }
 }

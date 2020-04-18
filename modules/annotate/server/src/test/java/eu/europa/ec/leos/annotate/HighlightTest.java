@@ -27,6 +27,7 @@ import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
+import eu.europa.ec.leos.annotate.services.TagsService;
 import eu.europa.ec.leos.annotate.services.exceptions.*;
 import org.junit.After;
 import org.junit.Assert;
@@ -39,6 +40,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
@@ -58,8 +60,11 @@ public class HighlightTest {
     private AnnotationService annotService;
 
     @Autowired
-    private AnnotationConversionService conversionService;
+    private TagsService tagsService;
     
+    @Autowired
+    private AnnotationConversionService conversionService;
+
     @Autowired
     private AnnotationTestRepository annotRepos;
 
@@ -203,5 +208,19 @@ public class HighlightTest {
         Assert.assertEquals(1, result.size());
         Assert.assertEquals(annot.getId(), result.getItems().get(0).getId());
         Assert.assertNull(result.getItems().get(0).getText());
+    }
+    
+    /**
+     * test successful recognition of an annotation as a highlight
+     */
+    @Test
+    public void testHighlightIsRecognized() {
+
+        // create the annotation
+        final Annotation annot = new Annotation();
+        annot.setTags(tagsService.getTagList(Arrays.asList(Annotation.ANNOTATION_HIGHLIGHT), annot));
+
+        // verify annotation is considered being a highlight
+        Assert.assertTrue(annotService.isHighlight(annot));
     }
 }

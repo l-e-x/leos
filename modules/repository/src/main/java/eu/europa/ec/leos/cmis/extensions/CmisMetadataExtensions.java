@@ -31,21 +31,27 @@ class CmisMetadataExtensions {
     static Option<ProposalMetadata> getProposalMetadataOption(Document document) {
         return buildMetadata(document, props -> Option.some(
                 new ProposalMetadata(props.stage, props.type, props.purpose, props.template,
-                        props.language, props.docTemplate, props.ref, null)));
+                        props.language, props.docTemplate, props.ref, null, "0.1.0")));
+    }
+
+    static Option<StructureMetaData> getStructureMetadataOption(Document document) {
+        return buildMetadata(document, props -> Option.some(
+                new StructureMetaData(props.stage, props.type, props.purpose, props.template,
+                        props.language, props.docTemplate, props.ref, null, "0.1.0")));
     }
 
     // FIXME add check for leos:memorandum secondary type???
     static Option<MemorandumMetadata> getMemorandumMetadataOption(Document document) {
         return buildMetadata(document, props -> Option.some(
                 new MemorandumMetadata(props.stage, props.type, props.purpose, props.template,
-                        props.language, props.docTemplate, props.ref, null)));
+                        props.language, props.docTemplate, props.ref, null, "0.1.0")));
     }
 
     // FIXME add check for leos:bill secondary type???
     static Option<BillMetadata> getBillMetadataOption(Document document) {
         return buildMetadata(document, props -> Option.some(
                 new BillMetadata(props.stage, props.type, props.purpose, props.template,
-                        props.language, props.docTemplate, props.ref, null)));
+                        props.language, props.docTemplate, props.ref, null, "0.1.0")));
     }
 
     // FIXME add check for leos:annex secondary type???
@@ -59,7 +65,7 @@ class CmisMetadataExtensions {
             if (index != null && number != null) {
                 return Option.some(
                         new AnnexMetadata(props.stage, props.type, props.purpose, props.template,
-                                props.language, props.docTemplate, props.ref, index, number, annexTitle, null));
+                                props.language, props.docTemplate, props.ref, index, number, annexTitle, null, "0.1.0"));
             } else {
                 return Option.none();
             }

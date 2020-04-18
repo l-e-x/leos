@@ -38,8 +38,10 @@ public interface AnnotationRepository extends PagingAndSortingRepository<Annotat
     /**
      * find an annotation with a given ID and having a specific status
      * 
-     * @param annotId the annotation's ID
-     * @param status the desired {@link AnnotationStatus} of the annotation
+     * @param annotId 
+     *        the annotation's ID
+     * @param status 
+     *        the desired {@link AnnotationStatus} of the annotation
      * 
      * @return found Annotation, or {@literal null}
      */
@@ -72,13 +74,25 @@ public interface AnnotationRepository extends PagingAndSortingRepository<Annotat
     /**
      * find all annotations having one of given metadata Ids and a certain status
      * 
-     * @param metadataIds the IDs of the associated metadata
-     * @param status the desired {@link AnnotationStatus} of the annotation
+     * @param metadataIds 
+     *        the IDs of the associated metadata
+     * @param status 
+     *        the desired {@link AnnotationStatus} of the annotation
      * 
      * @return found annotations
      */
     List<Annotation> findByMetadataIdIsInAndStatus(List<Long> metadataIds, AnnotationStatus status);
 
+    /**
+     * find all annotations having one of given metadata Ids
+     * 
+     * @param metadataIds 
+     *        the IDs of the associated metadata
+     * 
+     * @return found {@link Annotation}s
+     */
+    List<Annotation> findByMetadataIdIsIn(List<Long> metadataIds);
+    
     /**
      * keep the following signatures commented out here to remind what is easily possible using Spring Data framework
     List<Annotation> findByDocumentIdAndGroupIdAndRootAnnotationIdIsNull(long documentId, long groupId, Pageable page);
@@ -88,12 +102,26 @@ public interface AnnotationRepository extends PagingAndSortingRepository<Annotat
     /**
      *  search for annotation replies to a given set of annotations
      *  
-     * @param annotationIds the ID of the annotations whose replies are wanted
-     * @param status        the status that the annotations should have
-     * @param page          {@link Pageable} implementation that allows specifying sorting, ordering, and amount of results wanted
-     *                      (required here as we have to provide the replies with the same sorting as their parent annotations)
+     * @param annotationIds 
+     *        the ID of the annotations whose replies are wanted
+     * @param status        
+     *        the status that the annotations should have
+     * @param page          
+     *        {@link Pageable} implementation that allows specifying sorting, ordering, and amount of results wanted
+     *        (required here as we have to provide the replies with the same sorting as their parent annotations)
      * 
-     * @return              list of annotation objects meeting criteria
+     * @return list of annotation objects meeting criteria
      */
     List<Annotation> findByRootAnnotationIdIsInAndStatus(List<String> annotationIds, AnnotationStatus status, Pageable page);
+    
+    /**
+     * search for annotations having sentDeleted=true and certain metadata IDs and certain status IDs
+     * 
+     * @param metadataIds
+     *        the IDs of the desired metadata sets
+     * @param status
+     *        the status that the annotations should have
+     * @return
+     */
+    List<Annotation> findByMetadataIdIsInAndStatusIsInAndSentDeletedIsTrue(List<Long> metadataIds, List<AnnotationStatus> status);
 }

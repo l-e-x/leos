@@ -25,16 +25,9 @@ define(function actionManagerExtensionModule(require) {
     // configuration
     var EDITOR_CHANNEL_CFG = CONFIG.channels.editor;
 
-    var EDITABLE_ELEMENTS = "citation, recital, blockcontainer, division, clause";
-    var EDITABLE_ELEMENTS_EC = EDITABLE_ELEMENTS + ", article";
-    var EDITABLE_ELEMENTS_CN = EDITABLE_ELEMENTS + ", article[leos\\:origin='cn'], " +
-    		"article[leos\\:origin='ec'] paragraph:not(:has(subparagraph, point)), " +
-    		"article[leos\\:origin='ec'] subparagraph, " +
-    		"article[leos\\:origin='ec'] point:not(:has(point, alinea)), " +
-    		"article[leos\\:origin='ec'] alinea";
-
     var actionsListOpened = false;
     var zIndex = 1;
+    var tocItemsList = [];
 
     // handle extension initialization
     function _initExtension(connector) {
@@ -44,6 +37,7 @@ define(function actionManagerExtensionModule(require) {
         let $rootElement = $(UTILS.getParentElement(connector));
         connector.actionsEnabled = true;
         connector.instanceType = connector.getState().instanceType;
+        tocItemsList = JSON.parse(connector.getState().tocItemsJsonArray);
 
         _setupEditorChannel(connector, $rootElement);
         _registerEditorChannelSubscriptions(connector, $rootElement);
@@ -62,11 +56,10 @@ define(function actionManagerExtensionModule(require) {
         return $element.attr("leos:origin");
     }
 
-    const htmlToXmlTagMap = {blockcontainer: "blockContainer"};
-
     function _getType($element) {
         let tagName = $element.prop('tagName').toLowerCase();
-        return htmlToXmlTagMap[tagName] ? htmlToXmlTagMap[tagName] : tagName;
+        let tocItemElement = tocItemsList.find(function(e){return e.aknTag.toLowerCase() === tagName});
+        return tocItemElement ? tocItemElement.aknTag : tagName;
     }
 
     function _getEditable($element) {
@@ -98,8 +91,19 @@ define(function actionManagerExtensionModule(require) {
     }
 
     function _registerActionTriggers(connector, $rootElement) {
-        $rootElement.on("mouseenter.actions", _isCouncilInstance(connector) ? EDITABLE_ELEMENTS_CN : EDITABLE_ELEMENTS_EC, _attachActions.bind(undefined, connector));
-        $rootElement.on("mouseleave.actions", _isCouncilInstance(connector) ? EDITABLE_ELEMENTS_CN : EDITABLE_ELEMENTS_EC, _detachActions.bind(undefined, connector));
+        var EDITABLE_ELEMENTS = "";
+
+        tocItemsList.forEach(function(element) {
+            if (element.editable) {
+                var selector = element.elementSelector ? element.elementSelector : element.aknTag.toLowerCase();
+                EDITABLE_ELEMENTS = EDITABLE_ELEMENTS + selector + ", ";
+            }
+        });
+
+        EDITABLE_ELEMENTS = EDITABLE_ELEMENTS.substr(0, EDITABLE_ELEMENTS.length - 2);
+
+        $rootElement.on("mouseenter.actions", EDITABLE_ELEMENTS, _attachActions.bind(undefined, connector));
+        $rootElement.on("mouseleave.actions", EDITABLE_ELEMENTS, _detachActions.bind(undefined, connector));
 
         $rootElement.on("mouseenter.actions", ".leos-actions", _showActionsSingleIcon.bind(undefined, connector));
         $rootElement.on("mouseleave.actions", ".leos-actions", _hideActions.bind(undefined, connector));
@@ -343,7 +347,7 @@ define(function actionManagerExtensionModule(require) {
             case 'citation':
             case 'recital':
             case 'article':
-            case 'division': {
+            case 'level': {
                 insertBeforeAndAfter = !_isCouncilInstance(connector);//Preventing for council instance
                 break;
             }
@@ -356,6 +360,7 @@ define(function actionManagerExtensionModule(require) {
         let type = _getType($element);
         switch (type) {
             case 'clause': deletable = false; break;
+            case 'heading': deletable = false; break;
             default: deletable = deletable && !_isCouncilInstance(connector);
         }
         return deletable;

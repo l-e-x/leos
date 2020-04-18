@@ -18,25 +18,30 @@ import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+
 abstract public class LabelHandler {
     protected final String THIS_REF = "this";
-    protected final String ARTICLE = "article";
-    protected final String PARAGRAPH = "paragraph";
-    protected final String SUBPARAGRAPH = "subparagraph";
-    protected final String POINT = "point";
-    protected final String SUBPOINT = "sub-point";
-    protected final String INDENT = "indent";
-
     
-    abstract public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale);
+    abstract public boolean canProcess(List<TreeNode> refs);
+    
+    abstract public void process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale, boolean withAnchor);
 
     abstract public int getOrder();
 
-    protected String createAnchor(TreeNode ref, Locale locale) {
-        return String.format("<ref xml:id=\"%s\" href=\"%s\">%s</ref>",
-                ref.getRefId(),
-                ref.getIdentifier(),
-                NumFormatter.formattedNum(ref, locale));
+    protected String createAnchor(TreeNode ref, Locale locale, boolean withAnchor) {
+        final String rv;
+        if(withAnchor) {
+            rv = String.format("<ref xml:id=\"%s\" href=\"%s\" documentref=\"%s\">%s</ref>",
+                    ref.getRefId(),
+                    ref.getIdentifier(),
+                    ref.getDocumentRef(),
+                    NumFormatter.formattedNum(ref, locale));
+        } else {
+            rv = NumFormatter.formattedNum(ref, locale);
+        }
+        
+        return rv;
     }
     protected final boolean contains(List<TreeNode> node, Function<TreeNode, Object> valueGetter, Object value) {
         for (TreeNode treeNode : node) {
@@ -67,4 +72,8 @@ abstract public class LabelHandler {
     protected boolean inThisArticle(List<TreeNode> mrefCommonNodes) {
         return mrefCommonNodes.size() > 0 && ARTICLE.equals(mrefCommonNodes.get(0).getType());
     }
+
+    public void addPreffix(StringBuffer label, String docType) {
+    }
+
 }

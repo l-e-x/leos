@@ -98,18 +98,23 @@ public class JsonAuthenticationFailure {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
     public String getError() {
         return error;
     }
 
+    @Generated
     public void setError(final String error) {
         this.error = error;
     }
 
+    @Generated
     public String getError_description() {
         return error_description;
     }
 
+    @Generated
     public void setError_description(final String error_description) {
         this.error_description = error_description;
     }

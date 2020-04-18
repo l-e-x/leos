@@ -49,34 +49,43 @@ public class StatusUpdateRequest {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public String getGroup() {
         return group;
     }
 
+    @Generated
     public void setGroup(final String group) {
         this.group = group;
     }
 
+    @Generated
     public Metadata.ResponseStatus getResponseStatus() {
         return responseStatus;
     }
 
+    @Generated
     public void setResponseStatus(final Metadata.ResponseStatus responseStatus) {
         this.responseStatus = responseStatus;
     }
 
+    @Generated
     public SimpleMetadata getMetadataToMatch() {
         return metadataToMatch;
     }
 
+    @Generated
     public void setMetadataToMatch(final SimpleMetadata metadataToMatch) {
         this.metadataToMatch = metadataToMatch;
     }
 
+    @Generated
     public String getUri() {
         return uri;
     }
 
+    @Generated
     public void setUri(final String uri) {
         this.uri = uri;
     }

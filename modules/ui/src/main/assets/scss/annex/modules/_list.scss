@@ -13,15 +13,57 @@
  * See the Licence for the specific language governing permissions and limitations under the Licence.
 */
 
-$LIST_PADDING: 1.5cm;
+$LIST_PADDING: 1.0cm;
+$LIST_SPACING: 30px;
 
 %paddedList {
     padding-top: 6pt;
     padding-bottom: 6pt;
 }
 
+%padList {
+    display: block;
+    position: relative;
+
+    & > num {
+        @extend %paddedText;
+        display: block;
+        min-width: $LIST_SPACING;
+        float: left;
+    }
+
+    & > content {
+        & > table {
+            @extend %tableMargin;
+        }
+        & > p {
+            @extend %paddedText;
+            display: block;
+        }
+        & > aknP {
+            @extend %paddedText;
+            display: block;
+            padding-left: $LIST_SPACING;
+        }
+    }
+}
 //------------------------------- XML Styles --------------------------------//
 %xmlList {
+
+    list {
+        point,
+        indent {
+            padding-left: 34px;
+            @extend %padList;
+        }
+    }
+
+
+    point, indent {
+        @extend %padList;
+    }
+
+
     blockList {
         display: block;
     }
@@ -30,7 +72,7 @@ $LIST_PADDING: 1.5cm;
         display: block;
         padding-left: $LIST_PADDING;
         @extend %paddedList;
-        
+
         & > num {
             min-width: $LIST_PADDING;
             margin-left: -$LIST_PADDING;
@@ -55,36 +97,47 @@ $LIST_PADDING: 1.5cm;
         @extend %paddedList;
         padding-left: $LIST_PADDING;
         position: relative;
+        padding-bottom: 0pt;
 
         &:before {
             color: $GREY_COLOR;
             content: attr(data-akn-num);
-            min-width: $LIST_PADDING;
+            //min-width: $LIST_PADDING;
             margin-left: -$LIST_PADDING;
             float: left;
+            margin-right: 15px;
         }
-    }    
+    }
 }
-    
+
 %editorList {
-    ul[data-akn-name="UnNumberedBlockList"] {
+    ol[data-akn-name=aknLevelMandate],
+    ol[data-akn-name=aknOrderedList],
+    ol[data-akn-name=aknLevelOrderedList],
+    ul[data-akn-name="UnNumberedBlockList"],
+    ol[data-akn-name="NumberedBlockList"]{
         @extend %list;
     }
 
-    ol[data-akn-name="NumberedBlockList"] {
-            @extend %list;
+    ol[data-akn-name=aknLevel] > li > ol[data-akn-name=aknLevelOrderedList] {
+        padding-left: $LIST_SPACING;
     }
+
+    ol > li[data-akn-name="aknNumberedParagraph"] > ol[data-akn-name=aknOrderedList] {
+        padding-left: 40px;
+    }
+
 }
 
 //------------------------------- Showblock Styles --------------------------//
 %showblockList {
-    div[data-akn-name="division"] ul[data-akn-name="UnNumberedBlockList"] {
+    div[data-akn-name="level"] ul[data-akn-name="UnNumberedBlockList"] {
         & li {
             @include blockOutline("INDENT", $LIST_PADDING);
         }
     }
 
-    div[data-akn-name="division"] ol[data-akn-name="NumberedBlockList"] {
+    div[data-akn-name="level"] ol[data-akn-name="NumberedBlockList"] {
         & li {
             @include blockOutline("POINT", $LIST_PADDING);
         }

@@ -24,6 +24,7 @@ import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
 import eu.europa.ec.leos.ui.extension.MathJaxExtension;
 import eu.europa.ec.leos.ui.extension.SliderPinsExtension;
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
 import eu.europa.ec.leos.web.event.component.ComparisonResponseEvent;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
 import eu.europa.ec.leos.web.support.user.UserHelper;
@@ -42,11 +43,8 @@ public class TimeLineWindow<T extends XmlDocument> extends AbstractWindow {
     private HorizontalLayout contentCompareResult;
     private SecurityContext securityContext;
 
-    private TimeLineHeaderComponent<T> header;
-
-    final static int SINGLE_COLUMN_MODE = 1;
-    final static int TWO_COLUMN_MODE = 2;
-
+    public TimeLineHeaderComponent<T> header;
+    
     final static String SINGLE_COLUMN_WIDTH = "27.0cm";
     final static String TWO_COLUMN_WIDTH = "37.5cm";
 
@@ -107,11 +105,11 @@ public class TimeLineWindow<T extends XmlDocument> extends AbstractWindow {
         SliderPinsExtension sliderPins = new SliderPinsExtension(contentCompareResult, getSelectorStyleMap());
     }
 
-    private HorizontalLayout buildComparisonResultArea(HashMap<Integer, Object> htmlCompareResult) {
+    private HorizontalLayout buildComparisonResultArea(HashMap<ComparisonDisplayMode, Object> htmlCompareResult) {
         contentCompareResult.removeAllComponents();
         contentCompareResult.setPrimaryStyleName("leos-compare-layout");
 
-        if (htmlCompareResult.get(SINGLE_COLUMN_MODE) != null) {
+        if (htmlCompareResult.get(ComparisonDisplayMode.SINGLE_COLUMN_MODE) != null) {
             LeosDisplayField docDiff = new LeosDisplayField();
             new MathJaxExtension<>(docDiff);
 
@@ -120,10 +118,10 @@ public class TimeLineWindow<T extends XmlDocument> extends AbstractWindow {
             contentCompareResult.addComponent(docDiff);
             contentCompareResult.setExpandRatio(docDiff, 1.0f);
 
-            docDiff.setValue((String) htmlCompareResult.get(SINGLE_COLUMN_MODE));
-        } else if (htmlCompareResult.get(TWO_COLUMN_MODE) != null) {
+            docDiff.setValue((String) htmlCompareResult.get(ComparisonDisplayMode.SINGLE_COLUMN_MODE));
+        } else if (htmlCompareResult.get(ComparisonDisplayMode.TWO_COLUMN_MODE) != null) {
             LeosDisplayField leftSide = new LeosDisplayField();
-            leftSide.setValue(((String[]) htmlCompareResult.get(TWO_COLUMN_MODE))[0]);
+            leftSide.setValue(((String[]) htmlCompareResult.get(ComparisonDisplayMode.TWO_COLUMN_MODE))[0]);
             new MathJaxExtension<>(leftSide);
             leftSide.setPrimaryStyleName("leos-two-column-compare");
 
@@ -140,8 +138,8 @@ public class TimeLineWindow<T extends XmlDocument> extends AbstractWindow {
             contentCompareResult.addComponent(rightSide);
             contentCompareResult.setExpandRatio(rightSide, 0.5f);
 
-            leftSide.setValue(((String[]) htmlCompareResult.get(TWO_COLUMN_MODE))[0]);
-            rightSide.setValue(((String[]) htmlCompareResult.get(TWO_COLUMN_MODE))[1]);
+            leftSide.setValue(((String[]) htmlCompareResult.get(ComparisonDisplayMode.TWO_COLUMN_MODE))[0]);
+            rightSide.setValue(((String[]) htmlCompareResult.get(ComparisonDisplayMode.TWO_COLUMN_MODE))[1]);
             // this implementation binds as well a JS call to align the modified elements
             JavaScript.getCurrent().execute("versionCompare.alignModifiedElements();");
         }

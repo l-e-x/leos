@@ -26,6 +26,11 @@ public interface ContentComparatorService {
 
     String DOUBLE_COMPARE_REMOVED_CLASS = "leos-double-compare-removed";
     String DOUBLE_COMPARE_ADDED_CLASS = "leos-double-compare-added";
+    String DOUBLE_COMPARE_RETAIN_CLASS = "leos-double-compare-retain";
+    
+    String DOUBLE_COMPARE_INTERMEDIATE_STYLE = "-intermediate";
+    String DOUBLE_COMPARE_ORIGINAL_STYLE = "-original";
+    
     /** this service compares the two XML string in the context
      * and marks the modifed content with SPAN containing attrName set to either removedValue or addedValue
      * or the whole removed/added element with the same attrName in this interface for dispaly in single document form

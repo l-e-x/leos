@@ -29,7 +29,7 @@ public class SearchModelIscAllGroups extends SearchModel {
     // -------------------------------------
 
     public SearchModelIscAllGroups(final ResolvedSearchOptions rso, final List<MetadataIdsAndStatuses> metadataIds) {
-        super(rso, metadataIds);
+        super(rso, metadataIds, Consts.SearchModelMode.StandardSearch);
     }
 
 }

@@ -136,82 +136,103 @@ public class Token {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final long newId) {
         this.id = newId;
     }
 
+    @Generated
     public long getUserId() {
         return userId;
     }
 
+    @Generated
     public void setUserId(final long userId) {
         this.userId = userId;
     }
 
+    @Generated
     public User getUser() {
         return user;
     }
 
+    @Generated
     public void setUser(final User user) {
         this.user = user;
     }
 
+    @Generated
     public String getAuthority() {
         return authority;
     }
     
+    @Generated
     public void setAuthority(final String auth) {
         this.authority = auth;
     }
     
+    @Generated
     public String getAccessToken() {
         return accessToken;
     }
 
+    @Generated
     public void setAccessToken(final String accessToken) {
         this.accessToken = accessToken;
     }
 
+    @Generated
     public LocalDateTime getAccessTokenExpires() {
         return accessTokenExpires;
     }
 
+    @Generated
     public void setAccessTokenExpires(final LocalDateTime accessTokenExpires) {
         this.accessTokenExpires = accessTokenExpires;
     }
 
+    @Generated
     public String getRefreshToken() {
         return refreshToken;
     }
 
+    @Generated
     public void setRefreshToken(final String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
+    @Generated
     public LocalDateTime getRefreshTokenExpires() {
         return refreshTokenExpires;
     }
 
+    @Generated
     public void setRefreshTokenExpires(final LocalDateTime refreshTokenExpires) {
         this.refreshTokenExpires = refreshTokenExpires;
     }
 
+    @Generated
     public int getAccessTokenLifetimeSeconds() {
         return accessTokenLifetimeSeconds;
     }
 
+    @Generated
     public void setAccessTokenLifetimeSeconds(final int ttl) {
         this.accessTokenLifetimeSeconds = ttl;
     }
 
+    @Generated
     public int getRefreshTokenLifetimeSeconds() {
         return refreshTokenLifetimeSeconds;
     }
 
+    @Generated
     public void setRefreshTokenLifetimeSeconds(final int ttl) {
         this.refreshTokenLifetimeSeconds = ttl;
     }

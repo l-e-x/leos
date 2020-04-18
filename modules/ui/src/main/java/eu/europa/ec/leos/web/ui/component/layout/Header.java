@@ -17,23 +17,17 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.event.MouseEvents;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.server.FontAwesome;
-import com.vaadin.ui.Button;
-import com.vaadin.ui.Component;
-import com.vaadin.ui.CustomLayout;
-import com.vaadin.ui.Image;
+import com.vaadin.shared.ui.ContentMode;
+import com.vaadin.ui.*;
 import com.vaadin.ui.themes.ValoTheme;
-import com.vaadin.v7.shared.ui.label.ContentMode;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.ListSelect;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NavigationUpdateEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.component.HeaderResizeEvent;
-import eu.europa.ec.leos.i18n.LanguageHelper;
-import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
@@ -48,18 +42,11 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Header.class);
     private static final String HEADER_HEIGHT = "123px";
     private static final String HEADER_BAR_HEIGHT = "48px";
-    private static  String TEMPLATE_NAME="HeaderTemplate.html";
-	
-    public enum Action {
-        MAXIMIZE,
-        MINIMIZE
-    }
-
+    private static String TEMPLATE_NAME = "HeaderTemplate.html";
     private LanguageHelper langHelper;
     private MessageHelper messageHelper;
     private EventBus eventBus;
     private SecurityContext securityContext;
-
     public Header(final LanguageHelper langHelper, final MessageHelper msgHelper, final EventBus eventBus, final SecurityContext securityContext) {
         this.langHelper = langHelper;
         this.messageHelper = msgHelper;
@@ -69,7 +56,8 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         initLayout();
     }
 
-    @Nonnull protected abstract Component buildLogo();
+    @Nonnull
+    protected abstract Component buildLogo();
 
     private void initLayout() {
         setTemplate();
@@ -87,27 +75,24 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
 
     private void setTemplate() {
         try { //TODO hack fix to read file from a jar
-			initTemplateContentsFromInputStream(getClass().getResourceAsStream("/VAADIN/themes/"+LeosTheme.NAME+"/layouts/" + TEMPLATE_NAME));
-        }
-        catch (Exception e){
+            initTemplateContentsFromInputStream(getClass().getResourceAsStream("/VAADIN/themes/" + LeosTheme.NAME + "/layouts/" + TEMPLATE_NAME));
+        } catch (Exception e) {
             throw new RuntimeException(e);
-        }			
-	}
-	
-    private @Nonnull Component buildLanguageSelector() {
-        final ListSelect langSelector = new ListSelect();
-        langSelector.setNullSelectionAllowed(false);
-        langSelector.setRows(1);
-
-        // fill selection with configured languages
-        for (Locale locale : langHelper.getConfiguredLocales()) {
-            String itemId = locale.toLanguageTag();
-            String itemCaption = locale.getDisplayLanguage(locale) + " (" + locale.getLanguage() + ")";
-            langSelector.addItem(itemId);
-            langSelector.setItemCaption(itemId, itemCaption);
         }
+    }
+
+    private @Nonnull
+    Component buildLanguageSelector() {
+        final NativeSelect<Locale> langSelector = new NativeSelect<>();
+        langSelector.setEmptySelectionAllowed(false);
+        langSelector.setItemCaptionGenerator(locale ->
+                locale.getDisplayLanguage(locale) + " (" + locale.getLanguage() + ")");
+        // fill selection with configured languages
+        langSelector.setItems(langHelper.getConfiguredLocales());
+
         // selection of the current language
-        langSelector.select(langHelper.getCurrentLocale().toLanguageTag());
+        langSelector.setSelectedItem(langHelper.getCurrentLocale());
+
         return langSelector;
     }
 
@@ -119,26 +104,28 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         return title;
     }
 
-    private @Nonnull Component buildUser() {
+    private @Nonnull
+    Component buildUser() {
         // user (user may be authenticated or not)
         Label user = new Label();
         user.setIcon(VaadinIcons.USER);
 
         if (securityContext.isUserAuthenticated()) {
             user.setValue(messageHelper.getMessage("leos.ui.header.user.authenticated.info",
-                                                    securityContext.getUser().getName(),
-                                                    securityContext.getUser().getLogin()));
+                    securityContext.getUser().getName(),
+                    securityContext.getUser().getLogin()));
         }
         return user;
     }
 
-    private @Nonnull Component buildLogout() {
+    private @Nonnull
+    Component buildLogout() {
         String logoutCaptionKey = securityContext.isUserAuthenticated()
                 ? "leos.ui.header.user.authenticated.logout"
                 : "leos.ui.header.user.unauthenticated.exit";
         final Button logoutButton = new Button();
         logoutButton.setStyleName(ValoTheme.BUTTON_ICON_ONLY);
-        logoutButton.setIcon(FontAwesome.POWER_OFF);
+        logoutButton.setIcon(VaadinIcons.POWER_OFF);
         logoutButton.setDescription(messageHelper.getMessage(logoutCaptionKey));
         logoutButton.addClickListener(new Button.ClickListener() {
             private static final long serialVersionUID = -6562136893288814670L;
@@ -152,7 +139,8 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         return logoutButton;
     }
 
-    private @Nonnull Component buildHomeButton() {
+    private @Nonnull
+    Component buildHomeButton() {
         final Image home = new Image(null, LeosTheme.LEOS_HEADER_HOME_ICON);
         home.addClickListener(new MouseEvents.ClickListener() {
             private static final long serialVersionUID = 3388459558980465073L;
@@ -166,7 +154,8 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         return home;
     }
 
-    private @Nonnull Component buildNavigationPath() {
+    private @Nonnull
+    Component buildNavigationPath() {
         // current view
         final Button viewLink = new Button();
         viewLink.setPrimaryStyleName("leos-header-breadcrumb");
@@ -202,7 +191,8 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         return viewLink;
     }
 
-    private @Nonnull Component buildResizeTool() {
+    private @Nonnull
+    Component buildResizeTool() {
         // create button to resize the header
         // initial state is expanded by default
         final Button resizeButton = new Button();
@@ -257,5 +247,10 @@ public abstract class Header extends CustomLayout implements HeaderComponent {
         };
         eventBus.register(headerResizeSubscriber);
         return resizeButton;
+    }
+
+    public enum Action {
+        MAXIMIZE,
+        MINIMIZE
     }
 }

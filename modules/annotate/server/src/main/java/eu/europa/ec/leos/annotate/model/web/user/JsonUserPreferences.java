@@ -28,6 +28,7 @@ public class JsonUserPreferences {
     // Constructor
     // -----------------------------------------------------------
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public JsonUserPreferences() {
         // default constructor required by JSON deserialisation
     }
@@ -36,10 +37,12 @@ public class JsonUserPreferences {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public JsonUserShowSideBarPreference getPreferences() {
         return preferences;
     }
 
+    @Generated
     public void setPreferences(final JsonUserShowSideBarPreference preferences) {
         this.preferences = preferences;
     }

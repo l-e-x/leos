@@ -17,24 +17,32 @@ import com.ximpleware.NavException;
 import com.ximpleware.VTDNav;
 import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.domain.common.InstanceType;
+import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.support.ByteArrayBuilder;
 import eu.europa.ec.leos.services.support.IdGenerator;
-import eu.europa.ec.leos.instance.Instance;
+import eu.europa.ec.leos.vo.toc.NumberingConfig;
+import eu.europa.ec.leos.vo.toc.OptionsType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.AnnexTocItemType;
-import eu.europa.ec.leos.vo.toctype.LegalTextProposalTocItemType;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.vo.toc.TocItem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
 
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.*;
-import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.*;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_DEPTH_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getStartTag;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.insertOrUpdateAttributeValue;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupVTDNav;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateOriginAttribute;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractIndexedNonTocElements;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractLevelNonTocItems;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractOrBuildHeaderElement;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractOrBuildNumElement;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.navigateToFirstTocElment;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
@@ -44,11 +52,13 @@ public class VtdXmlContentProcessorForProposal extends VtdXmlContentProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(VtdXmlContentProcessorForProposal.class);
     
     @Override
-    public byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, List<TableOfContentItemVO> tableOfContentItemVOs,
-            byte[] content, User user) {
+    public byte[] createDocumentContentWithNewTocList(List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content, User user) {
         LOG.trace("Start building the document content for the new toc list");
         long startTime = System.currentTimeMillis();
         try {
+            List<TocItem> tocItems = structureContextProvider.get().getTocItems();
+            List<NumberingConfig> numberingConfigs = structureContextProvider.get().getNumberingConfigs();
+            Map<TocItem, List<TocItem>> tocRules = structureContextProvider.get().getTocRules();
 
             ByteArrayBuilder mergedContent = new ByteArrayBuilder();
             VTDNav contentNavigator = setupVTDNav(content);
@@ -66,7 +76,7 @@ public class VtdXmlContentProcessorForProposal extends VtdXmlContentProcessor {
                 
                 for (TableOfContentItemVO tocVo : tableOfContentItemVOs) {
                     index = tocVo.getVtdIndex();
-                    mergedContent.append(buildTocItemContent(getTocItemType, contentNavigator, tocVo, user));
+                    mergedContent.append(buildTocItemContent(tocItems, numberingConfigs, tocRules, contentNavigator, tocVo, user));
                 }
                 
                 contentNavigator.recoverNode(index);
@@ -88,42 +98,42 @@ public class VtdXmlContentProcessorForProposal extends VtdXmlContentProcessor {
         }
     }
 
-    static byte[] buildTocItemContent(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO, User user)
+    private byte[] buildTocItemContent(List<TocItem> tocItems, List<NumberingConfig> numberingConfigs, Map<TocItem, List<TocItem>> tocRules, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO, User user)
             throws NavException, UnsupportedEncodingException {
         ByteArrayBuilder tocItemContent = new ByteArrayBuilder();
 
         tocItemContent.append(extractOrBuildNumElement(contentNavigator, tableOfContentItemVO));
         tocItemContent.append(extractOrBuildHeaderElement(contentNavigator, tableOfContentItemVO));
-        if(tableOfContentItemVO.getPreambleFormula1TagIndex() != null) {
-            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getPreambleFormula1TagIndex()));
-        }
-        if (tableOfContentItemVO.getRecitalsIntroIndex() != null) {
-            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getRecitalsIntroIndex()));
+        if (tableOfContentItemVO.getIntroTagIndex() != null) {
+            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getIntroTagIndex()));
         }
 
         for (TableOfContentItemVO child : tableOfContentItemVO.getChildItemsView()) {
-            tocItemContent.append(buildTocItemContent(getTocItemType, contentNavigator, child, user));
+            tocItemContent.append(buildTocItemContent(tocItems, numberingConfigs, tocRules, contentNavigator, child, user));
         }
 
         byte[] startTag = new byte[0];
-        String tocTagName = tableOfContentItemVO.getType().getName();
+        String tocTagName = tableOfContentItemVO.getTocItem().getAknTag().value();
 
         if (tableOfContentItemVO.getVtdIndex() != null) {
             contentNavigator.recoverNode(tableOfContentItemVO.getVtdIndex());
             startTag = getStartTag(contentNavigator);
-            if (tableOfContentItemVO.getType().equals(LegalTextProposalTocItemType.PREAMBLE) && tableOfContentItemVO.getPreambleFormula2TagIndex() != null) {
-                tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getPreambleFormula2TagIndex()));
-            } else if (!tableOfContentItemVO.getType().equals(LegalTextProposalTocItemType.RECITALS)) { // Recitals contains intro non TOC item and it already has been added
-                tocItemContent.append(extractLevelNonTocItems(getTocItemType, contentNavigator));
+            tocItemContent.append(extractLevelNonTocItems(tocItems, tocRules, contentNavigator));
+            if (tableOfContentItemVO.getItemDepth() > 0) {
+               startTag = insertOrUpdateAttributeValue(new StringBuilder(new String(startTag)), LEOS_DEPTH_ATTR, tableOfContentItemVO.getItemDepth()).toString().getBytes(UTF_8);
             }
-        } else if (tableOfContentItemVO.getType().equals(LegalTextProposalTocItemType.CITATION)) {
-            return XmlHelper.getCitationTemplate().getBytes(UTF_8);
-        } else if (tableOfContentItemVO.getType().equals(LegalTextProposalTocItemType.RECITAL)) {
-            return XmlHelper.getRecitalTemplate(tableOfContentItemVO.getNumber()).getBytes(UTF_8);
-        } else if (tableOfContentItemVO.getType().equals(LegalTextProposalTocItemType.ARTICLE)) {
-            return XmlHelper.getArticleTemplate(tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading()).getBytes(UTF_8);
-        } else if (tableOfContentItemVO.getType().equals(AnnexTocItemType.DIVISION)) {
-            return XmlHelper.getAnnexTemplate().getBytes(UTF_8);
+        } else if (tableOfContentItemVO.getChildItemsView().isEmpty()) {
+            byte[] tocItemTag;
+            if (tableOfContentItemVO.getItemDepth() > 0) {
+                tocItemTag = XmlHelper.getTemplate(tableOfContentItemVO.getTocItem(), tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading(), messageHelper).getBytes(UTF_8);
+                tocItemTag = insertOrUpdateAttributeValue(new StringBuilder(new String(tocItemTag)), LEOS_DEPTH_ATTR, tableOfContentItemVO.getItemDepth()).toString().getBytes(UTF_8);
+            } else {
+                tocItemTag = XmlHelper.getTemplate(tableOfContentItemVO.getTocItem(), tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading(), messageHelper).getBytes(UTF_8);
+            }
+            if (tableOfContentItemVO.getTocItem().getItemHeading() == OptionsType.OPTIONAL) {
+                tocItemTag = removeEmptyHeading(new String(tocItemTag, UTF_8)).getBytes(UTF_8);
+            }
+            return tocItemTag;
         } else {
             String startTagStr = "<" + tocTagName + " xml:id=\"" + IdGenerator.generateId(tocTagName.substring(0, 3), 7) + "\">";
             startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.getOriginAttr());
@@ -132,7 +142,7 @@ public class VtdXmlContentProcessorForProposal extends VtdXmlContentProcessor {
     }
 
     @Override
-    public void specificInstanceXMLPostProcessing(XMLModifier xmlModifier) throws Exception {
+    public void specificInstanceXMLPostProcessing(XMLModifier xmlModifier) {
     }
 
     @Override

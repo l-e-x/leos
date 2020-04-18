@@ -112,18 +112,17 @@ public class ZipPackageUtil {
         return unzippedFiles;
     }
 
-    public static Map<String, Object> unzipFiles(File file) {
+    public static Map<String, Object> unzipFiles(File file, String unzipPath) {
         Map<String, Object> unzippedFiles = new HashMap<>();
-        try {
-            String tempDir = System.getProperty("java.io.tmpdir");
-            String outputFolder = tempDir + "/unzip/" + file.getName() + "_" + System.currentTimeMillis();
-            // create output directory is not exists
-            File folder = new File(outputFolder);
-            if (!folder.exists()) {
-                folder.mkdir();
-            }
-            // get the zip file content
-            ZipInputStream zis = new ZipInputStream(new FileInputStream(file));
+        String tempDir = System.getProperty("java.io.tmpdir");
+        String outputFolder = tempDir + unzipPath + file.getName() + "_" + System.currentTimeMillis();
+        // create output directory is not exists
+        File folder = new File(outputFolder);
+        if (!folder.exists()) {
+            folder.mkdir();
+        }
+        // get the zip file content with try-with-resources
+        try (ZipInputStream zis = new ZipInputStream(new FileInputStream(file)))  {
             // get the zipped file list entry
             ZipEntry ze;
             while ((ze = zis.getNextEntry()) != null) {
@@ -137,8 +136,8 @@ public class ZipPackageUtil {
                 fos.close();
                 unzippedFiles.put(newFile.getName(), newFile);
             }
-            zis.closeEntry();
-            zis.close();
+            // closeEntry should not be required. In the next step the stream will be closed.
+            // close will be done by the try-with-resources block
         } catch (IOException ex) {
             LOG.error("Error unzipping the file {} : {}", file.getName(), ex.getMessage());
         }

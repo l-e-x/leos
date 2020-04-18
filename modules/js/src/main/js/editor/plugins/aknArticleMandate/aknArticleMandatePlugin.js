@@ -20,10 +20,14 @@ define(function aknArticleMandatePluginModule(require) {
     var pluginTools = require("plugins/pluginTools");
     var aknArticleNumberWidget = require("plugins/aknArticleWidget/aknArticleNumberWidget");
     var aknArticleHeadingWidget = require("plugins/aknArticleWidget/aknArticleHeadingWidget");
+    var leosKeyHandler = require("plugins/leosKeyHandler/leosKeyHandler");
 
     var pluginName = "aknArticle";
     var COUNCIL_INSTANCE = "COUNCIL";
     var LEOS_ORIGIN_ATTR = "leos:origin";
+
+    var ENTER_KEY = 13;
+    var SHIFT_ENTER = CKEDITOR.SHIFT + ENTER_KEY;
 
     var pluginDefinition = {
         requires : "widget,leosWidget",
@@ -37,8 +41,34 @@ define(function aknArticleMandatePluginModule(require) {
 
             editor.widgets.add(aknArticleHeadingWidget.name, aknArticleHeadingWidget.definition);
             editor.addContentsCss(pluginTools.getResourceUrl(pluginName, aknArticleHeadingWidget.css));
+
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : ENTER_KEY,
+                action : _onEnterKey
+            });
+
+            leosKeyHandler.on({
+                editor : editor,
+                eventType : 'key',
+                key : SHIFT_ENTER,
+                action : _onShiftEnterKey
+            });
         }
     };
+
+    function _onEnterKey(context) {
+        if(context.event.data.domEvent.$.srcElement.tagName.toLocaleLowerCase() === 'h2'){
+            context.event.cancel();
+        }
+    }
+
+    function _onShiftEnterKey(context) {
+        if(context.event.data.domEvent.$.srcElement.tagName.toLocaleLowerCase() === 'h2'){
+            context.event.cancel();
+        }
+    }
     
     /*
      * Removes the initial snapshot which don't have 'article' as top level element 

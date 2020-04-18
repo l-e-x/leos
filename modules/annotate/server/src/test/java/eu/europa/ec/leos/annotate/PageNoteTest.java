@@ -62,7 +62,7 @@ public class PageNoteTest {
 
     @Autowired
     private AnnotationService annotService;
-    
+
     @Autowired
     private AnnotationConversionService conversionService;
 

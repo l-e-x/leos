@@ -28,10 +28,20 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.AKOMANTOSO;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BILL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CONTENT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LIST;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.MAINBODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PREAMBLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PREFACE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITALS;
+
 public class TreeHelper {
     private static final Logger LOG = LoggerFactory.getLogger(TreeHelper.class);
 
-    private static List<String> NOT_SIGNIFICANT_NODES = Arrays.asList("bill", "content", "list", "preface", "preamble", "body", "mainBody", "recitals");
+    private static List<String> NOT_SIGNIFICANT_NODES = Arrays.asList(BILL, CONTENT, LIST, PREFACE, PREAMBLE, BODY, MAINBODY, RECITALS);
 
     public static TreeNode createTree(VTDNav vtdNav, TreeNode root, List<Ref> refs) throws Exception {
         Validate.isTrue(refs != null && !refs.isEmpty(), "refs can not be empty");
@@ -62,13 +72,13 @@ public class TreeHelper {
                     }
                     vtdNav.push();
                 }
-                while (vtdNav.toElement(VTDNav.PARENT) && !"akomaNtoso".equals(tagName));
+                while (vtdNav.toElement(VTDNav.PARENT) && !AKOMANTOSO.equals(tagName));
 
                 //this block creates node subtree and attaches them in tree 
                 int depth;
                 while (vtdNav.pop()) {
                     depth = (parent == null) ? 0 : parent.getDepth() + 1;
-                    TreeNode currentNode = createNode(vtdNav, parent, depth);
+                    TreeNode currentNode = createNode(vtdNav, parent, depth, ref.getDocumentref());
 
                     //if tree root is not assigned
                     if (root == null) {
@@ -132,7 +142,7 @@ public class TreeHelper {
 
     private static final Pattern idPattern = Pattern.compile("\\s(xml:id)(\\s)*=(\\s)*\"(.+?)\"");
 
-    static TreeNode createNode(VTDNav vtdNav, TreeNode parent, int depth) throws Exception {
+    static TreeNode createNode(VTDNav vtdNav, TreeNode parent, int depth, String documentRef) throws Exception {
         try {
             int currentIndex = vtdNav.getCurrentIndex();
             int tokenType = vtdNav.getTokenType(currentIndex);
@@ -151,7 +161,7 @@ public class TreeHelper {
             //find num 
             String numValue = findNum(vtdNav, tagName);
             int childSeq = findSeq(vtdNav, tagName);
-            return new TreeNode(tagName, depth, childSeq, tagId, numValue, vtdNav.getCurrentIndex(), parent);
+            return new TreeNode(tagName, depth, childSeq, tagId, numValue, vtdNav.getCurrentIndex(), parent, documentRef);
         } catch (Exception ex) {
             LOG.error("Unexpected error. Consuming and continuing!!", ex);
             throw ex;
@@ -268,7 +278,7 @@ public class TreeHelper {
         String[] s = xmlNum.split(" ", 2);
         String num = s.length > 1 ? s[1] : s[0];
         //clean spaces, .,(), etc
-        return num.replaceAll("[\\s+|\\(|\\)|\\.]", "");
+        return num.replaceAll("[\\s+|\\(|\\)]|\\.$", "");
     }
 
     private static String getTagContent(VTDNav vtdNav) throws Exception {

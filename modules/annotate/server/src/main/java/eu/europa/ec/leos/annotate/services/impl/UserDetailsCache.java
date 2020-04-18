@@ -33,17 +33,17 @@ public class UserDetailsCache {
 
     private static final Logger LOG = LoggerFactory.getLogger(UserDetailsCache.class);
 
-    private final Map<String, UserDetails> userDetailsCache;
-    private LocalDateTime nextCacheCleanupTime = null; // time after which cache should be wiped
+    private final Map<String, UserDetails> udcache;
+    private LocalDateTime nextCacheCleanupTime; // time after which cache should be wiped
 
     // time in minutes after which cache should be wiped
-    private final static int USER_DETAILS_CACHE_CLEANUP_TIME_MINUTES = 10;
+    private final static int CLEANUP_TIME_MINUTES = 10;
 
     // -------------------------------------
     // Constructor
     // -------------------------------------
     public UserDetailsCache() {
-        this.userDetailsCache = new HashMap<String, UserDetails>();
+        this.udcache = new HashMap<String, UserDetails>();
     }
 
     // -------------------------------------
@@ -76,7 +76,7 @@ public class UserDetailsCache {
             setNextCacheCleanupInterval();
         }
 
-        return userDetailsCache.get(login);
+        return udcache.get(login);
     }
 
     /**
@@ -97,14 +97,14 @@ public class UserDetailsCache {
             return;
         }
 
-        userDetailsCache.put(login, details);
+        udcache.put(login, details);
     }
 
     /**
      * clean the cache
      */
     public void clear() {
-        userDetailsCache.clear();
+        udcache.clear();
     }
 
     /**
@@ -113,7 +113,7 @@ public class UserDetailsCache {
      * @return number of cached items
      */
     public int size() {
-        return userDetailsCache.size();
+        return udcache.size();
     }
 
     /**
@@ -132,7 +132,7 @@ public class UserDetailsCache {
      */
     private void setNextCacheCleanupInterval() {
 
-        nextCacheCleanupTime = LocalDateTime.now().plusMinutes(USER_DETAILS_CACHE_CLEANUP_TIME_MINUTES);
+        nextCacheCleanupTime = LocalDateTime.now().plusMinutes(CLEANUP_TIME_MINUTES);
         LOG.debug("Next user cache cleanup time scheduled for {}", nextCacheCleanupTime);
     }
 }

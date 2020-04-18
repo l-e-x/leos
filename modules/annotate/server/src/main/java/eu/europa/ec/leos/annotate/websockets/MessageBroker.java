@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.annotate.websockets;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonDeleteSuccessResponse;
@@ -176,14 +177,17 @@ public class MessageBroker {
             this.user = user;
         }
 
+        @Generated
         public Filter getFilter() {
             return filter;
         }
 
+        @Generated
         public WebSocketSession getSubscriber() {
             return subscriber;
         }
 
+        @Generated
         public UserInformation getUser() {
             return user;
         }
@@ -202,14 +206,17 @@ public class MessageBroker {
             this.clientId = clientId;
         }
 
+        @Generated
         public ACTION getAction() {
             return action;
         }
 
+        @Generated
         public String getId() {
             return id;
         }
 
+        @Generated
         public String getClientId() {
             return clientId;
         }

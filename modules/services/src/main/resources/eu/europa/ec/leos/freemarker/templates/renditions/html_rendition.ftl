@@ -1,6 +1,6 @@
 <#ftl encoding="UTF-8"
       output_format="HTML"
-      auto_esc=true
+      auto_esc=false
       strict_syntax=true
       strip_whitespace=true>
 
@@ -21,12 +21,42 @@
 <#assign xml=.data_model.xml_data>
 <#assign styleSheetName = .data_model.styleSheetName>
 
+<#setting url_escaping_charset="UTF-8">
+
+
 <html>
 <head>
-<meta charset="UTF-8">
-<link href="css/${styleSheetName}" rel="stylesheet" type="text/css" />
+    <meta charset="UTF-8">
+    <link href="css/${styleSheetName}" rel="stylesheet" type="text/css" />
+
+    <#if toc_file?has_content>
+        <link href="css/jqtree.css" rel="stylesheet" type="text/css"/>
+        <link href="css/leos-toc-rendition.css" rel="stylesheet" type="text/css"/>
+
+        <script src="js/${toc_file}" type="text/javascript"></script>
+        <script src="js/leos-toc-rendition.js" type="text/javascript"></script>
+    </#if>
 </head>
+
 <body>
-<#visit xml using xmlFtl>
+    <#if toc_file?has_content>
+      <div class="renditionContainer">
+          <div class="renditionTocContent">
+              <span class="title">Navigation pane</span>
+
+              <div id="notCompliantDiv" style="display: none; color: red; padding: 40px;">
+                <span>Navigation pane not available.</span> <br/>
+                <span>Jquery found in the host is not compliant, should be 1.9+</span>
+              </div>
+              <div id="treeContainer"></div>
+          </div>
+
+          <div class="renditionAkomaNtosoContent">
+             <#visit xml using xmlFtl>
+          </div>
+      </div>
+    <#else>
+        <#visit xml using xmlFtl>
+    </#if>
 </body>
 </html>

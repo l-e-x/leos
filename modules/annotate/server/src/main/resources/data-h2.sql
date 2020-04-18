@@ -15,6 +15,7 @@
 ------------------------------------------------------------------------
 -- Data to be inserted initially into H2 database
 ------------------------------------------------------------------------
+DELETE FROM METADATA;
 DELETE FROM GROUPS;
 DELETE FROM USERS;
 DELETE FROM USERS_GROUPS;

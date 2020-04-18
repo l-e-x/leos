@@ -11,12 +11,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
-
 package eu.europa.ec.leos.services.controllers;
 
 import com.google.common.eventbus.EventBus;
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
+import eu.europa.ec.leos.domain.cmis.document.Proposal;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.model.event.MilestoneUpdatedEvent;
 import eu.europa.ec.leos.security.AuthClient;
 import eu.europa.ec.leos.security.TokenService;
@@ -25,7 +26,8 @@ import eu.europa.ec.leos.services.compare.ContentComparatorService;
 import eu.europa.ec.leos.services.content.processor.TransformationService;
 import eu.europa.ec.leos.services.export.ExportOptions;
 import eu.europa.ec.leos.services.export.ExportService;
-import eu.europa.ec.leos.services.store.PackageService;
+import eu.europa.ec.leos.services.store.LegService;
+import eu.europa.ec.leos.services.store.WorkspaceService;
 import eu.europa.ec.leos.vo.token.JsonTokenReponse;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -37,16 +39,30 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.ServletServerHttpRequest;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.Properties;
 
-import static eu.europa.ec.leos.services.compare.ContentComparatorService.*;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.ATTR_NAME;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.CONTENT_ADDED_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.CONTENT_REMOVED_CLASS;
 
 @RestController
 public class LeosApiController {
@@ -54,7 +70,10 @@ public class LeosApiController {
     private static final Logger LOG = LoggerFactory.getLogger(LeosApiController.class);
 
     @Autowired
-    private PackageService packageService;
+    private LegService legService;
+
+    @Autowired
+    private WorkspaceService workspaceService;
 
     @Autowired
     private TokenService tokenService;
@@ -70,6 +89,9 @@ public class LeosApiController {
 
     @Autowired
     private ExportService exportService;
+
+    @Autowired
+    private Properties applicationProperties;
 
     private final int SINGLE_COLUMN_MODE = 1;
     private final int TWO_COLUMN_MODE = 2;
@@ -137,10 +159,42 @@ public class LeosApiController {
     @ResponseBody
     public ResponseEntity<Object> getProposalsForUser(@PathVariable("userId") String userId) {
         try {
-            return new ResponseEntity<>(packageService.getLegDocumentDetailsByUserId(userId).toArray(), HttpStatus.OK);
+            return new ResponseEntity<>(legService.getLegDocumentDetailsByUserId(userId).toArray(), HttpStatus.OK);
         } catch (Exception ex) {
             LOG.error("Exception occurred in search "+ ex.getMessage());
             return new ResponseEntity<>("Error Occurred while getting the Leg Document for user " + userId, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @RequestMapping(value = "/secured/search/{userId}/{documentRef}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Object> getDocumentForUser(@PathVariable("userId") String userId, @PathVariable("documentRef") String documentRef) {
+        XmlDocument document = null;
+        try {
+            document = workspaceService.findDocumentByRef(documentRef, XmlDocument.class);
+        } catch (Exception ex) {
+            LOG.error("Error occurred while getting document " + documentRef + " for user " + userId + ". " + ex.getMessage());
+            return new ResponseEntity<>("Error occurred while getting document " + documentRef + " for user " + userId, HttpStatus.NOT_FOUND);
+        }
+
+        Optional<Entry<String,String>> userAsCollaborator = document.getCollaborators().entrySet().stream()
+                .filter(x -> x.getKey().equalsIgnoreCase(userId)).findAny();
+        if (!userAsCollaborator.isPresent()) {
+            LOG.error("Error occurred while getting document " + documentRef + " for user " + userId + ". User not allowed to access the document.");
+            return new ResponseEntity<>("Error occurred while getting document " + documentRef + " for user " + userId, HttpStatus.FORBIDDEN);
+        }
+
+        switch (document.getCategory()) {
+            case ANNEX:
+            case BILL:
+            case MEMORANDUM:
+            case PROPOSAL:
+                String documentViewUrl = applicationProperties.getProperty("leos.mapping.url") +
+                        applicationProperties.getProperty("leos.document.view." + document.getCategory().toString().toLowerCase() + ".uri");
+                return new ResponseEntity<>(Collections.singletonMap("url", MessageFormat.format(documentViewUrl, documentRef)), HttpStatus.OK);
+            default:
+                LOG.error("Error occurred while getting document " + documentRef + " for user " + userId + ". Wrong category for document!!!");
+                return new ResponseEntity<>("Error occurred while getting document " + documentRef + " for user " + userId, HttpStatus.NOT_FOUND);
         }
     }
 
@@ -150,14 +204,14 @@ public class LeosApiController {
         boolean isStatusUpdated = false;
         LeosLegStatus currentStatus = null;
         try {
-            LegDocument legDocument = packageService.findLegDocumentById(legFileId);
+            LegDocument legDocument = legService.findLegDocumentById(legFileId);
             currentStatus = legDocument.getStatus();
             if (!(currentStatus == LeosLegStatus.IN_PREPARATION || currentStatus == LeosLegStatus.FILE_ERROR)) {
                 byte[] file = legDocument.getContent().get().getSource().getBytes();
                 HttpHeaders headers = new HttpHeaders();
                 headers.set("Content-Disposition", "attachment; filename=" + legDocument.getName());
                 headers.setContentLength(file.length);
-                LegDocument updatedLegDocument = packageService.updateLegDocument(legFileId, LeosLegStatus.SENT_TO_CONSULTATION);
+                LegDocument updatedLegDocument = legService.updateLegDocument(legFileId, LeosLegStatus.EXPORTED);
                 leosApplicationEventBus.post(new MilestoneUpdatedEvent(updatedLegDocument));
                 isStatusUpdated = true;
                 return new ResponseEntity<>(file, headers, HttpStatus.OK);
@@ -167,7 +221,7 @@ public class LeosApiController {
         } catch (Exception ex) {
             // in case of any exception reverting to current status
             if (isStatusUpdated) {
-                LegDocument updatedLegDocument = packageService.updateLegDocument(legFileId, currentStatus);
+                LegDocument updatedLegDocument = legService.updateLegDocument(legFileId, currentStatus);
                 leosApplicationEventBus.post(new MilestoneUpdatedEvent(updatedLegDocument));
             }
             LOG.error("Exception occurred in downloading leg file "+ ex.getMessage());
@@ -217,9 +271,28 @@ public class LeosApiController {
         }
     }
     
+    @RequestMapping(value = "/secured/milestones/{proposalRef}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Object> getLegFilesForProposal(@PathVariable("proposalRef") String proposalRef) {
+        Proposal proposal = null;
+        try {
+            proposal = workspaceService.findDocumentByRef(proposalRef, Proposal.class);
+        } catch (Exception ex) {
+            LOG.error("Error occurred while getting proposal {}. {}", proposalRef, ex.getMessage(), ex);
+            return new ResponseEntity<>("Error occurred while getting proposal " + proposalRef, HttpStatus.NOT_FOUND);
+        }
+        
+        try {
+            List<LegDocument> legFiles = legService.findLegDocumentByProposal(proposal.getId());
+            return new ResponseEntity<>(legFiles, HttpStatus.OK);
+        } catch (Exception ex) {
+            LOG.error("Error occurred while getting milestones for proposal {}. {}", proposalRef , ex.getMessage(), ex);
+            return new ResponseEntity<>("Error occurred while getting milestones for proposal " + proposalRef, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     
-    
-    /** The following methods are temporarily. They will be removed once ISC group fully adapt to the new security changes.
+    /**
+     * The following methods are temporarily. They will be removed once ISC group fully adapt to the new security changes.
      * From now on our endpoint will be accessible in a secure way as:
      * - /api/secured/endpointName
      *
@@ -228,7 +301,8 @@ public class LeosApiController {
      *
      * The following *_compatibility methods will keep the code working for the ongoing calls:
      * - /secured-api/method
-     * */
+     **/
+
     @RequestMapping(value = "/compare", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ResponseBody
     public ResponseEntity<Object> compareContents_compatibility(HttpServletRequest request, @RequestParam("mode") int mode,
@@ -253,6 +327,4 @@ public class LeosApiController {
     public ResponseEntity<Object> getPdfFromLegFile_compatibility(@RequestParam("legFile") MultipartFile legFile, @RequestParam("type") String type) {
         return getPdfFromLegFile(legFile, type);
     }
-    
 }
-

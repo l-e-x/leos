@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="package-mapping" content="component:eu.europa.ec.leos.ui.component.versions"/>
+</head>
+<body>
+    <v-vertical-layout _id="versionCard" id="versionCard" style-name="version-card" spacing="false" margin="false" size-full :expand="1.0">
+        <v-horizontal-layout _id="versionCardHeader" style-name="version-card-header" width-full>
+            <v-label _id="versionLabel" :left/>
+        </v-horizontal-layout>
+
+        <v-horizontal-layout _id="titleDescriptionIconBlock" width-full>
+            <v-vertical-layout _id="titleDescriptionBlock" spacing="false" margin="false" style-name="title-description-block" :left :expand="0.9">
+                <v-label _id="title" style-name="title"/>
+                <v-label _id="description" style-name="description collapsible-text"/>
+            </v-vertical-layout>
+
+            <v-vertical-layout _id="versionCardActionBlock" id="versionCardActionBlock" spacing="false" margin="false" :right :expand="0.1">
+                <v-vertical-layout _id="versionCardAction" id="versionCardAction" spacing="false" margin="false" :right :expand="0.1">
+                </v-vertical-layout>
+            </v-vertical-layout>
+        </v-horizontal-layout>
+        
+        <v-horizontal-layout width-full>
+            <v-label _id="lastUpdate" style-name="author-timestamp" :left/>
+        </v-horizontal-layout>
+
+        <v-vertical-layout _id="versionsBlock" id="versionsBlock" style-name="versions-block" spacing="false" margin="false">
+            <!-- This block ("Show more"/"Show less"), in case of Recent Changes will be moved after the versionsHolderWrapper component-->
+            <v-horizontal-layout _id="showVersionsBlock" id="showVersionsBlock" style-name="show-versions-block">
+                <v-button _id="showVersionsButton" id="showVersionsButton"  style-name="show-versions-button" :left :expand="0.03"></v-button>
+                <v-label _id="showVersionsLabel" style-name="show-versions-label" :left :expand="0.97"></v-label>
+            </v-horizontal-layout>
+
+            <v-horizontal-layout _id="versionsHolderWrapper" id="versionsHolderWrapper" size-full :expand="0.9">
+                <v-label id="spacerLabel" :left width="9px"/>
+                <v-vertical-layout _id="versionsHolder" style-name="versions-holder" size-full :expand="1.0" :left spacing="false" margin="false"/>
+            </v-horizontal-layout>
+        </v-vertical-layout>
+    </v-vertical-layout>
+</body>
+</html>

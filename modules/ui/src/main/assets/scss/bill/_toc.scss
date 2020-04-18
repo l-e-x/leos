@@ -68,4 +68,12 @@
             border: 1px solid $G_BORDER_COLOR;
         }
     }
+
+    .leos-toc-content-hide {
+        display: none;
+    }
+
+    .v-caption-leos-toc-content-hide * {
+        display: none;
+    }
 }

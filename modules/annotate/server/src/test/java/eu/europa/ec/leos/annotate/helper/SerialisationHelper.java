@@ -20,14 +20,18 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.*;
+import eu.europa.ec.leos.annotate.model.web.status.PublishContributionsSuccessResponse;
 import eu.europa.ec.leos.annotate.model.web.status.StatusUpdateSuccessResponse;
 import eu.europa.ec.leos.annotate.model.web.token.JsonAuthenticationFailure;
 import eu.europa.ec.leos.annotate.model.web.token.JsonTokenResponse;
 import eu.europa.ec.leos.annotate.model.web.user.JsonGroupWithDetails;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserPreferences;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserProfile;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -71,7 +75,8 @@ public final class SerialisationHelper {
         return asJson.replace("\"[", "[").replace("]\"", "]");
     }
 
-    public static String serializeSimpleMetadataWithStatusesList(final List<SimpleMetadataWithStatuses> requestedMetadata) throws JsonProcessingException {
+    public static String serializeSimpleMetadataWithStatusesList(final List<SimpleMetadataWithStatuses> requestedMetadata) 
+            throws JsonProcessingException {
         
         // note: uses the {@link SimpleMetadataWithStatusesSerializer}
         final ObjectMapper mapper = new ObjectMapper();
@@ -86,6 +91,25 @@ public final class SerialisationHelper {
         return mapper.writeValueAsString(idList);
     }
 
+    public static String serializeMetadataAndStatus(final List<SimpleMetadata> requestedMetadata, final List<AnnotationStatus> statuses)
+            throws JsonProcessingException {
+
+        if (!StringUtils.isEmpty(statuses)) {
+            final String statusForMeta = statuses.toString().replace(" ", "")
+                    .replace(",", "\",\"") // add quotes between elements
+                    .replace("[", "[\"") // quote for first element
+                    .replace("]", "\"]"); // quote for last element
+
+            // we need at least one dummy to add the status to
+            if (CollectionUtils.isEmpty(requestedMetadata)) {
+                requestedMetadata.add(new SimpleMetadata());
+            }
+            requestedMetadata.forEach(metaSet -> metaSet.put("status", statusForMeta));
+        }
+
+        return SerialisationHelper.serialize(requestedMetadata).replace("{", "%7B").replace("}", "%7D");
+    }
+    
     // -------------------------------------
     // JSON deserialisation functions
     // -------------------------------------
@@ -166,6 +190,12 @@ public final class SerialisationHelper {
     public static JsonSearchCount deserializeJsonSearchCount(final String input) throws JsonParseException, JsonMappingException, IOException {
         final ObjectMapper mapper = new ObjectMapper();
         return mapper.readValue(input, JsonSearchCount.class);
+    }
+
+    public static PublishContributionsSuccessResponse deserializeJsonPublishContributionsSuccessResponse(final String input)
+            throws JsonParseException, JsonMappingException, IOException {
+        final ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(input, PublishContributionsSuccessResponse.class);
     }
 
 }

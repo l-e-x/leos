@@ -1,0 +1,295 @@
+    
+                            LEOS EDITOR - HOWTO
+-------------------------------------------------------------------------------
+								INTRODUCTION
+
+The editors features available for each components are defined based on the
+Commission business rules. Some elements might or not be available based on
+theses rules.
+
+                             SAVING YOUR WORK
+-------------------------------------------------------------------------------
+1.	3 buttons are available at the top left of the editor:
+	- Save - will save your changes without closing the editing block
+	- Save Close - will save your changes and close the editing block
+	- Close - will cancel your changes and close the editing block
+
+
+10a.                         CITATIONS EDITION
+-------------------------------------------------------------------------------
+1.  On mouse-over citations in the document view, the action buttons will be
+    visible on the right side of the highlighted citations.
+   
+2.  Double-click on the citations content or click on the action button with a  
+    pen icon to edit the citations. Citations in the document will become 
+    available for editing. Editable portion of the document will be highlighted.
+   
+3.  The editable area will be accompanied by of a floating tool-bar specially 
+    customised for citations with different action buttons.
+
+4.  To create a new citation before or after an existing citation, place 
+	the cursor on this citation and from the action buttons on the right side 
+	select 'Insert citation before' OR 'Insert citation after'. A new citation 
+	will be created.
+	
+5.  To delete an existing citation place the cursor on this citation and from  
+	the action buttons on the right side click on 'Delete citation'. 
+    The citation will be deleted.
+   
+
+10b.                        RECITALS EDITION
+-------------------------------------------------------------------------------
+1.  On mouse-over recitals in the document view, the action buttons will be
+    visible on the right side of the highlighted recitals.
+   
+2.  Double-click on the recitals content or click on the action button with a  
+    pen icon to edit the recitals. Recitals in the document will be available for 
+    editing. Editable portion of the document will be highlighted.
+   
+3.  The editable area will be accompanied by of a floating tool-bar specially 
+    customised for recitals with different action buttons.
+
+4.  To create a new recital before or after an existing recital, place the cursor
+	on a existing recital and and from the action buttons select 
+	'Insert recital before' OR 'Insert recital after'.
+	A new recital will be created with the number auto-generated.
+  
+5.  To delete an existing recital place the cursor on this recital and from  
+	the action buttons on the right side click on 'Delete recital'. 
+    The recital will be deleted.
+
+
+
+10c.                        ARTICLE EDITION
+-------------------------------------------------------------------------------
+1.  On mouse-over the article in the document view, the action buttons will be
+    visible on the right side of the highlighted article.
+   
+2.  Double-click on the article content or click on the action button with a  
+    pen icon to edit the article. The article will become available for editing. 
+    Editable portion of the document will be highlighted.
+   
+3.  The editable area will be accompanied by of a floating tool-bar specially 
+    customised for articles with different action buttons.
+
+4.  To create a new article before or after an existing article, place the cursor
+	on a existing article and and from the action buttons select 
+	'Insert article before' OR 'Insert article after'.
+	A new article will be created with the number auto-generated.
+  
+5.  To delete an existing article place the cursor on this article and from  
+	the action buttons on the right side click on 'Delete article'. 
+    The article will be deleted.
+   
+   
+10d.                            NUMBERED PARAGRAPH
+--------------------------------------------------------------------------------
+1.  To create a new numbered paragraph place the cursor at the desired position
+    (start, end, in between) of the existing numbered paragraph and press the
+    'ENTER' key on the keyboard. A new numbered paragraph will be created with
+    the number auto-generated.
+   
+2.  To merge an existing numbered paragraph with the previous numbered paragraph
+    place the cursor at the beginning of the numbered paragraph and press
+    'BACKSPACE' key on the keyboard.
+   
+3.  To merge an existing numbered paragraph with the next numbered paragraph
+    place the cursor at the end of the numbered paragraph and press 'DELETE' key
+    on the keyboard.
+   
+4.  To delete an existing numbered paragraph select the entire numbered 
+    paragraph text and press 'DELETE' or 'BACKSPACE' key on the keyboard.
+	
+5. To switch form numbered paragraph to unumbered paragraph, click on the
+   action button marked as 'paragraph mode' available in the Leos editor tool-bar.
+
+	
+
+10e.                             SUB-PARAGRAPH
+-------------------------------------------------------------------------------
+1.  To create a sub-paragraph place the cursor at the desired position(start,
+    end, in between) of the existing numbered paragraph and press 
+    'SHIFT + ENTER' keys on the keyboard.
+
+2.  The content of the numbered paragraph will be transformed into sub-paragraph
+    and a new sub-paragraph is inserted in the new line available for editing.
+
+3.  To create subsequent sub-paragraphs press 'SHIFT + ENTER', a new 
+    sub-paragraph will be inserted in the new line.
+   
+4.  To delete an existing sub-paragraph select the entire sub-paragraph content 
+    and press 'DELETE' or 'BACKSPACE' key on the keyboard.
+   
+
+10f.            TRANSFORM NUMBERED PARAGRAPH TO POINT AND VICE-VERSA
+--------------------------------------------------------------------------------
+1.  To transform numbered paragraph into a point place the cursor anywhere in 
+    the existing paragraph and click on the tool-bar button with the label 
+    'Increase Indent'.
+
+2.  The paragraph will be transformed into a point and all its children will be
+    the child of the new point.
+	
+3.  To create subsequent points place the cursor at the desired position(start,
+    end, in between) of the existing point and press the 'ENTER' key button on
+    the keyboard. The point numbers are auto-generated.
+
+4.	You can use 'Increase Indent' to create an ordered list up to four levels as
+	shown below:
+	1. Paragraph
+
+		(a) alpha numbering scheme
+
+			(1) numeric numbering scheme
+
+				(i) roman numbering scheme
+
+					- hyphen numbering scheme	
+	
+5.  The first numbered paragraph in the article cannot be transformed to point
+    and the tool-bar button for indentation will be disabled.
+
+6.  Point can be transformed into numbered paragraph using the 'Decrease Indent'
+    tool-bar button wherever possible.
+	
+
+
+
+10g.                             REFERENCES NOTES
+--------------------------------------------------------------------------------
+1.  To create an reference note place the cursor at the desired position in the
+    edited area and click the tool-bar button with the label 'Insert footnote'.
+   
+2.  A dialog will open with an input field available to write the reference
+    note text. Click 'Ok' button to close the dialog.
+   
+3.  A new reference note will be created with the number auto-generated and the 
+    numbering of the remaining references notes will be adjusted accordingly.
+   
+3.  To edit an existing reference note double-click on it. A dialog will 
+    appear to edit the reference note text. Edit the existing text and click 
+    'Ok'
+   
+4.  To delete an existing reference note select it with the mouse and press the
+    'DELETE' key on the keyboard. The reference note will be deleted and the
+    numbering of the remaining references notes will be adjusted accordingly.
+   
+5.  To 'drag n drop' an existing reference note select it from the little 
+    square icon that appears over it and drag it to the desired position then 
+    drop it. The numbering of all the existing references notes will adjust 
+    accordingly.  
+
+
+10h.                             CROSS-REFERENCE
+--------------------------------------------------------------------------------
+1.  To create a cross-reference to any element inside the current document, open
+    the editor and place the cursor at the desired location and click the
+    tool-bar button with the label 'Internal reference'.
+
+2.  A dialog will open with the title 'Cross-reference'. The left hand side is 
+    the document tree and the right hand side is the content area which shows 
+    the content of the selected element on the tree.
+
+3.  Expand the tree and select the element from Preamble(Citations, Recitals) or
+    Enacting terms(Article) to display it's content on the content area.
+
+4.  It is possible to select the element within the content for e.g. citation,
+    recital, paragraph, sub-paragraph, point etc to make it as a cross-reference
+    .The selected element is labelled using the input field 'Show reference
+    as' provided at the bottom of the dialog window.
+    The selected element and the reference label are mandatory to create a cross
+    -reference.
+   
+5.  Click 'Ok' to close the dialog. The cross-reference  label will be inserted
+    at the position of the cursor. Click 'Save' to save the editor content.
+   
+6.  To edit an existing cross-reference double-click on the reference label, it 
+    will open the cross-reference dialog with the selected element highlighted.
+    A different element can be selected to modify the referenced element or the
+    reference label value can be edited.
+
+7.  To remove an existing cross-reference select it with the mouse and press the
+    'DELETE' key on the keyboard.
+
+8.  To 'drag n drop' an existing cross-reference select it from the little 
+    square icon that appears over it and drag it to the desired position then 
+    drop it.
+	
+   
+
+10i.                                   TABLES
+ --------------------------------------------------------------------------------
+1. To create a table place the cursor at the desired position in the
+    edited area and click the tool-bar button with the label 'Table'.
+   
+2.  A dialog will open with input fields available to define the table properties.
+    Click 'Ok' button to close the dialog.
+   
+3.  A new table will be created with the defined properties (rows/columns).
+   
+4.  To fill it in, just place your mouse cursor in the desired cell and type your
+	content.
+
+5.  To edit the table structure or properties, simply right click over the table
+	and use the contextual menu.
+   
+6.  To delete an existing the full table, right click over and choose "Delete Table"
+
+   
+10j.                                 FORMULAS
+ --------------------------------------------------------------------------------
+1. To create a formula place the cursor at the desired position in the
+    edited area and click the tool-bar button with the label 'Math'.
+   
+2.  A dialog will open with an input field  to define the formula using
+	LaTeX and a preview. 
+    Click 'Ok' button to close the dialog.
+   
+3.  The formulas will be inserted at the cursor position.
+   
+4.  To edit the formula, double click on it
+   
+5.  To delete a formula  select it with the mouse and press either the 'DELETE' or 
+	the 'BACKSPACE' key on the keyboard.
+	
+   
+10k.                                INSERT SPECIAL CHARACTER
+ --------------------------------------------------------------------------------
+1. To insert a special character place the cursor at the desired position in the
+    edited area and click the tool-bar button with the label 'Insert Special Character'.
+   
+2.  A dialog will open with a set of special character to choose from to the left and
+    to the right a preview of that character in normal and caps.
+	Click on the special character you need to insert it and close the dialog.
+   
+3.  To replace it, just delete it and insert the correct one.   
+   
+4.  To delete a special character, select it with the mouse and press
+    either the 'DELETE' or the 'BACKSPACE' key on the keyboard.
+	
+
+	
+10l.								SHOW SEMANTICS BLOCKS
+ --------------------------------------------------------------------------------								
+
+1. In order to show the semantic behinds the editor, click the tool-bar button with
+   the label 'Show blocks'
+   
+2. Some blocks with the semantic label in the background of your text.
+
+3. To hide it, just click again on the 'Show blocks' button.
+
+
+10m.								SHOW AKN CODE
+ --------------------------------------------------------------------------------
+ 
+ 1. This button is only available for users having support role
+ 
+ 2. To show the AKN source, click on the tool-bar button with the label 'Source'.
+ 
+ 3. A dialog will open showing the AKN code of that edition block.
+ 
+ 4. Clicking on 'OK' will save any change you would have made in the code and close the dialog.
+ 
+ 5. Clicking on 'Cancel' will close the dialog (without saving)
+    

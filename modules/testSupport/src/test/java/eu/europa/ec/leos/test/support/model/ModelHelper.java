@@ -13,14 +13,17 @@
  */
 package eu.europa.ec.leos.test.support.model;
 
+import eu.europa.ec.leos.model.user.Entity;
 import eu.europa.ec.leos.model.user.User;
+
+import java.util.List;
 
 public class ModelHelper {
 
     public static User buildUser(Long id, String login, String name){
-        return new User(id, login, name, null, null,null);
+        return new User(id, login, name, null, null, null);
     }
-    public static User buildUser(Long id, String login, String name, String dgiId){
-        return new User(id, login, name, dgiId, null,null);
+    public static User buildUser(Long id, String login, String name, List<Entity> entities){
+        return new User(id, login, name, entities, null, null);
     }
 }

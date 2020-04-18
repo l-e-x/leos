@@ -14,8 +14,10 @@
 package eu.europa.ec.leos.repository.document;
 
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 import eu.europa.ec.leos.repository.LeosRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Memorandum Repository implementation.
@@ -60,21 +63,21 @@ public class MemorandumRepositoryImpl implements MemorandumRepository {
     }
 
     @Override
-    public Memorandum updateMemorandum(String id, byte[] content, boolean major, String comment) {
+    public Memorandum updateMemorandum(String id, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Memorandum content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, content, major, comment, Memorandum.class);
+        return leosRepository.updateDocument(id, content, versionType, comment, Memorandum.class);
     }
 
     @Override
-    public Memorandum updateMemorandum(String id, MemorandumMetadata metadata, byte[] content, boolean major, String comment) {
+    public Memorandum updateMemorandum(String id, MemorandumMetadata metadata, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Memorandum metadata and content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, metadata, content, major, comment, Memorandum.class);
+        return leosRepository.updateDocument(id, metadata, content, versionType, comment, Memorandum.class);
     }
 
     @Override
-    public Memorandum updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment) {
+    public Memorandum updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Memorandum milestoneComments... [id=" + id + "]");
-        return leosRepository.updateMilestoneComments(id, content, milestoneComments, major, comment, Memorandum.class);
+        return leosRepository.updateMilestoneComments(id, content, milestoneComments, versionType, comment, Memorandum.class);
     }
 
     @Override
@@ -93,5 +96,45 @@ public class MemorandumRepositoryImpl implements MemorandumRepository {
     public List<Memorandum> findMemorandumVersions(String id, boolean fetchContent) {
         logger.debug("Finding Memorandum versions... [id=" + id + "]");
         return leosRepository.findDocumentVersionsById(id, Memorandum.class, fetchContent);
+    }
+
+    @Override
+    public Memorandum findMemorandumByRef(String ref) {
+        logger.debug("Finding Memorandum by ref... [ref=" + ref + "]");
+        return leosRepository.findDocumentByRef(ref, Memorandum.class);
+    }
+    
+    @Override
+    public List<Memorandum> findAllMinorsForIntermediate(String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults) {
+        logger.debug("Finding Memorandum versions between intermediates...");
+        return leosRepository.findAllMinorsForIntermediate(Memorandum.class, docRef, currIntVersion, prevIntVersion, startIndex, maxResults);
+    }
+    
+    @Override
+    public int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion) {
+    	logger.debug("Finding Memorandum minor versions count between intermediates...");
+        return leosRepository.findAllMinorsCountForIntermediate(Memorandum.class, docRef, currIntVersion, prevIntVersion);
+    }
+    
+    @Override
+    public Integer findAllMajorsCount(String docRef) {
+        return leosRepository.findAllMajorsCount(Memorandum.class, docRef);
+    }
+    
+    @Override
+    public List<Memorandum> findAllMajors(String docRef, int startIndex, int maxResult) {
+        return leosRepository.findAllMajors(Memorandum.class, docRef, startIndex, maxResult);
+    }
+    
+    @Override
+    public List<Memorandum> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults) {
+        final Memorandum memorandum = leosRepository.findLatestMajorVersionById(Memorandum.class, documentId);
+        return leosRepository.findRecentMinorVersions(Memorandum.class, documentRef, memorandum.getCmisVersionLabel(), startIndex, maxResults);
+    }
+    
+    @Override
+    public Integer findRecentMinorVersionsCount(String documentId, String documentRef) {
+        final Memorandum memorandum = leosRepository.findLatestMajorVersionById(Memorandum.class, documentId);
+        return leosRepository.findRecentMinorVersionsCount(Memorandum.class, documentRef, memorandum.getCmisVersionLabel());
     }
 }

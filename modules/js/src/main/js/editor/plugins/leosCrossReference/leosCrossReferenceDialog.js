@@ -31,18 +31,16 @@ define(function leosCrossReferenceDialog(require) {
 
     dialogDefinition.initializeDialog = function initializeDialog(editor) {
         var docType = editor.LEOS.type;
-        var htmlTocTemplate = '<div id="treeContainer" class="crTableOfContent leos-toc-tree"></div>';
-        var htmlContentTemplate = '<div id="content"><div id="contentContainer"  class="selected-content '
-                + docType
-                + '"></div>'
-                + '<div id="referenceElement" class="selected-content"><label id="lblRefElement"><strong>Selected element(s): </strong></lable><label id="pathLabel"> </label></div>'
-                + '<div id="refAs"><label id="lblRefAs"><strong>Reference shown as: </strong></label><input id="refrenceTextLabel" type="text" readonly="true"><div id="brokenRefLabel"></div><div id="errorLabel"></div></div></div>';
+        tabHandlers.build(editor);
 
         function handleOkDialogButton(dialog) {
             var okButton = dialog._.buttons['ok'];
             var internalOk = okButton.click;
             okButton.click = function(event) {
-                if (nodeContentHandler.checkIfValid()) {
+                var handlers = Object.keys(tabHandlers.nodeContentHandlers).filter(function (key) {
+                    return tabHandlers.nodeContentHandlers[key].checkIfValid();
+                });
+                if (handlers.length > 0) {
                     internalOk.call(okButton, event);
                 }
             }
@@ -53,72 +51,124 @@ define(function leosCrossReferenceDialog(require) {
             minWidth: 1000,
             minHeight: 600,
             resizable: CKEDITOR.DIALOG_RESIZE_NONE,
-            contents: [{
-                id: "info",
-                elements: [{
-                    id: "crossRef",
-                    type: 'hbox',
-                    className: 'crDialogbox',
-                    widths: ['40%', '60%'],
-                    height: 600,
-                    /* Set the dialog state upon data from widget, this is only used for editing already existed widgets. */
-                    setup: function setup(widget) {
-                        var brokenRef =  widget.element.getAttribute('leos:broken');
-                        var existingSelectedMrefId = widget.element.getId();
-                        nodeContentHandler.setSelectedMrefId(existingSelectedMrefId)
-                        if(brokenRef) {
-                            nodeContentHandler.showBrokenRefLabel(widget.element.getOuterHtml());
-                            nodeContentHandler.showErrors("brokenRef");
-                        } else {
-                            nodeContentHandler.clearBrokenRefLabel();
-                            var $existingSelectedItems = $(widget.element.$).children('ref');
-                            for (var index = 0; index < $existingSelectedItems.length; index++) {
-                                var refId = $existingSelectedItems[index].getAttribute('href');
-                                nodeContentHandler.addSelectedElementId(refId);
-                            }
-                        }
-                        nodeContentHandler.setUpExisting(widget.element.getHtml());
-                    },
-                    /* This function set up final state on the widget. */
-                    commit: function commit(widget) {
-                        if (nodeContentHandler.isExistingValuesChanged()) {
-                            // fire data event so editor is set to dirty
-                            widget.fire("data");
-                        }
-                        var $widget = $(widget.element.$);
-                        $widget.removeAttr('leos:broken');
-                        // Sets the user friendly label for referenced element
-                        $widget.html(nodeContentHandler.getRefrenceText());
-                    },
-
-                    children: [{
-                        type: 'html',
-                        title: 'Table of Content',
-                        html: htmlTocTemplate
-                    }, {
-                        type: 'html',
-                        title: 'Selected Content',
-                        className: 'crContent',
-                        html: htmlContentTemplate
-                    }]
-                }]
-            }],
+            contents: [],
             onLoad: function(event) {
                 handleOkDialogButton(event.sender);
                 // load plugin css to dialog
                 appendPluginCss(cssPath);
-                nodeContentHandler.init(editor);
-                tableOfContentHandler.init(editor, nodeContentHandler);
-
+                tabHandlers.init();
             },
             onShow: function() {
-                nodeContentHandler.reset(editor);
-                tableOfContentHandler.reset();
-            }
+                tabHandlers.reset();
+            },
+            addTabs: function addTabs(dialogDefinitionCKE) {
+                editor.LEOS.documentsMetadata.forEach(function (documentMetadata) {
+                    if (documentMetadata.category !== "MEMORANDUM") {
+                        tabHandlers.addHandler(documentMetadata.ref);
+                        var htmlTocTemplate = '<div id="treeContainer' + documentMetadata.ref + '" class="crTableOfContent"></div>';
+                        var htmlContentTemplate = '<div><div id="contentContainer' + documentMetadata.ref + '"  class="selected-content'
+                            + docType
+                            + '"></div>'
+                            + '<div id="referenceElement" class="selected-content"><label id="lblRefElement"><strong>Selected element(s): </strong></lable><label id="pathLabel' + documentMetadata.ref + '"> </label></div>'
+                            + '<div id="refAs"><label id="lblRefAs"><strong>Reference shown as: </strong></label><input id="refrenceTextLabel' + documentMetadata.ref + '" type="text" readonly="true"><div id="brokenRefLabel' + documentMetadata.ref + '"></div><div id="errorLabel' + documentMetadata.ref + '"></div></div></div>';
+                        var elements = [
+                            {
+                                id: "crossRef",
+                                type: 'hbox',
+                                className: 'crDialogbox',
+                                widths: ['40%', '60%'],
+                                height: 600,
+                                /* Set the dialog state upon data from widget, this is only used for editing already existed widgets. */
+                                setup: function setup(widget) {
+                                    var brokenRef =  widget.element.getAttribute('leos:broken');
+                                    var existingSelectedMrefId = widget.element.getId();
+                                    tabHandlers.nodeContentHandlers[documentMetadata.ref].setSelectedMrefId(existingSelectedMrefId)
+                                    if(brokenRef) {
+                                        tabHandlers.nodeContentHandlers[documentMetadata.ref].showBrokenRefLabel(widget.element.getOuterHtml());
+                                        tabHandlers.nodeContentHandlers[documentMetadata.ref].showErrors("brokenRef");
+                                    } else {
+                                        tabHandlers.nodeContentHandlers[documentMetadata.ref].clearBrokenRefLabel();
+                                        var $existingSelectedItems = $(widget.element.$).children('ref');
+                                        for (var index = 0; index < $existingSelectedItems.length; index++) {
+                                            var refId = $existingSelectedItems[index].getAttribute('href');
+                                            tabHandlers.nodeContentHandlers[documentMetadata.ref].addSelectedElementId(refId);
+                                        }
+                                    }
+                                    var children = $(widget.element.$).children('ref').filter(function () {
+                                        return this.getAttribute("documentref") === documentMetadata.ref;
+                                    });
+                                    if (children.length > 0) {
+                                        tabHandlers.nodeContentHandlers[documentMetadata.ref].setUpExisting(widget.element.getHtml());
+                                    } else {
+                                        tabHandlers.nodeContentHandlers[documentMetadata.ref].setUpExisting("");
+                                    }
+                                    tabHandlers.loadTableOfContent(tabHandlers.nodeContentHandlers[documentMetadata.ref].getSelectedElementIds());
+                                },
+                                /* This function set up final state on the widget. */
+                                commit: function commit(widget) {
+                                    if (tabHandlers.nodeContentHandlers[documentMetadata.ref].checkIfValid()) {
+                                        if (tabHandlers.nodeContentHandlers[documentMetadata.ref].isExistingValuesChanged()) {
+                                            // fire data event so editor is set to dirty
+                                            widget.fire("data");
+                                        }
+                                        var $widget = $(widget.element.$);
+                                        $widget.removeAttr('leos:broken');
+                                        // Sets the user friendly label for referenced element
+                                        $widget.html(tabHandlers.nodeContentHandlers[documentMetadata.ref].getRefrenceText());
+                                    }
+                                },
 
+                                children: [
+                                    {
+                                        type: 'html',
+                                        title: 'Navigation pane',
+                                        html: htmlTocTemplate
+                                    }, {
+                                        type: 'html',
+                                        title: 'Selected Content',
+                                        className: 'crContent',
+                                        html: htmlContentTemplate
+                                    }]
+                            }
+                        ];
+                        dialogDefinitionCKE.addContents({
+                            id: documentMetadata.ref,
+                            label: getTabName(editor, documentMetadata.category, documentMetadata.index),
+                            elements: elements
+                        });
+                    }
+                });
+            },
+            selectCurrentTabDocument: function selectCurrentTabDocument(dialogDefinitionCKE) {
+                dialogDefinitionCKE.onShow = function() {
+                    this.selectPage(editor.LEOS.documentRef);
+                };
+            }
         };
         return dialogDefinition;
     };
+
+    CKEDITOR.on('dialogDefinition', function(ev) {
+        var dialogName = ev.data.name;
+        var dialogDefinitionCKE = ev.data.definition;
+        if (dialogName === "leosCrossReferenceDialog") {
+            dialogDefinitionCKE.addTabs(dialogDefinitionCKE);
+            dialogDefinitionCKE.selectCurrentTabDocument(dialogDefinitionCKE);
+        }
+    });
+
+    function getTabName(editor, category, annexIndex) {
+        switch (category) {
+            case "MEMORANDUM":
+                return editor.lang.leosCrossReference.memorandum;
+            case "BILL":
+                return editor.lang.leosCrossReference.bill;
+            case "ANNEX":
+                return editor.lang.leosCrossReference.annex + " " + annexIndex;
+            default:
+                return "";
+        }
+    }
 
     function appendPluginCss(css) {
         $('<link>').appendTo('head').attr({
@@ -134,16 +184,17 @@ define(function leosCrossReferenceDialog(require) {
      */
     var nodeContentHandler = {
 
-        init: function init(editor) {
+        init: function init(editor, documentRef) {
             this.editor = editor;
-            this.SELECTABLE_ELEMENTS = "heading,paragraph,subparagraph,point,alinea,recital";
+            this.documentRef = documentRef;
+            this.SELECTABLE_ELEMENTS = "heading,paragraph,subparagraph,point,alinea,indent,recital";
             this.PATH_SEPARATOR = "/";
             // this is right-upper div container, which holds the data for selected node
-            this.$contentContainer = $('#contentContainer');
-            this.$pathLabel = $("#pathLabel");
-            this.$refrenceTextLabel = $("#refrenceTextLabel");
-            this.$errorLabel = $("#errorLabel");
-            this.$brokenRefLabel = $("#brokenRefLabel");
+            this.$contentContainer = $('#contentContainer' + documentRef);
+            this.$pathLabel = $("#pathLabel" + documentRef);
+            this.$refrenceTextLabel = $("#refrenceTextLabel" + documentRef);
+            this.$errorLabel = $("#errorLabel" + documentRef);
+            this.$brokenRefLabel = $("#brokenRefLabel" + documentRef);
             this.fullPath = "";
             this.treePath = "";
             this.treeNodeIds = new Set();
@@ -151,17 +202,23 @@ define(function leosCrossReferenceDialog(require) {
             this.refrenceText = "";
             this.articleHeadingAknName = 'data-akn-name';
             this.articleHeadingId = 'data-akn-heading-id';
-            
+            this.contentParagraphId = 'data-akn-mp-id';
+
             var that = this;
             editor.on("receiveElement", function(event) {
-                that.setContent(event.data.elementFragment, event.editor);
-                that.showExistingReferences();
-                that.handleOnClick();
+                if (event.data.documentRef === that.documentRef) {
+                    that.setContent(event.data.elementFragment, event.editor);
+                    that.showExistingReferences();
+                    that.handleOnClick();
+                }
             });
 
             editor.on("receiveRefLabel", function(event) {
-                that.setRefrenceTextLabel(event.data);
+                if (event.data.documentRef === that.documentRef) {
+                    that.setRefrenceTextLabel(event.data.references);
+                }
             });
+            that.normalizeStyles(editor);
         },
         showExistingReferences: function showExistingReferences() {
             var that = this;
@@ -389,7 +446,6 @@ define(function leosCrossReferenceDialog(require) {
         setUpExisting: function setUpExisting(label) {
             this.setExistingValues(label);
             this.setRefrenceTextLabel(label);
-            tableOfContentHandler.loadTableOfContent(this.getSelectedElementIds());
         },
         requestRefLabel: function requestRefLabel(nodeList) {
             var currentEditPosition = this.findCurrentEditedElement();
@@ -399,9 +455,11 @@ define(function leosCrossReferenceDialog(require) {
             }, []);
             var data = currentEditPosition ? {
                 references: nodeList,
-                currentEditPosition: currentEditPosition
+                currentEditPosition: currentEditPosition,
+                documentRef: this.documentRef
             } : {
-                references: nodeList
+                references: nodeList,
+                documentRef: this.documentRef
             };
             this.editor.fire("requestRefLabel", data);
         },
@@ -415,6 +473,12 @@ define(function leosCrossReferenceDialog(require) {
                 var selectedMrefId = this.getSelectedMrefId();
                 if(selectedMrefId === null) {
                     selectedMrefId = editor.getSelection().getCommonAncestor();
+                    if (selectedMrefId.$.nodeType === Node.TEXT_NODE) {
+                        return null;
+                    }
+                    if (selectedMrefId && selectedMrefId.getId() === null && startElement.hasAttribute(this.contentParagraphId)) {
+                        return startElement.getAttribute(this.contentParagraphId);
+                    }
                     return selectedMrefId && selectedMrefId.getId();
                 }
                 return selectedMrefId;
@@ -456,35 +520,26 @@ define(function leosCrossReferenceDialog(require) {
 
     /* This handler is used to manage the tree for table of content. */
     var tableOfContentHandler = {
-        init: function init(editor, nodeContentHandler) {
+        init: function init(editor, nodeContentHandler, documentRef) {
             this.editor = editor;
             this.nodeContentHandler = nodeContentHandler;
+            this.documentRef = documentRef;
             this.treePath = "";
-            this.$treeContainer = $('#treeContainer');
+            this.$treeContainer = $('#treeContainer' + documentRef);
             this.NbrOfSelectedNodes = 0;
-            this.handleTableOfContentLoaded();
-        },
-        loadTableOfContent: function loadTableOfContent(selectedNodeIds) {
-            this.editor.fire("requestToc", {
-                selectedNodeIds: Array.from(selectedNodeIds)
-            });
         },
         contentRequired: function contentRequired() {
             return (this.NbrOfSelectedNodes <= 1);
         },
-        handleTableOfContentLoaded: function handleTableOfContentLoaded() {
+        handleTableOfContentLoaded: function handleTableOfContentLoaded(tocItems, elementAncestorsIds) {
             var that = this;
-            this.editor.on("receiveToc", function(event) {
-                var tocItems = event.data.tocItems;
-                var elementAncestorsIds = event.data.elementAncestorsIds;
-                var selectedTreeItems = that.matchSelectedTreeItem({
-                    tocItems: tocItems,
-                    ancestorsIds: elementAncestorsIds,
-                    nodeIds: nodeContentHandler.existingRefIds
-                });
-                that.NbrOfSelectedNodes = selectedTreeItems ? selectedTreeItems.length : 0;
-                that.createTreeInstance(tocItems, selectedTreeItems);
+            var selectedTreeItems = that.matchSelectedTreeItem({
+                tocItems: tocItems,
+                ancestorsIds: elementAncestorsIds,
+                nodeIds: that.nodeContentHandler.existingRefIds
             });
+            this.NbrOfSelectedNodes = selectedTreeItems ? selectedTreeItems.length : 0;
+            this.createTreeInstance(tocItems, selectedTreeItems);
         },
 
         matchSelectedTreeItem: function matchSelectedTreeItem(treeContext) {
@@ -539,6 +594,7 @@ define(function leosCrossReferenceDialog(require) {
                             var treeNodeIds = that.nodeContentHandler.getTreeNodeIds();
                             that.nodeContentHandler.requestRefLabel(treeNodeIds);
                             that.NbrOfSelectedNodes = treeNodeIds.size;
+                            tabHandlers.resetOthers(that.documentRef);
                         }
 
                         that.populateContent(data.node, selectedNodes.length);
@@ -553,21 +609,31 @@ define(function leosCrossReferenceDialog(require) {
                 }
             });
         },
+        getAknTagDescription: function getAknTagDescription(aknTag) {
+            if (aknTag === "level") {
+                return this.editor.lang.leosCrossReference.levelDescription;
+            } else {
+                return aknTag;
+            }
+        },
         calculateTreePath: function calculateTreePath(selectedNodes) {
+            var that = this;
             var treePath = "";
             selectedNodes.forEach(function(node, index, nodes) {
-                var typeName = (node.original.number != null) ? node.original.type + " " + node.original.number : node.original.type;
+                var typeName = (node.original.number != null) ? that.getAknTagDescription(node.original.tocItem.aknTag) + " " + node.original.number : that.getAknTagDescription(node.original.tocItem.aknTag);
                 treePath += typeName + (index < (nodes.length - 1) ? " - " : "");
             });
             return treePath;
         },
         populateContent: function populateContent(selectedNode, nbrOfSelectedNodes) {
-            var higherElements = ["PART", "TITLE", "CHAPTER", "SECTION"];
-            var selectedNodeTypeName = selectedNode.original.type;
+            var higherElements = ["part", "title", "chapter", "section"];
+            var selectedNodeTypeName = selectedNode.original.tocItem.aknTag;
             if (this.contentRequired() && (nbrOfSelectedNodes === 1) && higherElements.indexOf(selectedNodeTypeName) === -1) {
+                var that = this;
                 this.editor.fire("requestElement", {
                     elementId: selectedNode.original.id,
-                    elementType: selectedNodeTypeName.toLowerCase()
+                    elementType: selectedNodeTypeName,
+                    documentRef: that.documentRef
                 });
             } else {
                 this.nodeContentHandler.setContent('<div class="no-preview-available">' + this.editor.lang.leosCrossReference.contentPaneMessage + '<div>');
@@ -608,6 +674,62 @@ define(function leosCrossReferenceDialog(require) {
             });
             this.handleNodeSelection();
         }
+    };
+
+    var tabHandlers = {
+
+        build: function build(editor) {
+            this.editor = editor;
+            this.nodeContentHandlers = {};
+            this.tableOfContentHandlers = {};
+        },
+
+        addHandler: function addHandler(documentRef) {
+            this.tableOfContentHandlers[documentRef] = Object.create(tableOfContentHandler);
+            this.nodeContentHandlers[documentRef] = Object.create(nodeContentHandler);
+        },
+
+        init: function init() {
+            for (const documentRef in this.nodeContentHandlers) {
+                this.nodeContentHandlers[documentRef].init(this.editor, documentRef);
+                this.tableOfContentHandlers[documentRef].init(this.editor, this.nodeContentHandlers[documentRef], documentRef);
+            }
+            this.handleTableOfContentLoaded();
+        },
+
+        reset: function reset() {
+            for (const documentRef in this.nodeContentHandlers) {
+                this.nodeContentHandlers[documentRef].reset(editor);
+                this.tableOfContentHandlers[documentRef].reset();
+            }
+        },
+
+        resetOthers: function resetOthers(currentDocumentRef) {
+            for (const documentRef in this.nodeContentHandlers) {
+                if (documentRef !== currentDocumentRef) {
+                    this.nodeContentHandlers[documentRef].reset(this.editor);
+                }
+            }
+        },
+
+        loadTableOfContent: function loadTableOfContent(selectedNodeIds) {
+            this.editor.fire("requestToc", {
+                selectedNodeIds: Array.from(selectedNodeIds)
+            });
+        },
+
+        handleTableOfContentLoaded: function handleTableOfContentLoaded() {
+            var that = this;
+            this.editor.on("receiveToc", function(event) {
+                var data = JSON.parse(event.data);
+                var tocItemsMap = data.tocItemsMap;
+                var elementAncestorsIds = event.data.elementAncestorsIds;
+                for (const documentRef in that.nodeContentHandlers) {
+                    that.tableOfContentHandlers[documentRef].handleTableOfContentLoaded(tocItemsMap[documentRef], elementAncestorsIds);
+                }
+            });
+        }
+
     };
 
     return dialogDefinition;

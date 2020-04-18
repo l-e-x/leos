@@ -18,7 +18,7 @@ define(function leosPreventElementDeletionPluginModule(require) {
     // load module dependencies
     var CKEDITOR = require("promise!ckEditor");
     var pluginTools = require("plugins/pluginTools");
-    var leosNonEditableEmptyWidget = require("plugins/leosPreventElementDeletion/leosNonEditableEmptyWidget")
+    var leosNonEditableEmptyWidget = require("plugins/leosPreventElementDeletion/leosNonEditableEmptyWidget");
     var pluginName = "leosPreventElementDeletion";
     var stylesLoaded = false;
 

@@ -17,7 +17,7 @@
                     <FRBRuri value=""/>
                     <FRBRdate date="9999-01-01" name=""/>
                     <FRBRauthor href=""/>
-                    <FRBRlanguage language="eng"/>
+                    <FRBRlanguage language="en"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis value=""/>
@@ -70,11 +70,11 @@
         <collectionBody xml:id="body">
             <component xml:id="body_cmp_1" refersTo="#memorandum">
                 <!-- reference to the memorandum, relative to this proposal -->
-                <documentRef xml:id="body_cmp_1__dref_1" href="memorandum_1.xml" showAs="Explanatory Memorandum"/>
+                <documentRef xml:id="body_cmp_1__dref_1" href="memorandum.xml" showAs="Explanatory Memorandum"/>
             </component>
             <component xml:id="body_cmp_2" refersTo="#bill">
                 <!-- reference to the bill, relative to this proposal -->
-                <documentRef xml:id="body_cmp_1__dref_2" href="bill_1.xml" showAs="Bill"/>
+                <documentRef xml:id="body_cmp_1__dref_2" href="bill.xml" showAs="Bill"/>
             </component>
         </collectionBody>
     </documentCollection>

@@ -47,11 +47,20 @@ public class UserHelper {
         if(user == null)
         {
             //If we don't find the user we return an instance of the user tagged as unavailable.
-            user = new User(RandomUtils.nextLong(), login, messageHelper.getMessage("collection.caption.unavailable.user",login),"","",null);
+            user = new User(RandomUtils.nextLong(), login, messageHelper.getMessage("collection.caption.unavailable.user",login), null, "", null);
         }
         return user;
     }
 
+    public String convertToPresentation(String value){
+        try {
+            User user = getUser(value);
+            value = ((user.getName() == null) || (user.getName().isEmpty())) ? user.getLogin() : user.getName();
+        }
+        finally {
+            return value;
+        }
+    }
     public List<User> searchUsersByKey(String key){
         return userService.searchUsersByKey(key);
     }

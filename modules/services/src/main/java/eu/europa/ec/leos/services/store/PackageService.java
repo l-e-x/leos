@@ -13,20 +13,14 @@
  */
 package eu.europa.ec.leos.services.store;
 
-import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
-import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
-import eu.europa.ec.leos.domain.cmis.document.Proposal;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
-import eu.europa.ec.leos.domain.vo.LegDocumentVO;
-import eu.europa.ec.leos.services.export.ExportOptions;
-import eu.europa.ec.leos.services.export.ExportResource;
-import io.atlassian.fugue.Pair;
+import eu.europa.ec.leos.domain.common.TocMode;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 public interface PackageService {
 
@@ -45,31 +39,9 @@ public interface PackageService {
 
     <T extends LeosDocument> List<T> findDocumentsByPackageId(String id, Class<T> filterType, Boolean allVersions, Boolean fetchContent);
     
-    Pair<File, ExportResource> createLegPackage(String proposalId, ExportOptions exportOptions) throws IOException;
-    
-    Pair<File, ExportResource> createLegPackage(String proposalId, ExportOptions exportOptions, XmlDocument intermediateMajor) throws IOException;
+    <T extends LeosDocument> List<T> findDocumentsByUserId(String userId, Class<T> filterType, String leosAuthority);
 
-    Pair<File,ExportResource> createLegPackage(File legFile, ExportOptions exportOptions) throws IOException;
+    Map<String, List<TableOfContentItemVO>> getTableOfContent(String documentId, TocMode mode);
 
-    <T extends Proposal> List<T> findDocumentsByUserId(String userId, Class<T> filterType, String leosAuthority);
-
-    List<LegDocumentVO> getLegDocumentDetailsByUserId(String userId);
-
-    LegDocument createLegDocument(String proposalId, String jobId, String milestoneComment, File file, LeosLegStatus status) throws IOException;
-
-    LegDocument updateLegDocument(String id, LeosLegStatus status);
-
-    LegDocument updateLegDocument(String id, byte[] pdfJobZip, byte[] wordJobZip);
-
-    LegDocument findLegDocumentById(String id);
-
-    /**
-     * Finds the Leg document that has jobId and is in the same package with any document that has @documentId.
-     * @param documentId the id of a document that is located in the same package as the Leg file
-     * @param jobId the jobId of the Leg document
-     * @return the Leg document if found, otherwise null
-     */
-    LegDocument findLegDocumentByAnyDocumentIdAndJobId(String documentId, String jobId);
-
-    List<LegDocument>  findLegDocumentByStatus(LeosLegStatus leosLegStatus);
+    String calculateDocType(XmlDocument targetDocument);
 }

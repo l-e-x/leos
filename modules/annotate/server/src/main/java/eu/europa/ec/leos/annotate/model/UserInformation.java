@@ -13,9 +13,12 @@
  */
 package eu.europa.ec.leos.annotate.model;
 
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.entity.Token;
 import eu.europa.ec.leos.annotate.model.entity.User;
+import eu.europa.ec.leos.annotate.model.search.Consts;
+import eu.europa.ec.leos.annotate.model.search.Consts.SearchUserType;
 
 import java.util.Objects;
 
@@ -30,20 +33,22 @@ public class UserInformation {
     private User user;                // user information from our database
     private UserDetails userDetails;  // user details retrieved from UD-repo
     private String clientId;          // browser generated id
+    private String connectedEntity;   // entity from which the user connects (used in ISC)
+    private Consts.SearchUserType searchUser = Consts.SearchUserType.Unknown; // type of user executing the search (relevant for ISC)
 
     // -----------------------------------------------------------
     // Constructors
     // -----------------------------------------------------------
     public UserInformation(final String login, final String authority) {
         this.login = login;
-        this.authority = authority;
+        setAuthorityIntern(authority);
     }
 
     public UserInformation(final Token token) {
         this.currentToken = token;
         if (token != null) {
             this.user = token.getUser();
-            this.authority = token.getAuthority();
+            setAuthorityIntern(token.getAuthority());
             this.login = this.user.getLogin();
         }
     }
@@ -53,7 +58,7 @@ public class UserInformation {
         if (user != null) {
             this.login = this.user.getLogin();
         }
-        this.authority = authority;
+        setAuthorityIntern(authority);
     }
 
     @SuppressWarnings("PMD.ConfusingTernary")
@@ -62,66 +67,115 @@ public class UserInformation {
         this.user = user;
         if (user != null) {
             this.login = user.getLogin();
-        } else if(userDetails != null) {
+        } else if (userDetails != null) {
             this.login = userDetails.getLogin();
         }
     }
 
     // assemble the hypothesis user account based on the given user information
     public String getAsHypothesisAccount() {
-        
+
         return "acct:" + login + "@" + authority;
     }
-    
+
+    private void updateSearchUser() {
+
+        if (Authorities.isLeos(this.authority)) {
+            this.searchUser = SearchUserType.EdiT;
+        } else if (Authorities.isIsc(this.authority)) {
+            this.searchUser = SearchUserType.ISC;
+        }
+    }
+
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+
+    @Generated
     public String getLogin() {
         return login;
     }
 
+    @Generated
     public void setLogin(final String login) {
         this.login = login;
     }
 
+    @Generated
     public String getAuthority() {
         return authority;
     }
 
+    @Generated
     public void setAuthority(final String authority) {
-        this.authority = authority;
+        setAuthorityIntern(authority);
     }
 
+    // PMD conform in order to avoid calling the overridable setAuthority method by other methods
+    private void setAuthorityIntern(final String authority) {
+        this.authority = authority;
+
+        updateSearchUser();
+    }
+
+    @Generated
     public Token getCurrentToken() {
         return currentToken;
     }
 
+    @Generated
     public void setCurrentToken(final Token currentToken) {
         this.currentToken = currentToken;
     }
 
+    @Generated
     public User getUser() {
         return user;
     }
 
+    @Generated
     public void setUser(final User user) {
         this.user = user;
     }
 
+    @Generated
     public UserDetails getUserDetails() {
         return userDetails;
     }
 
+    @Generated
     public void setUserDetails(final UserDetails userDetails) {
         this.userDetails = userDetails;
     }
 
+    @Generated
     public String getClientId() {
         return clientId;
     }
 
+    @Generated
     public void setClientId(final String clientId) {
         this.clientId = clientId;
+    }
+
+    @Generated
+    public String getConnectedEntity() {
+        return connectedEntity;
+    }
+
+    @Generated
+    public void setConnectedEntity(final String entity) {
+        this.connectedEntity = entity;
+    }
+
+    @Generated
+    public void setSearchUser(final Consts.SearchUserType searchUser) {
+        this.searchUser = searchUser;
+    }
+
+    @Generated
+    public Consts.SearchUserType getSearchUser() {
+        return searchUser;
     }
 
     // -------------------------------------
@@ -131,7 +185,7 @@ public class UserInformation {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(login, authority, currentToken, user, userDetails);
+        return Objects.hash(login, authority, currentToken, user, userDetails, connectedEntity, searchUser);
     }
 
     @Generated
@@ -148,6 +202,9 @@ public class UserInformation {
                 Objects.equals(this.login, other.login) &&
                 Objects.equals(this.currentToken, other.currentToken) &&
                 Objects.equals(this.user, other.user) &&
-                Objects.equals(this.userDetails, other.userDetails);
+                Objects.equals(this.userDetails, other.userDetails) &&
+                Objects.equals(this.connectedEntity, other.connectedEntity) &&
+                Objects.equals(this.searchUser, other.searchUser);
     }
+
 }

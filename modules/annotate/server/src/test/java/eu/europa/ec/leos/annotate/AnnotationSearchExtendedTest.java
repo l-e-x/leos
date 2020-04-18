@@ -93,45 +93,46 @@ public class AnnotationSearchExtendedTest {
     
     private UserInformation userInfo;
 
-    private static final String ID_ANN_USER1_1_PUB = "dDx4SEAjR-C4TR0J8s9IaQ";
-    private static final String ID_ANN_USER1_2_PUB = "E4-LjixbS0CwNEPu9EDfjA";
-    private static final String ID_ANN_USER1_3_PUB = "cUkva_1MSVaLXGIHOEVBHA";
-    private static final String ID_ANN_USER1_4_PUB = "imMyuSbeSoetO2-_cMfnrQ";
-    private static final String ID_ANN_USER1_5_PRIV = "gD8BHOs9R--PHDygxS4prg";
-    private static final String ID_ANN_USER1_6_PRIV = "SMEMXl4gSbW0j1Gj3SLQ3w";
-    private static final String ID_ANN_USER1_7_PRIV = "8Z16HBetT26H6NybYaI7Yg";
-    private static final String ID_ANN_USER1_8_PRIV = "IaozutxkRUq8Nthrz1EmvQ";
-    private static final String ID_ANN_USER1_9_PRIV = "AeAJ6jX1RjOv4OpOfFEZdw";
-    private static final String ID_ANN_USER1_10_PUB = "jVtHuWFsQiOGD8Vg0GMnVQ";
-    private static final String ID_ANN_USER1_11_PUB = "x8USFnmzTwaxBFFI02uKWA";
-    private static final String ID_ANN_USER1_12_PUB = "cB_aTYVCTfKkwKknBndUeQ";
-    private static final String ID_ANN_USER1_13_PUB = "CToFE33XQiOT0KdemkBeLA";
-    private static final String ID_ANN_USER1_14_PUB = "kQi4OwhBSFKUe9zu9NvTAA";
-    private static final String ID_ANN_USER1_15_PUB = "6LUUKoRoQWqcFTTwEAcRaQ";
-    private static final String ID_ANN_USER1_16_PUB = "yVhIPm4sT7S8udmfyEvLTg";
-    private static final String ID_ANN_USER1_17_PUB = "RB0WNYljQ2meOre2WFrzpw";
-    private static final String ID_ANN_USER1_18_PUB = "4rzazIXwQUK2kYkYGwonAw";
-    private static final String ID_ANN_USER1_19_PUB_REP = "XVz5ED6cTNOyLDZNLc-eOg";
-    private static final String ID_ANN_USER1_19_PUB_REP_DEL = "DFUah4X2SHahcu6bjgQ8Aw";
-    private static final String ID_ANN_USER1_20_PUB = "VX12QSnGQuiHCTiLGfbikA";
-    private static final String ID_ANN_USER1_21_PUB_REPLY = "WFCffWcLQYuUYojZuBkWrg";
-    private static final String ID_ANN_USER1_22_PUB_REPLY = "6SzIQC-CS5GV9NkCCvnPUQ";
-    private static final String ID_ANN_USER1_23_PUB_REPLY = "_N6ZA5v0SC2vHz5BGIxWKA";
-    private static final String ID_ANN_USER1_24_PRIV = "FnAOJPctQzS7AdarWxmVqQ";
-    private static final String ID_ANN_USER1_25_PRIV = "cpXc7X_JSnC7WXAU_ZMPsQ";
-    private static final String ID_ANN_USER2_26_PUB = "Zi6d7Q1fQd2-RZFUlmsdWg";
-    private static final String ID_ANN_USER1_27_PRIV_PNT = "rOLKWGlRQrmWgFPXA18_Ww";
-    private static final String ID_ANN_USER1_28_PUB_REP_PNT = "fpvfFb83RNewptNHxXgYiw";
-    private static final String ID_ANN_USER2_29_PRIV_HLT = "qxwnazYgQ3-oYLzRaOCz0w";
-    private static final String ID_ANN_USER1_30_PUB_PNT = "SdAx2AeHQE2NBMjcIcV5DA";
-    private static final String ID_ANN_USER1_31_PUB = "2NTBWRxhTM2EkhzId_r1aA";
-    private static final String ID_ANN_USER1_32_PUB = "toDnbyCSRaSiW5aY6O9Jgw";
-    private static final String ID_ANN_USER1_33_PRIV = "H8yF15JFSxWcjhMCljMqOg";
-    private static final String ID_ANN_USER3_34_PUB = "1NMs9Xc9Tmiui9rHDi7c6A";
-    private static final String ID_ANN_USER3_35_PUB_REPLY = "OtWIOBKyRMeBm9oOrMzatA";
-    private static final String ID_ANN_USER3_36_PUB = "TL_s-VviQeecIgEdStr3qg";
+    private static final String ID_USER1_1_PUB = "dDx4SEAjR-C4TR0J8s9IaQ";
+    private static final String ID_USER1_2_PUB = "E4-LjixbS0CwNEPu9EDfjA";
+    private static final String ID_USER1_3_PUB = "cUkva_1MSVaLXGIHOEVBHA";
+    private static final String ID_USER1_4_PUB = "imMyuSbeSoetO2-_cMfnrQ";
+    private static final String ID_USER1_5_PRIV = "gD8BHOs9R--PHDygxS4prg";
+    private static final String ID_USER1_6_PRIV = "SMEMXl4gSbW0j1Gj3SLQ3w";
+    private static final String ID_USER1_7_PRIV = "8Z16HBetT26H6NybYaI7Yg";
+    private static final String ID_USER1_8_PRIV = "IaozutxkRUq8Nthrz1EmvQ";
+    private static final String ID_USER1_9_PRIV = "AeAJ6jX1RjOv4OpOfFEZdw";
+    private static final String ID_USER1_10_PUB = "jVtHuWFsQiOGD8Vg0GMnVQ";
+    private static final String ID_USER1_11_PUB = "x8USFnmzTwaxBFFI02uKWA";
+    private static final String ID_USER1_12_PUB = "cB_aTYVCTfKkwKknBndUeQ";
+    private static final String ID_USER1_13_PUB = "CToFE33XQiOT0KdemkBeLA";
+    private static final String ID_USER1_14_PUB = "kQi4OwhBSFKUe9zu9NvTAA";
+    private static final String ID_USER1_15_PUB = "6LUUKoRoQWqcFTTwEAcRaQ";
+    private static final String ID_USER1_16_PUB = "yVhIPm4sT7S8udmfyEvLTg";
+    private static final String ID_USER1_17_PUB = "RB0WNYljQ2meOre2WFrzpw";
+    private static final String ID_USER1_18_PUB = "4rzazIXwQUK2kYkYGwonAw";
+    private static final String ID_USER1_19_PUB_REP = "XVz5ED6cTNOyLDZNLc-eOg";
+    private static final String ID_USER1_19_PUB_REP_DEL = "DFUah4X2SHahcu6bjgQ8Aw";
+    private static final String ID_USER1_20_PUB = "VX12QSnGQuiHCTiLGfbikA";
+    private static final String ID_USER1_21_PUB_REPLY = "WFCffWcLQYuUYojZuBkWrg";
+    private static final String ID_USER1_22_PUB_REPLY = "6SzIQC-CS5GV9NkCCvnPUQ";
+    private static final String ID_USER1_23_PUB_REPLY = "_N6ZA5v0SC2vHz5BGIxWKA";
+    private static final String ID_USER1_24_PRIV = "FnAOJPctQzS7AdarWxmVqQ";
+    private static final String ID_USER1_25_PRIV = "cpXc7X_JSnC7WXAU_ZMPsQ";
+    private static final String ID_USER2_26_PUB = "Zi6d7Q1fQd2-RZFUlmsdWg";
+    private static final String ID_USER1_27_PRIV_PNT = "rOLKWGlRQrmWgFPXA18_Ww";
+    private static final String ID_USER1_28_PUB_REP_PNT = "fpvfFb83RNewptNHxXgYiw";
+    private static final String ID_USER2_29_PRIV_HLT = "qxwnazYgQ3-oYLzRaOCz0w";
+    private static final String ID_USER1_30_PUB_PNT = "SdAx2AeHQE2NBMjcIcV5DA";
+    private static final String ID_USER1_31_PUB = "2NTBWRxhTM2EkhzId_r1aA";
+    private static final String ID_USER1_32_PUB = "toDnbyCSRaSiW5aY6O9Jgw";
+    private static final String ID_USER1_33_PRIV = "H8yF15JFSxWcjhMCljMqOg";
+    private static final String ID_USER3_34_PUB = "1NMs9Xc9Tmiui9rHDi7c6A";
+    private static final String ID_USER3_35_PUB_REPLY = "OtWIOBKyRMeBm9oOrMzatA";
+    private static final String ID_USER3_36_PUB = "TL_s-VviQeecIgEdStr3qg";
 
     @Before
+    @SuppressWarnings("PMD.ExcessiveMethodLength") // because its test data creation; no harm in here
     public void cleanDatabaseBeforeTests() throws URISyntaxException {
 
         TestDbHelper.cleanupRepositories(this);
@@ -181,7 +182,7 @@ public class AnnotationSearchExtendedTest {
 
         // first public annotation of first user
         final Annotation firstAnnot = new Annotation();
-        firstAnnot.setId(ID_ANN_USER1_1_PUB);
+        firstAnnot.setId(ID_USER1_1_PUB);
         firstAnnot.setCreated(LocalDateTime.of(2017, 12, 22, 11, 40, 57));
         firstAnnot.setUpdated(LocalDateTime.of(2017, 12, 22, 11, 42, 59));
         firstAnnot.setMetadata(meta);
@@ -194,7 +195,7 @@ public class AnnotationSearchExtendedTest {
 
         // second public annotation of first user
         final Annotation secondAnnot = new Annotation();
-        secondAnnot.setId(ID_ANN_USER1_2_PUB);
+        secondAnnot.setId(ID_USER1_2_PUB);
         secondAnnot.setCreated(LocalDateTime.of(2017, 12, 22, 12, 11, 28));
         secondAnnot.setUpdated(LocalDateTime.of(2017, 12, 22, 12, 11, 46));
         secondAnnot.setMetadata(meta);
@@ -207,7 +208,7 @@ public class AnnotationSearchExtendedTest {
 
         // third public annotation of first user
         final Annotation thirdAnnot = new Annotation();
-        thirdAnnot.setId(ID_ANN_USER1_3_PUB);
+        thirdAnnot.setId(ID_USER1_3_PUB);
         thirdAnnot.setCreated(LocalDateTime.of(2017, 12, 22, 12, 11, 29));
         thirdAnnot.setUpdated(LocalDateTime.of(2017, 12, 22, 12, 12, 33));
         thirdAnnot.setMetadata(meta);
@@ -220,7 +221,7 @@ public class AnnotationSearchExtendedTest {
 
         // fourth public annotation of first user
         final Annotation fourthAnnot = new Annotation();
-        fourthAnnot.setId(ID_ANN_USER1_4_PUB);
+        fourthAnnot.setId(ID_USER1_4_PUB);
         fourthAnnot.setCreated(LocalDateTime.of(2017, 12, 22, 13, 00, 57));
         fourthAnnot.setUpdated(LocalDateTime.of(2017, 12, 22, 13, 01, 49));
         fourthAnnot.setMetadata(meta);
@@ -233,7 +234,7 @@ public class AnnotationSearchExtendedTest {
 
         // fifth annotation of first user: private!
         final Annotation fifthAnnot = new Annotation();
-        fifthAnnot.setId(ID_ANN_USER1_5_PRIV);
+        fifthAnnot.setId(ID_USER1_5_PRIV);
         fifthAnnot.setCreated(LocalDateTime.of(2017, 12, 22, 13, 01, 56));
         fifthAnnot.setUpdated(LocalDateTime.of(2017, 12, 22, 13, 02, 15));
         fifthAnnot.setMetadata(meta);
@@ -246,7 +247,7 @@ public class AnnotationSearchExtendedTest {
 
         // sixth annotation of first user: private!
         final Annotation sixthAnnot = new Annotation();
-        sixthAnnot.setId(ID_ANN_USER1_6_PRIV);
+        sixthAnnot.setId(ID_USER1_6_PRIV);
         sixthAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 8, 27, 55));
         sixthAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 8, 28, 38));
         sixthAnnot.setMetadata(meta);
@@ -259,7 +260,7 @@ public class AnnotationSearchExtendedTest {
 
         // seventh annotation of first user: private!
         final Annotation seventhAnnot = new Annotation();
-        seventhAnnot.setId(ID_ANN_USER1_7_PRIV);
+        seventhAnnot.setId(ID_USER1_7_PRIV);
         seventhAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 8, 54, 40));
         seventhAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 8, 55, 17));
         seventhAnnot.setMetadata(meta);
@@ -272,7 +273,7 @@ public class AnnotationSearchExtendedTest {
 
         // eighth annotation of first user: private!
         final Annotation eighthAnnot = new Annotation();
-        eighthAnnot.setId(ID_ANN_USER1_8_PRIV);
+        eighthAnnot.setId(ID_USER1_8_PRIV);
         eighthAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 9, 11, 21));
         eighthAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 9, 11, 35));
         eighthAnnot.setMetadata(meta);
@@ -285,7 +286,7 @@ public class AnnotationSearchExtendedTest {
 
         // ninth annotation of first user: private!
         final Annotation ninthAnnot = new Annotation();
-        ninthAnnot.setId(ID_ANN_USER1_9_PRIV);
+        ninthAnnot.setId(ID_USER1_9_PRIV);
         ninthAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 9, 12, 23));
         ninthAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 9, 13, 37));
         ninthAnnot.setMetadata(meta);
@@ -298,7 +299,7 @@ public class AnnotationSearchExtendedTest {
 
         // tenth annotation of first user: public!
         final Annotation tenthAnnot = new Annotation();
-        tenthAnnot.setId(ID_ANN_USER1_10_PUB);
+        tenthAnnot.setId(ID_USER1_10_PUB);
         tenthAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 9, 44, 39));
         tenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 9, 45, 06));
         tenthAnnot.setMetadata(meta);
@@ -311,7 +312,7 @@ public class AnnotationSearchExtendedTest {
 
         // eleventh annotation of first user: public!
         final Annotation eleventhAnnot = new Annotation();
-        eleventhAnnot.setId(ID_ANN_USER1_11_PUB);
+        eleventhAnnot.setId(ID_USER1_11_PUB);
         eleventhAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 10, 52, 36));
         eleventhAnnot.setUpdated(LocalDateTime.of(2018, 01, 18, 16, 49, 20));
         eleventhAnnot.setMetadata(meta);
@@ -324,7 +325,7 @@ public class AnnotationSearchExtendedTest {
 
         // twelfth annotation of first user: public!
         final Annotation twelfthAnnot = new Annotation();
-        twelfthAnnot.setId(ID_ANN_USER1_12_PUB);
+        twelfthAnnot.setId(ID_USER1_12_PUB);
         twelfthAnnot.setCreated(LocalDateTime.of(2017, 12, 27, 12, 28, 14));
         twelfthAnnot.setUpdated(LocalDateTime.of(2017, 12, 27, 12, 28, 52));
         twelfthAnnot.setMetadata(meta);
@@ -337,7 +338,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirteenth annotation of first user: public!
         final Annotation thirteenthAnnot = new Annotation();
-        thirteenthAnnot.setId(ID_ANN_USER1_13_PUB);
+        thirteenthAnnot.setId(ID_USER1_13_PUB);
         thirteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 28, 9, 49, 43));
         thirteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 28, 9, 49, 51));
         thirteenthAnnot.setMetadata(meta);
@@ -350,7 +351,7 @@ public class AnnotationSearchExtendedTest {
 
         // fourteenth annotation of first user: public!
         final Annotation fourteenthAnnot = new Annotation();
-        fourteenthAnnot.setId(ID_ANN_USER1_14_PUB);
+        fourteenthAnnot.setId(ID_USER1_14_PUB);
         fourteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 28, 10, 42, 07));
         fourteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 28, 10, 42, 16));
         fourteenthAnnot.setMetadata(meta);
@@ -363,7 +364,7 @@ public class AnnotationSearchExtendedTest {
 
         // fifteenth annotation of first user: public!
         final Annotation fifteenthAnnot = new Annotation();
-        fifteenthAnnot.setId(ID_ANN_USER1_15_PUB);
+        fifteenthAnnot.setId(ID_USER1_15_PUB);
         fifteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 28, 12, 38, 18));
         fifteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 28, 12, 40, 36));
         fifteenthAnnot.setMetadata(meta);
@@ -376,7 +377,7 @@ public class AnnotationSearchExtendedTest {
 
         // sixteenth annotation of first user: public!
         final Annotation sixteenthAnnot = new Annotation();
-        sixteenthAnnot.setId(ID_ANN_USER1_16_PUB);
+        sixteenthAnnot.setId(ID_USER1_16_PUB);
         sixteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 28, 15, 05, 21));
         sixteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 28, 15, 05, 41));
         sixteenthAnnot.setMetadata(meta);
@@ -389,7 +390,7 @@ public class AnnotationSearchExtendedTest {
 
         // seventeenth annotation of first user: public!
         final Annotation seventeenthAnnot = new Annotation();
-        seventeenthAnnot.setId(ID_ANN_USER1_17_PUB);
+        seventeenthAnnot.setId(ID_USER1_17_PUB);
         seventeenthAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 10, 42, 20));
         seventeenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 10, 42, 40));
         seventeenthAnnot.setMetadata(meta);
@@ -402,7 +403,7 @@ public class AnnotationSearchExtendedTest {
 
         // eighteenth annotation of first user: public!
         final Annotation eighteenthAnnot = new Annotation();
-        eighteenthAnnot.setId(ID_ANN_USER1_18_PUB);
+        eighteenthAnnot.setId(ID_USER1_18_PUB);
         eighteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 10, 50, 42));
         eighteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 10, 56, 28));
         eighteenthAnnot.setMetadata(meta);
@@ -415,11 +416,11 @@ public class AnnotationSearchExtendedTest {
 
         // nineteenth annotation of first user: public reply (2nd degree)!
         final Annotation nineteenthAnnot = new Annotation();
-        nineteenthAnnot.setId(ID_ANN_USER1_19_PUB_REP);
+        nineteenthAnnot.setId(ID_USER1_19_PUB_REP);
         nineteenthAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 10, 59, 01));
         nineteenthAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 10, 59, 32));
         nineteenthAnnot.setMetadata(meta);
-        nineteenthAnnot.setReferences(Arrays.asList(ID_ANN_USER1_18_PUB, ID_ANN_USER1_19_PUB_REP_DEL));
+        nineteenthAnnot.setReferences(Arrays.asList(ID_USER1_18_PUB, ID_USER1_19_PUB_REP_DEL));
         nineteenthAnnot.setShared(true);
         nineteenthAnnot.setTargetSelectors(dummySelector);
         nineteenthAnnot.setText("child of child");
@@ -428,7 +429,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentieth annotation of first user: public!
         final Annotation twentiethAnnot = new Annotation();
-        twentiethAnnot.setId(ID_ANN_USER1_20_PUB);
+        twentiethAnnot.setId(ID_USER1_20_PUB);
         twentiethAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 13, 06, 54));
         twentiethAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 13, 13, 19));
         twentiethAnnot.setMetadata(meta);
@@ -441,11 +442,11 @@ public class AnnotationSearchExtendedTest {
 
         // twentyfirst annotation of first user: public reply!
         final Annotation twentyfirstAnnot = new Annotation();
-        twentyfirstAnnot.setId(ID_ANN_USER1_21_PUB_REPLY);
+        twentyfirstAnnot.setId(ID_USER1_21_PUB_REPLY);
         twentyfirstAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 13, 13, 49));
         twentyfirstAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 13, 14, 27));
         twentyfirstAnnot.setMetadata(meta);
-        twentyfirstAnnot.setReferences(ID_ANN_USER1_20_PUB);
+        twentyfirstAnnot.setReferences(ID_USER1_20_PUB);
         twentyfirstAnnot.setShared(true);
         twentyfirstAnnot.setTargetSelectors(dummySelector);
         twentyfirstAnnot.setText("first reply to root");
@@ -454,11 +455,11 @@ public class AnnotationSearchExtendedTest {
 
         // twentysecond annotation of first user: public reply!
         final Annotation twentysecondAnnot = new Annotation();
-        twentysecondAnnot.setId(ID_ANN_USER1_22_PUB_REPLY);
+        twentysecondAnnot.setId(ID_USER1_22_PUB_REPLY);
         twentysecondAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 13, 14, 48));
         twentysecondAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 13, 15, 9));
         twentysecondAnnot.setMetadata(meta);
-        twentysecondAnnot.setReferences(ID_ANN_USER1_20_PUB);
+        twentysecondAnnot.setReferences(ID_USER1_20_PUB);
         twentysecondAnnot.setShared(true);
         twentysecondAnnot.setTargetSelectors(dummySelector);
         twentysecondAnnot.setText("second reply to root");
@@ -467,11 +468,11 @@ public class AnnotationSearchExtendedTest {
 
         // twentythird annotation of first user: public reply!
         final Annotation twentythirdAnnot = new Annotation();
-        twentythirdAnnot.setId(ID_ANN_USER1_23_PUB_REPLY);
+        twentythirdAnnot.setId(ID_USER1_23_PUB_REPLY);
         twentythirdAnnot.setCreated(LocalDateTime.of(2017, 12, 29, 13, 15, 28));
         twentythirdAnnot.setUpdated(LocalDateTime.of(2017, 12, 29, 13, 16, 01));
         twentythirdAnnot.setMetadata(meta);
-        twentythirdAnnot.setReferences(Arrays.asList(ID_ANN_USER1_20_PUB, ID_ANN_USER1_21_PUB_REPLY));
+        twentythirdAnnot.setReferences(Arrays.asList(ID_USER1_20_PUB, ID_USER1_21_PUB_REPLY));
         twentythirdAnnot.setShared(true);
         twentythirdAnnot.setTargetSelectors(dummySelector);
         twentythirdAnnot.setText("first reply *to *first reply");
@@ -480,7 +481,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentyfourth annotation of first user: private!
         final Annotation twentyfourthAnnot = new Annotation();
-        twentyfourthAnnot.setId(ID_ANN_USER1_24_PRIV);
+        twentyfourthAnnot.setId(ID_USER1_24_PRIV);
         twentyfourthAnnot.setCreated(LocalDateTime.of(2018, 01, 3, 8, 44, 48));
         twentyfourthAnnot.setUpdated(LocalDateTime.of(2018, 01, 3, 8, 45, 05));
         twentyfourthAnnot.setMetadata(meta);
@@ -493,7 +494,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentyfifth annotation of first user: private!
         final Annotation twentyfifthAnnot = new Annotation();
-        twentyfifthAnnot.setId(ID_ANN_USER1_25_PRIV);
+        twentyfifthAnnot.setId(ID_USER1_25_PRIV);
         twentyfifthAnnot.setCreated(LocalDateTime.of(2018, 01, 9, 14, 9, 20));
         twentyfifthAnnot.setUpdated(LocalDateTime.of(2018, 01, 10, 12, 52, 28));
         twentyfifthAnnot.setMetadata(meta);
@@ -506,7 +507,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentysixth annotation of second user: private!
         final Annotation twentysixthAnnot = new Annotation();
-        twentysixthAnnot.setId(ID_ANN_USER2_26_PUB);
+        twentysixthAnnot.setId(ID_USER2_26_PUB);
         twentysixthAnnot.setCreated(LocalDateTime.of(2018, 01, 10, 12, 58, 00));
         twentysixthAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 10, 18, 53));
         twentysixthAnnot.setMetadata(meta);
@@ -519,7 +520,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentyseventh annotation of first user: private page note!
         final Annotation twentyseventhAnnot = new Annotation();
-        twentyseventhAnnot.setId(ID_ANN_USER1_27_PRIV_PNT);
+        twentyseventhAnnot.setId(ID_USER1_27_PRIV_PNT);
         twentyseventhAnnot.setCreated(LocalDateTime.of(2018, 01, 11, 11, 30, 05));
         twentyseventhAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 11, 30, 59));
         twentyseventhAnnot.setMetadata(meta);
@@ -532,11 +533,11 @@ public class AnnotationSearchExtendedTest {
 
         // twentyeighth annotation of first user: public reply to private page note!
         final Annotation twentyeighthAnnot = new Annotation();
-        twentyeighthAnnot.setId(ID_ANN_USER1_28_PUB_REP_PNT);
+        twentyeighthAnnot.setId(ID_USER1_28_PUB_REP_PNT);
         twentyeighthAnnot.setCreated(LocalDateTime.of(2018, 01, 11, 11, 31, 25));
         twentyeighthAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 11, 31, 50));
         twentyeighthAnnot.setMetadata(meta);
-        twentyeighthAnnot.setReferences(ID_ANN_USER1_27_PRIV_PNT);
+        twentyeighthAnnot.setReferences(ID_USER1_27_PRIV_PNT);
         twentyeighthAnnot.setShared(true);
         twentyeighthAnnot.setTargetSelectors(dummySelector);
         twentyeighthAnnot.setText("reply to page note (public)");
@@ -545,7 +546,7 @@ public class AnnotationSearchExtendedTest {
 
         // twentyninth annotation of second user: private highlight!
         final Annotation twentyninthAnnot = new Annotation();
-        twentyninthAnnot.setId(ID_ANN_USER2_29_PRIV_HLT);
+        twentyninthAnnot.setId(ID_USER2_29_PRIV_HLT);
         twentyninthAnnot.setCreated(LocalDateTime.of(2018, 01, 11, 11, 32, 25));
         twentyninthAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 11, 32, 25));
         twentyninthAnnot.setMetadata(meta);
@@ -558,7 +559,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtyth annotation of first user: public page note!
         final Annotation thirtythAnnot = new Annotation();
-        thirtythAnnot.setId(ID_ANN_USER1_30_PUB_PNT);
+        thirtythAnnot.setId(ID_USER1_30_PUB_PNT);
         thirtythAnnot.setCreated(LocalDateTime.of(2018, 01, 11, 14, 01, 34));
         thirtythAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 14, 01, 58));
         thirtythAnnot.setMetadata(meta);
@@ -571,7 +572,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtyfirst annotation of first user: public
         final Annotation thirtyfirstAnnot = new Annotation();
-        thirtyfirstAnnot.setId(ID_ANN_USER1_31_PUB);
+        thirtyfirstAnnot.setId(ID_USER1_31_PUB);
         thirtyfirstAnnot.setCreated(LocalDateTime.of(2018, 01, 11, 16, 05, 23));
         thirtyfirstAnnot.setUpdated(LocalDateTime.of(2018, 01, 11, 16, 05, 42));
         thirtyfirstAnnot.setMetadata(meta);
@@ -584,7 +585,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtysecond annotation of first user: public
         final Annotation thirtysecondAnnot = new Annotation();
-        thirtysecondAnnot.setId(ID_ANN_USER1_32_PUB);
+        thirtysecondAnnot.setId(ID_USER1_32_PUB);
         thirtysecondAnnot.setCreated(LocalDateTime.of(2018, 01, 24, 18, 50, 06));
         thirtysecondAnnot.setUpdated(LocalDateTime.of(2018, 01, 24, 18, 50, 11));
         thirtysecondAnnot.setMetadata(meta);
@@ -597,7 +598,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtythird annotation of first user: private
         final Annotation thirtythirdAnnot = new Annotation();
-        thirtythirdAnnot.setId(ID_ANN_USER1_33_PRIV);
+        thirtythirdAnnot.setId(ID_USER1_33_PRIV);
         thirtythirdAnnot.setCreated(LocalDateTime.of(2018, 01, 25, 18, 38, 03));
         thirtythirdAnnot.setUpdated(LocalDateTime.of(2018, 01, 25, 18, 38, 06));
         thirtythirdAnnot.setMetadata(meta);
@@ -610,7 +611,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtyfourth annotation of third user: public
         final Annotation thirtyfourthAnnot = new Annotation();
-        thirtyfourthAnnot.setId(ID_ANN_USER3_34_PUB);
+        thirtyfourthAnnot.setId(ID_USER3_34_PUB);
         thirtyfourthAnnot.setCreated(LocalDateTime.of(2018, 01, 26, 9, 35, 19));
         thirtyfourthAnnot.setUpdated(LocalDateTime.of(2018, 01, 26, 9, 35, 23));
         thirtyfourthAnnot.setMetadata(meta);
@@ -623,11 +624,11 @@ public class AnnotationSearchExtendedTest {
 
         // thirtyfifth annotation of third user: public reply
         final Annotation thirtyfifthAnnot = new Annotation();
-        thirtyfifthAnnot.setId(ID_ANN_USER3_35_PUB_REPLY);
+        thirtyfifthAnnot.setId(ID_USER3_35_PUB_REPLY);
         thirtyfifthAnnot.setCreated(LocalDateTime.of(2018, 01, 26, 10, 01, 36));
         thirtyfifthAnnot.setUpdated(LocalDateTime.of(2018, 01, 26, 10, 01, 41));
         thirtyfifthAnnot.setMetadata(meta);
-        thirtyfifthAnnot.setReferences(ID_ANN_USER2_26_PUB);
+        thirtyfifthAnnot.setReferences(ID_USER2_26_PUB);
         thirtyfifthAnnot.setShared(true);
         thirtyfifthAnnot.setTargetSelectors(dummySelector);
         thirtyfifthAnnot.setText("reply darth");
@@ -636,7 +637,7 @@ public class AnnotationSearchExtendedTest {
 
         // thirtysixth annotation of third user: public
         final Annotation thirtysixthAnnot = new Annotation();
-        thirtysixthAnnot.setId(ID_ANN_USER3_36_PUB);
+        thirtysixthAnnot.setId(ID_USER3_36_PUB);
         thirtysixthAnnot.setCreated(LocalDateTime.of(2018, 01, 26, 10, 04, 53));
         thirtysixthAnnot.setUpdated(LocalDateTime.of(2018, 01, 26, 10, 05, 01));
         thirtysixthAnnot.setMetadata(meta);
@@ -688,16 +689,16 @@ public class AnnotationSearchExtendedTest {
         Assert.assertEquals(0, result.getReplies().size()); // and 0 replies
 
         // check that the correct items (in correct order) were returned and check their respective number of replies
-        assertItemAndReplies(result.getRows().get(0), ID_ANN_USER1_1_PUB, null);
-        assertItemAndReplies(result.getRows().get(1), ID_ANN_USER1_2_PUB, null);
-        assertItemAndReplies(result.getRows().get(2), ID_ANN_USER1_3_PUB, null);
-        assertItemAndReplies(result.getRows().get(3), ID_ANN_USER1_4_PUB, null);
-        assertItemAndReplies(result.getRows().get(4), ID_ANN_USER1_5_PRIV, null);
-        assertItemAndReplies(result.getRows().get(5), ID_ANN_USER1_6_PRIV, null);
-        assertItemAndReplies(result.getRows().get(6), ID_ANN_USER1_7_PRIV, null);
-        assertItemAndReplies(result.getRows().get(7), ID_ANN_USER1_8_PRIV, null);
-        assertItemAndReplies(result.getRows().get(8), ID_ANN_USER1_9_PRIV, null);
-        assertItemAndReplies(result.getRows().get(9), ID_ANN_USER1_10_PUB, null);
+        assertItemAndReplies(result.getRows().get(0), ID_USER1_1_PUB, null);
+        assertItemAndReplies(result.getRows().get(1), ID_USER1_2_PUB, null);
+        assertItemAndReplies(result.getRows().get(2), ID_USER1_3_PUB, null);
+        assertItemAndReplies(result.getRows().get(3), ID_USER1_4_PUB, null);
+        assertItemAndReplies(result.getRows().get(4), ID_USER1_5_PRIV, null);
+        assertItemAndReplies(result.getRows().get(5), ID_USER1_6_PRIV, null);
+        assertItemAndReplies(result.getRows().get(6), ID_USER1_7_PRIV, null);
+        assertItemAndReplies(result.getRows().get(7), ID_USER1_8_PRIV, null);
+        assertItemAndReplies(result.getRows().get(8), ID_USER1_9_PRIV, null);
+        assertItemAndReplies(result.getRows().get(9), ID_USER1_10_PUB, null);
     }
 
     /**
@@ -729,26 +730,26 @@ public class AnnotationSearchExtendedTest {
         Assert.assertEquals(4, result.getReplies().size()); // and 4 replies
 
         // check that the correct items (in correct order) were returned and check their respective number of replies
-        assertItemAndReplies(result.getRows().get(0), ID_ANN_USER1_11_PUB, null);
-        assertItemAndReplies(result.getRows().get(1), ID_ANN_USER1_12_PUB, null);
-        assertItemAndReplies(result.getRows().get(2), ID_ANN_USER1_13_PUB, null);
-        assertItemAndReplies(result.getRows().get(3), ID_ANN_USER1_14_PUB, null);
-        assertItemAndReplies(result.getRows().get(4), ID_ANN_USER1_15_PUB, null);
-        assertItemAndReplies(result.getRows().get(5), ID_ANN_USER1_16_PUB, null);
-        assertItemAndReplies(result.getRows().get(6), ID_ANN_USER1_17_PUB, null);
-        assertItemAndReplies(result.getRows().get(7), ID_ANN_USER1_18_PUB, null);
+        assertItemAndReplies(result.getRows().get(0), ID_USER1_11_PUB, null);
+        assertItemAndReplies(result.getRows().get(1), ID_USER1_12_PUB, null);
+        assertItemAndReplies(result.getRows().get(2), ID_USER1_13_PUB, null);
+        assertItemAndReplies(result.getRows().get(3), ID_USER1_14_PUB, null);
+        assertItemAndReplies(result.getRows().get(4), ID_USER1_15_PUB, null);
+        assertItemAndReplies(result.getRows().get(5), ID_USER1_16_PUB, null);
+        assertItemAndReplies(result.getRows().get(6), ID_USER1_17_PUB, null);
+        assertItemAndReplies(result.getRows().get(7), ID_USER1_18_PUB, null);
         // 19 skipped, is a reply
-        assertItemAndReplies(result.getRows().get(8), ID_ANN_USER1_20_PUB, null);
+        assertItemAndReplies(result.getRows().get(8), ID_USER1_20_PUB, null);
         // 21-23 skipped, are replies
-        assertItemAndReplies(result.getRows().get(9), ID_ANN_USER1_24_PRIV, null);
+        assertItemAndReplies(result.getRows().get(9), ID_USER1_24_PRIV, null);
 
         // same for the replies
-        assertItemAndReplies(result.getReplies().get(0), ID_ANN_USER1_19_PUB_REP,
-                Arrays.asList(ID_ANN_USER1_18_PUB, ID_ANN_USER1_19_PUB_REP_DEL));
-        assertItemAndReplies(result.getReplies().get(1), ID_ANN_USER1_21_PUB_REPLY, Arrays.asList(ID_ANN_USER1_20_PUB));
-        assertItemAndReplies(result.getReplies().get(2), ID_ANN_USER1_22_PUB_REPLY, Arrays.asList(ID_ANN_USER1_20_PUB));
-        assertItemAndReplies(result.getReplies().get(3), ID_ANN_USER1_23_PUB_REPLY,
-                Arrays.asList(ID_ANN_USER1_20_PUB, ID_ANN_USER1_21_PUB_REPLY));
+        assertItemAndReplies(result.getReplies().get(0), ID_USER1_19_PUB_REP,
+                Arrays.asList(ID_USER1_18_PUB, ID_USER1_19_PUB_REP_DEL));
+        assertItemAndReplies(result.getReplies().get(1), ID_USER1_21_PUB_REPLY, Arrays.asList(ID_USER1_20_PUB));
+        assertItemAndReplies(result.getReplies().get(2), ID_USER1_22_PUB_REPLY, Arrays.asList(ID_USER1_20_PUB));
+        assertItemAndReplies(result.getReplies().get(3), ID_USER1_23_PUB_REPLY,
+                Arrays.asList(ID_USER1_20_PUB, ID_USER1_21_PUB_REPLY));
     }
 
     /**
@@ -781,22 +782,22 @@ public class AnnotationSearchExtendedTest {
         Assert.assertEquals(2, result.getReplies().size()); // and 1 reply
 
         // check that the correct items (in correct order) were returned and check their respective number of replies
-        assertItemAndReplies(result.getRows().get(0), ID_ANN_USER1_25_PRIV, null);
-        assertItemAndReplies(result.getRows().get(1), ID_ANN_USER2_26_PUB, null);
-        assertItemAndReplies(result.getRows().get(2), ID_ANN_USER1_27_PRIV_PNT, null);
+        assertItemAndReplies(result.getRows().get(0), ID_USER1_25_PRIV, null);
+        assertItemAndReplies(result.getRows().get(1), ID_USER2_26_PUB, null);
+        assertItemAndReplies(result.getRows().get(2), ID_USER1_27_PRIV_PNT, null);
         // 28 skipped, it is a reply to a page note
         // 29 skipped, it is a private highlight of another user
-        assertItemAndReplies(result.getRows().get(3), ID_ANN_USER1_30_PUB_PNT, null);
-        assertItemAndReplies(result.getRows().get(4), ID_ANN_USER1_31_PUB, null);
-        assertItemAndReplies(result.getRows().get(5), ID_ANN_USER1_32_PUB, null);
-        assertItemAndReplies(result.getRows().get(6), ID_ANN_USER1_33_PRIV, null);
-        assertItemAndReplies(result.getRows().get(7), ID_ANN_USER3_34_PUB, null);
+        assertItemAndReplies(result.getRows().get(3), ID_USER1_30_PUB_PNT, null);
+        assertItemAndReplies(result.getRows().get(4), ID_USER1_31_PUB, null);
+        assertItemAndReplies(result.getRows().get(5), ID_USER1_32_PUB, null);
+        assertItemAndReplies(result.getRows().get(6), ID_USER1_33_PRIV, null);
+        assertItemAndReplies(result.getRows().get(7), ID_USER3_34_PUB, null);
         // 35 skipped, is a reply
-        assertItemAndReplies(result.getRows().get(8), ID_ANN_USER3_36_PUB, null);
+        assertItemAndReplies(result.getRows().get(8), ID_USER3_36_PUB, null);
 
         // same for the replies
-        assertItemAndReplies(result.getReplies().get(0), ID_ANN_USER1_28_PUB_REP_PNT, Arrays.asList(ID_ANN_USER1_27_PRIV_PNT));
-        assertItemAndReplies(result.getReplies().get(1), ID_ANN_USER3_35_PUB_REPLY, Arrays.asList(ID_ANN_USER2_26_PUB));
+        assertItemAndReplies(result.getReplies().get(0), ID_USER1_28_PUB_REP_PNT, Arrays.asList(ID_USER1_27_PRIV_PNT));
+        assertItemAndReplies(result.getReplies().get(1), ID_USER3_35_PUB_REPLY, Arrays.asList(ID_USER2_26_PUB));
     }
 
     /**
@@ -830,5 +831,6 @@ public class AnnotationSearchExtendedTest {
         } else {
             Assert.assertArrayEquals(replyParentIds.toArray(), annot.getReferences().toArray());
         }
+        Assert.assertNull(annot.getLinkedAnnotationId());
     }
 }

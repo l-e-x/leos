@@ -20,6 +20,7 @@ import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
@@ -152,7 +153,10 @@ public class AnnotationSaveTest {
         Assert.assertNotNull(foundAnnotation.getUser());
         Assert.assertNotNull(foundAnnotation.getGroup());
         Assert.assertNotNull(foundAnnotation.getTags());
+        Assert.assertNull(foundAnnotation.getLinkedAnnotationId());
         Assert.assertEquals(1, foundAnnotation.getTags().size());
+        Assert.assertEquals(AnnotationStatus.NORMAL, foundAnnotation.getStatus());
+        Assert.assertFalse(foundAnnotation.isSentDeleted());
 
         // now we delete the tag again (only the tag) using our custom delete function
         // (hibernate does not do it due to the way our model is configured; the Annotation is the master for the Annotation-Tag relation)
@@ -189,7 +193,19 @@ public class AnnotationSaveTest {
         Assert.assertNotNull(returnAnnot);
         Assert.assertFalse(returnAnnot.getId().isEmpty());
         Assert.assertNotNull(returnAnnot.getUpdated());
-
+        
+        // verify that the annotation has NORMAL status and no update info yet
+        Assert.assertNotNull(returnAnnot.getStatus());
+        Assert.assertEquals(AnnotationStatus.NORMAL, returnAnnot.getStatus().getStatus());
+        Assert.assertNull(returnAnnot.getStatus().getUpdated_by());
+        Assert.assertNull(returnAnnot.getStatus().getUpdated());
+        Assert.assertNull(returnAnnot.getStatus().getUser_info());
+        Assert.assertFalse(returnAnnot.getStatus().isSentDeleted());
+        
+        // no replies or linked annotation
+        Assert.assertNull(returnAnnot.getReferences());
+        Assert.assertNull(returnAnnot.getLinkedAnnotationId());
+        
         Assert.assertEquals(1, annotRepos.count());
 
         // verify that dependent objects are saved
@@ -234,8 +250,42 @@ public class AnnotationSaveTest {
         Assert.assertEquals(authority, singleMeta.getSystemId());
     }
 
+    // test creation of an annotation with metadata containing systemId and version - should be saved to individual database columns
+    @Test
+    public void testCreateAnnotationWithSystemidAndVersion() throws CannotCreateAnnotationException {
+
+        final String authority = Authorities.EdiT;
+        final String username = PREFIX + LOGIN + "@" + authority;
+        final String version = "2.0";
+
+        // add user to default group
+        final User theUser = userRepos.save(new User(LOGIN));
+        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+        final UserInformation userInfo = new UserInformation(theUser, authority);
+
+        // let the annotation be created, but without providing any metadata
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(username);
+        final SimpleMetadata meta = jsAnnot.getDocument().getMetadata();
+        meta.put("version", version);
+        meta.put("ISCRef", "ISC/1");
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        // verify the annotation and a metadata record were saved
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, metadataRepos.count());
+
+        // verify that some system Id was supplied, namely the user's authority
+        final List<Metadata> allMetas = (List<Metadata>) metadataRepos.findAll();
+        final Metadata singleMeta = allMetas.get(0);
+        Assert.assertTrue(!StringUtils.isEmpty(singleMeta.getSystemId()));
+        Assert.assertEquals(authority, singleMeta.getSystemId());
+        Assert.assertEquals(version, singleMeta.getVersion());
+    }
+
     // test creation of an annotation when given metadata has response status set to SENT - should be refused
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     @Test
     public void testCannotCreateAnnotationWithSentResponseStatus() throws CannotCreateAnnotationException {
 
@@ -299,6 +349,7 @@ public class AnnotationSaveTest {
      * tests saving an annotation fails when no user is specified
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testCannotCreateAnnotationWithoutUser() throws URISyntaxException {
 
         final String username = "acct:myusername@domain.com";

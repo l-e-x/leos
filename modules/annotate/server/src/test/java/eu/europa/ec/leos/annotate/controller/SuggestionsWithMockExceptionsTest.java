@@ -127,6 +127,7 @@ public class SuggestionsWithMockExceptionsTest {
      * expected HTTP 500
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings({"PMD.AvoidThrowingNullPointerException"}) // required for test purpose
     @Test
     public void testAcceptSuggestionWithException() throws Exception {
 
@@ -167,6 +168,7 @@ public class SuggestionsWithMockExceptionsTest {
      * expected HTTP 500
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings({"PMD.AvoidThrowingNullPointerException"}) // required for test purpose
     @Test
     public void testRejectSuggestionWithException() throws Exception {
 

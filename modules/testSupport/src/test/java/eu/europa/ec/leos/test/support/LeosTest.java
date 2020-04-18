@@ -13,10 +13,10 @@
  */
 package eu.europa.ec.leos.test.support;
 
+import java.nio.charset.Charset;
+
 import org.junit.Before;
 import org.mockito.MockitoAnnotations;
-
-import java.nio.charset.Charset;
 
 public class LeosTest {
 

@@ -43,6 +43,7 @@ module.exports = class Guest extends Delegator
   plugins: null
   anchors: null
   visibleHighlights: false
+  visibleGuideLines: false #LEOS Change
   frameIdentifier: null
 
   html:
@@ -137,20 +138,22 @@ module.exports = class Guest extends Delegator
   _setupInitialState: (config) ->
     this.publish('panelReady')
     this.setVisibleHighlights(config.showHighlights == 'always')
+    this.setVisibleGuideLines(config.showGuideLinesButton)
 
   _connectAnnotationSync: (crossframe) ->
     this.subscribe 'annotationDeleted', (annotation) =>
       this.detach(annotation)
 
     this.subscribe 'annotationsLoaded', (annotations) =>
+      addToPromiseChain = false
       for annotation in annotations
-        this.anchor(annotation)
+        promiseChain = this.anchor(annotation, promiseChain, addToPromiseChain)
+        addToPromiseChain = true
 
   _connectAnnotationUISync: (crossframe) ->
-    crossframe.on 'focusAnnotations', (tags=[]) =>
-      for anchor in @anchors when anchor.highlights?
-        toggle = anchor.annotation.$tag in tags
-        $(anchor.highlights).toggleClass('annotator-hl-focused', toggle)
+#    LEOS Change - functionality moved to leos-sidebar
+#    crossframe.on 'focusAnnotations', (tags=[]) =>
+#      @focusAnnotations(tags)
 
     crossframe.on 'scrollToAnnotation', (tag) =>
       for anchor in @anchors when anchor.highlights?
@@ -172,6 +175,9 @@ module.exports = class Guest extends Delegator
     crossframe.on 'setVisibleHighlights', (state) =>
       this.setVisibleHighlights(state)
 
+    crossframe.on 'LEOS_setVisibleGuideLines', (state) =>
+      this.setVisibleGuideLines(state)
+
   destroy: ->
     $('#annotator-dynamic-style').remove()
 
@@ -189,7 +195,7 @@ module.exports = class Guest extends Delegator
 
     super
 
-  anchor: (annotation) ->
+  anchor: (annotation, promiseChain, addToPromiseChain) ->
     self = this
     root = @element[0]
 
@@ -237,7 +243,11 @@ module.exports = class Guest extends Delegator
       return animationPromise ->
         range = xpathRange.sniff(anchor.range)
         normedRange = range.normalize(root)
-        highlights = highlighter.highlightRange(normedRange)
+        #LEOS Change - differentiate between annotation/suggestion and highlight
+        if anchor.annotation.tags && anchor.annotation.tags[0] && anchor.annotation.tags[0] == 'highlight'
+          highlights = highlighter.highlightRange(normedRange, 'leos-annotator-highlight')
+        else
+          highlights = highlighter.highlightRange(normedRange)
 
         $(highlights).data('annotation', anchor.annotation)
         anchor.highlights = highlights
@@ -265,35 +275,39 @@ module.exports = class Guest extends Delegator
       # Let plugins know about the new information.
       self.plugins.BucketBar?.update()
       self.plugins.CrossFrame?.sync([annotation])
+      self.publish('LEOS_annotationsSynced')
 
       return anchors
 
-    # Remove all the anchors for this annotation from the instance storage.
-    for anchor in self.anchors.splice(0, self.anchors.length)
-      if anchor.annotation is annotation
-        # Anchors are valid as long as they still have a range and their target
-        # is still in the list of targets for this annotation.
-        if anchor.range? and anchor.target in annotation.target
+    if addToPromiseChain
+        return promiseChain.then(() => this.anchor(annotation, [], false))
+    else
+        # Remove all the anchors for this annotation from the instance storage.
+        for anchor in self.anchors.splice(0, self.anchors.length)
+          if anchor.annotation is annotation
+            # Anchors are valid as long as they still have a range and their target
+            # is still in the list of targets for this annotation.
+            if anchor.range? and anchor.target in annotation.target
+              anchors.push(anchor)
+              anchoredTargets.push(anchor.target)
+            else if anchor.highlights?
+              # These highlights are no longer valid and should be removed.
+              deadHighlights = deadHighlights.concat(anchor.highlights)
+              delete anchor.highlights
+              delete anchor.range
+          else
+            # These can be ignored, so push them back onto the new list.
+            self.anchors.push(anchor)
+
+        # Remove all the highlights that have no corresponding target anymore.
+        raf -> highlighter.removeHighlights(deadHighlights)
+
+        # Anchor any targets of this annotation that are not anchored already.
+        for target in annotation.target when target not in anchoredTargets
+          anchor = locate(target).then(highlight)
           anchors.push(anchor)
-          anchoredTargets.push(anchor.target)
-        else if anchor.highlights?
-          # These highlights are no longer valid and should be removed.
-          deadHighlights = deadHighlights.concat(anchor.highlights)
-          delete anchor.highlights
-          delete anchor.range
-      else
-        # These can be ignored, so push them back onto the new list.
-        self.anchors.push(anchor)
 
-    # Remove all the highlights that have no corresponding target anymore.
-    raf -> highlighter.removeHighlights(deadHighlights)
-
-    # Anchor any targets of this annotation that are not anchored already.
-    for target in annotation.target when target not in anchoredTargets
-      anchor = locate(target).then(highlight)
-      anchors.push(anchor)
-
-    return Promise.all(anchors).then(sync)
+        return Promise.all(anchors).then(sync)
 
   detach: (annotation) ->
     anchors = []
@@ -345,7 +359,7 @@ module.exports = class Guest extends Delegator
     targets = Promise.all([info, selectors]).then(setTargets)
 
     targets.then(-> self.publish('beforeAnnotationCreated', [annotation]))
-    targets.then(-> self.anchor(annotation))
+    targets.then(-> self.anchor(annotation, [], false))
 
     @crossframe?.call('showSidebar') unless annotation.$highlight
     annotation
@@ -433,8 +447,9 @@ module.exports = class Guest extends Delegator
     this.adderCtrl.hide()
     @selectedRanges = []
 
+#    LEOS change 3632
     $('.annotator-toolbar .h-icon-annotate')
-      .attr('title', 'New Page Note')
+      .attr('title', 'New Document Note')
       .removeClass('h-icon-annotate')
       .addClass('h-icon-note');
 
@@ -445,7 +460,7 @@ module.exports = class Guest extends Delegator
       this.showAnnotations annotations
 
   onElementClick: (event) ->
-    if !@selectedTargets?.length
+    if false #!@selectedTargets?.length #LEOS Change: Disable auto close of Sidebar
       @crossframe?.call('hideSidebar')
 
   onElementTouchStart: (event) ->
@@ -454,7 +469,7 @@ module.exports = class Guest extends Delegator
     # adding that to every element, we can add the initial
     # touchstart event which is always registered to
     # make up for the lack of click support for all elements.
-    if !@selectedTargets?.length
+    if false #!@selectedTargets?.length #LEOS Change: Disable auto close of Sidebar
       @crossframe?.call('hideSidebar')
 
   onHighlightMouseover: (event) ->
@@ -483,7 +498,7 @@ module.exports = class Guest extends Delegator
     # See the comment in onHighlightMouseover
     if event.target is event.currentTarget
       xor = (event.metaKey or event.ctrlKey)
-      setTimeout => this.selectAnnotations(annotations, xor)
+      setTimeout => @.selectAnnotations(annotations, xor)
 
   # Pass true to show the highlights in the frame or false to disable.
   setVisibleHighlights: (shouldShowHighlights) ->
@@ -496,3 +511,9 @@ module.exports = class Guest extends Delegator
       @element.removeClass(SHOW_HIGHLIGHTS_CLASS)
 
     @visibleHighlights = shouldShowHighlights
+
+  setVisibleGuideLines: (shouldShowGuideLines) ->
+    this.toggleGuideLines(shouldShowGuideLines)
+
+  toggleGuideLines: (shouldShowGuideLines) ->
+    @visibleGuideLines = shouldShowGuideLines

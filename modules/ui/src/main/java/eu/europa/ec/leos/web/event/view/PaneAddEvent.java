@@ -15,18 +15,12 @@ package eu.europa.ec.leos.web.event.view;
 
 public class PaneAddEvent {
     private Class paneClass;
-    private Class childClass;
 
-    public PaneAddEvent(Class paneClass, Class childClass) {
+    public PaneAddEvent(Class paneClass) {
         this.paneClass = paneClass;
-        this.childClass = childClass;
     }
 
     public Class getPaneClass() {
         return paneClass;
-    }
-    
-    public Class getChildClass() {
-        return childClass;
     }
 }

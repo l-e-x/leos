@@ -15,6 +15,7 @@ package eu.europa.ec.leos.annotate.services;
 
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.repository.GroupRepository;
@@ -37,6 +38,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
+
+import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
@@ -108,14 +111,15 @@ public class UserServiceWithMockedUserRepositoryTest {
     @Test
     public void testAddingUserToEntityGroupThrowsExceptionInternally() throws GroupAlreadyExistingException {
 
-        final String entity = "entity";
+        final String entityName = "entity";
         final String login = "evil";
 
         final User evilUser = new User(login);
-        final UserDetails details = new UserDetails(login, Long.valueOf(8), "first", "last", entity, "", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(8), "first", "last", 
+                Arrays.asList(new UserEntity("4", entityName, entityName)), "", null);
 
-        Mockito.when(groupService.findGroupByName(entity)).thenReturn(null);
-        Mockito.when(groupService.createGroup(entity, false)).thenThrow(new RuntimeException());
+        Mockito.when(groupService.findGroupByName(entityName)).thenReturn(null);
+        Mockito.when(groupService.createGroup(entityName, false)).thenThrow(new RuntimeException());
 
         // verify that adding a user to the entity group simply returns false,
         // even though exceptions are thrown internally

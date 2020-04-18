@@ -136,7 +136,7 @@ define(function transformationConfigResolverModule(require) {
                             });
                             context.matchedConfigs = that._resolveByElementName(context);
                             var matchedConfigsByCustomPredict = that._resolveConfisByCustomPredict(context);
-                            if (matchedConfigsByCustomPredict && matchedConfigsByCustomPredict.length > 0) {
+                            if (matchedConfigsByCustomPredict && matchedConfigsByCustomPredict.length == 1) {
                                 matchedConfigs = matchedConfigsByCustomPredict;
                                 return false;
                             }

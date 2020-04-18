@@ -30,16 +30,16 @@ import java.util.List;
 public final class TestDbHelper {
 
     private static final Logger Log = LoggerFactory.getLogger(TestDbHelper.class);
-
-    private TestDbHelper() {
-        // utility class -> private constructor
-    }
     
     @SuppressWarnings("PMD.LongVariable")
     public static final String DEFAULT_GROUP_INTERNALNAME = "__world__";
+    
+    private TestDbHelper() {
+        // utility class -> private constructor
+    }
 
     // clean the database by cleaning individual repositories
-    @SuppressWarnings({"unchecked", "rawtypes"})
+    @SuppressWarnings({"unchecked", "rawtypes", "PMD.CyclomaticComplexity", "PMD.ModifiedCyclomaticComplexity"})
     public static void cleanupRepositories(final Object instance) {
 
         final Class<?> clazz = instance.getClass();

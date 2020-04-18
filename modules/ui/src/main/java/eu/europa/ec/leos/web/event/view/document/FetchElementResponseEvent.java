@@ -15,25 +15,31 @@ package eu.europa.ec.leos.web.event.view.document;
 
 public class FetchElementResponseEvent {
 
-	private String elementId;
-	private String elementTagName;
+    private String elementId;
+    private String elementTagName;
     private String elementFragment;
+    private String documentRef;
 
-	public FetchElementResponseEvent(String elementId, String elementTagName, String elementFragment) {
-		this.elementId = elementId;
-		this.elementTagName = elementTagName;
+    public FetchElementResponseEvent(String elementId, String elementTagName, String elementFragment, String documentRef) {
+        this.elementId = elementId;
+        this.elementTagName = elementTagName;
         this.elementFragment = elementFragment;
-	}
-	
-	public String getElementTagName() {
-		return elementTagName;
-	}
-	
-	public String getElementId() {
-		return elementId;
-	}
+        this.documentRef = documentRef;
+    }
+
+    public String getElementTagName() {
+        return elementTagName;
+    }
+
+    public String getElementId() {
+        return elementId;
+    }
 
     public String getElementFragment() {
         return elementFragment;
+    }
+
+    public String getDocumentRef() {
+        return documentRef;
     }
 }

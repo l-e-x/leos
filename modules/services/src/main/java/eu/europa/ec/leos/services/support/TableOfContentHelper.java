@@ -13,10 +13,11 @@
  */
 package eu.europa.ec.leos.services.support;
 
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.model.action.SoftActionType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
-import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
@@ -24,24 +25,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.AUTHORIAL_NOTE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CHAPTER;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.INLINE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PARAGRAPH;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PART;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.SECTION;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.TBLOCK;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.TITLE;
+
 public class TableOfContentHelper {
 
     public static final int DEFAULT_CAPTION_MAX_SIZE = 50;
-    public static final String EC = "ec";
-    public static final String CN = "cn";
-    public static final String ARTICLE = "article";
-    public static final String PARAGRAPH = "paragraph";
-    public static final String SUBPARAGRAPH = "subparagraph";
-    public static final String LIST = "list";
-    public static final String POINT = "point";
-    public static final String SUBPOINT = "alinea";
-    public static final List<String> ELEMENTS_WITHOUT_CONTENT = Collections.unmodifiableList(Arrays.asList("article", "section", "chapter", "title", "part"));
+    
+    public static final List<String> ELEMENTS_WITHOUT_CONTENT = Collections.unmodifiableList(Arrays.asList(ARTICLE, SECTION, CHAPTER, TITLE, PART));
     private static final String MOVE_LABEL_SPAN_START_TAG = "<span class=\"leos-soft-move-label\">";
     private static final String MOVED_TITLE_SPAN_START_TAG = "<span class=\"leos-soft-move-title\">";
     private static final String SPAN_END_TAG = "</span>";
     private static final String SPACE = " ";
     private static final int MOVED_LABEL_SIZE = MOVED_TITLE_SPAN_START_TAG.length() + SPACE.length() + MOVE_LABEL_SPAN_START_TAG.length() + 2 * SPAN_END_TAG.length();
-    private static final List<String> ELEMENTS_TO_REMOVE_FROM_CONTENT = Arrays.asList("inline", "authorialNote");
+    private static final List<String> ELEMENTS_TO_REMOVE_FROM_CONTENT = Arrays.asList(INLINE, AUTHORIAL_NOTE);
 
     private static String getMovedLabel(MessageHelper messageHelper) {
         return MOVE_LABEL_SPAN_START_TAG + messageHelper.getMessage("toc.edit.window.softmove.label") + SPAN_END_TAG;
@@ -53,12 +57,12 @@ public class TableOfContentHelper {
     }
 
     public static String buildItemCaption(TableOfContentItemVO tocItem, int captionMaxSize, MessageHelper messageHelper) {
-        Validate.notNull(tocItem.getType(), "Type should not be null");
+        Validate.notNull(tocItem.getTocItem(), "Type should not be null");
 
         boolean shoudlAddMovedLabel = shouldAddMoveLabel(tocItem);
 
-        StringBuilder itemDescription = tocItem.getType().hasItemDescription()
-                ? new StringBuilder(getDisplayableItemType(tocItem.getType(), messageHelper)).append(SPACE)
+        StringBuilder itemDescription = tocItem.getTocItem().isItemDescription()
+                ? new StringBuilder(getDisplayableTocItem(tocItem.getTocItem(), messageHelper)).append(SPACE)
                 : new StringBuilder();
 
         if (shoudlAddMovedLabel) {
@@ -66,20 +70,30 @@ public class TableOfContentHelper {
         }
 
         if (!StringUtils.isEmpty(tocItem.getNumber()) && !StringUtils.isEmpty(tocItem.getHeading())) {
+            if(tocItem.getTocItem().getAknTag().value().equalsIgnoreCase(tocItem.getNumber().trim())){
+                tocItem.setNumber("#");
+            }
             itemDescription.append(tocItem.getNumber());
             if (shoudlAddMovedLabel) {
                 itemDescription.append(SPAN_END_TAG).append(getMovedLabel(messageHelper));
             }
-            itemDescription.append(tocItem.getType().getNumHeadingSeparator()).append(tocItem.getHeading());
+            if(TBLOCK.equals(tocItem.getTocItem().getAknTag().name())){
+                itemDescription.append(TocItemUtils.CONTENT_SEPARATOR).append(tocItem.getHeading());
+            }else{
+                itemDescription.append(TocItemUtils.NUM_HEADING_SEPARATOR).append(tocItem.getHeading());
+            }
         } else if (!StringUtils.isEmpty(tocItem.getNumber())) {
             SoftActionType softAction = tocItem.getNumSoftActionAttr();
 
-            if (PARAGRAPH.equals(tocItem.getType().getName()) && (softAction != null
-                    && SoftActionType.DELETE.equals(softAction)) && !SoftActionType.MOVE_TO.equals(tocItem.getSoftActionAttr())) {
-                itemDescription.append("<span class=\"leos-soft-num-removed\">" + tocItem.getNumber() + "</span>");
-            } else if (PARAGRAPH.equals(tocItem.getType().getName()) && softAction != null
-                    && SoftActionType.ADD.equals(softAction) && !SoftActionType.MOVE_TO.equals(tocItem.getSoftActionAttr())) {
-                itemDescription.append("<span class=\"leos-soft-num-new\">" + tocItem.getNumber() + "</span>");
+            if(softAction != null){
+                if (PARAGRAPH.equals(tocItem.getTocItem().getAknTag().value()) && (SoftActionType.DELETE.equals(softAction))
+                        && !SoftActionType.MOVE_TO.equals(tocItem.getSoftActionAttr())) {
+                    itemDescription.append("<span class=\"leos-soft-num-removed\">" + tocItem.getNumber() + "</span>");
+                } else if (PARAGRAPH.equals(tocItem.getTocItem().getAknTag().value())
+                        && SoftActionType.ADD.equals(softAction) && !SoftActionType.MOVE_TO.equals(tocItem.getSoftActionAttr())) {
+                    itemDescription.append("<span class=\"leos-soft-num-new\">" + tocItem.getNumber() + "</span>");
+                }
+                captionMaxSize = captionMaxSize+itemDescription.length();
             } else {
                 itemDescription.append(tocItem.getNumber());
                 if (shoudlAddMovedLabel) {
@@ -95,15 +109,15 @@ public class TableOfContentHelper {
             itemDescription.append(SPAN_END_TAG).append(getMovedLabel(messageHelper));
         }
 
-        if (tocItem.getType().isContentDisplayed()) {
-            itemDescription.append(itemDescription.length() > 0 ? tocItem.getType().getContentSeparator() : "").append(removeTag(tocItem.getContent()));
+        if (tocItem.getTocItem().isContentDisplayed()) {
+            itemDescription.append(itemDescription.length() > 0 ? TocItemUtils.CONTENT_SEPARATOR : "").append(removeTag(tocItem.getContent()));
         }
 
         return StringUtils.abbreviate(itemDescription.toString(), shoudlAddMovedLabel ? captionMaxSize + MOVED_LABEL_SIZE : captionMaxSize);
     }
 
-    public static String getDisplayableItemType(TocItemType itemType, MessageHelper messageHelper) {
-        return messageHelper.getMessage("toc.item.type." + itemType.getName().toLowerCase());
+    public static String getDisplayableTocItem(TocItem tocItem, MessageHelper messageHelper) {
+        return messageHelper.getMessage("toc.item.type." + tocItem.getAknTag().value().toLowerCase());
     }
     
     private static String removeTag(String itemContent) {
@@ -132,4 +146,5 @@ public class TableOfContentHelper {
         }
         return retVal;
     }
+    
 }

@@ -35,7 +35,7 @@ class DocumentViewImpl extends AbstractLeosView<DocumentScreenImpl> implements D
 
     @Override
     protected String[] getParameterKeys() {
-        String[] PARAM_KEYS = {SessionAttribute.BILL_ID.name()};
+        String[] PARAM_KEYS = {SessionAttribute.BILL_REF.name()};
         return PARAM_KEYS;
     }
 }

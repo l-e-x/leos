@@ -23,8 +23,13 @@ public enum ExportOptions {
     TO_PDF_DW_LT("PDF_", "LEGALTEXT", false, "", ComparisonType.DOUBLE),
     TO_WORD_DW_LT("DW_", "LEGALTEXT", false, "", ComparisonType.DOUBLE),
 
+    TO_PDF_DW_ANNEX("PDF_", "ANNEX", false, "", ComparisonType.DOUBLE),
+    TO_WORD_DW_ANNEX("DW_", "ANNEX", false, "", ComparisonType.DOUBLE),
+
     TO_WORD_MILESTONE_LW("LW_", "", false, "", ComparisonType.NONE),
-    TO_WORD_MILESTONE_DW("DW_", "", false, "", ComparisonType.NONE);
+    TO_WORD_MILESTONE_DW("DW_", "", false, "", ComparisonType.NONE),
+
+    TO_PDF("PDF_", "", false, "", ComparisonType.NONE);
 
     private String filePrefix;
     private String fileType;

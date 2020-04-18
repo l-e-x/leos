@@ -1,0 +1,51 @@
+{
+  "guidance": [
+    {
+      "targets": [
+        {
+          "destinationId": "cit_4",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-4\" class=\"guidance-green-block\"><span id=\"cit-4-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "cit_5",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-5\" class=\"guidance-green-block\"><span id=\"cit-5-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "clause_1",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-clause-1\" class=\"guidance-green-block\"><span id=\"clause-1-guidance\">[Choose between the two options above. The second option must be used where the Regulation is binding and directly applicable <b>only in certain</b> Member States in accordance with the Treaties.]</span></guidance>"
+    }
+  ],
+  "alternatives": [
+    {
+      "name": "listOption1",
+      "list": [
+        {
+          "index": "1",
+          "content": "This Regulation shall be binding in its entirety and directly applicable in all Member States."
+        },
+        {
+          "index": "2",
+          "content": "This Regulation shall be binding in its entirety and directly applicable in the Member States in accordance with the Treaties."
+        }
+      ]
+    }
+  ],
+  "structure": [
+    {
+      "name": "structure_01"
+    }
+  ]
+}

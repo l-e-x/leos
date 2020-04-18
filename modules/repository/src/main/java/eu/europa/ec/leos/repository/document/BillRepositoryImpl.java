@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.repository.document;
 
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.repository.LeosRepository;
@@ -22,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -53,9 +55,9 @@ public class BillRepositoryImpl implements BillRepository {
     }
 
     @Override
-    public Bill updateBill(String id, BillMetadata metadata, byte[] content, boolean major, String comment) {
+    public Bill updateBill(String id, BillMetadata metadata, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Bill metadata and content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, metadata, content, major, comment, Bill.class);
+        return leosRepository.updateDocument(id, metadata, content, versionType, comment, Bill.class);
     }
 
     @Override
@@ -65,9 +67,9 @@ public class BillRepositoryImpl implements BillRepository {
     }
 
     @Override
-    public Bill updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment) {
+    public Bill updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Bill milestoneComments... [id=" + id + "]");
-        return leosRepository.updateMilestoneComments(id, content, milestoneComments, major, comment, Bill.class);
+        return leosRepository.updateMilestoneComments(id, content, milestoneComments, versionType, comment, Bill.class);
     }
 
     @Override
@@ -86,5 +88,45 @@ public class BillRepositoryImpl implements BillRepository {
     public List<Bill> findBillVersions(String id, boolean fetchContent) {
         logger.debug("Finding Bill versions... [id=" + id + "]");
         return leosRepository.findDocumentVersionsById(id, Bill.class, fetchContent);
+    }
+    
+    @Override
+    public Bill findBillByRef(String ref) {
+        logger.debug("Finding Bill by ref... [ref=" + ref + "]");
+        return leosRepository.findDocumentByRef(ref, Bill.class);
+    }
+
+    @Override
+    public List<Bill> findAllMinorsForIntermediate(String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults) {
+        logger.debug("Finding Bill versions between intermediates...");
+        return leosRepository.findAllMinorsForIntermediate(Bill.class, docRef, currIntVersion, prevIntVersion, startIndex, maxResults);
+    }
+    
+    @Override
+    public int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion) {
+        logger.debug("Finding Bill minor versions count between intermediates...");
+        return leosRepository.findAllMinorsCountForIntermediate(Bill.class, docRef, currIntVersion, prevIntVersion);
+    }
+
+    @Override
+    public Integer findAllMajorsCount(String docRef) {
+        return leosRepository.findAllMajorsCount(Bill.class, docRef);
+    }
+
+    @Override
+    public List<Bill> findAllMajors(String docRef, int startIndex, int maxResult) {
+        return leosRepository.findAllMajors(Bill.class, docRef, startIndex, maxResult);
+    }
+    
+    @Override
+    public List<Bill> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults) {
+        Bill bill = leosRepository.findLatestMajorVersionById(Bill.class, documentId);
+        return leosRepository.findRecentMinorVersions(Bill.class, documentRef, bill.getCmisVersionLabel(), startIndex, maxResults);
+    }
+    
+    @Override
+    public Integer findRecentMinorVersionsCount(String documentId, String documentRef) {
+        Bill bill = leosRepository.findLatestMajorVersionById(Bill.class, documentId);
+        return leosRepository.findRecentMinorVersionsCount(Bill.class, documentRef, bill.getCmisVersionLabel());
     }
 }

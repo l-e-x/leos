@@ -15,6 +15,7 @@ package eu.europa.ec.leos.domain.cmis.document;
 
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
 import io.atlassian.fugue.Option;
 
@@ -27,8 +28,12 @@ public final class Proposal extends XmlDocument {
     private final Instant initialCreationInstant;
     private final Option<ProposalMetadata> metadata;
 
-    public Proposal(String id, String name, String createdBy, Instant creationInstant, String lastModifiedBy, Instant lastModificationInstant, String versionSeriesId, String versionLabel, String versionComment, boolean isMajorVersion, boolean isLatestVersion, String title, Map<String, String> collaborators, List<String> milestoneComments, String initialCreatedBy, Instant initialCreationInstant, Option<Content> content, Option<ProposalMetadata> metadata) {
-        super(LeosCategory.PROPOSAL, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant, versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion, title, collaborators, milestoneComments, content);
+    public Proposal(String id, String name, String createdBy, Instant creationInstant, String lastModifiedBy, Instant lastModificationInstant,
+                    String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment, VersionType versionType,
+                    boolean isLatestVersion, String title, Map<String, String> collaborators, List<String> milestoneComments,
+                    String initialCreatedBy, Instant initialCreationInstant, Option<Content> content, Option<ProposalMetadata> metadata) {
+        super(LeosCategory.PROPOSAL, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant,
+                versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, title, collaborators, milestoneComments, content);
         this.initialCreatedBy = initialCreatedBy;
         this.initialCreationInstant = initialCreationInstant;
         this.metadata = metadata;

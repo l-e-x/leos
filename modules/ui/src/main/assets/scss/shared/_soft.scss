@@ -25,7 +25,8 @@ $LIGHT_GREY: #A7A7A7;
 }
 
 %softAdded {
-    font-weight: bolder;
+    font-weight: bold;
+    text-decoration: none;
 }
 
 %softMovedTo {
@@ -34,37 +35,35 @@ $LIGHT_GREY: #A7A7A7;
 
 %softMovedFrom {
     font-weight: normal;
+    text-decoration: none;
 }
 
 %soft {
-    span.leos-content-soft-removed {
-        @extend %softRemoved;
-    }
 
-    span.leos-content-soft-new {
-        @extend %softAdded;
-    }
-
-    [leos\:softaction="del"] {
+    .leos-content-soft-removed[leos\:softaction="del"] {
         & {
-            *:not([leos\:origin="cn"]), num[leos\:origin="cn"] {
+            *:not([leos\:origin="cn"]):not(span), num[leos\:origin="cn"] {
                @extend %softRemoved; 
             } 
         }    
-    }    
+    }
 
-    [leos\:softaction="add"] {
+    .leos-content-soft-new[leos\:softaction="add"] {
         & {
-            *:not([leos\:origin="ec"]), num[leos\:origin="ec"] {
+            *:not([leos\:origin="ec"]):not(span), num[leos\:origin="ec"] {
                 @extend %softAdded;
+            }
+
+            num[leos\:origin="cn"], num[leos\:origin="ec"] {
+                padding-bottom: 0;
             }
         }
         
     }
 
-    [leos\:softaction="move_to"] {
+    .leos-content-soft-removed[leos\:softaction="move_to"] {
         & {
-            *:not([leos\:origin="cn"]), num[leos\:origin="ec"] {
+            *:not([leos\:origin="cn"]):not(span), num[leos\:origin="ec"] {
                 @extend %softMovedTo; 
             }
         
@@ -74,9 +73,9 @@ $LIGHT_GREY: #A7A7A7;
         }    
     }
 
-    [leos\:softaction="move_from"] {
+    .leos-content-soft-new[leos\:softaction="move_from"] {
         & {
-            *:not([leos\:origin="cn"]):not(heading) {
+            *:not([leos\:origin="cn"]):not(span):not(heading) {
                 @extend %softMovedFrom; 
             }
 
@@ -88,6 +87,14 @@ $LIGHT_GREY: #A7A7A7;
                 @extend %softAdded;
             }
         }   
+    }
+
+    span.leos-content-soft-removed {
+        @extend %softRemoved;
+    }
+
+    span.leos-content-soft-new {
+        @extend %softAdded;
     }
 
     //--------------------------------Soft IMG-----------------------------------/

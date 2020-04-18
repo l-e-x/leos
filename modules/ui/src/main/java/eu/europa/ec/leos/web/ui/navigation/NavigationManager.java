@@ -39,6 +39,9 @@ import org.springframework.stereotype.Component;
 @UIScope
 @Component
 public class NavigationManager implements Serializable {
+
+    private static final long serialVersionUID = 4402645174494054571L;
+
     private static final Logger LOG = LoggerFactory.getLogger(NavigationManager.class);
 
     private EventBus eventBus;
@@ -103,6 +106,9 @@ public class NavigationManager implements Serializable {
     }
 
     private class OpenWindowHandler implements ViewChangeListener {
+
+        private static final long serialVersionUID = -3156526235453685822L;
+
         @Override
         public boolean beforeViewChange(ViewChangeEvent viewChangeEvent) {
             ArrayList<Window> arrWindows = new ArrayList<>();

@@ -13,12 +13,21 @@
  */
 package eu.europa.ec.leos.cmis.repository;
 
+import eu.europa.ec.leos.cmis.extensions.CmisDocumentExtensions;
+import eu.europa.ec.leos.cmis.mapping.CmisProperties;
 import eu.europa.ec.leos.cmis.search.SearchStrategy;
 import eu.europa.ec.leos.cmis.search.SearchStrategyProvider;
 import eu.europa.ec.leos.cmis.support.OperationContextProvider;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
-import org.apache.chemistry.opencmis.client.api.*;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.model.filter.QueryFilter;
+import org.apache.chemistry.opencmis.client.api.CmisObject;
+import org.apache.chemistry.opencmis.client.api.Document;
+import org.apache.chemistry.opencmis.client.api.Folder;
+import org.apache.chemistry.opencmis.client.api.ObjectId;
+import org.apache.chemistry.opencmis.client.api.OperationContext;
+import org.apache.chemistry.opencmis.client.api.Session;
 import org.apache.chemistry.opencmis.commons.PropertyIds;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.chemistry.opencmis.commons.enums.BaseTypeId;
@@ -26,12 +35,19 @@ import org.apache.chemistry.opencmis.commons.enums.UnfileObject;
 import org.apache.chemistry.opencmis.commons.enums.Updatability;
 import org.apache.chemistry.opencmis.commons.enums.VersioningState;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisBaseException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.io.ByteArrayInputStream;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import static eu.europa.ec.leos.cmis.support.OperationContextProvider.getMinimalContext;
 
@@ -41,6 +57,7 @@ public class CmisRepository {
     private static final Logger logger = LoggerFactory.getLogger(CmisRepository.class);
 
     private final Session cmisSession;
+    private static final Map<String, Long> synchronizedKeys = new ConcurrentHashMap<>();
 
     CmisRepository(Session cmisSession) {
         this.cmisSession = cmisSession;
@@ -69,14 +86,20 @@ public class CmisRepository {
         folder.deleteTree(true, UnfileObject.DELETE, true);
     }
 
-    Document createDocumentFromContent(final String path, final String name, Map<String, ?> properties, final String mimeType, byte[] contentBytes, VersioningState versioningState) {
+    Document createDocumentFromContent(final String path, final String name, Map<String, ?> properties, final String mimeType, byte[] contentBytes) {
         logger.trace("Creating document... [path=" + path + ", name=" + name + ", mimeType=" + mimeType + "]");
         OperationContext context = getMinimalContext(cmisSession);
 
         Folder targetFolder = findFolderByPath(path, context);
         ByteArrayInputStream byteStream = new ByteArrayInputStream(contentBytes);
         ContentStream contentStream = cmisSession.getObjectFactory().createContentStream(name, (long) contentBytes.length, mimeType, byteStream);
-        return targetFolder.createDocument(properties, contentStream, versioningState);
+
+        Map<String, Object> updatedProperties = new LinkedHashMap<>();
+        updatedProperties.putAll(properties);
+        updatedProperties.put(CmisProperties.VERSION_TYPE.getId(), VersionType.MINOR.value());
+        updatedProperties.put(CmisProperties.VERSION_LABEL.getId(), getNextVersionLabel(VersionType.MINOR, null));
+
+        return targetFolder.createDocument(updatedProperties, contentStream, VersioningState.MINOR);
     }
 
     Document createDocumentFromSource(final String sourceId, String path, Map<String, ?> properties) {
@@ -86,7 +109,12 @@ public class CmisRepository {
         Folder targetFolder = findFolderByPath(path, context);
         Document sourceDoc = findDocumentById(sourceId, false, context);
 
-        return sourceDoc.copy(targetFolder, properties, VersioningState.MAJOR, null, null, null, context);
+        Map<String, Object> updatedProperties = new LinkedHashMap<>();
+        updatedProperties.putAll(properties);
+        updatedProperties.put(CmisProperties.VERSION_TYPE.getId(), VersionType.MINOR.value());
+        updatedProperties.put(CmisProperties.VERSION_LABEL.getId(), getNextVersionLabel(VersionType.MINOR, null));
+
+        return sourceDoc.copy(targetFolder, updatedProperties, VersioningState.MINOR, null, null, null, context);
     }
 
     void deleteDocumentById(final String id) {
@@ -104,19 +132,25 @@ public class CmisRepository {
         return (Document) document.updateProperties(properties);
     }
 
-    Document updateDocument(String id, Map<String, ?> properties, byte[] updatedDocumentBytes, boolean major, String comment) {
-        logger.trace("Updating document properties and content... [id=" + id + ']');
-        Document pwc = checkOutWorkingCopy(id);
-        Document udpatedDocument = checkInWorkingCopy(pwc, properties, updatedDocumentBytes, major, comment);
-        logger.trace("Updated document properties and content...");
-        if (udpatedDocument == null) {
-            throw new IllegalStateException("Update not successful for document:" + id);
-        } else {
-            return udpatedDocument;
+    public Document updateDocument(String id, Map<String, ?> properties, byte[] updatedDocumentBytes, VersionType versionType, String comment) {
+        try {
+            synchronized (getSyncKey(id)) {
+                logger.trace("Updating document properties and content... [id=" + id + ']');
+                Document pwc = checkOutWorkingCopy(id);
+                Document udpatedDocument = checkInWorkingCopy(pwc, properties, updatedDocumentBytes, versionType, comment);
+                logger.trace("Updated document properties and content...");
+                if (udpatedDocument == null) {
+                    throw new IllegalStateException("Update not successful for document:" + id);
+                } else {
+                    return udpatedDocument;
+                }
+            }
+        } finally {
+            cleanSyncKey(id);
         }
     }
 
-    private Document checkInWorkingCopy(Document pwc, Map<String, ?> properties, byte[] updatedDocumentBytes, boolean major, String comment) {
+    private Document checkInWorkingCopy(Document pwc, Map<String, ?> properties, byte[] updatedDocumentBytes, VersionType versionType, String comment) {
         Map<String, Object> updatedProperties = new LinkedHashMap<>();
         // KLUGE LEOS-2408 workaround for issue related to reset properties values with OpenCMIS In-Memory server
         logger.trace("KLUGE LEOS-2408 workaround for reset properties values...");
@@ -138,26 +172,19 @@ public class CmisRepository {
 
             try {
                 ContentStream pwcContentStream = pwc.getContentStream();
-
                 ContentStream contentStream = cmisSession.getObjectFactory().createContentStream(pwcContentStream.getFileName(),
                         updatedDocumentBytes.length, pwcContentStream.getMimeType(), byteStream);
-                updatedDocId = pwc.checkIn(major, updatedProperties, contentStream, comment);
+
+                updatedProperties.put(CmisProperties.VERSION_TYPE.getId(), versionType.value());
+                updatedProperties.put(CmisProperties.VERSION_LABEL.getId(),
+                        getNextVersionLabel(versionType, pwc.getAllVersions().size() > 1 ? CmisDocumentExtensions.getLeosVersionLabel(pwc.getAllVersions().get(1)) : null));
+
+                updatedDocId = pwc.checkIn(versionType.equals(VersionType.MAJOR) || versionType.equals(VersionType.INTERMEDIATE), updatedProperties, contentStream, comment);
                 logger.trace("Document checked-in successfully...[updated document id:" + updatedDocId.getId() + ']');
             } catch (CmisBaseException e) {
                 logger.error("Document update failed, trying to cancel the checkout", e);
                 pwc.cancelCheckOut();
                 throw e;
-            }
-
-            // If major version, remove previous version
-            // FIXME: Couldn't update major version flag and comment in CMIS without checking out and checking in
-            if (pwc.getAllVersions().size() > 1) {
-                Document beforeLastVersion = pwc.getAllVersions().get(1);
-                if (major && !beforeLastVersion.isMajorVersion() && beforeLastVersion.getLastModifiedBy().equals(pwc.getLastModifiedBy())) {
-                    logger.trace("Major version - Removing the before last version...");
-                    beforeLastVersion.delete(false);
-
-                }
             }
 
             return findDocumentById(updatedDocId.getId(), true, context);
@@ -220,18 +247,15 @@ public class CmisRepository {
         return findDocumentById(id, latest, context);
     }
 
-
     List<Document> findDocumentsByUserId(final String userId, String primaryType, String leosAuthority) {
         logger.trace("Finding document by user id... userId=" + userId);
         return findDocumentsForUser(userId, primaryType, leosAuthority);
     }
 
-
     List<Document> findDocumentsByStatus(LeosLegStatus status, String primaryType) {
         OperationContext context = getMinimalContext(cmisSession);
         return getSearchStrategy().findDocumentsByStatus(status, primaryType, context);
     }
-
 
     List<Document> findAllVersions(final String id) {
         logger.trace("Finding all document versions... [id=" + id + ']');
@@ -275,5 +299,109 @@ public class CmisRepository {
         if (!requiredCondition) {
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private static synchronized Long getSyncKey(String key) {
+        if (!synchronizedKeys.containsKey(key) ) {
+            synchronizedKeys.put(key, new Long(System.currentTimeMillis()));
+        }
+        return synchronizedKeys.get(key);
+    }
+
+    private static void cleanSyncKey(String key) {
+        synchronizedKeys.remove(key);
+    }
+
+    private String getNextVersionLabel(VersionType versionType, String oldVersion) {
+        if (StringUtils.isEmpty(oldVersion)) {
+            if (versionType.equals(VersionType.MAJOR)) {
+                return "1.0.0";
+            } else if (versionType.equals(VersionType.INTERMEDIATE)) {
+                return "0.1.0";
+            } else {
+                return "0.0.1";
+            }
+        }
+
+        String[] newVersion = oldVersion.split("\\.");
+        if (versionType.equals(VersionType.MAJOR)) {
+            newVersion[0] = Integer.parseInt(newVersion[0]) + 1 + "";
+            newVersion[1] = "0";
+            newVersion[2] = "0";
+        } else if (versionType.equals(VersionType.INTERMEDIATE)) {
+            newVersion[1] = Integer.parseInt(newVersion[1]) + 1 + "";
+            newVersion[2] = "0";
+        } else {
+            newVersion[2] = Integer.parseInt(newVersion[2]) + 1 + "";
+        }
+        return newVersion[0] + "." + newVersion[1] + "." + newVersion[2];
+    }
+
+    // Pagination changes
+    Stream<Document> findPagedDocumentsByParentPath(String path, String primaryType, Set<LeosCategory> categories, boolean descendants, int startIndex, int maxResults, QueryFilter workspaceFilter) {
+        logger.trace("Finding documents by parent path... [path=$path, primaryType=$primaryType, categories=$categories, descendants=$descendants]");
+        OperationContext context = OperationContextProvider.getOperationContext(cmisSession, maxResults);
+
+        Folder folder = findFolderByPath(path, context);
+        Stream<Document> documents = getSearchStrategy().findDocumentPage(folder, primaryType, categories, descendants, false, context, startIndex, workspaceFilter);
+
+        logger.trace("Found ${documents.count()} CMIS document(s).");
+        return documents;
+    }
+
+    int findDocumentCountByParentPath(String path, String primaryType, Set<LeosCategory> categories, boolean descendants, QueryFilter workspaceFilter) {
+        logger.trace("Finding documents by parent path... [path=$path, primaryType=$primaryType, categories=$categories, descendants=$descendants]");
+        OperationContext context = OperationContextProvider.getMinimalContext(cmisSession);
+
+        Folder folder = findFolderByPath(path, context);
+        int documentCount = getSearchStrategy().findDocumentCount(folder, primaryType, categories, descendants, false, context, workspaceFilter);
+
+        logger.trace("Found ${documentCount} CMIS document(s).");
+        return documentCount;
+    }
+
+    List<Document> findDocumentsByRef(String ref, String primaryType) {
+        OperationContext context = getMinimalContext(cmisSession);
+        List<Document> documents = getSearchStrategy().findDocumentsByRef(ref, primaryType, context);
+        logger.trace("Found " + documents.size() + " documents for " + ref);
+        return documents;
+    }
+    
+    public Stream<Document> findAllMinorsForIntermediate(String primaryType, String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults) {
+        OperationContext context = OperationContextProvider.getOperationContext(cmisSession, maxResults);
+        Stream<Document> documents = getSearchStrategy().findAllMinorsForIntermediate(primaryType, docRef, currIntVersion, prevIntVersion, startIndex, context);
+        return documents;
+    }
+    
+    public int findAllMinorsCountForIntermediate(String primaryType, String docRef, String currIntVersion, String prevIntVersion) {
+        OperationContext context = getMinimalContext(cmisSession);
+        return getSearchStrategy().findAllMinorsCountForIntermediate(primaryType, docRef, currIntVersion, prevIntVersion, context);
+    }
+
+    public Integer findAllMajorsCount(String primaryType, String docRef) {
+        OperationContext context = getMinimalContext(cmisSession);
+        return getSearchStrategy().findAllMajorsCount(primaryType, docRef, context);
+    }
+
+    public Stream<Document> findAllMajors(String primaryType, String docRef, int startIndex, int maxResult) {
+        OperationContext context = OperationContextProvider.getOperationContext(cmisSession, maxResult);
+        return getSearchStrategy().findAllMajors(primaryType, docRef, startIndex, context);
+    }
+
+    public Stream<Document> findRecentMinorVersions(String primaryType, String documentRef, String lastMajorId, int startIndex, int maxResults) {
+        OperationContext context = OperationContextProvider.getOperationContext(cmisSession, maxResults);
+        return getSearchStrategy().findRecentMinorVersions(primaryType, documentRef, lastMajorId, startIndex, context);
+    }
+
+    public Integer findRecentMinorVersionsCount(String primaryType, String documentRef, String versionLabel) {
+        OperationContext context = getMinimalContext(cmisSession);
+        return getSearchStrategy().findRecentMinorVersionsCount(primaryType, documentRef, versionLabel, context);
+    }
+    
+    public Document findLatestMajorVersionById(String id) {
+        OperationContext context = getMinimalContext(cmisSession);
+        CmisObject cmisObject = cmisSession.getLatestDocumentVersion(id, true, context);
+        require(cmisObject instanceof Document, "CMIS object referenced by id [" + id + "] is not a Document!");
+        return (Document) cmisObject;
     }
 }

@@ -10,10 +10,24 @@
            cursor: default; 
            background-color: $WHITE;
         }
-    
+
         .v-treegrid-scroller-horizontal, 
         .v-treegrid-horizontal-scrollbar-deco {
            display:none; //FIXME: find a better way to remove the horizontal scroll-bar
+        }
+
+        .v-treegrid-tablewrapper {
+            border: solid 2px transparent;
+        }
+    }
+
+    .leos-toc-tree-editable {
+        background-color: $ELEMENT_EDITABLE_BACKGROUND_COLOR;
+        :not(.v-treegrid-row-selected) > .v-treegrid-cell {
+            background-color: $ELEMENT_EDITABLE_BACKGROUND_COLOR;
+        }
+        .v-treegrid-tablewrapper {
+            border-color: $ELEMENT_EDITABLE_BORDER_COLOR;
         }
     }
 }

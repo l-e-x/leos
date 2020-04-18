@@ -16,8 +16,8 @@ package eu.europa.ec.leos.web.ui.component;
 import com.vaadin.server.Page;
 import com.vaadin.server.WebBrowser;
 import com.vaadin.ui.Component;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.VerticalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.i18n.MessageHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +39,8 @@ public class Banner extends VerticalLayout {
     }
 
     private void initLayout() {
+        setMargin(false);
+        setSpacing(false);
         addStyleName("leos-banner-layout");
         WebBrowser browser = Page.getCurrent().getWebBrowser();
         if (!browser.isChrome()) {

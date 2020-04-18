@@ -15,7 +15,6 @@ package eu.europa.ec.leos.services.export;
 
 
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
-import io.atlassian.fugue.Pair;
 
 import java.io.File;
 import java.util.Optional;
@@ -26,10 +25,12 @@ public interface ExportService {
 
     byte[] exportToToolboxCoDe(File legFile, ExportOptions exportOptions) throws Exception;
 
-    String exportLegPackage(String proposalId, Pair<File, ExportResource> legPackage) throws Exception;
+    String exportLegPackage(String proposalId, LegPackage legPackage) throws Exception;
 
     File createCollectionPackage(String jobFileName, String documentId, ExportOptions exportOptions) throws Exception;
 
     File createDocuWritePackage(String jobFileName, String documentId, ExportOptions exportOptions, Optional<XmlDocument> versionToCompare) throws Exception;
+
+    File exportToPdf(String proposalId) throws Exception;
 
 }

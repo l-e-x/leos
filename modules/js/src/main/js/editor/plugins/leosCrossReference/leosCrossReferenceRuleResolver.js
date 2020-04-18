@@ -16,7 +16,7 @@ define(function leosCrossReferenceRuleResolverModule(require) {
     "use strict";
     
     var $ = require('jquery');
-    var ARTICLE = "ARTICLE";
+    var ARTICLE = "article";
 
     function _isSelectionAllowed(currentSelectedElement, prevSelectedElements, isTreeNode) {
         var result = false;
@@ -54,14 +54,21 @@ define(function leosCrossReferenceRuleResolverModule(require) {
     }
 
     function _isAllowed(currentSelectedTreeNode, prevSelectedTreeNode) {
-        var parentElement1 = document.getElementById(currentSelectedTreeNode.parent),
-        parentElement2 = document.getElementById(prevSelectedTreeNode.parent), result;
-        
-        if(currentSelectedTreeNode.original && currentSelectedTreeNode.original.type === ARTICLE) {
-            result = (currentSelectedTreeNode.original.type === prevSelectedTreeNode.original.type);
-        } else {
-            result = parentElement1 != null ? (parentElement1.isSameNode(parentElement2) && 
-                currentSelectedTreeNode.original.type === prevSelectedTreeNode.original.type) : false;
+        var parentCurrentElement = document.getElementById(currentSelectedTreeNode.parent),
+            parentPrevElement = document.getElementById(prevSelectedTreeNode.parent);
+
+        var currentAknTag = (currentSelectedTreeNode.original && currentSelectedTreeNode.original.tocItem) ?
+            currentSelectedTreeNode.original.tocItem.aknTag : null;
+        var prevAknTag = (currentSelectedTreeNode.original && prevSelectedTreeNode.original.tocItem) ?
+            prevSelectedTreeNode.original.tocItem.aknTag : null;
+    
+        var result = false;
+        if (!currentAknTag || !prevAknTag) {
+            result = false;
+        } else if (currentAknTag === ARTICLE) {
+            result = (currentAknTag === prevAknTag);
+        } else if (parentCurrentElement != null) {
+            result = parentCurrentElement.isSameNode(parentPrevElement) && (currentAknTag === prevAknTag);
         }
         return result;
     }

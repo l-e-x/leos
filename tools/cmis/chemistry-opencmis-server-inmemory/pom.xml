@@ -72,6 +72,17 @@
                     <archiveClasses>true</archiveClasses>
                     <attachClasses>true</attachClasses>
                     <failOnMissingWebXml>false</failOnMissingWebXml>
+                    <webResources>
+                        <resource>
+                            <filtering>true</filtering>
+                            <directory>src/main/webapp</directory>
+                            <includes>
+                                <include>**/web.xml</include>
+                            </includes>
+                        </resource>
+                    </webResources>
+                    <warSourceDirectory>src/main/webapp</warSourceDirectory>
+                    <webXml>src/main/webapp/WEB-INF/web.xml</webXml>
                 </configuration>
             </plugin>
             <plugin>
@@ -169,5 +180,47 @@
             <version>${log4j.version}</version>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <!-- Default OS Instance-->
+        <profile>
+            <id>default</id>
+            <activation>
+                <property>
+                    <name>!instance</name>
+                </property>
+            </activation>
+            <properties>
+                <repo.build.instance>os</repo.build.instance>
+            </properties>
+        </profile>
+        <!-- EC Instance -->
+        <profile>
+            <id>ec</id>
+            <activation>
+                <property>
+                    <name>instance</name>
+                    <value>ec</value>
+                </property>
+            </activation>
+            <properties>
+                <repo.build.instance>ec</repo.build.instance>
+            </properties>
+        </profile>
+        <!-- CN Instance -->
+        <profile>
+            <id>cn</id>
+            <activation>
+                <property>
+                    <name>instance</name>
+                    <value>cn</value>
+                </property>
+            </activation>
+            <properties>
+                <repo.build.instance>cn</repo.build.instance>
+            </properties>
+        </profile>
+
+    </profiles>
 
 </project>

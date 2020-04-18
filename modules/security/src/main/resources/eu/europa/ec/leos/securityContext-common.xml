@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:sec="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+                           http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- Secured Leos API services -->
+    <sec:http pattern="${leos.api.filter.processor.url}" entry-point-ref="restAuthenticationEntryPoint" create-session="stateless">
+        <sec:csrf disabled="true"/>
+        <sec:custom-filter after="PRE_AUTH_FILTER" ref="leosApiAuthenticationFilter"/>
+    </sec:http>
+
+    <bean id="restAuthenticationEntryPoint" class="eu.europa.ec.leos.api.auth.RestAuthenticationEntryPoint"/>
+
+    <bean id="leosApiAuthenticationFilter" class="eu.europa.ec.leos.api.auth.LeosApiAuthenticationFilter">
+        <constructor-arg value="${leos.api.filter.processor.url}" />
+        <constructor-arg ref="tokenService" />
+        <property name="authenticationManager" ref="leosApiAuthenticationManager" />
+        <property name="authenticationSuccessHandler" ref="leosApiAuthSuccessHandler" />
+    </bean>
+
+    <bean id="tokenService" class="eu.europa.ec.leos.security.JwtTokenService"/>
+
+    <bean id="leosApiAuthSuccessHandler" class="eu.europa.ec.leos.api.auth.LeosApiAuthSuccessHandler"/>
+
+    <sec:authentication-manager id="leosApiAuthenticationManager" alias="leosApiAuthenticationManager">
+        <sec:authentication-provider ref="leosApiAuthenticationProvider"/>
+    </sec:authentication-manager>
+
+    <bean id="leosApiAuthenticationProvider"
+          class="eu.europa.ec.leos.api.auth.LeosApiAuthenticationProvider">
+    </bean>
+
+    <bean class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass" value="org.springframework.security.core.context.SecurityContextHolder" />
+        <property name="targetMethod" value="setStrategyName" />
+        <property name="arguments">
+            <list>
+                <value>MODE_INHERITABLETHREADLOCAL</value>
+            </list>
+        </property>
+    </bean>
+
+    <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AUTHORIZATION ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
+    <sec:global-method-security pre-post-annotations="enabled">
+        <sec:expression-handler ref="expressionHandler"/>
+    </sec:global-method-security>
+
+    <bean id="expressionHandler" class="org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler">
+        <property name="permissionEvaluator" ref ="leosPermissionEvaluator"/>
+        <!--Override default role prefix set by RoleVoter -->
+        <property name="defaultRolePrefix" value=""/>
+    </bean>
+
+</beans>

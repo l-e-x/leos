@@ -21,6 +21,7 @@ public class AnnotationRepositoryImpl implements AnnotationRepositoryCustom {
 
     // this is an override of the CrudRepository interface function, which should not be used due to problems;
     // see comment on the customDeleteAll function in AnnotationRepository
+    @SuppressWarnings("PMD.AvoidThrowingRawExceptionTypes")
     public void deleteAll() {
         throw new RuntimeException("This method must not be called; call the customDeleteAll method instead.");
     }

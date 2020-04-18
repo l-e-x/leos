@@ -17,24 +17,8 @@ import eu.europa.ec.leos.domain.common.Result;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 
 public interface PostProcessingMandateService {
-
-	// Constants declaration
-	static final String BILL = "bill";
-	static final String DOC = "doc";
-
-	static final String BODY = "body";
-	static final String PREAMBLE = "preamble";
-	static final String ARTICLE = "article";
-	static final String CITATIONS = "citations";
-	static final String CITATION = "citation";
-	static final String RECITALS = "recitals";
-	static final String RECITAL = "recital";
-
-	static final String EC = "ec";
-	static final String LEOS_ORIGIN_ATTR = "leos:origin";
-	static final String LEOS_DELETABLE_ATTR = "leos:deletable";
-	static final String LEOS_EDITABLE_ATTR = "leos:editable";
-
+	
 	// Interface methods
 	Result processMandate(DocumentVO documentVO);
+	
 }

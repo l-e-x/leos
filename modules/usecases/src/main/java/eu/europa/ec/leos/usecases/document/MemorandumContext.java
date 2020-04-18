@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.usecases.document;
 
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
@@ -116,7 +117,8 @@ public class MemorandumContext {
         Validate.notNull(purpose, "Memorandum purpose is required!");
         MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose).withType(type).withTemplate(template);
 
-        return memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
+        Memorandum memorandumCreated = memorandumService.createMemorandum(memorandum.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
+        return memorandumService.createVersion(memorandumCreated.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeUpdateMemorandum() {
@@ -124,14 +126,15 @@ public class MemorandumContext {
 
         Validate.notNull(leosPackage, "Memorandum package is required!");
         Memorandum memorandum = memorandumService.findMemorandumByPackagePath(leosPackage.getPath());
+        if (memorandum != null) {
+            Option<MemorandumMetadata> metadataOption = memorandum.getMetadata();
+            Validate.isTrue(metadataOption.isDefined(), "Memorandum metadata is required!");
 
-        Option<MemorandumMetadata> metadataOption = memorandum.getMetadata();
-        Validate.isTrue(metadataOption.isDefined(), "Memorandum metadata is required!");
+            Validate.notNull(purpose, "Memorandum purpose is required!");
+            MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        Validate.notNull(purpose, "Memorandum purpose is required!");
-        MemorandumMetadata metadata = metadataOption.get().withPurpose(purpose);
-
-        memorandumService.updateMemorandum(memorandum, metadata, false, actionMsgMap.get(ContextAction.METADATA_UPDATED));
+            memorandumService.updateMemorandum(memorandum, metadata, VersionType.MINOR, actionMsgMap.get(ContextAction.METADATA_UPDATED));
+        }
     }
 
     public Memorandum executeImportMemorandum() {
@@ -147,22 +150,25 @@ public class MemorandumContext {
 
         Validate.notNull(memoDocument.getSource(), "Memorandum xml is required!");
 
-        return memorandumService.createMemorandumFromContent(leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), memoDocument.getSource());
+        Memorandum memorandumCreated = memorandumService.createMemorandumFromContent(leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), memoDocument.getSource());
+        return memorandumService.createVersion(memorandumCreated.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeCreateMilestone() {
         Memorandum memorandum = memorandumService.findMemorandumByPackagePath(leosPackage.getPath());
-        List<String> milestoneComments = memorandum.getMilestoneComments();
-        milestoneComments.add(milestoneComment);
-        if (memorandum.isMajorVersion()) {
-            memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum.getId(), milestoneComments);
-            LOG.info("Major version {} already present. Updated only milestoneComment for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
-        } else {
-            memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum, milestoneComments, true, versionComment);
-            LOG.info("Created major version {} for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
+        if (memorandum != null) {
+            List<String> milestoneComments = memorandum.getMilestoneComments();
+            milestoneComments.add(milestoneComment);
+            if (memorandum.getVersionType().equals(VersionType.MAJOR)) {
+                memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum.getId(), milestoneComments);
+                LOG.info("Major version {} already present. Updated only milestoneComment for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
+            } else {
+                memorandum = memorandumService.updateMemorandumWithMilestoneComments(memorandum, milestoneComments, VersionType.MAJOR, versionComment);
+                LOG.info("Created major version {} for [memorandum={}]", memorandum.getVersionLabel(), memorandum.getId());
+            }
         }
     }
-    
+
     public String getUpdatedMemorandumId() {
         return memorandum.getId();
     }

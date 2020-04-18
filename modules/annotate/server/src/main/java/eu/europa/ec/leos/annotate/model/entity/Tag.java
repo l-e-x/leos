@@ -70,26 +70,32 @@ public class Tag {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public Long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final Long newId) {
         this.id = newId;
     }
 
+    @Generated
     public String getName() {
         return name;
     }
 
+    @Generated
     public void setName(final String name) {
         this.name = name;
     }
 
+    @Generated
     public Annotation getAnnotation() {
         return annotation;
     }
 
+    @Generated
     public void setAnnotation(final Annotation annot) {
         this.annotation = annot;
     }

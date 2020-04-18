@@ -26,24 +26,22 @@ import com.vaadin.v7.data.Item;
 import com.vaadin.v7.data.util.BeanItemContainer;
 import com.vaadin.v7.data.util.GeneratedPropertyContainer;
 import com.vaadin.v7.data.util.PropertyValueGenerator;
+import com.vaadin.v7.data.util.converter.Converter;
 import com.vaadin.v7.shared.ui.grid.HeightMode;
 import com.vaadin.v7.ui.ComboBox;
 import com.vaadin.v7.ui.Grid;
 import de.datenhahn.vaadin.componentrenderer.ComponentRenderer;
-import eu.europa.ec.leos.permissions.Role;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.ui.event.view.collection.EditCollaboratorRequest;
 import eu.europa.ec.leos.ui.event.view.collection.RemoveCollaboratorRequest;
 import eu.europa.ec.leos.web.model.CollaboratorVO;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.converter.UserDisplayConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 /* This class contain collaborators to be shown as a grid
@@ -62,9 +60,6 @@ public class CollaboratorsComponent extends CustomComponent {
 
     @Autowired
     LeosPermissionAuthorityMapHelper authorityMapHelper;
-
-    private static final Logger LOG = LoggerFactory.getLogger(CollaboratorsComponent.class);
-    private static List<Role> selectableAuthorities = new ArrayList<>();
 
     enum COLUMN {
         NAME("user"),
@@ -185,12 +180,11 @@ public class CollaboratorsComponent extends CustomComponent {
     private ComboBox createInplaceAuthorityEditor(Item item, CollaboratorVO collaborator, Object propertyId) {
         ComboBox comboBox = new ComboBox();
 
-        selectableAuthorities.addAll(authorityMapHelper.getCollaboratorRoles());
-
-        for (Role authority : selectableAuthorities) {
+        authorityMapHelper.getCollaboratorRoles().forEach(authority -> {
             comboBox.addItem(authority);
             comboBox.setItemCaption(authority, messageHelper.getMessage(authority.getMessageKey()));
-        }
+        });
+
         comboBox.addStyleName("role-editor");
         comboBox.setPropertyDataSource(item.getItemProperty(propertyId));
         comboBox.setNullSelectionAllowed(false);
@@ -217,4 +211,27 @@ public class CollaboratorsComponent extends CustomComponent {
         collaboratorGrid.getColumn(CollaboratorsComponent.COLUMN.ACTION.getKey()).setHidden(!enabled);//hide if disabled
         this.hasPermission = enabled;
     }
+    public class UserDisplayConverter implements Converter<String, User> {
+
+        @Override
+        public User convertToModel(String value, Class<? extends User> targetType, Locale locale) throws ConversionException {
+            throw new ConversionException("Not Implemented Method");
+        }
+
+        @Override
+        public String convertToPresentation(User value, Class<? extends String> targetType, Locale locale) throws ConversionException {
+            return (value != null) ? value.getName() : null;
+        }
+
+        @Override
+        public Class<User> getModelType() {
+            return User.class;
+        }
+
+        @Override
+        public Class<String> getPresentationType() {
+            return String.class;
+        }
+    }
+
 }

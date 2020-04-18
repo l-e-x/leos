@@ -21,33 +21,63 @@ import com.vaadin.server.Resource;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
-import com.vaadin.ui.*;
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.JavaScript;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.action.VersionVO;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.store.PackageService;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.ui.component.AccordionPane;
+import eu.europa.ec.leos.ui.component.ComparisonComponent;
+import eu.europa.ec.leos.ui.component.doubleCompare.DoubleComparisonComponent;
+import eu.europa.ec.leos.ui.component.markedText.MarkedTextComponent;
 import eu.europa.ec.leos.ui.component.toc.TableOfContentItemConverter;
+import eu.europa.ec.leos.ui.component.versions.VersionsTab;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenRequest;
 import eu.europa.ec.leos.ui.event.security.SecurityTokenResponse;
-import eu.europa.ec.leos.ui.event.toc.RefreshTocWindowEvent;
-import eu.europa.ec.leos.ui.window.TocEditor;
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
+import eu.europa.ec.leos.ui.view.TriFunction;
+import eu.europa.ec.leos.ui.window.milestone.MilestoneExplorer;
+import eu.europa.ec.leos.ui.window.toc.TocEditor;
 import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.component.ComparisonResponseEvent;
-import eu.europa.ec.leos.web.event.view.document.*;
+import eu.europa.ec.leos.web.event.component.LayoutChangeRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.CancelActionElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.CheckDeleteLastEditingTypeEvent;
 import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent.Action;
+import eu.europa.ec.leos.web.event.view.document.FetchCrossRefTocResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchElementResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchUserGuidanceResponse;
+import eu.europa.ec.leos.web.event.view.document.FetchUserPermissionsResponse;
+import eu.europa.ec.leos.web.event.view.document.InstanceTypeResolver;
+import eu.europa.ec.leos.web.event.view.document.ReferenceLabelResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.RefreshElementEvent;
+import eu.europa.ec.leos.web.event.view.document.SearchActResponseEvent;
 import eu.europa.ec.leos.web.model.TocAndAncestorsVO;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
 import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
+import eu.europa.ec.leos.web.ui.component.ContentPane;
 import eu.europa.ec.leos.web.ui.component.LegalTextPaneComponent;
 import eu.europa.ec.leos.web.ui.component.MenuBarComponent;
+import eu.europa.ec.leos.web.ui.component.actions.LegalTextActionsMenuBar;
+import eu.europa.ec.leos.web.ui.screen.document.ColumnPosition;
 import eu.europa.ec.leos.web.ui.window.ImportWindow;
-import eu.europa.ec.leos.web.ui.window.MajorVersionWindow;
+import eu.europa.ec.leos.web.ui.window.IntermediateVersionWindow;
 import eu.europa.ec.leos.web.ui.window.TimeLineWindow;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
@@ -55,14 +85,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.context.WebApplicationContext;
 import org.vaadin.dialogs.ConfirmDialog;
 
+import javax.inject.Provider;
 import java.text.SimpleDateFormat;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 @SpringComponent
 @ViewScope
@@ -83,13 +117,18 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
 
     private final Label docTitle = new Label();
     private final Label docIcon = new Label("", ContentMode.HTML);
-    
-    private TimeLineWindow timeLineWindow;
+
+    private TimeLineWindow<Bill> timeLineWindow;
     private ImportWindow importWindow;
     protected TocEditor tocEditor;
+    protected VersionsTab<Bill> versionsTab;
     protected LegalTextPaneComponent legalTextPaneComponent;
-    private WebApplicationContext webAppContext;
+    protected LegalTextActionsMenuBar legalTextActionMenuBar;
+    private MenuBarComponent menuBarComponent;
     private LeosPermissionAuthorityMapHelper authorityMapHelper;
+    protected ComparisonComponent<Bill> comparisonComponent;
+    protected Provider<StructureContext> structureContextProvider;
+    private PackageService packageService;
 
     @Value("${leos.coedition.sip.enabled}")
     private boolean coEditionSipEnabled;
@@ -100,7 +139,8 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
     @Autowired
     DocumentScreenImpl(UserHelper userHelper, SecurityContext securityContext, EventBus eventBus, ConfigurationHelper cfgHelper,
                        MessageHelper messageHelper, TocEditor tocEditor, InstanceTypeResolver instanceTypeResolver,
-                       WebApplicationContext webAppContext, LeosPermissionAuthorityMapHelper authorityMapHelper) {
+                       MenuBarComponent menuBarComponent, LeosPermissionAuthorityMapHelper authorityMapHelper, LegalTextActionsMenuBar legalTextActionMenuBar,
+                       ComparisonComponent<Bill> comparisonComponent, VersionsTab<Bill> versionsTab, Provider<StructureContext> structureContextProvider, PackageService packageService) {
         LOG.trace("Initializing document screen...");
         Validate.notNull(userHelper, "UserHelper must not be null!");
         this.userHelper = userHelper;
@@ -116,11 +156,20 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
         this.tocEditor = tocEditor;
         Validate.notNull(instanceTypeResolver, "instanceTypeResolver must not be null!");
         this.instanceTypeResolver = instanceTypeResolver;
-        Validate.notNull(webAppContext, "webAppContext must not be null!");
-        this.webAppContext = webAppContext;
+        Validate.notNull(menuBarComponent, "menuBarComponent must not be null!");
+        this.menuBarComponent = menuBarComponent;
         Validate.notNull(authorityMapHelper, "authorityMapHelper must not be null!");
         this.authorityMapHelper = authorityMapHelper;
-
+        Validate.notNull(legalTextActionMenuBar, "legalTextActionMenuBar must not be null!");
+        this.legalTextActionMenuBar = legalTextActionMenuBar;
+        Validate.notNull(comparisonComponent, "comparisonComponent must not be null!");
+        this.comparisonComponent = comparisonComponent;
+        Validate.notNull(versionsTab, "versionsTab must not be null!");
+        this.versionsTab = versionsTab;
+        Validate.notNull(structureContextProvider, "structureContextProvider must not be null!");
+        this.structureContextProvider = structureContextProvider;
+        Validate.notNull(structureContextProvider, "packageService must not be null!");
+        this.packageService = packageService;
         init();
     }
 
@@ -138,97 +187,6 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
         eventBus.unregister(this);
     }
 
-    @Override
-    public void setDocumentTitle(final String documentTitle) {
-        docTitle.setValue(documentTitle);
-    }
-
-    @Override
-    public void setDocumentVersionInfo(VersionInfoVO versionInfoVO) {
-        legalTextPaneComponent.setDocumentVersionInfo(versionInfoVO);
-    }
-
-    @Override
-    public void refreshContent(final String documentContent) {
-        legalTextPaneComponent.populateContent(documentContent);
-    }
-
-    @Override
-    public void populateMarkedContent(final String markedContent) {
-    }
-
-    @Override
-    public void populateDoubleComparisonContent(String doubleComparisonContent) {
-    }
-    
-    @Override
-    public void setToc(final List<TableOfContentItemVO> tableOfContentItemVoList) {
-        TreeData<TableOfContentItemVO> treeTocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
-        legalTextPaneComponent.setTableOfContent(treeTocData);
-    }
-
-    @Override
-    public void setTocEditWindow(final List<TableOfContentItemVO> tableOfContentItemVoList) {
-        TreeData<TableOfContentItemVO> treeTocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
-        eventBus.post(new RefreshTocWindowEvent(treeTocData));
-    }
-
-    @Override
-    public void showElementEditor(final String elementId, final String  elementTagName, final String elementFragment, String alternatives) {
-        eventBus.post(instanceTypeResolver.createEvent(elementId, elementTagName, elementFragment, LeosCategory.BILL.name(),
-                securityContext.getUser(),authorityMapHelper.getPermissionsForRoles(securityContext.getUser().getRoles()),alternatives));
-    }
-
-    @Override
-    public void refreshElementEditor(final String elementId, final String elementTagName, final String elementFragment) {
-        eventBus.post(new RefreshElementEvent(elementId, elementTagName, elementFragment));
-    }
-
-    @Override
-    public void showTimeLineWindow(List documentVersions) {
-        timeLineWindow = new TimeLineWindow(securityContext, messageHelper, eventBus, userHelper, documentVersions);
-        UI.getCurrent().addWindow(timeLineWindow);
-        timeLineWindow.center();
-        timeLineWindow.focus();
-    }
-
-    @Override
-    public void updateTimeLineWindow(List documentVersions) {
-        timeLineWindow.updateVersions(documentVersions);
-        timeLineWindow.focus();
-    }
-
-    @Override
-    public void showMajorVersionWindow() {
-        MajorVersionWindow majorVersionWindow = new MajorVersionWindow(messageHelper, eventBus);
-        UI.getCurrent().addWindow(majorVersionWindow);
-        majorVersionWindow.center();
-        majorVersionWindow.focus();
-    }
-
-    @Override
-    public void showImportWindow() {
-        importWindow = new ImportWindow(messageHelper, eventBus);
-        UI.getCurrent().addWindow(importWindow);
-        importWindow.center();
-        importWindow.focus();
-    }
-
-    @Override
-    public void displayComparison(HashMap<Integer, Object> htmlResult) {
-        eventBus.post(new ComparisonResponseEvent(htmlResult, LeosCategory.BILL.name().toLowerCase()));
-    }
-
-    @Override
-    public void setTocAndAncestors(List<TableOfContentItemVO> tocItemList, List<String> elementAncestorsIds) {
-        eventBus.post(new FetchCrossRefTocResponseEvent(new TocAndAncestorsVO(tocItemList, elementAncestorsIds, messageHelper)));
-    }
-
-    @Override
-    public void setElement(String elementId, String elementType, String elementContent) {
-        eventBus.post(new FetchElementResponseEvent(elementId, elementType, elementContent));
-    }
-
     void init() {
         setSizeFull();
         setMargin(false);
@@ -237,7 +195,6 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
 
         // create layout for document title
         buildTitleAndMenubar();
-        buildDocumentPane();
     }
 
     private HorizontalLayout buildTitleAndMenubar() {
@@ -260,20 +217,104 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
         docLayout.setComponentAlignment(docTitle, Alignment.MIDDLE_LEFT);
 
         // add menu bar component
-        MenuBarComponent menuBarComponent = webAppContext.getBean(MenuBarComponent.class);
         menuBarComponent.setWidth("73px");
         docLayout.addComponent(menuBarComponent);
         docLayout.setComponentAlignment(menuBarComponent, Alignment.TOP_RIGHT);
+
         return docLayout;
     }
 
-    private void buildDocumentPane() {
+    protected void buildDocumentPane() {
         LOG.debug("Building document pane...");
-
         // Add Legal Text Pane and add content and toc in it
-        legalTextPaneComponent = new LegalTextPaneComponent(eventBus, messageHelper, cfgHelper, securityContext);
+        legalTextPaneComponent = new LegalTextPaneComponent(eventBus, messageHelper, cfgHelper, securityContext, legalTextActionMenuBar, tocEditor, versionsTab, structureContextProvider, packageService);
         addComponent(legalTextPaneComponent);
         setExpandRatio(legalTextPaneComponent, 1.0f);
+    }
+
+    @Override
+    public void setDocumentTitle(final String documentTitle) {
+        docTitle.setValue(documentTitle);
+    }
+
+    @Override
+    public void setDocumentVersionInfo(VersionInfoVO versionInfoVO) {
+        legalTextPaneComponent.setDocumentVersionInfo(versionInfoVO);
+    }
+
+    @Override
+    public void refreshContent(final String documentContent) {
+        legalTextPaneComponent.populateContent(documentContent);
+    }
+
+    public abstract void showVersion(String content, String versionInfo);
+    
+    public abstract void populateMarkedContent(String comparedContent, String versionInfo);
+
+    public abstract void populateDoubleComparisonContent(String comparedContent, String versionInfo);
+    
+    @Override
+    public void setToc(final List<TableOfContentItemVO> tableOfContentItemVoList) {
+        TreeData<TableOfContentItemVO> treeTocData = TableOfContentItemConverter.buildTocData(tableOfContentItemVoList);
+        legalTextPaneComponent.setTableOfContent(treeTocData);
+    }
+    
+    @Override
+    public void showElementEditor(final String elementId, final String  elementTagName, final String elementFragment, String alternatives) {
+        eventBus.post(instanceTypeResolver.createEvent(elementId, elementTagName, elementFragment, LeosCategory.BILL.name(),
+                securityContext.getUser(),authorityMapHelper.getPermissionsForRoles(securityContext.getUser().getRoles()),alternatives));
+    }
+
+    @Override
+    public void refreshElementEditor(final String elementId, final String elementTagName, final String elementFragment) {
+        eventBus.post(new RefreshElementEvent(elementId, elementTagName, elementFragment));
+    }
+
+    @Override
+    public void showTimeLineWindow(List documentVersions) {
+        timeLineWindow = new TimeLineWindow<Bill>(securityContext, messageHelper, eventBus, userHelper, documentVersions);
+        UI.getCurrent().addWindow(timeLineWindow);
+        timeLineWindow.center();
+        timeLineWindow.focus();
+    }
+    
+    @Override
+    public void updateTimeLineWindow(List documentVersions) {
+        if (timeLineWindow != null) { //TODO added avoid NPE. Until Timeline will be cleaned up
+            timeLineWindow.updateVersions(documentVersions);
+            timeLineWindow.focus();
+        }
+    }
+
+    @Override
+    public void showIntermediateVersionWindow() {
+        IntermediateVersionWindow intermediateVersionWindow = new IntermediateVersionWindow(messageHelper, eventBus);
+        UI.getCurrent().addWindow(intermediateVersionWindow);
+        intermediateVersionWindow.center();
+        intermediateVersionWindow.focus();
+    }
+
+    @Override
+    public void showImportWindow() {
+        importWindow = new ImportWindow(messageHelper, eventBus);
+        UI.getCurrent().addWindow(importWindow);
+        importWindow.center();
+        importWindow.focus();
+    }
+
+    @Override
+    public void displayComparison(HashMap<ComparisonDisplayMode, Object> htmlResult) {
+        eventBus.post(new ComparisonResponseEvent(htmlResult, LeosCategory.BILL.name().toLowerCase()));
+    }
+
+    @Override
+    public void setTocAndAncestors(Map<String, List<TableOfContentItemVO>> tocItemList, List<String> elementAncestorsIds) {
+        eventBus.post(new FetchCrossRefTocResponseEvent(new TocAndAncestorsVO(tocItemList, elementAncestorsIds, messageHelper)));
+    }
+
+    @Override
+    public void setElement(String elementId, String elementType, String elementContent, String documentRef) {
+        eventBus.post(new FetchElementResponseEvent(elementId, elementType, elementContent, documentRef));
     }
 
     @Override
@@ -314,8 +355,8 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
     }
 
     @Override
-    public void setReferenceLabel(String referenceLabels) {
-        eventBus.post(new ReferenceLabelResponseEvent(referenceLabels));
+    public void setReferenceLabel(String referenceLabels, String documentRef) {
+        eventBus.post(new ReferenceLabelResponseEvent(referenceLabels, documentRef));
     }
 
     @Override
@@ -355,7 +396,11 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
         if (!StringUtils.isEmpty(coEditorsList)) {
             confirmCoEdition(coEditorsList.toString(), elementId, action, actionEvent);
         } else {
-            eventBus.post(actionEvent);
+            if (action == Action.DELETE) {
+                eventBus.post(new CheckDeleteLastEditingTypeEvent(elementId, actionEvent));
+            } else {
+                eventBus.post(actionEvent);
+            }
         }
     }
 
@@ -370,7 +415,11 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
         confirmDialog.setHeightUndefined();
         confirmDialog.show(getUI(), dialog -> {
             if (dialog.isConfirmed()) {
-                eventBus.post(actionEvent);
+                if (action == Action.DELETE) {
+                    eventBus.post(new CheckDeleteLastEditingTypeEvent(elementId, actionEvent));
+                } else {
+                    eventBus.post(actionEvent);
+                }
             } else {
                 eventBus.post(new CancelActionElementRequestEvent(elementId));
             }
@@ -393,4 +442,54 @@ abstract class DocumentScreenImpl extends VerticalLayout implements DocumentScre
     @Override
     public void setDownloadStreamResource(Resource downloadstreamResource) {
     }
+
+    protected void changeLayout(LayoutChangeRequestEvent event, Object obj) {
+        if (obj instanceof MarkedTextComponent || obj instanceof DoubleComparisonComponent) {
+            if (event.getOriginatingComponent() == ComparisonComponent.class) {
+                if (!event.getPosition().equals(ColumnPosition.OFF)) {
+                    comparisonComponent.setContent((ContentPane)obj);
+                } else {
+                    obj = null;
+                    comparisonComponent.setContent(null);
+                }
+            }
+            else if (event.getOriginatingComponent() == AccordionPane.class) {
+                JavaScript.getCurrent().execute("$(function(){document.defaultView.dispatchEvent(new Event('resize'));})");
+            }
+            legalTextPaneComponent.changeComponentLayout(event.getPosition(), event.getOriginatingComponent());
+        }
+    }
+    
+    @Override
+    public boolean isTocEnabled() {
+        return legalTextPaneComponent.isTocEnabled();
+    }
+    
+    @Override
+    public void setDataFunctions(List<VersionVO> allVersions,
+                                 BiFunction<Integer, Integer, List<Bill>> majorVersionsFn, Supplier<Integer> countMajorVersionsFn,
+                                 TriFunction<String, Integer, Integer, List<Bill>> minorVersionsFn, Function<String, Integer> countMinorVersionsFn,
+                                 BiFunction<Integer, Integer, List<Bill>> recentChangesFn, Supplier<Integer> countRecentChangesFn) {
+        legalTextPaneComponent.setDataFunctions(allVersions, majorVersionsFn, countMajorVersionsFn, minorVersionsFn,
+                countMinorVersionsFn, recentChangesFn, countRecentChangesFn, true);
+    }
+    
+    public void refreshVersions(List<VersionVO> allVersions, boolean isComparisonMode) {
+        versionsTab.refreshVersions(allVersions, isComparisonMode);
+    }
+
+    @Override
+    public void showMilestoneExplorer(LegDocument legDocument, String milestoneTitle) {
+        legalTextPaneComponent.removeAnnotateExtension();
+        MilestoneExplorer milestoneExplorer = new MilestoneExplorer(legDocument, milestoneTitle, messageHelper, eventBus, cfgHelper, securityContext, userHelper);
+        UI.getCurrent().addWindow(milestoneExplorer);
+        milestoneExplorer.center();
+        milestoneExplorer.focus();
+    }
+
+    @Override
+    public boolean isComparisonComponentVisible() {
+        return comparisonComponent != null && comparisonComponent.getParent() != null;
+    }
+
 }

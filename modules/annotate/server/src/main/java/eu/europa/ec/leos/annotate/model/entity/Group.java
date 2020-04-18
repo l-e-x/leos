@@ -67,12 +67,20 @@ public class Group {
     public Group() {
         // default constructor required for JPA
     }
-    
+
     // simple constructor, reuse name for other properties
     public Group(final String name, final boolean isPublic) {
         this.name = name;
         this.displayName = name;
         this.description = name;
+        this.publicGroup = isPublic;
+    }
+
+    // simple constructor, separate display name
+    public Group(final String name, final String displayName, final boolean isPublic) {
+        this.name = name;
+        this.displayName = displayName;
+        this.description = displayName;
         this.publicGroup = isPublic;
     }
 
@@ -87,42 +95,52 @@ public class Group {
     // Getters & setters
     // -------------------------------------------------
 
+    @Generated
     public Long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final Long newId) {
         this.id = newId;
     }
 
+    @Generated
     public String getName() {
         return name;
     }
 
+    @Generated
     public void setName(final String name) {
         this.name = name;
     }
 
+    @Generated
     public String getDisplayName() {
         return displayName;
     }
 
+    @Generated
     public void setDisplayName(final String displayName) {
         this.displayName = displayName;
     }
 
+    @Generated
     public String getDescription() {
         return description;
     }
 
+    @Generated
     public void setDescription(final String description) {
         this.description = description;
     }
 
+    @Generated
     public boolean isPublicGroup() {
         return publicGroup;
     }
 
+    @Generated
     public void setPublicGroup(final boolean publicGroup) {
         this.publicGroup = publicGroup;
     }
@@ -134,7 +152,7 @@ public class Group {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, displayName, description);
+        return Objects.hash(id, name, displayName, description, publicGroup);
     }
 
     @Generated
@@ -151,6 +169,6 @@ public class Group {
                 Objects.equals(this.name, other.name) &&
                 Objects.equals(this.displayName, other.displayName) &&
                 Objects.equals(this.description, other.description) &&
-                Objects.equals(this.isPublicGroup(), other.isPublicGroup());
+                Objects.equals(this.publicGroup, other.publicGroup);
     }
 }

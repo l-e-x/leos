@@ -18,5 +18,5 @@ package eu.europa.ec.leos.annotate.services;
  */
 public interface AuthenticationServiceWithTestFunctions extends AuthenticationService {
 
-    String createToken(String userId, String clientId) throws Exception;
+    String createToken(String userId, String clientId);
 }

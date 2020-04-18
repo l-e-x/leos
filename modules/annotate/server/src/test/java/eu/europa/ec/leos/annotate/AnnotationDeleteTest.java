@@ -18,6 +18,8 @@ import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.helper.TestHelper;
+import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
@@ -27,6 +29,7 @@ import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteSentAnnotationException;
+import eu.europa.ec.leos.annotate.services.impl.UserDetailsCache;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,7 +63,7 @@ public class AnnotationDeleteTest {
 
     @Autowired
     private AnnotationConversionService conversionService;
-    
+
     @Autowired
     @Qualifier("annotationTestRepos")
     private AnnotationTestRepository annotRepos;
@@ -83,6 +86,9 @@ public class AnnotationDeleteTest {
     @Autowired
     private UserGroupRepository userGroupRepos;
 
+    @Autowired
+    private UserDetailsCache userDetailsCache;
+
     // -------------------------------------
     // Help variables
     // -------------------------------------
@@ -101,6 +107,8 @@ public class AnnotationDeleteTest {
 
         theUser = userRepos.save(new User(LOGIN));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+
+        userDetailsCache.clear();
     }
 
     @After
@@ -126,6 +134,8 @@ public class AnnotationDeleteTest {
         final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
         final UserInformation userInfo = new UserInformation(LOGIN, authority);
         userInfo.setUser(theUser);
+        userDetailsCache.cache(LOGIN, new UserDetails(LOGIN, theUser.getId(), "use", "r", Arrays.asList(new UserEntity("1", "EMPL", "EMPL")),
+                "use@r.com", null));
         annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
@@ -140,14 +150,16 @@ public class AnnotationDeleteTest {
         Assert.assertEquals(1, documentRepos.count());
         Assert.assertEquals(2, tagRepos.count());
         TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.DELETED, theUser.getId());
-        
+
         // check that the annotation status would be reported correctly in JSON format
         final Annotation annot = annotRepos.findById(jsAnnot.getId());
         final JsonAnnotation jsConverted = conversionService.convertToJsonAnnotation(annot, userInfo);
         Assert.assertNotNull(jsConverted);
         Assert.assertEquals(AnnotationStatus.DELETED, jsConverted.getStatus().getStatus());
         Assert.assertNotNull(jsConverted.getStatus().getUpdated());
-        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUpdated_by()); // corresponds to user of UserInformation instance
+        Assert.assertEquals("EMPL", jsConverted.getStatus().getUpdated_by()); // corresponds to entity of UserInformation instance
+        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUser_info()); // corresponds to user of UserInformation instance
+        Assert.assertFalse(jsConverted.getStatus().isSentDeleted()); // this flag does not apply to pure deletion
     }
 
     /**
@@ -199,12 +211,12 @@ public class AnnotationDeleteTest {
 
     /**
      * an annotation having response status SENT is tried to be deleted (by same ISC user) 
-     * -> refused
+     * -> accepted, annotation flagged as "sent deleted"
      */
-    @Test(expected = CannotDeleteSentAnnotationException.class)
-    public void testCannotDeleteSentAnnotationFromIsc() throws Exception {
+    @Test
+    public void testSentDeleteSentAnnotationFromIsc() throws Exception {
 
-        final String authority = "someauth";
+        final String authority = Authorities.ISC;
         final String hypothesisUserAccount = HYPO_PREFIX + authority;
 
         // retrieve out test annotation: has two tags
@@ -223,8 +235,153 @@ public class AnnotationDeleteTest {
         savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
         metadataRepos.save(savedMetadata);
 
-        // try to remove it -> should fail
+        // try to remove it -> passes, sets the new "sentDeleted" flag
         annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+
+        // verify: annotation has the "sentDeleted" flag
+        final Annotation readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertNotNull(readAnnot);
+        Assert.assertTrue(readAnnot.isSentDeleted());
+        Assert.assertEquals(AnnotationStatus.NORMAL, readAnnot.getStatus()); // not changed to DELETED status!
+    }
+
+    /**
+     * an annotation having response status SENT is deleted twice (by same ISC user) 
+     * -> accepted, annotation flagged as "sent deleted" (and not just toggled each time)
+     */
+    @Test
+    public void testSentDeleteSentAnnotationFromIscTwiceDoesNotToggleStatus() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+
+        // retrieve out test annotation: has two tags
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        final UserInformation userInfo = new UserInformation(LOGIN, authority);
+        userInfo.setUser(theUser);
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        // set metadata response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove it -> passes, sets the new "sentDeleted" flag
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+
+        // verify: annotation has the "sentDeleted" flag
+        Annotation readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertNotNull(readAnnot);
+        Assert.assertTrue(readAnnot.isSentDeleted());
+
+        // try to remove it once more -> passes, "sentDeleted" flag remains set (is not toggled)
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+        
+        // verify the flag is still set
+        readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertTrue(readAnnot.isSentDeleted());
+    }
+
+    /**
+     * an annotation having response status SENT is tried to be deleted (by ISC user of the same group) 
+     * -> accepted, annotation flagged as "sent deleted"
+     */
+    @Test
+    public void testSentDeleteSentAnnotationFromIscSameGroup() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+        final String username = "jane";
+        final String groupname = "AGRI";
+
+        // retrieve out test annotation: has two tags
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot.setGroup(groupname);
+
+        final Group groupAgri = new Group(groupname, true);
+        groupRepos.save(groupAgri);
+
+        final UserInformation userInfo = new UserInformation(username, authority);
+        final User userJane = new User(username);
+        userRepos.save(userJane);
+        userInfo.setUser(userJane);
+
+        userGroupRepos.save(new UserGroup(userJane.getId(), groupAgri.getId()));
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+        Assert.assertEquals(1, documentRepos.count());
+        Assert.assertEquals(2, tagRepos.count());
+
+        // set metadata response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // try to remove it -> passes, sets the new "sentDeleted" flag
+        annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+
+        // verify: annotation has the "sentDeleted" flag
+        final Annotation readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertNotNull(readAnnot);
+        Assert.assertTrue(readAnnot.isSentDeleted());
+        Assert.assertEquals(AnnotationStatus.NORMAL, readAnnot.getStatus()); // not changed to DELETED status!
+    }
+
+    /**
+     * an annotation having response status SENT is tried to be deleted (by ISC user of the different group) 
+     * -> accepted, annotation flagged as "sent deleted"
+     */
+    @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    public void testSentDeleteSentAnnotationFromIscDifferentGroup() throws Exception {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = HYPO_PREFIX + authority;
+        final String username = "jodi";
+        final String groupname = "BGRI";
+
+        // retrieve out test annotation: has two tags
+        final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        jsAnnot.setGroup(groupname);
+
+        final Group groupBgri = new Group(groupname, true);
+        groupRepos.save(groupBgri);
+
+        final UserInformation userInfo = new UserInformation(username, authority);
+        final User userJane = new User(username);
+        userRepos.save(userJane);
+        userInfo.setUser(userJane);
+
+        final UserGroup bgriMembership = userGroupRepos.save(new UserGroup(userJane.getId(), groupBgri.getId()));
+
+        annotService.createAnnotation(jsAnnot, userInfo);
+
+        Assert.assertEquals(1, annotRepos.count());
+
+        // set metadata response status to SENT
+        final Metadata savedMetadata = annotService.findAnnotationById(jsAnnot.getId()).getMetadata();
+        savedMetadata.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(savedMetadata);
+
+        // remove the user from the group
+        userGroupRepos.delete(bgriMembership);
+
+        // try to remove it -> should throw exception
+        try {
+            annotService.deleteAnnotationById(jsAnnot.getId(), userInfo);
+            Assert.fail("Expected CannotDeleteSentAnnotationException not received!");
+        } catch (CannotDeleteSentAnnotationException cdsae) {
+            // OK
+        }
+
+        // verify: annotation does not have the "sentDeleted" flag
+        final Annotation readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertNotNull(readAnnot);
+        Assert.assertFalse(readAnnot.isSentDeleted());
+        Assert.assertEquals(AnnotationStatus.NORMAL, readAnnot.getStatus()); // not changed to DELETED status!
     }
 
     /**
@@ -256,8 +413,13 @@ public class AnnotationDeleteTest {
         // try to remove it as an EdiT user -> should be possible
         final UserInformation userInfoEdit = new UserInformation(LOGIN, Authorities.EdiT);
         annotService.deleteAnnotationById(jsAnnot.getId(), userInfoEdit);
+
+        final Annotation readAnnot = annotRepos.findById(jsAnnot.getId());
+        Assert.assertNotNull(readAnnot);
+        Assert.assertFalse(readAnnot.isSentDeleted());
+        Assert.assertEquals(AnnotationStatus.DELETED, readAnnot.getStatus()); // was really DELETED (status change)
     }
-    
+
     /**
      * a reply of another user is tried to be deleted
      * -> accepted, but parent annotation shall remain
@@ -298,10 +460,11 @@ public class AnnotationDeleteTest {
 
     /**
      * a reply with response status SENT is tried to be deleted as an ISC user
-     * -> should be refused
+     * -> should be accepted and reply be flagged as "sent deleted"
      */
     @Test
-    public void testCannotDeleteSentReplyFromIsc() throws Exception {
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    public void testSentDeleteSentReplyFromIsc() throws Exception {
 
         final String authority = Authorities.ISC;
         final String hypothesisUserAccount = HYPO_PREFIX + authority;
@@ -322,19 +485,15 @@ public class AnnotationDeleteTest {
         savedMetadata.setResponseStatus(ResponseStatus.SENT);
         metadataRepos.save(savedMetadata);
 
-        // try to remove the reply -> exception
-        try {
-            annotService.deleteAnnotationById(jsReply.getId(), userInfo);
-            Assert.fail("Expected exception when trying to delete SENT reply, but did not get any");
-        } catch (CannotDeleteSentAnnotationException ex) {
-            // OK
-        }
+        // try to remove the reply -> will be flagged
+        annotService.deleteAnnotationById(jsReply.getId(), userInfo);
 
         // verify that the parent annotation and the reply remain
         Assert.assertEquals(2, annotRepos.count());
 
-        // reply must still be flagged as "NORMAL", it must not be flagged as DELETED
+        // reply must still be flagged as "NORMAL", it must not be flagged as DELETED - but as "sent deleted"
         TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.NORMAL, null);
+        Assert.assertTrue(annotRepos.findById(jsReply.getId()).isSentDeleted());
     }
 
     /**
@@ -373,7 +532,7 @@ public class AnnotationDeleteTest {
         // reply must be flagged as "DELETED" now
         TestHelper.assertHasStatus(annotRepos, jsReply.getId(), AnnotationStatus.DELETED, userInfo.getUser().getId());
     }
-    
+
     /**
      *  there are two annotations to the same document; both shared some tags
      *  one of the annotations is deleted

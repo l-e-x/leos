@@ -14,9 +14,8 @@
 package eu.europa.ec.leos.web.support;
 
 public enum SessionAttribute {
-    REPOSITORY_TYPE, // FIXME this param should also come from url?
-    PROPOSAL_ID,
-    MEMORANDUM_ID,
-    BILL_ID,
-    ANNEX_ID
+    PROPOSAL_REF,
+    MEMORANDUM_REF,
+    BILL_REF,
+    ANNEX_REF
 }

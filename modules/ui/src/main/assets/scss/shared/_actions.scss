@@ -37,6 +37,14 @@ $ACTION_BACKGROUND:#FFFAFF;
         @extend %elementEditable;
     }
 
+    article {
+        @extend %elementEditable;
+    }
+
+    article.leos-editable-content {
+        @extend %contentEditable;
+    }
+
     article[leos\:origin='ec'] {
         .leos-editable-content, paragraph.leos-editable-content {
             @extend %contentEditable;
@@ -52,10 +60,19 @@ $ACTION_BACKGROUND:#FFFAFF;
             @extend %elementEditable;
             padding: 0 5px 0px 45px;
         }
+        indent {
+            @extend %elementEditable;
+            padding: 0 5px 0px 45px;
+        }
+        heading {
+            @extend %elementEditable;
+        }
     }
 
-    article[leos\:origin='cn'].leos-editable-content {
-        @extend %contentEditable;
+    part, aknTitle, chapter, section {
+        heading {
+            @extend %elementEditable;
+        }
     }
 
     citations[leos\:origin='ec'] {
@@ -72,6 +89,35 @@ $ACTION_BACKGROUND:#FFFAFF;
             @extend %contentEditable;
         }
         recital {
+            @extend %elementEditable;
+        }
+    }
+
+    level {
+        @extend %elementEditable;
+    }
+
+    level.leos-editable-content {
+        @extend %contentEditable;
+    }
+
+    level[leos\:origin='ec'] {
+        .leos-editable-content {
+            @extend %contentEditable;
+        }
+        subparagraph {
+            @extend %elementEditable;
+            display: block;
+        }
+        point {
+            @extend %elementEditable;
+            padding: 0 5px 0px 45px;
+        }
+        indent {
+            @extend %elementEditable;
+            padding: 0 5px 0px 45px;
+        }
+        alinea, heading {
             @extend %elementEditable;
         }
     }

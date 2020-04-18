@@ -33,6 +33,7 @@ public class AuthenticatedUserStore {
     // -----------------------------------------------------------
 
     // remove the reference to the user
+    @SuppressWarnings("PMD.NullAssignment")
     public void clear() {
         this.userInfo = null;
     }

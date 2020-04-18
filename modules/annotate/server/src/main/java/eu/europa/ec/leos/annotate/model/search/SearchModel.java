@@ -16,8 +16,11 @@ package eu.europa.ec.leos.annotate.model.search;
 import eu.europa.ec.leos.annotate.Generated;
 import eu.europa.ec.leos.annotate.model.MetadataIdsAndStatuses;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.search.Consts.SearchModelMode;
 import eu.europa.ec.leos.annotate.repository.impl.AnnotationSearchSpec;
 import org.springframework.data.jpa.domain.Specification;
+
+import javax.annotation.Nonnull;
 
 import java.util.List;
 import java.util.Objects;
@@ -38,11 +41,18 @@ public class SearchModel {
     private final ResolvedSearchOptions rso;
     private final Specification<Annotation> searchSpec;
     private final List<MetadataIdsAndStatuses> metaAndStatus;
+    
+    // flag indicating if the respective derived model class uses post-filtering functionality
+    protected boolean hasPostFiltering;
 
+    // flag indicating if the respective derived model class should add deleted items in historical sets
+    protected boolean addDeletedHistoryItems;
+    
     // -------------------------------------
     // Constructors
     // -------------------------------------
-    public SearchModel(final ResolvedSearchOptions rso, final List<MetadataIdsAndStatuses> metaAndStatus) {
+    public SearchModel(final ResolvedSearchOptions rso, final List<MetadataIdsAndStatuses> metaAndStatus,
+            final SearchModelMode searchModeToUse) {
 
         this.rso = rso;
         this.metaAndStatus = metaAndStatus;
@@ -50,18 +60,46 @@ public class SearchModel {
         this.searchSpec = new AnnotationSearchSpec(
                 rso.getExecutingUser().getId(),
                 rso.getFilterUser() == null ? null : rso.getFilterUser().getId(),
-                        metaAndStatus);
+                metaAndStatus,
+                rso.getGroup(), searchModeToUse);
+        this.hasPostFiltering = false;
     }
 
+    /**
+     * apply a post-filtering on a given list of annotations
+     * not needed by default, will be overridden only in search models requiring it
+     * 
+     * @param foundItems
+     *        list of items to be post-filtered
+     * @return filtered list
+     */
+    @Nonnull
+    public List<Annotation> postFilterSearchResults(final List<Annotation> foundItems) {
+        
+        return foundItems;
+    }
+    
     // -------------------------------------
     // Getters
     // -------------------------------------
+    @Generated
     public Specification<Annotation> getSearchSpecification() {
-        return searchSpec;
+        return this.searchSpec;
     }
 
+    @Generated
     public List<MetadataIdsAndStatuses> getMetadataAndStatusesList() {
         return this.metaAndStatus;
+    }
+
+    @Generated
+    public boolean isHasPostFiltering() {
+        return this.hasPostFiltering;
+    }
+    
+    @Generated
+    public boolean isAddDeletedHistoryItems() {
+        return this.addDeletedHistoryItems;
     }
     
     // -------------------------------------
@@ -71,7 +109,7 @@ public class SearchModel {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(rso, searchSpec, metaAndStatus);
+        return Objects.hash(rso, searchSpec, metaAndStatus, hasPostFiltering);
     }
 
     @Generated
@@ -86,6 +124,7 @@ public class SearchModel {
         final SearchModel other = (SearchModel) obj;
         return Objects.equals(this.rso, other.rso) &&
                 Objects.equals(this.searchSpec, other.searchSpec) &&
-                Objects.equals(this.metaAndStatus, other.metaAndStatus);
+                Objects.equals(this.metaAndStatus, other.metaAndStatus) &&
+                Objects.equals(this.hasPostFiltering, other.hasPostFiltering);
     }
 }

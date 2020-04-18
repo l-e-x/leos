@@ -59,8 +59,8 @@
             wnumb: "lib/wNumb_1.1.0/wNumb",
             jsTree: "lib/jsTree_3.3.2/jstree",
             cuid: "lib/cuid_1.3.8/client-cuid",
-            ckEditor: "lib/ckeditor_4.9.2/ckeditor",
-            "ckEditor.jquery": "lib/ckeditor_4.9.2/adapters/jquery",
+            ckEditor: "lib/ckeditor_4.12.1/ckeditor",
+            "ckEditor.jquery": "lib/ckeditor_4.12.1/adapters/jquery",
             // CKEditor External Plugins
             /*=> start section with external ckEditor plugins,      // FIXME re-evaluate the need to keep this!!!
              * they are not valid requirejs modules so they shouldn't be resolved as one

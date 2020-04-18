@@ -19,19 +19,30 @@ import com.vaadin.icons.VaadinIcons;
 import com.vaadin.shared.Registration;
 import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.shared.ui.MarginInfo;
-import com.vaadin.ui.*;
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.GridLayout;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.VerticalLayout;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.action.CheckinCommentVO;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.document.util.CheckinCommentUtil;
+import eu.europa.ec.leos.services.support.VersionsUtil;
 import eu.europa.ec.leos.ui.component.RangeSliderComponent;
 import eu.europa.ec.leos.ui.component.RangeSliderStepVO;
-import eu.europa.ec.leos.web.event.component.ComparisonRequestEvent;
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
+import eu.europa.ec.leos.web.event.component.CompareTimeLineRequestEvent;
 import eu.europa.ec.leos.web.event.component.RestoreVersionRequestEvent;
 import eu.europa.ec.leos.web.support.StepValueComparator;
 import eu.europa.ec.leos.web.support.VersionComparator;
 import eu.europa.ec.leos.web.support.user.UserHelper;
-import eu.europa.ec.leos.web.ui.converter.UserLoginDisplayConverter;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -39,7 +50,14 @@ import org.slf4j.LoggerFactory;
 import org.vaadin.dialogs.ConfirmDialog;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayout {
 
@@ -52,14 +70,12 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
     private SecurityContext securityContext;
 
     private final static SimpleDateFormat dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
-
-    final static int SINGLE_COLUMN_MODE = 1;
-    final static int TWO_COLUMN_MODE = 2;
-    private int diffMode;
+    private ComparisonDisplayMode diffMode;
 
     private GridLayout oldVersionInfo;
     private GridLayout newVersionInfo;
     private RangeSliderComponent rangeSliderComponent;
+    private CheckBox intermediateVersionCheckBox;
 
     // data
     private List<T> allDocumentVersions;
@@ -67,7 +83,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
     private Selection minSelection;
     private Selection maxSelection;
     private boolean showAllIntermediateBeforeLastMajor = false;
-    private HashMap<Button, Registration> restoreVersionRegisteredListeners = new HashMap();
+    private HashMap<Button, Registration> restoreVersionRegisteredListeners = new HashMap<Button, Registration>();
 
     public TimeLineHeaderComponent(SecurityContext securityContext, final MessageHelper messageHelper, final EventBus eventBus, final UserHelper userHelper, List<T> docVersions) {
         super();
@@ -96,6 +112,8 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
 
         this.filteredVersions = filterVersions(allDocumentVersions);
         initTimeLineHeaderComponent();
+        
+        intermediateVersionCheckBox.setValue(true);
     }
 
     private void initTimeLineHeaderComponent() {
@@ -127,34 +145,45 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
 
     private T getMinVersion(List<T> versions, T maxVersion) {
         final T minVersion;
-        T lastMajorVersion = getLastMajorVersion(versions);
+        T lastMajorOrIntermediateVersion = getLastMajorOrIntermediateVersion(versions);
         T lastMinorVersionCreatedBySameUser = getLastMinorVersionCreatedBySameUser(versions);
 
-        if(lastMajorVersion == null || maxVersion.isMajorVersion()) {
+        if(lastMajorOrIntermediateVersion == null || maxVersion.getVersionType().equals(VersionType.MAJOR) || maxVersion.getVersionType().equals(VersionType.INTERMEDIATE)) {
             // If no major version present, or the actual version is already a major version, take the previous one.
             minVersion = getPreviousVersion(versions);
         } else {
             if (lastMinorVersionCreatedBySameUser == null) {
                 // compare with last major
-                if(lastMajorVersion == null || maxVersion.isMajorVersion()) {
+                if(lastMajorOrIntermediateVersion == null || maxVersion.getVersionType().equals(VersionType.MAJOR) || maxVersion.getVersionType().equals(VersionType.INTERMEDIATE)) {
                     // if the actual version is a major, compare with the previous one
                     minVersion = getPreviousVersion(versions);
                 } else {
-                    minVersion = lastMajorVersion;
+                    minVersion = lastMajorOrIntermediateVersion;
                 }
             } else {
                 // compare with last minor
-                Double lastMinorVersionDouble = Double.valueOf(lastMinorVersionCreatedBySameUser.getVersionLabel());
-                Double lastMajorVersionDouble = Double.valueOf(lastMajorVersion.getVersionLabel());
-                if (lastMinorVersionDouble > lastMajorVersionDouble) {
-                    minVersion = lastMinorVersionCreatedBySameUser;
-                } else {
-                    //if the last minor is previous to the last major, no need to compare with it, compare with the last major.
-                    minVersion = lastMajorVersion;
-                }
+                minVersion = compareVersions(lastMinorVersionCreatedBySameUser.getVersionLabel(), lastMajorOrIntermediateVersion.getVersionLabel()) > 0
+                        ? lastMinorVersionCreatedBySameUser : lastMajorOrIntermediateVersion;
             }
         }
         return minVersion;
+    }
+
+    private int compareVersions(String firstVersion, String secondVersion) {
+        String[] firstVersionArray = firstVersion.split("\\.");
+        String[] secondVersionArray = secondVersion.split("\\.");
+
+        for (int i = 0; i < firstVersionArray.length; i++) {
+            int firstVersionInt = Integer.parseInt(firstVersionArray[i]);
+            int secondVersionInt = Integer.parseInt(secondVersionArray[i]);
+            if (firstVersionInt < secondVersionInt) {
+                return -1;
+            } else if (firstVersionInt > secondVersionInt) {
+                return 1;
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -164,23 +193,23 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
     private T getLastMinorVersionCreatedBySameUser(List<T> versions) {
         T lastMinor = null;
         for (T version : versions) {
-            if (version.getLastModifiedBy().contains(securityContext.getUser().getLogin()) && !version.isMajorVersion()) {
+            if (version.getLastModifiedBy().contains(securityContext.getUser().getLogin()) && version.getVersionType().equals(VersionType.MINOR)) {
                 lastMinor = version;
                 break;
             }
         }
         return lastMinor;
     }
-
-    private T getLastMajorVersion(List<T> versions) {
-        T lastMajorVersion = null;
+    
+    private T getLastMajorOrIntermediateVersion(List<T> versions) {
+        T lastMajorOrIntermediateVersion = null;
         for (T version : versions) {
-            if (version.isMajorVersion()) {
-                lastMajorVersion = version;
+            if (version.getVersionType().equals(VersionType.MAJOR) || version.getVersionType().equals(VersionType.INTERMEDIATE)) {
+                lastMajorOrIntermediateVersion = version;
                 break;
             }
         }
-        return lastMajorVersion;
+        return lastMajorOrIntermediateVersion;
     }
 
     /**
@@ -225,7 +254,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
     }
 
     private Component buildDiffModeSelectionArea() {
-        diffMode = TWO_COLUMN_MODE;//default selection mode
+        diffMode = ComparisonDisplayMode.TWO_COLUMN_MODE;//default selection mode
 
         HorizontalLayout diffModeSelectionArea = new HorizontalLayout();
         diffModeSelectionArea.setMargin(new MarginInfo(false, true, false, true));
@@ -236,7 +265,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
         diffModeSelectionArea.setExpandRatio(captionLabel, 0.8f);
         diffModeSelectionArea.setComponentAlignment(captionLabel, Alignment.MIDDLE_LEFT);
 
-        final CheckBox intermediateVersionCheckBox = buildIntermediateVersionCheckBox();
+        intermediateVersionCheckBox = buildIntermediateVersionCheckBox();
         intermediateVersionCheckBox.addStyleName("leos-intermediate-version-compare");
         diffModeSelectionArea.addComponent(intermediateVersionCheckBox);
         diffModeSelectionArea.setComponentAlignment(intermediateVersionCheckBox, Alignment.MIDDLE_RIGHT);
@@ -252,7 +281,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
         diffModeSelectionArea.setExpandRatio(twoColumnLbl, 0.2f);
         diffModeSelectionArea.setComponentAlignment(twoColumnLbl, Alignment.MIDDLE_LEFT);
 
-        if (diffMode == SINGLE_COLUMN_MODE) {
+        if (diffMode == ComparisonDisplayMode.SINGLE_COLUMN_MODE) {
             onoffSwitch.setValue(false);
         } else {
             onoffSwitch.setValue(true);
@@ -260,11 +289,11 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
 
         onoffSwitch.addValueChangeListener(event -> {
              if (event.getValue()) { //Two Column
-                 diffMode = TWO_COLUMN_MODE;
-                 eventBus.post(new ComparisonRequestEvent<>(minSelection.getVersion(), maxSelection.getVersion(), diffMode));
+                 diffMode = ComparisonDisplayMode.TWO_COLUMN_MODE;
+                 eventBus.post(new CompareTimeLineRequestEvent(minSelection.getVersion().getId(), maxSelection.getVersion().getId(), diffMode));
              } else { //Single column
-                 diffMode = SINGLE_COLUMN_MODE;
-                 eventBus.post(new ComparisonRequestEvent<>(minSelection.getVersion(), maxSelection.getVersion(), diffMode));
+                 diffMode = ComparisonDisplayMode.SINGLE_COLUMN_MODE;
+                 eventBus.post(new CompareTimeLineRequestEvent(minSelection.getVersion().getId(), maxSelection.getVersion().getId(), diffMode));
              }
         });
 
@@ -419,15 +448,18 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
         }
 
         Label actionLabel = (Label)gridLayout.getComponent(1, 0);
-        String action = componentCompareItem.getVersionComment() != null
+        final String checkinCommentJson = componentCompareItem.getVersionComment() != null
                 ? messageHelper.getMessage((String) componentCompareItem.getVersionComment()) : messageHelper.getMessage("popup.label.revision.nocomment");
-        actionLabel.setValue(messageHelper.getMessage("document.versions.caption.action",StringEscapeUtils.escapeHtml4(action)));
+        final CheckinCommentVO checkinComment = CheckinCommentUtil.getJavaObjectFromJson(checkinCommentJson);
+        final String labelComment = VersionsUtil.buildLabel(checkinComment, messageHelper);
+        final String label = messageHelper.getMessage("document.versions.caption.action", StringEscapeUtils.escapeHtml4(labelComment));
+        actionLabel.setValue(label);
 
         Label userLabel = (Label)gridLayout.getComponent(1, 1);
         userLabel.setValue(messageHelper.getMessage("document.versions.caption.user",
-                new UserLoginDisplayConverter(userHelper).convertToPresentation(componentCompareItem.getLastModifiedBy(), null, null)));
+                userHelper.convertToPresentation(componentCompareItem.getLastModifiedBy())));
     }
-
+    
     private boolean hasRestoreVersionPermission() {
         if (allDocumentVersions != null && allDocumentVersions.size() > 0) {
             return securityContext.hasPermission(allDocumentVersions.get(0), LeosPermission.CAN_RESTORE_PREVIOUS_VERSION);
@@ -438,8 +470,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
 
 
     private String getVersionType(T document) {
-        return document.isMajorVersion() ? messageHelper.getMessage("document.versions.caption.versionMajor")
-                : messageHelper.getMessage("document.versions.caption.versionMinor");
+        return messageHelper.getMessage("document.versions.caption.version." + document.getVersionType().value());
     }
 
     private List<T> filterVersions(List<T> documentVersions) {
@@ -450,7 +481,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
             /*INFO: All versions of the version series, sorted by {@code cmis:creationDate}
               descending and preceded by the PWC, if one exists, not {@code null}*/
             for(T version : documentVersions) {
-                if (version.isMajorVersion()) {
+                if (version.getVersionType().equals(VersionType.MAJOR) || version.getVersionType().equals(VersionType.INTERMEDIATE)) {
                     versionAfterLastMajorVersion = false;
                     filteredVersions.add(version);
                 }
@@ -476,7 +507,7 @@ public class TimeLineHeaderComponent<T extends XmlDocument> extends VerticalLayo
 
     private void selectionChanged() {
         rangeSliderComponent.setHandles(new String[]{minSelection.getVersion().getVersionLabel(), maxSelection.getVersion().getVersionLabel()});
-        eventBus.post(new ComparisonRequestEvent<>(minSelection.getVersion(), maxSelection.getVersion(), diffMode));
+        eventBus.post(new CompareTimeLineRequestEvent(minSelection.getVersion().getId(), maxSelection.getVersion().getId(), diffMode));
     }
 
     private class TimeLineSliderContent implements Observer {

@@ -78,10 +78,10 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
     private UUIDGeneratorService uuidService;
 
     @Value("${token.access.lifetime}")
-    private int LIFETIME_ACCESS_TOKEN;
+    private int lifetimeAccessToken;
 
     @Value("${token.refresh.lifetime}")
-    private int LIFETIME_REFRESH_TOKEN;
+    private int lifetimeRefreshToken;
 
     @Autowired
     private AuthenticatedUserStore authUserStore;
@@ -121,15 +121,13 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
                 .get();
 
         // any more claims we need to verify?
-        final String token = JWT.create()
+        return JWT.create()
                 .withIssuer(registeredClient.getClient().getClientId())
                 .withSubject(String.format("acct:%s@%s", userId, registeredClient.getClient().getAuthorities()))
                 .withIssuedAt(now)
                 .withNotBefore(now)
                 .withExpiresAt(expiresAt)
                 .sign(registeredClient.getAlgorithm());
-
-        return token;
     }
 
     /**
@@ -360,8 +358,8 @@ public class AuthenticationServiceImpl implements AuthenticationServiceWithTestF
         }
 
         final Token newToken = new Token();
-        newToken.setAccessToken(accessToken, LIFETIME_ACCESS_TOKEN);
-        newToken.setRefreshToken(refreshToken, LIFETIME_REFRESH_TOKEN);
+        newToken.setAccessToken(accessToken, lifetimeAccessToken);
+        newToken.setRefreshToken(refreshToken, lifetimeRefreshToken);
         newToken.setUser(user);
         newToken.setAuthority(authority);
 

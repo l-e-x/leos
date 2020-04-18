@@ -17,7 +17,7 @@
                     <FRBRuri value=""/>
                     <FRBRdate date="9999-01-01" name=""/>
                     <FRBRauthor href=""/>
-                    <FRBRlanguage language="eng"/>
+                    <FRBRlanguage language="en"/>
                 </FRBRExpression>
                 <FRBRManifestation>
                     <FRBRthis value=""/>
@@ -84,11 +84,24 @@
             </longTitle>
         </preface>
         <mainBody xml:id="body">
-            <division xml:id="body_division_1" leos:editable="true" leos:deletable="true">
-                <content xml:id="body_division_1_content">
-                    <p xml:id="body_division_1_content_p">TEXT...</p>
+            <level xml:id="body_level_1">
+                <num xml:id="body_level_1_num">1.</num>
+                <content xml:id="body_level_1_content">
+                    <p xml:id="body_level_1_content_p">Text...</p>
                 </content>
-            </division>
+            </level>
+            <level xml:id="body_level_1_1">
+                <num xml:id="body_level_1_1_num">1.1.</num>
+                <content xml:id="body_level_1_1_content">
+                    <p xml:id="body_level_1_1_content_p">Text...</p>
+                </content>
+            </level>
+            <level xml:id="body_level_2">
+                <num xml:id="body_level_2_num">2.</num>
+                <content xml:id="body_level_2_content">
+                    <p xml:id="body_level_2_content_p">Text...</p>
+                </content>
+            </level>
         </mainBody>
     </doc>
 </akomaNtoso>

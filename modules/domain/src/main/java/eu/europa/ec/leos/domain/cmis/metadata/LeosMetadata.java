@@ -28,9 +28,10 @@ public abstract class LeosMetadata {
     protected final String docTemplate;
     protected final String ref;
     protected final String objectId;
+    protected final String docVersion;
 
     protected LeosMetadata(LeosCategory category, String stage, String type, String purpose, String template,
-                           String language, String docTemplate, String ref, String objectId) {
+                           String language, String docTemplate, String ref, String objectId, String docVersion) {
         this.category = category;
         this.stage = stage;
         this.type = type;
@@ -40,6 +41,7 @@ public abstract class LeosMetadata {
         this.docTemplate = docTemplate;
         this.ref = ref;
         this.objectId = objectId;
+        this.docVersion = docVersion;
     }
 
     public String getStage() {
@@ -78,6 +80,10 @@ public abstract class LeosMetadata {
         return this.category;
     }
 
+    public String getDocVersion() {
+        return docVersion;
+    }
+    
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -91,12 +97,13 @@ public abstract class LeosMetadata {
                 Objects.equals(language, that.language) &&
                 Objects.equals(docTemplate, that.docTemplate) &&
                 Objects.equals(ref, that.ref) &&
-                Objects.equals(objectId, that.objectId);
+                Objects.equals(objectId, that.objectId) &&
+                Objects.equals(docVersion, that.docVersion);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(category, stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return Objects.hash(category, stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     @Override
@@ -111,7 +118,7 @@ public abstract class LeosMetadata {
                 ", docTemplate='" + docTemplate + '\'' +
                 ", ref='" + ref + '\'' +
                 ", objectId='" + objectId + '\'' +
+                ", docVersion='" + docVersion + '\'' +
                 '}';
     }
-
 }

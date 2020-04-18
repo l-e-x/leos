@@ -28,7 +28,15 @@ define(function leosHierarchicalElementSubparagraphAfterLastPointModule(require)
 
     var DATA_AKN_NUM = "data-akn-num";
     var DATA_AKN_NAME = "data-akn-name";
-
+    
+    var LEVEL_ELEMENT_TYPE = "level";
+    var AKN_LEVEL = "aknLevel";
+    var AKN_LEVEL_ORDERED_LIST = "aknLevelOrderedList";
+    
+    var ARTICLE_ELEMENT_TYPE = "article";
+    var AKN_NUMBERED_PARAGRAPH = "aknNumberedParagraph";
+    var AKN_ORDERED_LIST = "aknOrderedList";
+    
     var CMD_NAME = "leosHierarchicalElementSubparagraphAfterLastPoint";
 
     var pluginDefinition = {
@@ -93,12 +101,20 @@ define(function leosHierarchicalElementSubparagraphAfterLastPointModule(require)
         var emptyElement = new CKEDITOR.dom.element('p');
         emptyElement.appendBogus();
         
-        // go up until reach the subparagraph level, and insert the empty element as last child of the paragraph
-        while (startElement.getParent()
-            && startElement.getParent().getAttribute(DATA_AKN_NAME) != "aknNumberedParagraph") {
-            
-            startElement = startElement.getParent();
-            emptyElement.insertAfter(startElement);
+        switch (editor.LEOS.elementType) {
+            case LEVEL_ELEMENT_TYPE:
+                // go up until reach the subparagraph level, and insert the empty element as last child of the level
+                while (startElement.getParent() && startElement.getParent().getAttribute(DATA_AKN_NAME) != AKN_LEVEL) {
+                    emptyElement.insertAfter(startElement);
+                    startElement = startElement.getParent();
+                }
+                break;
+            default:
+                // go up until reach the subparagraph level, and insert the empty element as last child of the paragraph
+                while (startElement.getParent() && startElement.getParent().getAttribute(DATA_AKN_NAME) != AKN_NUMBERED_PARAGRAPH) {
+                    startElement = startElement.getParent();
+                    emptyElement.insertAfter(startElement);
+                }
         }
         
         // make selection at the beginning of the new subparagraph
@@ -132,24 +148,32 @@ define(function leosHierarchicalElementSubparagraphAfterLastPointModule(require)
         if (!selection) {
             return false;
         }
+        
         var currentElement = leosKeyHandler.getSelectedElement(selection);
-        currentElement = currentElement.getAscendant("li", true);
-        
-        if(!currentElement){
-            return false;
-        }
-    
-        if (!_isNumberedParagraph(currentElement)) {
+        currentElement = currentElement.getAscendant("li", true);        
+        if (!currentElement) {
             return false;
         }
         
-        if(!isElementInsideList(currentElement)
-            || !isLastElementInsideList(currentElement)){
-            return false;
+        switch (editor.LEOS.elementType) {
+            case LEVEL_ELEMENT_TYPE:
+                if (!isElementInsideList(currentElement, LEVEL_ELEMENT_TYPE, AKN_LEVEL_ORDERED_LIST)
+                        || !isLastElementInsideList(currentElement, LEVEL_ELEMENT_TYPE)) {
+                    return false;
+                }
+                break;
+            default:
+                if (!_isNumberedParagraph(currentElement)) {
+                    return false;
+                }
+                if (!isElementInsideList(currentElement, ARTICLE_ELEMENT_TYPE, AKN_ORDERED_LIST)
+                        || !isLastElementInsideList(currentElement, ARTICLE_ELEMENT_TYPE)) {
+                    return false;
+                }
         }
         
         // false if we current element is not a leaf, so contains a nested list
-        if($(currentElement.$).find("ol").length != 0){
+        if ($(currentElement.$).find("ol").length != 0) {
             return false;
         }
         
@@ -174,31 +198,30 @@ define(function leosHierarchicalElementSubparagraphAfterLastPointModule(require)
     /**
      * Check if the element is inside an ordered list (ol)
      */
-    function isElementInsideList(el) {
+    function isElementInsideList(el, elementType, orderedListName) {
         do {
-            if (el.getAscendant("ol") && el.getAscendant("ol").getAttribute(DATA_AKN_NAME) === "aknOrderedList") {
+            if (el.getAscendant("ol") && el.getAscendant("ol").getAttribute(DATA_AKN_NAME) === orderedListName) {
                 return true;
             }
             el = el.getParent();
-        } while (el.getAscendant("article", true) != null);
+        } while (el.getAscendant(elementType, true) != null);
         return false;
     }
     
     /**
      * Check if the element passed as parameter is the last child between its siblings, and his ancestors too.
      */
-    function isLastElementInsideList(el) {
+    function isLastElementInsideList(el, elementType) {
         do {
             if (el.$ != el.getParent().getChild(el.getParent().getChildCount() - 1).$) {
                 return false;
             }
-        
             el = el.getAscendant("li")
-        } while (el.getAttribute(DATA_AKN_NAME) != "aknNumberedParagraph");
-    
+        } while (el && ((elementType === ARTICLE_ELEMENT_TYPE && el.getAttribute(DATA_AKN_NAME) != AKN_NUMBERED_PARAGRAPH)
+                || (elementType === LEVEL_ELEMENT_TYPE && el.getAscendant('ol') && el.getAscendant("ol").getAttribute(DATA_AKN_NAME) != AKN_LEVEL)));
+        
         return true;
     }
-    
 
     pluginTools.addPlugin(pluginName, pluginDefinition);
 

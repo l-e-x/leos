@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.CollectionUtils;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -51,7 +52,7 @@ import java.util.function.Consumer;
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
-@SuppressWarnings("PMD.TooManyMethods")
+@SuppressWarnings({"PMD.TooManyMethods", "PMD.GodClass"}) // test classes for complex relations
 public class AnnotationMetadataMatchingTest {
 
     /**
@@ -229,6 +230,16 @@ public class AnnotationMetadataMatchingTest {
         return meta;
     }
 
+    // set the response status to SENT of a given list of annotations
+    private void setMetadataSent(final List<Annotation> annotsToSent) {
+
+        for (final Annotation annotToSent : annotsToSent) {
+            final Metadata meta = annotToSent.getMetadata();
+            meta.setResponseStatus(Metadata.ResponseStatus.SENT);
+            metadataRepos.save(meta);
+        }
+    }
+
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -241,10 +252,26 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         // no metadata sent -> all annotations should match
         final AnnotationSearchResult result = annotService.searchAnnotations(options, userInfo);
         checkResult(result, Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7));
+    }
+
+    /**
+     * test with ISC: search for group only without specifying further metadata
+     * -> should return all annotations of the group
+     */
+    @Test
+    public void testIscUserIsc_SearchForGroupOnly_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann3, ann5)); // some are SENT only -> could be found
+
+        // no metadata sent -> all annotations should match
+        final AnnotationSearchResult result = annotService.searchAnnotations(options, userInfo);
+        checkResult(result, Arrays.asList(ann3, ann5, ann7));
     }
 
     /**
@@ -254,6 +281,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_DeletedStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7, annGroup2)); // all are SENT, could be found
 
         // no metadata sent -> all annotations should match; status DELETED -> only one matches (2)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(Arrays.asList(AnnotationStatus.DELETED), Arrays.asList(ann2));
@@ -266,6 +294,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_AcceptedStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
 
         // no metadata sent -> all annotations should match; status ACCEPTED -> only two match (4, 5)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(Arrays.asList(AnnotationStatus.ACCEPTED), Arrays.asList(ann4, ann5));
@@ -278,6 +307,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_RejectedStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7));
 
         // no metadata sent -> all annotations should match; status REJECTED -> only one matches (3)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(Arrays.asList(AnnotationStatus.REJECTED), Arrays.asList(ann3));
@@ -288,8 +318,9 @@ public class AnnotationMetadataMatchingTest {
      */
     @Test
     public void testIscUserIsc_SearchForGroupOnly_NormalDeletedStatus() throws Exception {
-        
+
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
 
         // no metadata sent -> all annotations should match; status NORMAL, DELETED -> several matches (1, 2, 6, 7)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
@@ -303,10 +334,26 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_NormalAcceptedStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all SENT -> could be found
 
         // no metadata sent -> all annotations should match; status NORMAL, ACCEPTED -> several matches (1, 4, 5, 6, 7)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
                 Arrays.asList(AnnotationStatus.NORMAL, AnnotationStatus.ACCEPTED), Arrays.asList(ann1, ann4, ann5, ann6, ann7));
+    }
+
+    /**
+     * test that asking for NORMAL and ACCEPTED annotations only returns them; no further metadata specified
+     */
+    @Test
+    public void testIscUserIsc_SearchForGroupOnly_NormalAcceptedStatus_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann4, ann7)); // some SENT -> could be found
+
+        // no metadata sent -> all annotations should match; status NORMAL, ACCEPTED -> several matches (1, 4, 5, 6, 7)
+        // but only 1, 4 and 7 are SENT -> result: 1, 4, 7
+        runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
+                Arrays.asList(AnnotationStatus.NORMAL, AnnotationStatus.ACCEPTED), Arrays.asList(ann1, ann4, ann7));
     }
 
     /**
@@ -316,6 +363,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_DeletedAcceptedRejectedStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7, annGroup2)); // all are SENT, could be found
 
         // no metadata sent -> all annotations should match; status DELETED, ACCEPTED, REJECTED -> several matches (2, 3, 4, 5)
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
@@ -330,11 +378,28 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_AllStatus() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
 
         // no metadata sent -> all annotations should match; ALL status -> all match
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
                 Arrays.asList(AnnotationStatus.ALL),
                 Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7));
+    }
+
+    /**
+     * test that asking for ALL annotations returns them; no further metadata specified
+     * however only those being SENT are returned
+     */
+    @Test
+    public void testIscUserIsc_SearchForGroupOnly_AllStatus_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann2, ann4, ann5)); // only some are SENT, could be found
+
+        // no metadata sent -> all annotations should match; ALL status -> all match; 2+4+5+7 SENT -> only those match
+        runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
+                Arrays.asList(AnnotationStatus.ALL),
+                Arrays.asList(ann2, ann4, ann5, ann7));
     }
 
     /**
@@ -344,7 +409,8 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForGroupOnly_DeletedAllStatus() throws Exception {
 
         createTestData(Authorities.ISC);
-        
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
+
         // no metadata sent -> all annotations should match; status DELETED + ALL = ALL -> all match
         runTestIscUserIsc_SearchForGroupOnly_StatusCombinations(
                 Arrays.asList(AnnotationStatus.DELETED, AnnotationStatus.ALL),
@@ -395,6 +461,8 @@ public class AnnotationMetadataMatchingTest {
         final Annotation ann4Reply = createReply(Arrays.asList(ann4.getId()), ann4.getDocument().getUri(), ann4.getGroup().getName());
         ann4.setStatus(AnnotationStatus.DELETED);
         annotRepos.save(ann4);
+
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
         
         // act
         // no metadata sent -> all annotations should match; status NORMAL -> two matches, and one of its replies
@@ -419,7 +487,7 @@ public class AnnotationMetadataMatchingTest {
         checkResult(result, Arrays.asList(ann1, ann2, ann3, ann4));
         replies = annotService.searchRepliesForAnnotations(result, options, userInfo);
         Assert.assertEquals(4, replies.size());
-        Assert.assertThat(Arrays.asList(ann1Reply.getId(), ann2Reply.getId(), ann3Reply.getId(), ann4Reply.getId()), 
+        Assert.assertThat(Arrays.asList(ann1Reply.getId(), ann2Reply.getId(), ann3Reply.getId(), ann4Reply.getId()),
                 Matchers.containsInAnyOrder(replies.stream().map(Annotation::getId).toArray()));
     }
 
@@ -473,9 +541,25 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1Only() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1Only();
         checkResult(result, Arrays.asList(ann2, ann3, ann6, ann7));
+    }
+
+    /**
+     * test with ISC: search with specifying ISC reference 1 only
+     * -> should return four annotations (2, 7)
+     * similar as testIscUserIsc_SearchForIscRef1Only, but fewer annotations are SENT
+     */
+    @Test
+    public void testIscUserIsc_SearchForIscRef1Only_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann2, ann7)); // not all are SENT -> could be found
+
+        final AnnotationSearchResult result = runSearchForIscRef1Only();
+        checkResult(result, Arrays.asList(ann2, ann7));
     }
 
     /**
@@ -534,6 +618,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef2Only() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef2Only();
         checkResult(result, Arrays.asList(ann4, ann5));
@@ -595,6 +680,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForRespVers1Only() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForRespVers1Only();
         checkResult(result, Arrays.asList(ann2, ann4));
@@ -656,6 +742,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForRespVers2Only() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
 
         final AnnotationSearchResult result = runSearchForRespVers2Only();
         checkResult(result, Arrays.asList(ann3, ann5));
@@ -717,9 +804,25 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1RespVers1() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1RespVers1();
         checkResult(result, Arrays.asList(ann2));
+    }
+
+    /**
+     * test with ISC: search with specifying ISC reference 1 and response version 1 only
+     * however, the only matching annotation (2) is not SENT
+     * -> should not return any annotation
+     */
+    @Test
+    public void testIscUserIsc_SearchForIscRef1RespVers1_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann3)); // only some are SENT -> could be found
+
+        final AnnotationSearchResult result = runSearchForIscRef1RespVers1();
+        checkResult(result, new ArrayList<Annotation>());
     }
 
     /**
@@ -779,6 +882,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1RespVers2() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann3, ann5)); // only some are SENT, but at least the one we aim for
 
         final AnnotationSearchResult result = runSearchForIscRef1RespVers2();
         checkResult(result, Arrays.asList(ann3));
@@ -841,6 +945,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef2RespVers1() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef2RespVers1();
         checkResult(result, Arrays.asList(ann4));
@@ -903,6 +1008,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef2RespVers2() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef2RespVers2();
         checkResult(result, Arrays.asList(ann5));
@@ -965,9 +1071,24 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1Ref2() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1Ref2();
         checkResult(result, Arrays.asList(ann2, ann3, ann4, ann5, ann6, ann7));
+    }
+
+    /**
+     * test with ISC: search with specifying ISC references 1 and 2 in two metadata sets
+     * -> should return four annotations (2, 4, 6, 7)
+     */
+    @Test
+    public void testIscUserIsc_SearchForIscRef1Ref2_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann2, ann4, ann6)); // only some are SENT -> could be found
+
+        final AnnotationSearchResult result = runSearchForIscRef1Ref2();
+        checkResult(result, Arrays.asList(ann2, ann4, ann6, ann7));
     }
 
     /**
@@ -1029,6 +1150,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1Version1And2() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1Version1And2();
         checkResult(result, Arrays.asList(ann2, ann3));
@@ -1096,6 +1218,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef1Version1Ref2Version2() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1Version1Ref2Version2();
         checkResult(result, Arrays.asList(ann2, ann5));
@@ -1165,9 +1288,44 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForRespVers2AndSent() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann7)); // some are SENT
 
         final AnnotationSearchResult result = runSearchForRespVers2AndSent(Optional.empty());
-        checkResult(result, Arrays.asList(ann3, ann5, ann7)); // 3+5: version 2; 7: response status SENT
+        
+     // 3+5: version 2; 7: response status SENT anyway; 1,2,3,7: also SENT -> 5 is dropped (since not SENT)
+        checkResult(result, Arrays.asList(ann1, ann2, ann3, ann7)); 
+    }
+
+    /**
+     * test with ISC: search with specifying response version 2 and response status SENT in two metadata sets
+     * -> should return two annotations (5, 7)
+     */
+    @Test
+    public void testIscUserIsc_SearchForRespVers2AndSent_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann5, ann6, ann7)); // only some are SENT -> item 3 won't match
+
+        final AnnotationSearchResult result = runSearchForRespVers2AndSent(Optional.empty());
+        checkResult(result, Arrays.asList(ann5, ann6, ann7)); // 5: version 2; 6: SENT; 7: response status SENT anyway
+    }
+
+    /**
+     * test with ISC: search with specifying response version 2 and response status SENT in two metadata sets
+     * one annotation is DELETED (5)
+     * -> should return all annotations except 5
+     */
+    @Test
+    public void testIscUserIsc_SearchForRespVers2AndSent_OneDeleted() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT, could be found
+
+        ann5.setStatus(AnnotationStatus.DELETED);
+        annotRepos.save(ann5);
+
+        final AnnotationSearchResult result = runSearchForRespVers2AndSent(Optional.empty());
+        checkResult(result, Arrays.asList(ann1, ann2, ann3, ann4, ann6, ann7)); // 3: version 2; all: response status SENT; 5 was DELETED -> ignored
     }
 
     /**
@@ -1176,17 +1334,18 @@ public class AnnotationMetadataMatchingTest {
      * -> should return two annotations (3, 7)
      */
     @Test
-    public void testIscUserIsc_SearchForRespVers2AndSent_OneDeleted() throws Exception {
+    public void testIscUserIsc_SearchForRespVers2AndSent_OneDeleted_NotAllSent() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann3, ann4, ann5, ann7)); // some are SENT, could be found
 
         ann5.setStatus(AnnotationStatus.DELETED);
         annotRepos.save(ann5);
 
         final AnnotationSearchResult result = runSearchForRespVers2AndSent(Optional.empty());
-        checkResult(result, Arrays.asList(ann3, ann7)); // 3: version 2; 7: response status SENT; 5 was DELETED -> ignored
+        checkResult(result, Arrays.asList(ann3, ann4, ann7)); // 3: version 2; 4,7: response status SENT
     }
-
+    
     /**
      * test with ISC: search with specifying response version 2 and response status SENT in two metadata sets
      * one annotation is DELETED (5); we ask for DELETED ones
@@ -1196,6 +1355,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForRespVers2AndSent_OneDeleted_SearchDeleted() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all SENT -> could be found
 
         ann5.setStatus(AnnotationStatus.DELETED);
         annotRepos.save(ann5);
@@ -1262,9 +1422,9 @@ public class AnnotationMetadataMatchingTest {
         final SimpleMetadata firstMetaToMatch = new SimpleMetadata(RESPVERS, "2");
         final SimpleMetadata secondMetaToMatch = new SimpleMetadata(RESPSTATUS, "SENT");
 
-        List<AnnotationStatus> statuses = null; 
-        if(statusesToSet.isPresent()) statuses = statusesToSet.get();
-        
+        List<AnnotationStatus> statuses = null;
+        if (statusesToSet.isPresent()) statuses = statusesToSet.get();
+
         options.setMetadataMapsWithStatusesList(Arrays.asList(
                 new SimpleMetadataWithStatuses(firstMetaToMatch, statuses),
                 new SimpleMetadataWithStatuses(secondMetaToMatch, statuses)));
@@ -1281,6 +1441,7 @@ public class AnnotationMetadataMatchingTest {
     public void testIscUserIsc_SearchForIscRef2Vers1AndVers3AndUnknownRef() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4)); // some are SENT, but all candidates
 
         final AnnotationSearchResult result = runSearchForIscRef2Vers1AndVers3AndUnknownRef();
         checkResult(result, Arrays.asList(ann4)); // matches ISC reference 1 version 2
@@ -1529,15 +1690,30 @@ public class AnnotationMetadataMatchingTest {
 
     /**
      * test with ISC: search with specifying ISC reference 2 and response status SENT
-     * -> should not return any annotation
+     * -> should return annotations 4 and 5
      */
     @Test
     public void testIscUserIsc_SearchForIscRef2ResponseStatusSent() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7)); // all are SENT -> could be found
 
         final AnnotationSearchResult result = runSearchForIscRef2ResponseStatusSent();
-        checkResult(result, new ArrayList<Annotation>());
+        checkResult(result, Arrays.asList(ann4, ann5), Arrays.asList(ISCREF2));
+    }
+
+    /**
+     * test with ISC: search with specifying ISC reference 2 and response status SENT
+     * -> should return annotation 4 only as annotation 5 is not SENT yet
+     */
+    @Test
+    public void testIscUserIsc_SearchForIscRef2ResponseStatusSent_NotAllSent() throws Exception {
+
+        createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann6, ann7)); // all except 5 are SENT -> could be found
+
+        final AnnotationSearchResult result = runSearchForIscRef2ResponseStatusSent();
+        checkResult(result, Arrays.asList(ann4), Arrays.asList(ISCREF2));
     }
 
     /**
@@ -1591,15 +1767,17 @@ public class AnnotationMetadataMatchingTest {
 
     /**
      * test with ISC: search with specifying ISC reference 1 and the second group
-     * -> should only return the one annotation of the second group 
+     * -> should only return all annotations of all groups having ISC reference 1, despite the group being specified
+     * ( group is no longer taken into account with ANOT-96) 
      */
     @Test
     public void testIscUserIsc_SearchForIscRef1InSecondGroup() throws Exception {
 
         createTestData(Authorities.ISC);
+        setMetadataSent(Arrays.asList(ann1, ann2, ann3, ann4, ann5, ann6, ann7, annGroup2)); // all are SENT, could be found
 
         final AnnotationSearchResult result = runSearchForIscRef1InSecondGroup();
-        checkResult(result, Arrays.asList(annGroup2));
+        checkResult(result, Arrays.asList(ann2, ann3, ann6, ann7, annGroup2));
     }
 
     /**
@@ -1651,8 +1829,13 @@ public class AnnotationMetadataMatchingTest {
         return annotService.searchAnnotations(options, userInfo);
     }
 
-    // check the number of results and check that the expected annotations are received
     private void checkResult(final AnnotationSearchResult result, final List<Annotation> expectedAnnots) {
+        checkResult(result, expectedAnnots, null);
+    }
+
+    // check the number of results and check that the expected annotations are received
+    private void checkResult(final AnnotationSearchResult result, final List<Annotation> expectedAnnots,
+            final List<String> metadataValuesToMatch) {
 
         Assert.assertEquals("Different number of annotations received!",
                 expectedAnnots.size(), result.getTotalItems());
@@ -1661,6 +1844,10 @@ public class AnnotationMetadataMatchingTest {
             // we compare the received and expected ID
             Assert.assertTrue("Annotation with id '" + ann.getId() + " not received!",
                     result.getItems().stream().anyMatch(annot -> annot.getId().equals(ann.getId())));
+
+            if (!CollectionUtils.isEmpty(metadataValuesToMatch)) {
+                metadataValuesToMatch.forEach(metaToMatch -> Assert.assertTrue(ann.getMetadata().getKeyValuePairs().contains(metaToMatch)));
+            }
         }
     }
 

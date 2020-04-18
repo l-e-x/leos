@@ -41,12 +41,11 @@ class ProposalTextComparator implements TextComparator {
     private static final List<String> TAGS_NOT_TO_SPLIT_LIST = new ArrayList<>(Arrays.asList(TAGS_NOT_TO_SPLIT.split(",")));
 
     @Override
-    public String compareTextNodeContents(String firstContent, String secondContent, String intermediateContent, String attrName, String removedValue,
-            String addedValue, Boolean threeWayDiffEnabled) {
-        return compareTextNodeContentsTwoWayDiff(firstContent, secondContent, attrName, removedValue, addedValue);
+    public String compareTextNodeContents(String firstContent, String secondContent, String intermediateContent, ContentComparatorContext context) {
+        return compareTextNodeContentsTwoWayDiff(firstContent, secondContent, context);
     }
     
-    private String compareTextNodeContentsTwoWayDiff(String firstContent, String secondContent, String attrName, String removedValue, String addedValue) {
+    private String compareTextNodeContentsTwoWayDiff(String firstContent, String secondContent, ContentComparatorContext context) {
         List<String> originalList = contentToLines(firstContent);
         List<String> revisedList = contentToLines(secondContent);
         StringBuilder diffBuilder = new StringBuilder();
@@ -71,7 +70,7 @@ class ProposalTextComparator implements TextComparator {
                 endPos = orig.last() + 1;
                 for (String line : (List<String>) rev.getLines()) {
                     // handle insert line
-                    writeChangedLine(diffBuilder, line, attrName, addedValue);
+                    writeChangedLine(diffBuilder, line, context.getAttrName(), context.getAddedValue());
                 }
                 continue;
             }
@@ -81,13 +80,13 @@ class ProposalTextComparator implements TextComparator {
                 endPos = orig.last() + 1;
                 for (String line : (List<String>) orig.getLines()) {
                     // handle delete lines
-                    writeChangedLine(diffBuilder, line, attrName, removedValue);
+                    writeChangedLine(diffBuilder, line, context.getAttrName(), context.getRemovedValue());
                 }
                 continue;
             }
     
             // catch now changed line
-            catchChangedLine(orig, rev, diffBuilder, diffBuilder, attrName, removedValue, addedValue);
+            catchChangedLine(orig, rev, diffBuilder, diffBuilder, context.getAttrName(), context.getRemovedValue(), context.getAddedValue());
             endPos = orig.last() + 1;
     
         }

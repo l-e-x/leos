@@ -78,66 +78,83 @@ public class JsonUserProfile {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public String getAuthority() {
         return authority;
     }
 
+    @Generated
     public void setAuthority(final String authority) {
         this.authority = authority;
     }
 
+    @Generated
     public String getUserid() {
         return userid;
     }
 
+    @Generated
     public void setUserid(final String userid) {
         this.userid = userid;
     }
 
+    @Generated
     public String getStatus() {
         return status;
     }
 
+    @Generated
     public void setStatus(final String status) {
         this.status = status;
     }
 
+    @Generated
     public JsonUserShowSideBarPreference getPreferences() {
         return preferences;
     }
 
+    @Generated
     public void setPreferences(final JsonUserShowSideBarPreference preferences) {
         this.preferences = preferences;
     }
 
+    @Generated
     public List<JsonGroup> getGroups() {
         return groups;
     }
 
+    @Generated
     public void setGroups(final List<JsonGroup> groups) {
         this.groups = groups;
     }
 
+    @Generated
     public JsonClientFeatures getFeatures() {
         return features;
     }
 
+    @Generated
     public void setFeatures(final JsonClientFeatures features) {
         this.features = features;
     }
 
+    @Generated
     public JsonFlash getFlash() {
         return flash;
     }
 
+    @Generated
     public void setFlash(final JsonFlash flash) {
         this.flash = flash;
     }
 
+    @Generated
     public JsonUserInfo getUser_info() {
         return user_info;
     }
 
+    @Generated
     public void setUser_info(final JsonUserInfo user_info) {
         this.user_info = user_info;
     }

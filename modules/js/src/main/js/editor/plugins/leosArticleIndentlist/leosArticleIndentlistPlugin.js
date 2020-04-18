@@ -326,6 +326,9 @@ define(function leosArticleIndentListPluginModule(require) {
     }
 
     function isSingleElementDeeperThanThreshold(selected, maxLevel){
+        if(!selected){
+            return false;
+        }
         selected = selected.getAscendant(HTML_POINT, true);//get first li it founds in hierarchy considering even itself
         var actualLevel = leosPluginUtils.calculateListLevel(selected);
         var stopLevelDownside = maxLevel - actualLevel;

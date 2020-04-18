@@ -10,8 +10,10 @@
       
       - ACT: Shows the list of proposal belonging to the same act type.
        
-      - LANGUAGES: Shows the list of proposal created using the selected
-        languages. 
-            
+      - TEMPLATES: Shows the list of proposal having this template.
+	  
+      - ROLES: Shows the list of proposal for which the user has this/these role(s).
+
+   
 3.  A 'Reset' button is provided on top-right side of filter pane to reset the 
     changed filters to initial state.

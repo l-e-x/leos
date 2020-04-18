@@ -21,6 +21,7 @@ import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.security.Key;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +31,7 @@ public class CatalogUtil {
 
     public static final String TYPE_PROPERTY = "type";
     public static final String NAME_PROPERTY = "name";
+    public static final String KEY_PROPERTY = "key";
     public static final String DESC_PROPERTY = "desc";
     public static final String LANG_PROPERTY = "lang";
     public static final String ENABLED_PROPERTY = "enabled";
@@ -44,6 +46,7 @@ public class CatalogUtil {
         // create container properties
         container.addContainerProperty(TYPE_PROPERTY, CatalogItem.ItemType.class, null);
         container.addContainerProperty(NAME_PROPERTY, String.class, null);
+        container.addContainerProperty(KEY_PROPERTY, String.class, null);
         container.addContainerProperty(DESC_PROPERTY, String.class, null);
         container.addContainerProperty(LANG_PROPERTY, Map.class, null);
         container.addContainerProperty(ENABLED_PROPERTY, Boolean.class, Boolean.FALSE);
@@ -63,6 +66,7 @@ public class CatalogUtil {
                 item.getItemProperty(NAME_PROPERTY).setValue(ctgItem.getName(lang));
                 item.getItemProperty(DESC_PROPERTY).setValue(ctgItem.getDescription(lang));
                 item.getItemProperty(ENABLED_PROPERTY).setValue(ctgItem.isEnabled());
+                item.getItemProperty(KEY_PROPERTY).setValue(ctgItem.getKey());
 
                 if (parent != null) {
                     container.setParent(ctgItem.getId(), parent.getId());

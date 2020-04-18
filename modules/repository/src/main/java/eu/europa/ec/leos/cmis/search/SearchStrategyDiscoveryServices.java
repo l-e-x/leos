@@ -16,27 +16,33 @@ package eu.europa.ec.leos.cmis.search;
 import eu.europa.ec.leos.cmis.mapping.CmisProperties;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
-import org.apache.chemistry.opencmis.client.api.*;
+import eu.europa.ec.leos.model.filter.QueryFilter;
+import org.apache.chemistry.opencmis.client.api.CmisObject;
+import org.apache.chemistry.opencmis.client.api.Document;
+import org.apache.chemistry.opencmis.client.api.Folder;
+import org.apache.chemistry.opencmis.client.api.ItemIterable;
+import org.apache.chemistry.opencmis.client.api.OperationContext;
+import org.apache.chemistry.opencmis.client.api.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-class SearchStrategyDiscoveryServices implements SearchStrategy {
+class SearchStrategyDiscoveryServices extends SearchStrategyImpl {
 
     private static final Logger logger = LoggerFactory.getLogger(SearchStrategyDiscoveryServices.class);
-
-    private final Session cmisSession;
-
+    
     SearchStrategyDiscoveryServices(Session cmisSession) {
-        this.cmisSession = cmisSession;
+        super(cmisSession);
     }
 
     @Override
-    public List<Document> findDocuments(Folder folder, String primaryType, Set<LeosCategory> categories, boolean descendants, boolean allVersion, OperationContext context) {
+    public List<Document> findDocuments(Folder folder, String primaryType, Set<LeosCategory> categories, boolean descendants, boolean allVersion,
+            OperationContext context) {
         logger.trace("Finding documents...");
         String categoryStr = categories.stream()
                 .map(leosCategory -> "'" + leosCategory.name() + "'")
@@ -56,26 +62,6 @@ class SearchStrategyDiscoveryServices implements SearchStrategy {
                 .map(cmisObject -> (Document) cmisObject)
                 .collect(Collectors.toList());
     }
-
-
-    @Override
-    public List<Document> findDocumentsForUser(String userId, String primaryType, String leosAuthority, OperationContext context) {
-        logger.trace("Finding documents...");
-        String whereClause = CmisProperties.DOCUMENT_CATEGORY.getId() + " IN ('PROPOSAL') AND ANY " + CmisProperties.COLLABORATORS.getId() + " IN ('" + userId + "::" + leosAuthority + "')";
-        logger.trace("Ordering by ....." + context.getOrderBy());
-        ItemIterable<CmisObject> cmisObjects = cmisSession.queryObjects(primaryType, whereClause, false, context);
-        return StreamSupport.stream(cmisObjects.spliterator(), false)
-                .map(cmisObject -> (Document) cmisObject)
-                .collect(Collectors.toList());
-    }
-
-
-    @Override
-    public List<Document> findDocumentsByStatus(LeosLegStatus status, String primaryType, OperationContext context) {
-        String whereClause = CmisProperties.STATUS.getId() + " IN ('" + status + "')";
-        ItemIterable<CmisObject> cmisObjects = cmisSession.queryObjects(primaryType, whereClause, false, context);
-        return StreamSupport.stream(cmisObjects.spliterator(), false)
-                .map(cmisObject -> (Document) cmisObject)
-                .collect(Collectors.toList());
-    }
+    
+    
 }

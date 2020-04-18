@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var angular = require('angular');
@@ -23,11 +10,20 @@ function getExistingAnnotation(store, id) {
   });
 }
 
+//LEOS Change
+function LEOS_processAnnotations(annotations, _rootScope) {
+  annotations.forEach(function (annotation) {
+    annotation.group = annotation.group.replace(" ",_rootScope.ANNOTATION_GROUP_SPACE_REPLACE_TOKEN);
+  });
+}
+
 // Wraps the annotation store to trigger events for the CRUD actions
 // @ngInject
 function annotationMapper($rootScope, store, api) {
   function loadAnnotations(annotations, replies) {
     annotations = annotations.concat(replies || []);
+    //LEOS Change : remove white spaces from GROUP names
+    LEOS_processAnnotations(annotations, $rootScope);
 
     var loaded = [];
     annotations.forEach(function (annotation) {

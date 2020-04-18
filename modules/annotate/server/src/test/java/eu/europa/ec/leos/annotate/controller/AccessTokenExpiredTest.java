@@ -133,12 +133,12 @@ public class AccessTokenExpiredTest {
 
         final JsonUserPreferences prefs = new JsonUserPreferences();
         prefs.setPreferences(new JsonUserShowSideBarPreference(false));
-        final String serializedPreferenceUpdate = SerialisationHelper.serialize(prefs);
+        final String serializedPrefUpdate = SerialisationHelper.serialize(prefs);
 
         // send profile retrieval request
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.patch("/api/profile")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(serializedPreferenceUpdate)
+                .content(serializedPrefUpdate)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
 
         final ResultActions result = this.mockMvc.perform(builder);

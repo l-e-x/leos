@@ -13,7 +13,9 @@
  */
 package eu.europa.ec.digit.userdata;
 
+import eu.europa.ec.digit.userdata.entities.Entity;
 import eu.europa.ec.digit.userdata.entities.User;
+import eu.europa.ec.digit.userdata.repositories.EntityRepository;
 import eu.europa.ec.digit.userdata.repositories.UserRepository;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,6 +27,9 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.assertEquals;
@@ -36,8 +41,12 @@ import static org.junit.Assert.assertNotNull;
 public class ApplicationTests {
 
     private static Logger LOG = LoggerFactory.getLogger(ApplicationTests.class);
+
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private EntityRepository entityRepository;
 
     @Test
     @Transactional(readOnly = true)
@@ -51,16 +60,25 @@ public class ApplicationTests {
     public void test_findBylogin() {
         User user = userRepository.findByLogin("jane");
         assertNotNull(user);
-        assertEquals(user.getLogin(),"jane");
+        assertEquals(user.getLogin(), "jane");
         assertEquals(user.getRoles().get(0), "SUPPORT");
-        assertEquals(user.getPerId(), Long.valueOf(3)); //from data-h2.sql
+        assertEquals(user.getPerId(), Long.valueOf(3)); // from data-h2.sql
+        assertEquals(user.getEntities().get(0).getName(), "DGT.R.3");
     }
 
     @Test
     @Transactional(readOnly = true)
-    public void test_findAllDg() {
-        Stream<String> dgs = userRepository.findAllEntities();
-        assertNotNull(dgs);
-        assertEquals(dgs.count(), 2); //unique dgs from data-h2.sql
+    public void test_findAllOrganizations() {
+        Stream<String> organizations = entityRepository.findAllOrganizations();
+        assertEquals(organizations.count(), 3); // unique dgs from data-h2.sql
+    }
+
+    @Test
+    @Transactional(readOnly = true)
+    public void test_findAllFullPathEntities() {
+        Stream<Entity> entities = entityRepository
+                .findAllFullPathEntities(Arrays.asList("4", "8"));
+        List<Entity> test = entities.collect(Collectors.toList());
+        assertEquals(test.size(), 8);
     }
 }

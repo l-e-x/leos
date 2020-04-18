@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<structure xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xmlns="http://eu.europa.ec.digit.leos.pilot/schema/"
+           xsi:schemaLocation="http://eu.europa.ec.digit.leos.pilot/schema/ structure.xsd">
+
+    <name>structure_03.xml</name>
+    <description>Structure used for Memorandum</description>
+    <version>1</version>
+
+    <tocItems>
+        <tocItem>
+            <aknTag>preface</aknTag>
+            <root>true</root>
+            <draggable>false</draggable>
+            <childrenAllowed>false</childrenAllowed>
+            <display>true</display>
+            <itemNumber>none</itemNumber>
+            <itemHeading>none</itemHeading>
+            <itemDescription>true</itemDescription>
+            <numberEditable>false</numberEditable>
+            <contentDisplayed>false</contentDisplayed>
+            <deletable>false</deletable>
+            <numWithType>false</numWithType>
+            <expandedByDefault>true</expandedByDefault>
+            <sameParentAsChild>false</sameParentAsChild>
+            <numberingType>NONE</numberingType>
+            <editable>false</editable>
+        </tocItem>
+
+        <tocItem>
+            <aknTag>mainBody</aknTag>
+            <root>true</root>
+            <draggable>false</draggable>
+            <childrenAllowed>true</childrenAllowed>
+            <display>false</display>
+            <itemNumber>none</itemNumber>
+            <itemHeading>none</itemHeading>
+            <itemDescription>true</itemDescription>
+            <numberEditable>false</numberEditable>
+            <contentDisplayed>false</contentDisplayed>
+            <deletable>false</deletable>
+            <numWithType>false</numWithType>
+            <expandedByDefault>true</expandedByDefault>
+            <sameParentAsChild>false</sameParentAsChild>
+            <numberingType>NONE</numberingType>
+            <editable>false</editable>
+        </tocItem>
+
+        <tocItem>
+            <aknTag>tblock</aknTag>
+            <root>false</root>
+            <draggable>false</draggable>
+            <childrenAllowed>true</childrenAllowed>
+            <display>true</display>
+            <itemNumber>none</itemNumber>
+            <itemHeading>none</itemHeading>
+            <itemDescription>false</itemDescription>
+            <numberEditable>false</numberEditable>
+            <contentDisplayed>false</contentDisplayed>
+            <deletable>true</deletable>
+            <numWithType>false</numWithType>
+            <expandedByDefault>true</expandedByDefault>
+            <sameParentAsChild>false</sameParentAsChild>
+            <numberingType>NONE</numberingType>
+            <editable>false</editable>
+        </tocItem>
+
+        <tocItem>
+            <aknTag>blockContainer</aknTag>
+            <root>false</root>
+            <draggable>false</draggable>
+            <childrenAllowed>false</childrenAllowed>
+            <display>false</display>
+            <itemNumber>none</itemNumber>
+            <itemHeading>none</itemHeading>
+            <itemDescription>false</itemDescription>
+            <numberEditable>false</numberEditable>
+            <contentDisplayed>false</contentDisplayed>
+            <deletable>true</deletable>
+            <numWithType>false</numWithType>
+            <expandedByDefault>true</expandedByDefault>
+            <sameParentAsChild>false</sameParentAsChild>
+            <numberingType>NONE</numberingType>
+            <profile>inlineAknEMBlockContainer</profile>
+            <editable>true</editable>
+        </tocItem>
+    </tocItems>
+
+    <numberingConfigs/>
+
+    <tocRules>
+        <entry>
+            <tocItem>preface</tocItem>
+            <list/>
+        </entry>
+        <entry>
+            <tocItem>mainBody</tocItem>
+            <list>
+                <tocItem>tblock</tocItem>
+            </list>
+        </entry>
+        <entry>
+            <tocItem>tblock</tocItem>
+            <list>
+                <tocItem>tblock</tocItem>
+            </list>
+        </entry>
+    </tocRules>
+
+</structure>

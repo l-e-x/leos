@@ -22,18 +22,17 @@ import com.ximpleware.TranscodeException;
 import com.ximpleware.VTDGen;
 import com.ximpleware.VTDNav;
 import com.ximpleware.XMLModifier;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.model.action.SoftActionType;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.support.ByteArrayBuilder;
-import eu.europa.ec.leos.vo.toctype.LegalTextMandateTocItemType;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.vo.toc.TocItem;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -43,9 +42,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CLAUSE;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.HEADING;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LIST;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.META;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.NUM;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PARAGRAPH;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.XML_DOC_TYPE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.XML_NAME;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.XML_SHOW_AS;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.XML_TLC_REFERENCE;
 
 public class VTDUtils {
 
@@ -54,7 +61,6 @@ public class VTDUtils {
     public static final String XMLID = "xml:id";
     public static final Charset UTF_8 = Charset.forName("UTF-8");
     static final String WHITESPACE = " ";
-    static final String CONTENT = "content";
     static final byte[] HEADING_BYTES = HEADING.getBytes(UTF_8);
     static final byte[] HEADING_START_TAG = "<".concat(HEADING).concat(">").getBytes(UTF_8);
     static final byte[] NUM_BYTES = NUM.getBytes(UTF_8);
@@ -64,7 +70,9 @@ public class VTDUtils {
     public static final String LEOS_DELETABLE_ATTR = "leos:deletable";
     public static final String LEOS_EDITABLE_ATTR = "leos:editable";
     public static final String LEOS_AFFECTED_ATTR = "leos:affected";
-
+    public static final String LEOS_REF_BROKEN_ATTR = "leos:broken";
+    public static final String LEOS_DEPTH_ATTR = "leos:depth";
+    
     public static final String LEOS_SOFT_ACTION_ATTR = "leos:softaction";
     public static final String LEOS_SOFT_ACTION_ROOT_ATTR = "leos:softactionroot";
 
@@ -79,17 +87,15 @@ public class VTDUtils {
     public static final String TOGGLED_TO_NUM = "toggled_to_num";
 
     public static final String LEOS_SOFT_MOVED_LABEL_ATTR = "leos:softmove_label";
-    
-    public static final String DOUBLE_COMPARE_INTERMEDIATE_STYLE = "-intermediate";
-    public static final String DOUBLE_COMPARE_ORIGINAL_STYLE = "-original";
+
     public static final String EMPTY_STRING = "";
     public static final String NON_BREAKING_SPACE = "\u00A0";
 
-    static VTDNav setupVTDNav(byte[] xmlContent) throws NavException {
+    static VTDNav setupVTDNav(byte[] xmlContent) {
         return setupVTDNav(xmlContent, true);
     }
 
-    static VTDNav setupVTDNav(byte[] xmlContent, boolean namespaceEnabled) throws NavException {
+    static VTDNav setupVTDNav(byte[] xmlContent, boolean namespaceEnabled) {
         VTDNav vtdNav = null;
         try {
             VTDGen vtdGen = new VTDGen();
@@ -99,7 +105,7 @@ public class VTDUtils {
         } catch (ParseException parseException) {
             throw new RuntimeException("Exception occured while Vtd generator parsing", parseException);
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error occoured during setup of VTDNav", e);
+            throw new RuntimeException("Unexpected error occurred during setup of VTDNav", e);
         }
         return vtdNav;
     }
@@ -138,7 +144,7 @@ public class VTDUtils {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error occoured during setup of XML Modifier", e);
+            throw new RuntimeException("Unexpected error occurred during setup of XML Modifier", e);
         }
         return null; // Element not found
     }
@@ -351,57 +357,57 @@ public class VTDUtils {
     }
 
     
-    public static byte[] updateSoftInfo(byte[] tag, SoftActionType action, Boolean isSoftActionRoot, User user, String originAttrValue, String moveId, boolean isUndeleted, TocItemType type) {
+    public static byte[] updateSoftInfo(byte[] tag, SoftActionType action, Boolean isSoftActionRoot, User user, String originAttrValue, String moveId, boolean isUndeleted, TocItem tocItem) {
         if (originAttrValue == null) {
             return tag;
         }
         StringBuilder tagStr = new StringBuilder(new String(tag, UTF_8));
         if (SoftActionType.DELETE.equals(action) || SoftActionType.MOVE_TO.equals(action)) {
-            updateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
-            updateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
+            insertOrUpdateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
+            insertOrUpdateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
         }
     
         boolean updatedSoftAction = updateSoftAction(tagStr, action, isUndeleted);
     
-        updateAttributeValue(tagStr, LEOS_SOFT_ACTION_ROOT_ATTR, isSoftActionRoot);
+        insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_ACTION_ROOT_ATTR, isSoftActionRoot);
     
         if (isUndeleted) {
             restoreOldId(tagStr);
-            if (type != LegalTextMandateTocItemType.ARTICLE) {
-                updateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, null);
-                updateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, null);
+            if (tocItem.getAknTag().value() != ARTICLE) {
+                insertOrUpdateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, null);
             }
             
-            if(type == LegalTextMandateTocItemType.CLAUSE){
-                updateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, true);
-                updateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, true);
+            if(tocItem.getAknTag().value() == CLAUSE){
+                insertOrUpdateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, true);
+                insertOrUpdateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, true);
             }
         }
         
         if (updatedSoftAction) {
             if (SoftActionType.MOVE_TO.equals(action)) {
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, moveId);
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, moveId);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, null);
             } else if (SoftActionType.MOVE_FROM.equals(action)) {
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, moveId);
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, moveId);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, null);
             } else {
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVED_LABEL_ATTR, null);
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, null);
-                updateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVED_LABEL_ATTR, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_FROM, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_MOVE_TO, null);
             }
             
             if (action != null) {
-                updateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, user != null ? user.getLogin() : null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, user != null ? user.getLogin() : null);
                 try {
                     String softActionDate = DatatypeFactory.newInstance().newXMLGregorianCalendar(new GregorianCalendar()).toXMLFormat();
-                    updateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, softActionDate);
+                    insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, softActionDate);
                 } catch (DatatypeConfigurationException e) {
-                    updateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
+                    insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
                 }
             } else {
-                updateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
-                updateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
+                insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, null);
             }
         }
         
@@ -444,7 +450,7 @@ public class VTDUtils {
         }
         else {
             int position = tagStr.indexOf(">");
-            if (action != null) {
+            if (action != null && position != -1) {
                 tagStr.insert(position, insertAttribute(LEOS_SOFT_ACTION_ATTR, action.getSoftAction()));
             }
         }
@@ -486,7 +492,7 @@ public class VTDUtils {
 
     public static byte[] updateSoftTransFromAttribute(byte[] tag, String newValue) {
         StringBuilder tagStr = new StringBuilder(new String(tag, UTF_8));
-        updateAttributeValue(tagStr, LEOS_SOFT_TRANS_FROM, newValue);
+        insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_TRANS_FROM, newValue);
         return tagStr.toString().getBytes(UTF_8);
     }
 
@@ -504,21 +510,21 @@ public class VTDUtils {
         return attrVal != null ? (" ").concat(attrTag).concat("=\"").concat(attrVal.toString()).concat("\"") : EMPTY_STRING;
     }
 
-    public static StringBuilder updateAttributeValue(StringBuilder tagStr, String leosAttr, Object attrValue) {
-        if (tagStr != null && leosAttr != null) {
-            int editableAttrPos = tagStr.indexOf(leosAttr);
-            if (editableAttrPos != -1) {
-                int editableAttrValStartPos = tagStr.indexOf("=", editableAttrPos) + 2;
-                int editableAttrValEndPos = tagStr.indexOf("\"", editableAttrValStartPos);
+    public static StringBuilder insertOrUpdateAttributeValue(StringBuilder tagStr, String attrName, Object attrValue) {
+        if (tagStr != null && attrName != null) {
+            int attrPos = tagStr.indexOf(attrName);
+            if (attrPos != -1) {
+                int attrValStartPos = tagStr.indexOf("=", attrPos) + 2;
+                int attrValEndPos = tagStr.indexOf("\"", attrValStartPos);
                 if (attrValue != null) {
-                    tagStr.replace(editableAttrValStartPos, editableAttrValEndPos, attrValue.toString());
+                    tagStr.replace(attrValStartPos, attrValEndPos, attrValue.toString());
                 } else {
-                    tagStr.replace(editableAttrPos, editableAttrValEndPos+1, EMPTY_STRING);
+                    tagStr.replace(attrPos, attrValEndPos+1, EMPTY_STRING);
                 }
             } else {
                 int position = tagStr.indexOf(">");
                 if (position >= 0) {
-                    tagStr.insert(position, insertAttribute(leosAttr, attrValue));
+                    tagStr.insert(position, insertAttribute(attrName, attrValue));
                 }
             }
         }
@@ -563,4 +569,46 @@ public class VTDUtils {
         return false;
     }
 
+    public static int getPointDepth(VTDNav vtdNav, int pointDepth) throws NavException {
+        int currentIndex = vtdNav.getCurrentIndex();
+        while (true) {
+            if (vtdNav.toElement(VTDNav.PARENT)) {
+                if (vtdNav.matchElement(LIST)) {
+                    pointDepth++;
+                } else if (vtdNav.matchElement(PARAGRAPH)) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+        vtdNav.recoverNode(currentIndex);
+        return pointDepth;
+    }
+    
+    public static String getDocType(byte[] xmlContent) {
+        String docType = null;
+        try {
+            VTDNav vtdNav = VTDUtils.setupVTDNav(xmlContent);
+            AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.selectElement(XML_TLC_REFERENCE);
+            while (autoPilot.iterate()) {
+                int attIndex = vtdNav.getAttrVal(XML_NAME);
+                if (attIndex != -1) {
+                    String name = vtdNav.toString(attIndex);
+                    if (XML_DOC_TYPE.equals(name)) {
+                        attIndex = vtdNav.getAttrVal(XML_SHOW_AS);
+                        if (attIndex != -1) {
+                            docType = vtdNav.toString(attIndex);
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LOG.error("Unexpected error occurred while calculating getDocType {}", e.getMessage());
+            throw new IllegalStateException("Unexpected error occurred while calculating getDocType", e);
+        }
+        return docType;
+    }
 }

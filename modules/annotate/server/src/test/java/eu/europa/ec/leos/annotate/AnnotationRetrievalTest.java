@@ -19,6 +19,7 @@ import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
@@ -35,13 +36,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Arrays;
-import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
@@ -59,18 +58,11 @@ public class AnnotationRetrievalTest {
     @Autowired
     private AnnotationConversionService conversionService;
     
-        @Autowired
-    @Qualifier("annotationTestRepos")
-    private AnnotationTestRepository annotRepos;
-    
     @Autowired
     private GroupRepository groupRepos;
 
     @Autowired
     private UserRepository userRepos;
-
-    @Autowired
-    private MetadataRepository metadataRepos;
 
     @Autowired
     private UserGroupRepository userGroupRepos;
@@ -120,11 +112,13 @@ public class AnnotationRetrievalTest {
         final String Key_RespStatusProp = "responseStatus";
         final String Value_RespStatusProp = "IN_PREPARATION";
         final String Key_SystemId = "systemId";
+        final String entityName = "entity.A.4";
 
         final User user = new User(LOGIN);
         userRepos.save(user);
 
-        userDetailsCache.cache(LOGIN, new UserDetails(LOGIN, Long.valueOf(4), "first", "last", "entity", LOGIN + "@" + authority, null));
+        userDetailsCache.cache(LOGIN, new UserDetails(LOGIN, Long.valueOf(4), "first", "last", 
+                Arrays.asList(new UserEntity("5", entityName, "entity")), LOGIN + "@" + authority, null));
 
         final UserInformation userInfo = new UserInformation(user, authority);
 
@@ -147,7 +141,7 @@ public class AnnotationRetrievalTest {
         Assert.assertNotNull(jsAnnotOut);
         Assert.assertNotNull(jsAnnotOut.getUser_info());
         Assert.assertEquals("last first", jsAnnotOut.getUser_info().getDisplay_name());
-        Assert.assertEquals("entity", jsAnnotOut.getUser_info().getEntity_name());
+        Assert.assertEquals(entityName, jsAnnotOut.getUser_info().getEntity_name());
 
         // verify that all metadata is properly returned (systemId, responseStatus, and other key-value items)
         final SimpleMetadata metadataOut = jsAnnotOut.getDocument().getMetadata();
@@ -291,66 +285,4 @@ public class AnnotationRetrievalTest {
         annotService.findAnnotationById(jsAnnot.getId(), otherLogin); // should throw MissingPermissionException
     }
 
-    /**
-     * test retrieval of all annotation IDs associated to certain metadata
-     */
-    @Test
-    public void testFindAnnotationsOfMetadata() throws Exception {
-
-        defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-
-        final String authority = "europa";
-        final String hypothesisUserAccount = HYPO_PREFIX + authority;
-        final User theUser = userRepos.save(new User(LOGIN));
-        userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
-
-        final UserInformation userInfo = new UserInformation(theUser, authority);
-
-        // let four annotations be created - three associated to same metadata (but one is deleted)
-        JsonAnnotation jsAnnot1 = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot1 = annotService.createAnnotation(jsAnnot1, userInfo);
-
-        JsonAnnotation jsAnnot2 = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot2 = annotService.createAnnotation(jsAnnot2, userInfo);
-        
-        // third annotation, but is deleted already
-        JsonAnnotation jsAnnot3 = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot3 = annotService.createAnnotation(jsAnnot3, userInfo);
-        final Annotation readAnnot = annotRepos.findById(jsAnnot3.getId());
-        readAnnot.setStatus(AnnotationStatus.DELETED);
-        annotRepos.save(readAnnot);
-
-        // fourth annotation, associated to different metadata
-        JsonAnnotation jsAnnot4 = TestData.getTestAnnotationObject(hypothesisUserAccount);
-        jsAnnot4.getDocument().getMetadata().put("ISCReference", "ISC/1/2"); // other metadata
-        jsAnnot4 = annotService.createAnnotation(jsAnnot4, userInfo);
-
-        Assert.assertEquals(2, metadataRepos.count());
-
-        final Metadata metaWithTwoAnnots = annotService.findAnnotationById(jsAnnot1.getId()).getMetadata();
-        final Metadata metaWithOneAnnot = annotService.findAnnotationById(jsAnnot4.getId()).getMetadata();
-
-        // verify that the service returns the correct annotation items 
-        // and number of items: two only (third is not counted as it is deleted)
-        final List<String> twoIds = annotService.getAnnotationIdsOfMetadata(Arrays.asList(metaWithTwoAnnots.getId()));
-        Assert.assertEquals(2, twoIds.size());
-        Assert.assertTrue(twoIds.contains(jsAnnot1.getId()));
-        Assert.assertTrue(twoIds.contains(jsAnnot2.getId()));
-        Assert.assertFalse(twoIds.contains(jsAnnot3.getId()));
-
-        final List<String> oneId = annotService.getAnnotationIdsOfMetadata(Arrays.asList(metaWithOneAnnot.getId()));
-        Assert.assertEquals(1, oneId.size());
-        Assert.assertTrue(oneId.contains(jsAnnot4.getId()));
-
-        // random id should not contain any items
-        Assert.assertEquals(0, annotService.getAnnotationIdsOfMetadata(Arrays.asList(Long.MAX_VALUE)).size());
-        
-        // finally check that all three non-deleted annotations are returned when asking for both metadata sets
-        final List<String> threeIds = annotService.getAnnotationIdsOfMetadata(Arrays.asList(metaWithOneAnnot.getId(), metaWithTwoAnnots.getId()));
-        Assert.assertEquals(3, threeIds.size());
-        Assert.assertTrue(threeIds.contains(jsAnnot1.getId()));
-        Assert.assertTrue(threeIds.contains(jsAnnot2.getId()));
-        Assert.assertFalse(threeIds.contains(jsAnnot3.getId())); // the deleted one
-        Assert.assertTrue(threeIds.contains(jsAnnot4.getId()));
-    }
 }

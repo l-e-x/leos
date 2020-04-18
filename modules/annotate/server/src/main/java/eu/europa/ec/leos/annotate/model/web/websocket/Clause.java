@@ -36,6 +36,7 @@ public class Clause {
     // -------------------------------------
 
     public Clause() {
+        // default constructor
     }
 
     public Clause(final String field, final String operator, final Set<String> value, final boolean case_sensitive, final Object options) {
@@ -49,43 +50,53 @@ public class Clause {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
-
+    
+    @Generated
     public String getField() {
         return field;
     }
 
+    @Generated
     public void setField(final String field) {
         this.field = field;
     }
 
+    @Generated
     public String getOperator() {
         return operator;
     }
 
+    @Generated
     public void setOperator(final String operator) {
         this.operator = operator;
     }
 
+    @Generated
     public Set<String> getValue() {
         return value;
     }
 
+    @Generated
     public void setValue(final Set<String> value) {
         this.value = value;
     }
 
+    @Generated
     public boolean isCase_sensitive() {
         return case_sensitive;
     }
 
+    @Generated
     public void setCase_sensitive(final boolean case_sensitive) {
         this.case_sensitive = case_sensitive;
     }
 
+    @Generated
     public Object getOptions() {
         return options;
     }
 
+    @Generated
     public void setOptions(final Object options) {
         this.options = options;
     }

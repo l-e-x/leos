@@ -17,27 +17,26 @@ $LIGHT_GREY: #A7A7A7;
 
 %doubleCompareContentRemovedOriginal {
   text-decoration: line-through;
-  color: $LIGHT_GREY;
+  font-weight: bold;
 }
 
 %doubleCompareContentAddedOriginal {
   font-weight: bold;
-  text-decoration: none;
 }
 
 %doubleCompareContentRemovedIntermediate {
   @extend %doubleCompareContentRemovedOriginal;
-  font-weight: bold;
+  text-decoration: line-through underline solid;
 }
 
 %doubleCompareContentAddedIntermediate {
   font-weight: bold;
-  text-decoration: underline;
+  text-decoration: underline solid;
 }
 
 %doubleCompareMovedFrom {
   font-weight: normal;
-  text-decoration: none;
+  text-decoration: underline white solid;
 }
 
 %doubleCompare {
@@ -50,6 +49,10 @@ $LIGHT_GREY: #A7A7A7;
       *:not([leos\:origin="cn"]):not(span), num[leos\:origin="cn"] {
         @extend %doubleCompareContentRemovedOriginal;
       }
+
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
+      }
     }
   }
 
@@ -58,6 +61,10 @@ $LIGHT_GREY: #A7A7A7;
     & {
       *:not([leos\:origin="cn"]):not(span), num[leos\:origin="cn"] {
         @extend %doubleCompareContentRemovedIntermediate;
+      }
+
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
       }
     }
   }
@@ -80,6 +87,10 @@ $LIGHT_GREY: #A7A7A7;
       *:not([leos\:origin="ec"]):not(span), num[leos\:origin="ec"] {
         @extend %doubleCompareContentAddedOriginal;
       }
+
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
+      }
     }
   }
 
@@ -87,6 +98,10 @@ $LIGHT_GREY: #A7A7A7;
     & {
       *:not([leos\:origin="ec"]):not(span), num[leos\:origin="ec"] {
         @extend %doubleCompareContentAddedIntermediate;
+      }
+
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
       }
     }
   }
@@ -108,6 +123,10 @@ $LIGHT_GREY: #A7A7A7;
         @extend %doubleCompareMovedFrom;
       }
 
+      num[leos\:origin="cn"], num[leos\:origin="ec"] {
+        padding-bottom: 0;
+      }
+
       num[leos\:origin="cn"] {
         @extend %doubleCompareContentAddedOriginal;
       }
@@ -125,6 +144,10 @@ $LIGHT_GREY: #A7A7A7;
       }
     }
   }
+
+  .leos-double-compare-retain-original {
+ 		text-decoration: underline; 
+  }	
 
   span.leos-double-compare-removed-intermediate {
     @extend %doubleCompareContentRemovedIntermediate;

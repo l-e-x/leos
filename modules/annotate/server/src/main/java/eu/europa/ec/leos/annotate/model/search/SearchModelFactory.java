@@ -18,16 +18,21 @@ import eu.europa.ec.leos.annotate.model.MetadataIdsAndStatuses;
 import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
 import eu.europa.ec.leos.annotate.model.entity.Metadata;
 import eu.europa.ec.leos.annotate.services.GroupService;
+import eu.europa.ec.leos.annotate.services.MetadataMatchingService;
 import eu.europa.ec.leos.annotate.services.MetadataService;
+import eu.europa.ec.leos.annotate.services.impl.MetadataListHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Component
 public class SearchModelFactory {
@@ -42,6 +47,9 @@ public class SearchModelFactory {
 
     @Autowired
     private MetadataService metadataService;
+    
+    @Autowired
+    private MetadataMatchingService metadataMatchingService;
 
     // -------------------------------------
     // Main factory function
@@ -73,11 +81,30 @@ public class SearchModelFactory {
 
             if (defaultGroupName.equals(rso.getGroup().getName())) {
 
-                // -------------------------------------
-                // case EdiT.1
-                // -------------------------------------
-                resultingModel = getSearchModelEdiT1(rso);
+                // metadata search should be used if there is _real_ metadata available
+                // (normally, the list contains an empty default entry - which we don't count as _real_ data)
+                boolean useMetadataSearch = !CollectionUtils.isEmpty(rso.getMetadataWithStatusesList());
+                if (useMetadataSearch) {
+                    // check that the list does not only consist of one default entry
+                    // note: if there is more than one entry, we think they are valuable
+                    useMetadataSearch = !(rso.getMetadataWithStatusesList().size() == 1 &&
+                            rso.getMetadataWithStatusesList().get(0).isEmptyDefaultEntry());
+                }
 
+                if (useMetadataSearch) {
+
+                    // -------------------------------------
+                    // case EdiT with metadata
+                    // -------------------------------------
+                    resultingModel = getSearchModelEdiTByMetadata(rso);
+
+                } else {
+
+                    // -------------------------------------
+                    // case EdiT.1
+                    // -------------------------------------
+                    resultingModel = getSearchModelEdiT1(rso);
+                }
             } else {
 
                 // -------------------------------------
@@ -110,6 +137,36 @@ public class SearchModelFactory {
         return resultingModel;
     }
 
+    // provide a search model like EdiT.1, but consider given metadata sets
+    private SearchModel getSearchModelEdiTByMetadata(final ResolvedSearchOptions rso) {
+
+        final List<Long> groupIds = groupService.getGroupIdsOfUser(rso.getExecutingUser()); // won't be empty as at least the default group is present
+
+        // desired annotations may
+        // a) belong to LEOS system, any group of the user
+        final List<Metadata> metaLeos = metadataService.findMetadataOfDocumentSystemidGroupIds(rso.getDocument(), Authorities.EdiT, groupIds);
+
+        // b) belong to ISC system, any group (independent of the user), and have responseStatus SENT
+        final List<Metadata> metaIsc = metadataService.findMetadataOfDocumentSystemidSent(rso.getDocument(), Authorities.ISC);
+
+        final List<MetadataIdsAndStatuses> resolvedCandidates = new ArrayList<MetadataIdsAndStatuses>();
+
+        // note: we want all LEOS and all ISC items matching the given metadata sets, so we have to multiply them all
+        for (final SimpleMetadataWithStatuses smws : rso.getMetadataWithStatusesList()) {
+            final List<Long> metadataIdsLeos = metadataMatchingService.getIdsOfMatchingMetadatas(metaLeos, smws.getMetadata());
+            if (metadataIdsLeos != null) { // our function returns {@literal null} or a list with content, but no empty list
+                resolvedCandidates.add(new MetadataIdsAndStatuses(metadataIdsLeos, smws.getStatuses()));
+            }
+
+            final List<Long> metadataIdsIsc = metadataMatchingService.getIdsOfMatchingMetadatas(metaIsc, smws.getMetadata());
+            if (metadataIdsIsc != null) { // our function returns {@literal null} or a list with content, but no empty list
+                resolvedCandidates.add(new MetadataIdsAndStatuses(metadataIdsIsc, smws.getStatuses()));
+            }
+        }
+
+        return new SearchModelLeosAllGroups(rso, resolvedCandidates);
+    }
+
     private SearchModel getSearchModelEdiT1(final ResolvedSearchOptions rso) {
 
         final List<Long> groupIds = groupService.getGroupIdsOfUser(rso.getExecutingUser()); // won't be empty as at least the default group is present
@@ -121,7 +178,7 @@ public class SearchModelFactory {
         // b) belong to ISC system, any group (independent of the user), and have responseStatus SENT
         final List<Metadata> metaIsc = metadataService.findMetadataOfDocumentSystemidSent(rso.getDocument(), Authorities.ISC);
 
-        final List<Long> metadataIds = metadataService.getMetadataSetIds(metaLeos, metaIsc);
+        final List<Long> metadataIds = MetadataListHelper.getMetadataSetIds(metaLeos, metaIsc);
         if (metadataIds == null) { // our function returns {@literal null} or a list with content, but no empty list
             LOG.info("No corresponding metadata fulfilling search model EdiT.1 found in DB");
             return null;
@@ -145,7 +202,7 @@ public class SearchModelFactory {
         final List<Metadata> metaIsc = metadataService.findMetadataOfDocumentGroupSystemidSent(rso.getDocument(),
                 rso.getGroup(), Authorities.ISC);
 
-        final List<Long> metadataIds = metadataService.getMetadataSetIds(metaLeos, metaIsc);
+        final List<Long> metadataIds = MetadataListHelper.getMetadataSetIds(metaLeos, metaIsc);
         if (metadataIds == null) { // our function returns {@literal null} or a list with content, but no empty list
             LOG.info("No corresponding metadata fulfilling search model EdiT.2 found in DB");
             return null;
@@ -161,18 +218,38 @@ public class SearchModelFactory {
 
     private SearchModel getSearchModelIsc1And2(final ResolvedSearchOptions rso) {
 
-        // find matching metadata - search for candidates associated to document, group and authority
-        final List<Metadata> metaCandidates = metadataService.findMetadataOfDocumentGroupSystemid(rso.getDocument(), rso.getGroup(), Authorities.ISC);
-        if (metaCandidates.isEmpty()) {
+        // we need:
+        // a) all SENT items to this document/System ID having NORMAL status
+        // a1) without those sentDeleted=true of the searched group if the user is member of the group
+        // a2) without linked ones of the searched group if the user is member of the group
+        // b) all IN_PREPARATION of the searched group if the user is member
+        //
+        // example for "of the searched group if the user is member": DIGIT user runs search for DIGIT; DIGIT user runs search for AGRI and is member of AGRI
+        // counterexample: DIGIT user runs search for EMPL, but is not member of EMPL
+        
+        // find matching metadata - search for candidates associated to document and authority and being SENT
+        final List<Metadata> metaCandidatesSent = metadataService.findMetadataOfDocumentSystemidSent(rso.getDocument(), Authorities.ISC);
+
+        // retrieve the same, but being IN_PREPARATION
+        List<Metadata> metaCandidatesInPrep = new ArrayList<Metadata>();
+        if(rso.isUserIsMemberOfGroup()) {
+            metaCandidatesInPrep = metadataService.findMetadataOfDocumentGroupSystemidInPreparation(rso.getDocument(), rso.getGroup(), Authorities.ISC);
+        }
+        
+        if (metaCandidatesSent.isEmpty() && metaCandidatesInPrep.isEmpty()) {
             LOG.info("No corresponding metadata fulfilling search model ISC.1/ISC.2 found in DB (based on document/group/systemId");
             return null;
         }
+        
+        // there are candidates -> merge the lists
+        final List<Metadata> metaCandidates = Stream.of(metaCandidatesSent, metaCandidatesInPrep).flatMap(item -> item == null ? null : item.stream())
+                .collect(Collectors.toList());
 
         final List<MetadataIdsAndStatuses> resolvedCandidates = new ArrayList<MetadataIdsAndStatuses>();
         for (final SimpleMetadataWithStatuses smws : rso.getMetadataWithStatusesList()) {
 
             // now check if these candidates have at least the metadata received via the search options
-            final List<Long> metadataIds = metadataService.getIdsOfMatchingMetadatas(metaCandidates, smws.getMetadata());
+            final List<Long> metadataIds = metadataMatchingService.getIdsOfMatchingMetadatas(metaCandidates, smws.getMetadata());
             if (metadataIds == null) { // our function returns {@literal null} or a list with content, but no empty list
                 continue;
             }
@@ -183,6 +260,7 @@ public class SearchModelFactory {
         return new SearchModelIscSingleGroup(rso, resolvedCandidates);
     }
 
+    // note: probably this search model is not being used any more in production; could maybe be removed in the future
     private SearchModel getSearchModelIsc3(final ResolvedSearchOptions rso) {
 
         // desired annotations belong to ISC system, any group of the user, and have responseStatus SENT
@@ -201,7 +279,7 @@ public class SearchModelFactory {
         for (final SimpleMetadataWithStatuses smws : rso.getMetadataWithStatusesList()) {
 
             // ... filter out those sets that match the given criteria...
-            final List<Long> metadataIds = metadataService.getIdsOfMatchingMetadatas(metaIsc, smws.getMetadata());
+            final List<Long> metadataIds = metadataMatchingService.getIdsOfMatchingMetadatas(metaIsc, smws.getMetadata());
             if (metadataIds == null) { // our function returns {@literal null} or a list with content, but no empty list
                 continue;
             }

@@ -33,6 +33,13 @@ public class JsonAnnotationDocumentLink {
         // default constructor
     }
     
+    public JsonAnnotationDocumentLink(final JsonAnnotationDocumentLink orig) {
+        // copy constructor
+        if(orig.href != null) {
+            this.href = URI.create(orig.href.toString());
+        }
+    }
+    
     public JsonAnnotationDocumentLink(final URI uri) {
         this.href = uri;
     }
@@ -41,10 +48,12 @@ public class JsonAnnotationDocumentLink {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public URI getHref() {
         return href;
     }
 
+    @Generated
     public void setHref(final URI href) {
         this.href = href;
     }

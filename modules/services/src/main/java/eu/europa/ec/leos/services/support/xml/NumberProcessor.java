@@ -15,12 +15,14 @@ package eu.europa.ec.leos.services.support.xml;
 
 public interface NumberProcessor {
 
-    byte[] renumberArticles(byte[] xmlContent, String language);
+    byte[] renumberArticles(byte[] xmlContent);
     
     String renumberImportedArticle(String content, String language);
 
     byte[] renumberRecitals(byte[] xmlContent);
 
     String renumberImportedRecital(String content);
+    
+    byte[] renumberLevel(byte[] xmlContent);
     
 }

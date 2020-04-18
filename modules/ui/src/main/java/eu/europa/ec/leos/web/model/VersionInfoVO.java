@@ -13,21 +13,23 @@
  */
 package eu.europa.ec.leos.web.model;
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+
 public class VersionInfoVO {
 
     String documentVersion;
     String lastModifiedBy;
     String entity;
     String lastModificationInstant;
-    boolean isMajor;
+    VersionType versionType;
 
-    public VersionInfoVO(String documentVersion, String lastModifiedBy, String entity, String lastModificationInstant, boolean isMajor) {
+    public VersionInfoVO(String documentVersion, String lastModifiedBy, String entity, String lastModificationInstant, VersionType versionType) {
         super();
         this.documentVersion = documentVersion;
         this.lastModifiedBy = lastModifiedBy;
         this.entity = entity;
         this.lastModificationInstant = lastModificationInstant;
-        this.isMajor = isMajor;
+        this.versionType = versionType;
     }
     
     public String getDocumentVersion() {
@@ -62,11 +64,11 @@ public class VersionInfoVO {
         this.lastModificationInstant = lastModificationInstant;
     }
     
-    public boolean isMajor() {
-        return isMajor;
+    public VersionType getVersionType() {
+        return versionType;
     }
     
-    public void setMajor(boolean isMajor) {
-        this.isMajor = isMajor;
+    public void setVersionType(VersionType versionType) {
+        this.versionType = versionType;
     }
 }

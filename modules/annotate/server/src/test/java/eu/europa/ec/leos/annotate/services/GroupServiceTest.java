@@ -46,8 +46,12 @@ import java.util.stream.Collectors;
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class GroupServiceTest {
 
+    private static final String OPEN = "open";
+    private static final String GROUPDESC = "Group description";
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -97,6 +101,7 @@ public class GroupServiceTest {
      * Test creation of random groups
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     @SuppressFBWarnings(value = SpotBugsAnnotations.ExceptionIgnored, justification = SpotBugsAnnotations.ExceptionIgnored)
     public void testCreateManyGroups() throws GroupAlreadyExistingException {
 
@@ -179,7 +184,7 @@ public class GroupServiceTest {
     @Test
     public void testNoDoubleAssignmentToDefaultGroup() throws DefaultGroupNotFoundException {
 
-        final User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User("me"));
         TestDbHelper.insertDefaultGroup(groupRepos);
         Assert.assertEquals(0, userGroupRepos.count()); // empty
 
@@ -218,7 +223,7 @@ public class GroupServiceTest {
     public void testAssignUserToGroup_New_And_AlreadyAssigned() {
 
         // prepare: create group and user
-        final User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User("myname"));
         Assert.assertEquals(0, userGroupRepos.count()); // empty
 
         final Group testGroup = new Group("testgroup", false);
@@ -240,7 +245,7 @@ public class GroupServiceTest {
     @Test
     public void testGroupMembership() {
 
-        final User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User("someuser"));
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         Assert.assertFalse(groupService.isUserMemberOfGroup(theUser, defaultGroup));
@@ -277,11 +282,11 @@ public class GroupServiceTest {
     @Test
     public void testGroupsOfUser() {
 
-        final User theUser = userRepos.save(new User("demo"));
+        final User theUser = userRepos.save(new User("demo2"));
         final User anotherUser = userRepos.save(new User("other"));
         final User grouplessUser = userRepos.save(new User("lonesomeuser"));
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-        final Group anotherGroup = groupRepos.save(new Group("internalGroupId", "group nicename", "Group description", false));
+        final Group anotherGroup = groupRepos.save(new Group("internalGroupId", "nice group name", "Group desc", false));
 
         // empty lists received so far as users are not associated to groups yet
         Assert.assertEquals(0, groupService.getGroupsOfUser(theUser).size());
@@ -343,10 +348,10 @@ public class GroupServiceTest {
 
         // assign user to groups: the public default group, two private ones, two public ones
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-        final Group firstPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName1, "Group description", false));
-        final Group secondPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName2, "Group description", false));
-        final Group firstPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName1, "Group description", true));
-        final Group secondPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName2, "Group description", true));
+        final Group firstPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName1, GROUPDESC, false));
+        final Group secondPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName2, GROUPDESC, false));
+        final Group firstPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName1, GROUPDESC, true));
+        final Group secondPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName2, GROUPDESC, true));
 
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
         userGroupRepos.save(new UserGroup(theUser.getId(), firstPrivateGroup.getId()));
@@ -363,7 +368,7 @@ public class GroupServiceTest {
         // world public group first
         final JsonGroupWithDetails extractedDefaultGroup = userGroupsLeos.get(0);
         Assert.assertNotNull(extractedDefaultGroup);
-        Assert.assertEquals("open", extractedDefaultGroup.getType());
+        Assert.assertEquals(OPEN, extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
 
@@ -403,10 +408,10 @@ public class GroupServiceTest {
 
         // assign user to groups: the public default group, two private ones, two public ones
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-        final Group firstPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName1, "Group description", false));
-        final Group secondPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName2, "Group description", false));
-        final Group firstPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName1, "Group description", true));
-        final Group secondPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName2, "Group description", true));
+        final Group firstPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName1, GROUPDESC, false));
+        final Group secondPrivateGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), privateGroupName2, GROUPDESC, false));
+        final Group firstPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName1, GROUPDESC, true));
+        final Group secondPublicGroup = groupRepos.save(new Group(Integer.toString(rand.nextInt()), publicGroupName2, GROUPDESC, true));
 
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
         userGroupRepos.save(new UserGroup(theUser.getId(), firstPrivateGroup.getId()));
@@ -464,7 +469,7 @@ public class GroupServiceTest {
         Assert.assertNotNull(extractedDefaultGroup);
         Assert.assertEquals(defaultGroup.getDisplayName(), extractedDefaultGroup.getName());
         Assert.assertEquals(defaultGroup.getName(), extractedDefaultGroup.getId());
-        Assert.assertEquals("open", extractedDefaultGroup.getType());
+        Assert.assertEquals(OPEN, extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
     }
@@ -491,7 +496,7 @@ public class GroupServiceTest {
         Assert.assertNotNull(extractedDefaultGroup);
         Assert.assertEquals(defaultGroup.getDisplayName(), extractedDefaultGroup.getName());
         Assert.assertEquals(defaultGroup.getName(), extractedDefaultGroup.getId());
-        Assert.assertEquals("open", extractedDefaultGroup.getType());
+        Assert.assertEquals(OPEN, extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
     }
@@ -516,7 +521,7 @@ public class GroupServiceTest {
         Assert.assertNotNull(extractedDefaultGroup);
         Assert.assertEquals(defaultGroup.getDisplayName(), extractedDefaultGroup.getName());
         Assert.assertEquals(defaultGroup.getName(), extractedDefaultGroup.getId());
-        Assert.assertEquals("open", extractedDefaultGroup.getType());
+        Assert.assertEquals(OPEN, extractedDefaultGroup.getType());
         Assert.assertTrue(extractedDefaultGroup.isPublic());
         Assert.assertFalse(extractedDefaultGroup.isScoped());
     }
@@ -556,7 +561,7 @@ public class GroupServiceTest {
         final User theUser = userRepos.save(new User("demo"));
         final User anotherUser = userRepos.save(new User("other"));
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
-        final Group anotherGroup = groupRepos.save(new Group("internalGroupId", "group nicename", "Group description", false));
+        final Group anotherGroup = groupRepos.save(new Group("internalGroupId", "group nicename", GROUPDESC, false));
 
         Assert.assertNull(groupService.getUserIdsOfGroup(""));
         Assert.assertEquals(0, groupService.getUserIdsOfGroup(new Group()).size()); // test with undefined group
@@ -592,4 +597,54 @@ public class GroupServiceTest {
         Assert.fail("Expected exception about invalid argument not received!");
     }
 
+    /**
+     * test removing a user from a group - but user is undefined
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testRemovalOfGroup_UserUndefined() {
+        
+        groupService.removeUserFromGroup(null, null);
+    }
+    
+    /**
+     * test removing a user from a group - but group is undefined
+     */
+    @Test(expected = IllegalArgumentException.class)
+    public void testRemovalOfGroup_GroupUndefined() {
+        
+        final User user = new User("somebody");
+        groupService.removeUserFromGroup(user, null);
+    }
+    
+    /**
+     * test successfully removing a user from a group
+     */
+    @Test
+    public void testRemovalOfGroup() {
+        
+        final User user = new User("somebody");
+        final Group group = new Group("someGroup", false);
+        
+        userRepos.save(user);
+        groupRepos.save(group);
+        userGroupRepos.save(new UserGroup(user.getId(), group.getId()));
+        Assert.assertEquals(1, userGroupRepos.count());
+        
+        // act
+        Assert.assertTrue(groupService.removeUserFromGroup(user, group));
+        
+        // verify
+        Assert.assertEquals(0, userGroupRepos.count());
+    }
+    
+    /**
+     * test removing a user from a group - but user is not a member of the group
+     */
+    @Test
+    public void testRemovalOfGroup_UserNotMember() {
+        
+        final User user = new User("somebody");
+        final Group group = new Group("someGroup", false);
+        Assert.assertFalse(groupService.removeUserFromGroup(user, group));
+    }
 }

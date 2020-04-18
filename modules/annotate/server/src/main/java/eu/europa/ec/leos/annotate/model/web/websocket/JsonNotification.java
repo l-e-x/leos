@@ -41,30 +41,37 @@ public class JsonNotification {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public String getType() {
         return type;
     }
 
+    @Generated
     public void setType(final String type) {
         this.type = type;
     }
 
+    @Generated
     public Map<String, String> getOptions() {
         return options;
     }
 
+    @Generated
     public void setOptions(final Map<String, String> options) {
         this.options = options;
     }
 
+    @Generated
     public List<Object> getPayload() {
         return payload;
     }
 
+    @Generated
     public void setPayload(final List<Object> payload) {
         this.payload = payload;
     }
 
+    @Generated
     public void addPayload(final Object payload) {
         this.payload.add(payload);
     }

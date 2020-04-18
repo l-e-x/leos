@@ -13,10 +13,14 @@
  */
 package eu.europa.ec.leos.repository.document;
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
+import eu.europa.ec.leos.model.filter.QueryFilter;
+import org.springframework.security.access.prepost.PostAuthorize;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Memorandum Repository interface.
@@ -62,11 +66,11 @@ public interface MemorandumRepository {
      *
      * @param id      the ID of the memorandum document to update.
      * @param content the content of the memorandum.
-     * @param major   creates a *major version* of the memorandum, when *true*.
+     * @param versionType the version type to be created
      * @param comment the comment of the update, optional.
      * @return the updated memorandum document.
      */
-    Memorandum updateMemorandum(String id, byte[] content, boolean major, String comment);
+    Memorandum updateMemorandum(String id, byte[] content, VersionType versionType, String comment);
 
     /**
      * Updates a [Memorandum] document with the given metadata and content.
@@ -74,13 +78,13 @@ public interface MemorandumRepository {
      * @param id       the ID of the memorandum document to update.
      * @param metadata the metadata of the memorandum.
      * @param content  the content of the memorandum.
-     * @param major    creates a *major version* of the memorandum, when *true*.
+     * @param versionType  the version type to be created
      * @param comment  the comment of the update, optional.
      * @return the updated memorandum document.
      */
-    Memorandum updateMemorandum(String id, MemorandumMetadata metadata, byte[] content, boolean major, String comment);
+    Memorandum updateMemorandum(String id, MemorandumMetadata metadata, byte[] content, VersionType versionType, String comment);
 
-    Memorandum updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment);
+    Memorandum updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment);
 
     Memorandum updateMilestoneComments(String id, List<String> milestoneComments);
 
@@ -101,4 +105,25 @@ public interface MemorandumRepository {
      * @return the list of found Memorandum document versions or empty.
      */
     List<Memorandum> findMemorandumVersions(String id, boolean fetchContent);
+
+    /**
+     * Finds a [Memorandum] document with the specified characteristics.
+     *
+     * @param ref the reference metadata of the memorandum document to retrieve.
+     * @return the found memorandum document.
+     */
+    @PostAuthorize("hasPermission(returnObject, 'CAN_READ')")
+    Memorandum findMemorandumByRef(String ref);
+ 
+    List<Memorandum> findAllMinorsForIntermediate(String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults);
+    
+    int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion);
+    
+    Integer findAllMajorsCount(String docRef);
+    
+    List<Memorandum> findAllMajors(String docRef, int startIndex, int maxResult);
+    
+    List<Memorandum> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults);
+    
+    Integer findRecentMinorVersionsCount(String documentId, String documentRef);
 }

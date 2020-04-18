@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import eu.europa.ec.leos.annotate.Generated;
@@ -25,6 +26,10 @@ import java.util.Objects;
 
 public class JsonAnnotationStatus {
 
+    /**
+     * class providing information about the status of an annotation: state, time of change, ...
+     */
+    
     private AnnotationStatus status;
 
     @JsonSerialize(using = LocalDateTimeSerializer.class)
@@ -33,43 +38,75 @@ public class JsonAnnotationStatus {
 
     private String updated_by;
 
+    private String user_info;
+    
+    @JsonProperty(value = "sent_deleted")
+    private boolean sentDeleted;
+
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public AnnotationStatus getStatus() {
         return status;
     }
 
+    @Generated
     public void setStatus(final AnnotationStatus status) {
         this.status = status;
     }
 
+    @Generated
     public LocalDateTime getUpdated() {
         return updated;
     }
 
+    @Generated
     public void setUpdated(final LocalDateTime updated) {
         this.updated = updated;
     }
 
+    @Generated
     public String getUpdated_by() {
         return updated_by;
     }
 
-    public void setUpdated_by(final String updated_by) {
-        this.updated_by = updated_by;
+    @Generated
+    public void setUpdated_by(final String updatedBy) {
+        this.updated_by = updatedBy;
+    }
+
+    @Generated
+    public String getUser_info() {
+        return user_info;
+    }
+
+    @Generated
+    public void setUser_info(final String userInfo) {
+        this.user_info = userInfo;
+    }
+    
+    @Generated
+    public boolean isSentDeleted() {
+        return sentDeleted;
+    }
+    
+    @Generated
+    public void setSentDeleted(final boolean sentDeletedNow) {
+        this.sentDeleted = sentDeletedNow;
     }
 
     // -------------------------------------
     // equals and hashCode
     // -------------------------------------
-    
+
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(status, updated, updated_by);
+        return Objects.hash(status, updated, updated_by, user_info, sentDeleted);
     }
-    
+
     @Generated
     @Override
     public boolean equals(final Object obj) {
@@ -83,6 +120,8 @@ public class JsonAnnotationStatus {
         final JsonAnnotationStatus other = (JsonAnnotationStatus) obj;
         return Objects.equals(this.status, other.status) &&
                 Objects.equals(this.updated, other.updated) &&
-                Objects.equals(this.updated_by, other.updated_by);
+                Objects.equals(this.updated_by, other.updated_by) &&
+                Objects.equals(this.user_info,  other.user_info) &&
+                Objects.equals(this.sentDeleted, other.sentDeleted);
     }
 }

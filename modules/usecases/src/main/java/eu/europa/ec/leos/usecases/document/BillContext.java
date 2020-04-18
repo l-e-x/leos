@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.usecases.document;
 
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Annex;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Provider;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,14 +163,14 @@ public class BillContext {
         Validate.notNull(purpose, "Bill purpose is required!");
         BillMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        return billService.createBill(bill.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
+        Bill billCreated = billService.createBill(bill.getId(), leosPackage.getPath(), metadata, actionMsgMap.get(ContextAction.METADATA_UPDATED), null);
+        return billService.createVersion(billCreated.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public Bill executeImportBill() {
         LOG.trace("Executing 'Create Bill' use case...");
         Validate.notNull(leosPackage, "Bill package is required!");
         Validate.notNull(bill, "Bill template is required!");
-        MetadataVO billMeta = billDocument.getMetadata();
 
         Option<BillMetadata> metadataOption = bill.getMetadata();
         Validate.isTrue(metadataOption.isDefined(), "Bill metadata is required!");
@@ -193,7 +195,7 @@ public class BillContext {
             }
         }
 
-        return billCreated;
+        return billService.createVersion(billCreated.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeUpdateBill() {
@@ -206,7 +208,7 @@ public class BillContext {
         Validate.isTrue(metadataOption.isDefined(), "Bill metadata is required!");
         Validate.notNull(purpose, "Bill purpose is required!");
         BillMetadata metadata = metadataOption.get().withPurpose(purpose);
-        billService.updateBill(bill, metadata, false, actionMsgMap.get(ContextAction.METADATA_UPDATED));
+        billService.updateBill(bill, metadata, VersionType.MINOR, actionMsgMap.get(ContextAction.METADATA_UPDATED));
         // We dont need to fetch the content here, the executeUpdateAnnexMetadata gets the latest version of the annex by id
         List<Annex> annexes = packageService.findDocumentsByPackagePath(leosPackage.getPath(), Annex.class, false);
         annexes.forEach(annex -> {
@@ -410,11 +412,11 @@ public class BillContext {
         Bill bill = billService.findBillByPackagePath(leosPackage.getPath());
         List<String> milestoneComments = bill.getMilestoneComments();
         milestoneComments.add(milestoneComment);
-        if (bill.isMajorVersion()) {
+        if (bill.getVersionType().equals(VersionType.MAJOR)) {
             bill = billService.updateBillWithMilestoneComments(bill.getId(), milestoneComments);
             LOG.info("Major version {} already present. Updated only milestoneComment for [bill={}]", bill.getVersionLabel(), bill.getId());
         } else {
-            bill = billService.updateBillWithMilestoneComments(bill, milestoneComments, true, versionComment);
+            bill = billService.updateBillWithMilestoneComments(bill, milestoneComments, VersionType.MAJOR, versionComment);
             LOG.info("Created major version {} for [bill={}]", bill.getVersionLabel(), bill.getId());
         }
 

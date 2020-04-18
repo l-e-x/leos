@@ -31,7 +31,6 @@ define(function aknInlineArticleProfileModule(require) {
     plugins.push(require("plugins/aknHtmlItalic/aknHtmlItalicPlugin"));
     plugins.push(require("plugins/aknHtmlUnderline/aknHtmlUnderlinePlugin"));
     plugins.push(require("plugins/aknOrderedList/aknOrderedListPlugin"));
-    plugins.push(require("plugins/aknUnorderedList/aknUnorderedListPlugin"));
     plugins.push(require("plugins/aknNumberedParagraph/aknNumberedParagraphPlugin"));
     plugins.push(require("plugins/leosShowblocks/leosShowblocksPlugin"));
     plugins.push(require("plugins/aknAuthorialNote/aknAuthorialNotePlugin"));
@@ -55,6 +54,7 @@ define(function aknInlineArticleProfileModule(require) {
     plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
     plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+    plugins.push(require("plugins/leosPreventSelectAll/leosPreventSelectAllPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -93,10 +93,6 @@ define(function aknInlineArticleProfileModule(require) {
         forcePasteAsPlainText: false,
         //Use native spellchecker
         disableNativeSpellChecker: false,
-        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in recital
-        blockedKeystrokes: [
-            CKEDITOR.CTRL + 65 //CTRL +A
-        ],
         // toolbar groups arrangement, optimized for a single toolbar row
         toolbar: [
             {name: 'save', items: ['leosInlineSave', 'leosInlineSaveClose', 'leosInlineCancel']},

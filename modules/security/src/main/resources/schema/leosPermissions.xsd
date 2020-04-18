@@ -13,7 +13,7 @@
     <xs:complexType name="roleType">
         <xs:all>
             <xs:element name="permissions" type="permissionList"/>
-            <xs:element name="application-role" type="xs:string"/>
+            <xs:element name="application-role" type="xs:boolean"/>
             <xs:element name="collaborator" type="xs:boolean"/>
             <xs:element name="default-doc-creation-role" type="xs:boolean"/>
             <xs:element name="message-key" type="xs:string"/>

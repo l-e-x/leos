@@ -40,9 +40,9 @@ class AttachmentProcessorImpl implements AttachmentProcessor {
             String attachmentsTag = new StringBuilder("<attachments>")
                     .append(createAttachmentTag(href, showAs))
                     .append("</attachments>").toString();
-            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "bill", attachmentsTag);
+            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "bill", attachmentsTag, false);
         } else {
-            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "attachments", createAttachmentTag(href, showAs));
+            updatedContent = xmlContentProcessor.appendElementToTag(xmlContent, "attachments", createAttachmentTag(href, showAs), false);
         }
         return xmlContentProcessor.doXMLPostProcessing(updatedContent);
     }

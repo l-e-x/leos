@@ -70,26 +70,32 @@ public class UserGroup implements Serializable {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public Long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final Long newId) {
         this.id = newId;
     }
 
+    @Generated
     public long getUserId() {
         return userId;
     }
 
+    @Generated
     public void setUserId(final long userId) {
         this.userId = userId;
     }
 
+    @Generated
     public long getGroupId() {
         return groupId;
     }
 
+    @Generated
     public void setGroupId(final long groupId) {
         this.groupId = groupId;
     }

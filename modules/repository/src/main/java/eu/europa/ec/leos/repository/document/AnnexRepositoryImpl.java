@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.repository.document;
 
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Annex;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import eu.europa.ec.leos.repository.LeosRepository;
@@ -61,21 +62,21 @@ public class AnnexRepositoryImpl implements AnnexRepository {
     }
 
     @Override
-    public Annex updateAnnex(String id, byte[] content, boolean major, String comment) {
+    public Annex updateAnnex(String id, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Annex content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, content, major, comment, Annex.class);
+        return leosRepository.updateDocument(id, content, versionType, comment, Annex.class);
     }
 
     @Override
-    public Annex updateAnnex(String id, AnnexMetadata metadata, byte[] content, boolean major, String comment) {
+    public Annex updateAnnex(String id, AnnexMetadata metadata, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Annex metadata and content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, metadata, content, major, comment, Annex.class);
+        return leosRepository.updateDocument(id, metadata, content, versionType, comment, Annex.class);
     }
 
     @Override
-    public Annex updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment) {
+    public Annex updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Annex milestoneComments and content... [id=" + id + "]");
-        return leosRepository.updateMilestoneComments(id, content, milestoneComments, major, comment, Annex.class);
+        return leosRepository.updateMilestoneComments(id, content, milestoneComments, versionType, comment, Annex.class);
     }
 
     @Override
@@ -100,5 +101,45 @@ public class AnnexRepositoryImpl implements AnnexRepository {
     public List<Annex> findAnnexVersions(String id, boolean fetchContent) {
         logger.debug("Finding Annex versions... [id=" + id + "]");
         return leosRepository.findDocumentVersionsById(id, Annex.class, fetchContent);
+    }
+
+    @Override
+    public Annex findAnnexByRef(String ref) {
+        logger.debug("Finding Annex by ref... [ref=" + ref + "]");
+        return leosRepository.findDocumentByRef(ref, Annex.class);
+    }
+    
+    @Override
+    public List<Annex> findAllMinorsForIntermediate(String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults) {
+        logger.debug("Finding Annex versions between intermediates...");
+        return leosRepository.findAllMinorsForIntermediate(Annex.class, docRef, currIntVersion, prevIntVersion, startIndex, maxResults);
+    }
+    
+    @Override
+    public int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion) {
+        logger.debug("Finding Annex minor versions count between intermediates...");
+        return leosRepository.findAllMinorsCountForIntermediate(Annex.class, docRef, currIntVersion, prevIntVersion);
+    }
+    
+    @Override
+    public Integer findAllMajorsCount(String docRef) {
+        return leosRepository.findAllMajorsCount(Annex.class, docRef);
+    }
+    
+    @Override
+    public List<Annex> findAllMajors(String docRef, int startIndex, int maxResult) {
+        return leosRepository.findAllMajors(Annex.class, docRef, startIndex, maxResult);
+    }
+    
+    @Override
+    public List<Annex> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults) {
+        final Annex annex = leosRepository.findLatestMajorVersionById(Annex.class, documentId);
+        return leosRepository.findRecentMinorVersions(Annex.class, documentRef, annex.getCmisVersionLabel(), startIndex, maxResults);
+    }
+    
+    @Override
+    public Integer findRecentMinorVersionsCount(String documentId, String documentRef) {
+        final Annex annex = leosRepository.findLatestMajorVersionById(Annex.class, documentId);
+        return leosRepository.findRecentMinorVersionsCount(Annex.class, documentRef, annex.getCmisVersionLabel());
     }
 }

@@ -30,6 +30,7 @@ public class StatusUpdateSuccessResponse {
     // Constructor
     // -------------------------------------
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public StatusUpdateSuccessResponse() {
         // default constructor required for deserialisation
     }
@@ -38,6 +39,8 @@ public class StatusUpdateSuccessResponse {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getUpdated() {
         return updated;
     }
@@ -54,6 +57,7 @@ public class StatusUpdateSuccessResponse {
 
     @Generated
     @Override
+    @SuppressWarnings("PMD.SimplifyBooleanReturns")
     public boolean equals(final Object obj) {
         if (this == obj) {
             return true;

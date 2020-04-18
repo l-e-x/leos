@@ -1,0 +1,82 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+*/
+
+//------------------------------- XML Styles --------------------------------//
+%xmlLevelSubParagraph {
+    subparagraph {
+      display: block;
+      padding-left: 18px;
+
+      & > content > aknP, & > content > p {
+        @extend %paddedText;
+        display: block;
+      }
+    }
+
+    // add padding to subparagraph. If is the first subparagraph do not apply since num tag is already padding.
+    num ~ subparagraph > content > aknp::before{
+      @extend %padSubParagraph;
+    }
+    num + subparagraph > content > aknp::before{
+      display: none;
+    }
+}
+
+%tocLevelSubParagraph {
+  subparagraph > content > aknP, subparagraph > content > p {
+    @extend %clearTopText;
+  }
+
+  // pad all subparagraphs of numbered paragraphs, except the first one which is already padded by the number tag
+  num ~ subparagraph > content > p::before{
+    @extend %padSubParagraph;
+  }
+  num + subparagraph > content > p::before{
+    display: none;
+  }
+}
+
+//------------------------------- Editor Styles -----------------------------//
+%editorLevelSubParagraph {
+   ol > li {
+        & > p:first-child {
+           padding-top: 0;
+        }
+        & > p {
+           @extend %paddedText;
+        }
+        & > p:last-child {
+           padding-bottom: 0;
+        }
+    }
+    // pad all subparagraphs of numbered paragraphs, except the first one which is already padded by the number tag
+    ol > li[data-akn-name="aknLevelSubParagraph"] {
+      & > p:not(:first-of-type)::before {
+        @extend %padSubParagraph;
+      }
+    }
+}
+
+//------------------------------- Showblock Styles --------------------------//
+%showblockLevelSubParagraph {
+    ol > li > p {
+        @include blockOutline("SUBPARAGRAPH");
+    }
+}
+
+%padSubParagraph {
+  content: '';
+  margin-right: 15px;
+}

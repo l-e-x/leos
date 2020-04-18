@@ -43,6 +43,8 @@ class LeosLoader {
             'metadata.docStage'       : 'metadata:docStage',
             'metadata.docType'        : 'metadata:docType',
             'metadata.docPurpose'     : 'metadata:docPurpose',
+            'metadata.procedureType'  : 'metadata:procedureType',
+            'metadata.actType'        : 'metadata:actType',
             // TODO leos MEMORANDUM specific metadata properties
             // use sub-key metadata.memorandum.<>
             // TODO leos BILL specific metadata properties
@@ -73,7 +75,7 @@ class LeosLoader {
     LeosLoader(String resourcesLocalPath, String repoPropertiesLocalPath, Session session) {
         this.RESOURCES_LOCAL_PATH = resourcesLocalPath
 
-        def repoPropertiesFilePropsPath = repoPropertiesLocalPath + '/repository.properties'
+        def repoPropertiesFilePropsPath = repoPropertiesLocalPath + '/repository_os.properties'
         println "Loading properties file: $repoPropertiesFilePropsPath"
 
         def properties = new java.util.Properties()

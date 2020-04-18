@@ -142,7 +142,7 @@ public class UserInformationTest {
 
         final String login = "login";
         final User user = new User(login);
-        final UserDetails details = new UserDetails(login, Long.valueOf(1), "first", "last", "", "", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(1), "first", "last", null, "", null);
 
         final UserInformation userinfo = new UserInformation(user, details);
 
@@ -165,7 +165,7 @@ public class UserInformationTest {
 
         final String login = "login";
         final User user = null;
-        final UserDetails details = new UserDetails(login, Long.valueOf(1), "first", "last", "", "", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(1), "first", "last", null, "", null);
 
         final UserInformation userinfo = new UserInformation(user, details);
 

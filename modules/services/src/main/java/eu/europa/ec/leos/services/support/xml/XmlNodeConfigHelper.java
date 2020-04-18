@@ -50,7 +50,9 @@ public class XmlNodeConfigHelper {
     public static final String DOC_PURPOSE_PREFACE = "docPurposePreface";
     public static final String DOC_STAGE_PREFACE = "docStagePreface";
     public static final String DOC_TYPE_PREFACE = "docTypePreface";
-
+    
+    public static final String DOC_VERSION = "docVersion";
+    
     public static final String DOC_REF_COVER = "coverPage";
 
     public static final String PROPOSAL_DOC_COLLECTION = "docCollectionName";
@@ -89,7 +91,8 @@ public class XmlNodeConfigHelper {
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary_docTemplate", "leos:docTemplate"))));
         metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
         Collections.emptyList()));
-
+        metadataConfig.put(DOC_VERSION, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docVersion", true, Collections.emptyList()));
+        
         proposalConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -115,7 +118,7 @@ public class XmlNodeConfigHelper {
     private static Map<String, XmlNodeConfig> createBillConfig() {
         Map<String, XmlNodeConfig> billConfigMap = new HashMap<>();
 
-        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(8);
+        final Map<String, XmlNodeConfig> metadataConfig = new HashMap<>(9);
         metadataConfig.put(DOC_STAGE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docStage", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__docstage", "leos:docStage"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
@@ -132,7 +135,8 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(DOC_SPECIFIC_TEMPLATE, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docTemplate", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary_docTemplate", "leos:docTemplate"))));
         metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
-                Collections.emptyList()));        
+                Collections.emptyList()));  
+        metadataConfig.put(DOC_VERSION, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docVersion", true, Collections.emptyList()));
         billConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -183,6 +187,7 @@ public class XmlNodeConfigHelper {
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary_docTemplate", "leos:docTemplate"))));
         metadataConfig.put(DOC_LANGUAGE, new XmlNodeConfig("//meta/identification/FRBRExpression/FRBRlanguage/@language", false, 
                 Collections.emptyList()));
+        metadataConfig.put(DOC_VERSION, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docVersion", true, Collections.emptyList()));
         memorandumConfigMap.putAll(metadataConfig);
 
         final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(4);
@@ -237,14 +242,15 @@ public class XmlNodeConfigHelper {
         metadataConfig.put(ANNEX_TITLE_META, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:annexTitle", true,
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "proprietary__annexTitle", "leos:annexTitle"),
                         new XmlNodeConfig.Attribute("source", "~leos", "proprietary"))));
+        metadataConfig.put(DOC_VERSION, new XmlNodeConfig("/akomaNtoso//meta/proprietary/leos:docVersion", true, Collections.emptyList()));
         annexConfigMap.putAll(metadataConfig);
 
-        final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(8);
-        coverPageConfig.put(DOC_STAGE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docStage", true,
+        final Map<String, XmlNodeConfig> coverPageConfig = new HashMap<>(5);
+        coverPageConfig.put(DOC_STAGE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docStage", false,
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "cover_docstage", "docStage"))));
-        coverPageConfig.put(DOC_TYPE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docType", true,
+        coverPageConfig.put(DOC_TYPE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docType", false,
                 Arrays.asList(new XmlNodeConfig.Attribute("xml:id", "cover_doctype", "docType"))));
-        coverPageConfig.put(DOC_PURPOSE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docPurpose", true,
+        coverPageConfig.put(DOC_PURPOSE_COVER, new XmlNodeConfig("//coverPage/longTitle/p/docPurpose", false,
                 Arrays.asList(
                         new XmlNodeConfig.Attribute("xml:id", "cover_docpurpose", "docPurpose"),
                         new XmlNodeConfig.Attribute("xml:id", "em_coverpage__longTitle", "longTitle"),
@@ -320,9 +326,9 @@ public class XmlNodeConfigHelper {
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_COVER, metadata.getPurpose());
         keyValueMap.put(DOC_LANGUAGE_COVER, metadata.getLanguage().toUpperCase());
-
+        keyValueMap.put(DOC_VERSION, metadata.getDocVersion());
+        
         keyValueMap.put(ANNEX_NUMBER_COVER, metadata.getNumber());
-
         keyValueMap.put(ANNEX_TITLE_PREFACE, metadata.getTitle());
 
         return keyValueMap;
@@ -343,6 +349,7 @@ public class XmlNodeConfigHelper {
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_COVER, metadata.getPurpose());
         keyValueMap.put(DOC_LANGUAGE_COVER, metadata.getLanguage().toUpperCase());
+        keyValueMap.put(DOC_VERSION, metadata.getDocVersion());
 
         return keyValueMap;
     }
@@ -367,6 +374,7 @@ public class XmlNodeConfigHelper {
         keyValueMap.put(DOC_STAGE_PREFACE, metadata.getStage());
         keyValueMap.put(DOC_TYPE_PREFACE, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_PREFACE, metadata.getPurpose());
+        keyValueMap.put(DOC_VERSION, metadata.getDocVersion());
 
         return keyValueMap;
     }
@@ -387,6 +395,7 @@ public class XmlNodeConfigHelper {
         keyValueMap.put(DOC_TYPE_COVER, metadata.getType());
         keyValueMap.put(DOC_PURPOSE_COVER, metadata.getPurpose());
         keyValueMap.put(DOC_LANGUAGE_COVER, metadata.getLanguage().toUpperCase());
+        keyValueMap.put(DOC_VERSION, metadata.getDocVersion());
 
         return keyValueMap;
     }

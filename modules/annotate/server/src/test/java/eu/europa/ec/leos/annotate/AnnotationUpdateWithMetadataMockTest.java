@@ -90,7 +90,7 @@ public class AnnotationUpdateWithMetadataMockTest {
     // Cleanup of database content before running new test
     // -------------------------------------
     @Before
-    public void cleanDatabaseBeforeTests() throws Exception {
+    public void cleanDatabaseBeforeTests() {
 
         TestDbHelper.cleanupRepositories(this);
         defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
@@ -99,7 +99,7 @@ public class AnnotationUpdateWithMetadataMockTest {
     }
 
     @After
-    public void cleanDatabaseAfterTests() throws Exception {
+    public void cleanDatabaseAfterTests() {
 
         TestDbHelper.cleanupRepositories(this);
     }
@@ -110,6 +110,7 @@ public class AnnotationUpdateWithMetadataMockTest {
 
     // test updating of an annotation's group when metadata service has internal failures - annotation update should throw expected exception
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     @Test
     public void testCreateAnnotation_MetadataService_Failure() throws Exception {
 

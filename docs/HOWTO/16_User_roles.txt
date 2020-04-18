@@ -1,0 +1,67 @@
+                            USER ROLES - HOWTO
+--------------------------------------------------------------------------------
+Roles:
+
+1. Document collaborator roles - assigned to users through proposal collaborators panel
+    -   author (creator of the document)
+    -   contributor (list of people allowed to edit)
+    -   reviewer (list of people allowed to make comments and suggestions but not merge them)
+
+2. Application roles - assigned to users manually through application database table leos_user_role
+    -   admin
+    -   support
+
+LEOS configuration defines following mapping between roles and permissions. New mappings can be created/modified
+editing XML configuration file leosPermissions.xml
+
+Everyone who has access to the application can create a proposal. 
+An author can:
+-   edit/delete a document
+-   add and remove (aka grant and revoke) author or contributor or reviewer for a document
+-   make comments and make/merge suggestions
+-   add a milestone (major version) of the document
+-   restore a previous version of a document
+-   upload/download document
+
+A contributor can:
+-   edit
+-   make comments and make/merge suggestions
+
+A reviewer can:
+-   access a document to review it (not editable)
+-   make comments and suggestions but not merge them
+
+
+An admin user can:
+-   edit/delete all documents
+-   add and remove (aka grant and revoke) author or contributor or reviewer for a document
+-   make comments and make/merge suggestions
+-   add a milestone (major version) of the document
+-   restore a previous version of the document
+-   upload/download document
+
+A support user can:
+-   edit/delete all documents
+-   add and remove (aka grant and revoke) author or contributor or reviewer for a document
+-   make comments and make/merge suggestions
+-   add a milestone (major version) of the document
+-   restore a previous version of the document
+-   upload/download document
+-   see source of document edited element
+
+
+                            BEHAVIOUR
+--------------------------------------------------------------------------------
+Behaviour UI:
+-   Only view list of document where user is author, contributor or reviewer or all documents if user
+    belongs to application role admin/support
+-   Only offer the delete/download/upload button to the author or admin/support user
+-   Add grant and revoke facilities for document author or admin/support user
+-   Only offer the milestone panel to the author or admin/support user
+-   Only offer restore version option to the author or admin/support user
+
+
+                            USER LOOKUP
+--------------------------------------------------------------------------------
+Provided by third party integration
+By default LEOS embedded a H2 database storing the user

@@ -26,7 +26,7 @@ public class JsonGroupWithDetails extends JsonGroup {
     private static final String PRIVATE_GROUP_INDICATOR = "private";
     private static final String PUBLIC_GROUP_INDICATOR = "open";
 
-    private boolean scoped = false; // currently hard-coded, as no further support available yet
+    private boolean scoped; // currently hard-coded, as no further support available yet
     private String type;
 
     // -----------------------------------------------------------
@@ -47,18 +47,23 @@ public class JsonGroupWithDetails extends JsonGroup {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public boolean isScoped() {
         return scoped;
     }
 
+    @Generated
     public void setScoped(final boolean scoped) {
         this.scoped = scoped;
     }
 
+    @Generated
     public String getType() {
         return type;
     }
 
+    @Generated
     public void setType(final String type) {
         this.type = type;
     }

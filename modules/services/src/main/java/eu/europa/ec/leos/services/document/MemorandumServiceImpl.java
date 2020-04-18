@@ -16,17 +16,22 @@ package eu.europa.ec.leos.services.document;
 import com.google.common.base.Stopwatch;
 import cool.graph.cuid.Cuid;
 import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
+import eu.europa.ec.leos.domain.common.TocMode;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.action.VersionVO;
 import eu.europa.ec.leos.repository.document.MemorandumRepository;
 import eu.europa.ec.leos.repository.store.PackageRepository;
 import eu.europa.ec.leos.services.document.util.DocumentVOProvider;
+import eu.europa.ec.leos.services.support.VersionsUtil;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper;
 import eu.europa.ec.leos.services.support.xml.XmlNodeProcessor;
+import eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper;
 import eu.europa.ec.leos.services.validation.ValidationService;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.MemorandumTocItemType;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +41,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.DOC;
 import static eu.europa.ec.leos.services.support.xml.XmlNodeConfigHelper.createValueMap;
 
 @Service
@@ -51,15 +57,18 @@ public class MemorandumServiceImpl implements MemorandumService {
     private final XmlNodeProcessor xmlNodeProcessor;
     private final XmlContentProcessor xmlContentProcessor;
     private final XmlNodeConfigHelper xmlNodeConfigHelper;
+    private final XmlTableOfContentHelper xmlTableOfContentHelper;
     
     private final ValidationService validationService;
     private final DocumentVOProvider documentVOProvider;
-
+    private final MessageHelper messageHelper;
+    
     MemorandumServiceImpl(MemorandumRepository memorandumRepository,
                           PackageRepository packageRepository,
                           XmlNodeProcessor xmlNodeProcessor,
                           XmlContentProcessor xmlContentProcessor,
-                          XmlNodeConfigHelper xmlNodeConfigHelper, ValidationService validationService, DocumentVOProvider documentVOProvider) {
+                          XmlNodeConfigHelper xmlNodeConfigHelper, ValidationService validationService, DocumentVOProvider documentVOProvider,
+                          XmlTableOfContentHelper xmlTableOfContentHelper, MessageHelper messageHelper) {
         this.memorandumRepository = memorandumRepository;
         this.packageRepository = packageRepository;
         this.xmlNodeProcessor = xmlNodeProcessor;
@@ -67,25 +76,30 @@ public class MemorandumServiceImpl implements MemorandumService {
         this.xmlNodeConfigHelper = xmlNodeConfigHelper;
         this.validationService = validationService;
         this.documentVOProvider = documentVOProvider;
+        this.xmlTableOfContentHelper = xmlTableOfContentHelper;
+        this.messageHelper = messageHelper;
     }
 
     @Override
     public Memorandum createMemorandum(String templateId, String path, MemorandumMetadata metadata, String actionMsg, byte[] content) {
         LOG.trace("Creating Memorandum... [templateId={}, path={}, metadata={}]", templateId, path, metadata);
-        String name = generateMemorandumName();
-        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
+        String memorandumUid = getMemorandumUid();
+        String name = generateMemorandumName(memorandumUid);
+        metadata = metadata.withRef(generateMemorandumReference(memorandumUid));
         Memorandum memorandum = memorandumRepository.createMemorandum(templateId, path, name, metadata);
-        byte[] updatedBytes = updateDataInXml((content==null)? getContent(memorandum) : content, metadata);
-        return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, updatedBytes,false, actionMsg);
+        byte[] updatedBytes = updateDataInXml((content == null) ? getContent(memorandum) : content, metadata);
+        return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, updatedBytes, VersionType.MINOR, actionMsg);
     }
 
     @Override
     public Memorandum createMemorandumFromContent(String path, MemorandumMetadata metadata, String actionMsg, byte[] content) {
         LOG.trace("Creating Memorandum... [ path={}, metadata={}]", path, metadata);
-        String name = generateMemorandumName();
-        metadata = metadata.withRef(name);//FIXME: a better scheme needs to be devised
-        Memorandum memorandum = memorandumRepository.createMemorandumFromContent(path, name, metadata, content);
-        return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, content,false, actionMsg);
+        String memorandumUid = getMemorandumUid();
+        String name = generateMemorandumName(memorandumUid);
+        metadata = metadata.withRef(generateMemorandumReference(memorandumUid));
+        byte[] updatedBytes = updateDataInXml(content, metadata);
+        Memorandum memorandum = memorandumRepository.createMemorandumFromContent(path, name, metadata, updatedBytes);
+        return memorandumRepository.updateMemorandum(memorandum.getId(), metadata, updatedBytes, VersionType.MINOR, actionMsg);
     }
 
     @Override
@@ -97,7 +111,7 @@ public class MemorandumServiceImpl implements MemorandumService {
     @Override
     @Cacheable(value="docVersions", cacheManager = "cacheManager")
     public Memorandum findMemorandumVersion(String id) {
-        LOG.trace("Finding Memorandum version... [it={}]", id);
+        LOG.trace("Finding Memorandum version... [id={}]", id);
         return memorandumRepository.findMemorandumById(id, false);
     }
     
@@ -107,15 +121,18 @@ public class MemorandumServiceImpl implements MemorandumService {
         // FIXME can be improved, now we don't fetch ALL docs because it's loaded later the one needed, 
         // this can be improved adding a page of 1 item or changing the method/query.
         List<Memorandum> docs = packageRepository.findDocumentsByPackagePath(path, Memorandum.class, false);
-        Memorandum memorandum = findMemorandum(docs.get(0).getId());
-        return memorandum;
+        if (!docs.isEmpty()) {
+            return findMemorandum(docs.get(0).getId());
+        } else {
+            return null;
+        }
     }
 
     @Override
-    public Memorandum updateMemorandum(Memorandum memorandum, byte[] updatedMemorandumContent, boolean major, String comment) {
+    public Memorandum updateMemorandum(Memorandum memorandum, byte[] updatedMemorandumContent, VersionType versionType, String comment) {
         LOG.trace("Updating Memorandum Xml Content... [id={}]", memorandum.getId());
         
-        memorandum = memorandumRepository.updateMemorandum(memorandum.getId(), updatedMemorandumContent, major, comment);
+        memorandum = memorandumRepository.updateMemorandum(memorandum.getId(), updatedMemorandumContent, versionType, comment);
         //call validation on document with updated content
         validationService.validateDocumentAsync(documentVOProvider.createDocumentVO(memorandum, updatedMemorandumContent));
         
@@ -129,12 +146,12 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
-    public Memorandum updateMemorandum(Memorandum memorandum, MemorandumMetadata updatedMetadata, boolean major, String comment) {
+    public Memorandum updateMemorandum(Memorandum memorandum, MemorandumMetadata updatedMetadata, VersionType versionType, String comment) {
         LOG.trace("Updating Memorandum... [id={}, metadata={}]", memorandum.getId(), updatedMetadata);
         Stopwatch stopwatch = Stopwatch.createStarted();
         byte[] updatedBytes = updateDataInXml(getContent(memorandum), updatedMetadata); //FIXME: Do we need latest data again??
         
-        memorandum = memorandumRepository.updateMemorandum(memorandum.getId(), updatedMetadata, updatedBytes, major, comment);
+        memorandum = memorandumRepository.updateMemorandum(memorandum.getId(), updatedMetadata, updatedBytes, versionType, comment);
         
         //call validation on document with updated content
         validationService.validateDocumentAsync(documentVOProvider.createDocumentVO(memorandum, updatedBytes));
@@ -144,10 +161,10 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
-    public Memorandum updateMemorandumWithMilestoneComments(Memorandum memorandum, List<String> milestoneComments, boolean major, String comment){
-        LOG.trace("Updating Memorandum... [id={}, milestoneComments={}, major={}, comment={}]", memorandum.getId(), milestoneComments, major, comment);
+    public Memorandum updateMemorandumWithMilestoneComments(Memorandum memorandum, List<String> milestoneComments, VersionType versionType, String comment){
+        LOG.trace("Updating Memorandum... [id={}, milestoneComments={}, versionType={}, comment={}]", memorandum.getId(), milestoneComments, versionType, comment);
         final byte[] updatedBytes = getContent(memorandum);
-        memorandum = memorandumRepository.updateMilestoneComments(memorandum.getId(), milestoneComments, updatedBytes, major, comment);
+        memorandum = memorandumRepository.updateMilestoneComments(memorandum.getId(), milestoneComments, updatedBytes, versionType, comment);
         return memorandum;
     }
 
@@ -158,11 +175,11 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
-    public List<TableOfContentItemVO> getTableOfContent(Memorandum memorandum) {
+    public List<TableOfContentItemVO> getTableOfContent(Memorandum memorandum, TocMode mode) {
         Validate.notNull(memorandum, "Memorandum is required");
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
         final byte[] memorandumContent = content.getSource().getBytes();
-        return xmlContentProcessor.buildTableOfContent("doc", MemorandumTocItemType::getTocItemTypeFromName, memorandumContent, false);
+        return xmlTableOfContentHelper.buildTableOfContent(DOC, memorandumContent, mode);
     }
 
     private byte[] updateDataInXml(final byte[] content, MemorandumMetadata dataObject) {
@@ -170,8 +187,16 @@ public class MemorandumServiceImpl implements MemorandumService {
         return xmlContentProcessor.doXMLPostProcessing(updatedBytes);
     }
 
-    private String generateMemorandumName() {
-        return MEMORANDUM_NAME_PREFIX + Cuid.createCuid() + MEMORANDUM_DOC_EXTENSION;
+    private String getMemorandumUid() {
+        return Cuid.createCuid();
+    }
+
+    private String generateMemorandumReference(String memorandumUid) {
+        return MEMORANDUM_NAME_PREFIX + memorandumUid;
+    }
+
+    private String generateMemorandumName(String memorandumUid) {
+        return generateMemorandumReference(memorandumUid) + MEMORANDUM_DOC_EXTENSION;
     }
 
     @Override
@@ -182,17 +207,78 @@ public class MemorandumServiceImpl implements MemorandumService {
     }
 
     @Override
-    public Memorandum createVersion(String id, boolean major, String comment) {
-        LOG.trace("Creating Memorandum version... [id={}, major={}, comment={}]", id, major, comment);
+    public Memorandum createVersion(String id, VersionType versionType, String comment) {
+        LOG.trace("Creating Memorandum version... [id={}, versionType={}, comment={}]", id, versionType, comment);
         final Memorandum memorandum = findMemorandum(id);
         final MemorandumMetadata metadata = memorandum.getMetadata().getOrError(() -> "Memorandum metadata is required!");
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
         final byte[] contentBytes = content.getSource().getBytes();
-        return memorandumRepository.updateMemorandum(id, metadata, contentBytes, major, comment);
+        return memorandumRepository.updateMemorandum(id, metadata, contentBytes, versionType, comment);
     }
 
     private byte[] getContent(Memorandum memorandum) {
         final Content content = memorandum.getContent().getOrError(() -> "Memorandum content is required!");
         return content.getSource().getBytes();
+    }
+
+    @Override
+    public Memorandum findMemorandumByRef(String ref) {
+        LOG.trace("Finding Memorandum by ref... [ref=" + ref + "]");
+        return memorandumRepository.findMemorandumByRef(ref);
+    }
+    
+    @Override
+    public List<VersionVO> getAllVersions(String documentId, String docRef) {
+        // TODO temporary call. paginated loading will be implemented in the future Story
+        List<Memorandum> majorVersions = findAllMajors(docRef, 0, 9999);
+        LOG.trace("Found {} majorVersions for [id={}]", majorVersions.size(), documentId);
+    
+        List<VersionVO> majorVersionsVO = VersionsUtil.buildVersionVO(majorVersions, messageHelper);
+        return majorVersionsVO;
+    }
+    
+    @Override
+    public List<Memorandum> findAllMinorsForIntermediate(String docRef, String currIntVersion, int startIndex, int maxResults) {
+        final String prevIntVersion = calculatePreviousVersion(currIntVersion);
+        return memorandumRepository.findAllMinorsForIntermediate(docRef, currIntVersion, prevIntVersion, startIndex, maxResults);
+    }
+    
+    @Override
+    public int findAllMinorsCountForIntermediate(String docRef, String currIntVersion) {
+        final String prevVersion = calculatePreviousVersion(currIntVersion);
+        return memorandumRepository.findAllMinorsCountForIntermediate(docRef, currIntVersion, prevVersion);
+    }
+    
+    private String calculatePreviousVersion(String currIntVersion) {
+        final String prevVersion;
+        String[] str = currIntVersion.split("\\.");
+        if (str.length != 2) {
+            throw new IllegalArgumentException("CMIS Version number should be in the format x.y");
+        } else {
+            int curr = Integer.parseInt(str[0]);
+            int prev = curr - 1;
+            prevVersion = prev + "." + "0";
+        }
+        return prevVersion;
+    }
+    
+    @Override
+    public Integer findAllMajorsCount(String docRef) {
+        return memorandumRepository.findAllMajorsCount(docRef);
+    }
+    
+    @Override
+    public List<Memorandum> findAllMajors(String docRef, int startIndex, int maxResults) {
+        return memorandumRepository.findAllMajors(docRef, startIndex, maxResults);
+    }
+    
+    @Override
+    public List<Memorandum> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults) {
+        return memorandumRepository.findRecentMinorVersions(documentId, documentRef, startIndex, maxResults);
+    }
+    
+    @Override
+    public Integer findRecentMinorVersionsCount(String documentId, String documentRef) {
+        return memorandumRepository.findRecentMinorVersionsCount(documentId, documentRef);
     }
 }

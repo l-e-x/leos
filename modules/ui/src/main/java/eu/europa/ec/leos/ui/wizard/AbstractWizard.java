@@ -13,10 +13,16 @@
  */
 package eu.europa.ec.leos.ui.wizard;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.eventbus.EventBus;
 import com.vaadin.server.AbstractErrorMessage;
-import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.server.UserError;
+import com.vaadin.shared.ui.ErrorLevel;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.ui.Alignment;
 import com.vaadin.ui.Button;
@@ -25,13 +31,9 @@ import com.vaadin.v7.shared.ui.label.ContentMode;
 import com.vaadin.v7.ui.HorizontalLayout;
 import com.vaadin.v7.ui.Label;
 import com.vaadin.v7.ui.VerticalLayout;
+
 import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.window.AbstractWindow;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class AbstractWizard extends AbstractWindow {
 
@@ -55,8 +57,8 @@ public abstract class AbstractWizard extends AbstractWindow {
         super(messageHelper, eventBus);
         LOG.trace("Initializing wizard...");
         // set default window size
-        setWidth("650px");
-        setHeight("450px");
+        setWidth("820px");
+        setHeight("520px");
 
         buildWizardBody();
         setBodyComponent(wizardBodyLayout);
@@ -213,12 +215,12 @@ public abstract class AbstractWizard extends AbstractWindow {
 
     private Button buildFinishButton() {
         finishButton = new Button();
-        finishButton.setCaption(messageHelper.getMessage("leos.button.finish"));
+        finishButton.setCaption(messageHelper.getMessage("leos.button.create"));
         finishButton.addStyleName("primary");
         finishButton.addClickListener(new Button.ClickListener() {
             @Override
             public void buttonClick(Button.ClickEvent clickEvent) {
-                LOG.trace("Wizard finish button was clicked!");
+                LOG.trace("Wizard create button was clicked!");
                 clearButtonErrors();
                 if (stepList.get(currentStep).validateState()) {
                     boolean isSuccess = handleFinishAction(stepList);

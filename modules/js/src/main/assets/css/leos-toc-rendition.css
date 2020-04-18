@@ -27,7 +27,8 @@
 ul.jqtree-tree .jqtree-title {
     margin-left: 19px;
     color: #474747;
-    font: 400 14px/1.55 "Open Sans";
+    font-family: "Open Sans";
+    color:#474747;
     white-space: nowrap;
 }
 
@@ -44,7 +45,7 @@ ul.jqtree-tree li.jqtree-selected > .jqtree-element:hover {
 }
 
 ul.jqtree-tree .jqtree-toggler {
-    font-size: 9px;
+    font-size: 7pt;
     padding-left: 5px;
 }
 

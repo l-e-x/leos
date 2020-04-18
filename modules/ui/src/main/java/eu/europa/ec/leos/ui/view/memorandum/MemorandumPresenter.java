@@ -18,10 +18,14 @@ import com.google.common.eventbus.Subscribe;
 import com.vaadin.server.VaadinServletService;
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
+import eu.europa.ec.leos.domain.common.TocMode;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.model.action.VersionVO;
 import eu.europa.ec.leos.model.event.DocumentUpdatedByCoEditorEvent;
 import eu.europa.ec.leos.model.event.UpdateUserInfoEvent;
 import eu.europa.ec.leos.model.user.User;
@@ -31,24 +35,50 @@ import eu.europa.ec.leos.services.content.TemplateConfigurationService;
 import eu.europa.ec.leos.services.content.processor.DocumentContentService;
 import eu.europa.ec.leos.services.content.processor.ElementProcessor;
 import eu.europa.ec.leos.services.document.MemorandumService;
+import eu.europa.ec.leos.services.store.PackageService;
+import eu.europa.ec.leos.services.store.WorkspaceService;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.ui.component.ComparisonComponent;
 import eu.europa.ec.leos.ui.event.CloseBrowserRequestEvent;
 import eu.europa.ec.leos.ui.event.CloseScreenRequestEvent;
+import eu.europa.ec.leos.ui.event.EnableSyncScrollRequestEvent;
 import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataRequest;
 import eu.europa.ec.leos.ui.event.metadata.DocumentMetadataResponse;
 import eu.europa.ec.leos.ui.event.metadata.SearchMetadataRequest;
 import eu.europa.ec.leos.ui.event.metadata.SearchMetadataResponse;
+import eu.europa.ec.leos.ui.event.toc.CloseEditTocEvent;
 import eu.europa.ec.leos.ui.model.AnnotateMetadata;
 import eu.europa.ec.leos.ui.support.CoEditionHelper;
 import eu.europa.ec.leos.ui.view.AbstractLeosPresenter;
 import eu.europa.ec.leos.ui.view.ComparisonDelegate;
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
 import eu.europa.ec.leos.usecases.document.CollectionContext;
 import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent;
 import eu.europa.ec.leos.web.event.NotificationEvent.Type;
-import eu.europa.ec.leos.web.event.component.*;
-import eu.europa.ec.leos.web.event.view.document.*;
+import eu.europa.ec.leos.web.event.component.CleanComparedContentEvent;
+import eu.europa.ec.leos.web.event.component.CompareRequestEvent;
+import eu.europa.ec.leos.web.event.component.CompareTimeLineRequestEvent;
+import eu.europa.ec.leos.web.event.component.LayoutChangeRequestEvent;
+import eu.europa.ec.leos.web.event.component.RestoreVersionRequestEvent;
+import eu.europa.ec.leos.web.event.component.ShowVersionRequestEvent;
+import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
+import eu.europa.ec.leos.web.event.component.VersionListResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent;
+import eu.europa.ec.leos.web.event.view.document.CloseDocumentEvent;
+import eu.europa.ec.leos.web.event.view.document.ComparisonEvent;
+import eu.europa.ec.leos.web.event.view.document.DocumentUpdatedEvent;
+import eu.europa.ec.leos.web.event.view.document.EditElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchUserGuidanceRequest;
+import eu.europa.ec.leos.web.event.view.document.FetchUserPermissionsRequest;
+import eu.europa.ec.leos.web.event.view.document.MergeSuggestionRequest;
+import eu.europa.ec.leos.web.event.view.document.MergeSuggestionResponse;
+import eu.europa.ec.leos.web.event.view.document.RefreshDocumentEvent;
+import eu.europa.ec.leos.web.event.view.document.SaveElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.SaveIntermediateVersionEvent;
+import eu.europa.ec.leos.web.event.view.document.ShowIntermediateVersionWindowEvent;
 import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
 import eu.europa.ec.leos.web.event.window.ShowTimeLineWindowEvent;
 import eu.europa.ec.leos.web.model.VersionInfoVO;
@@ -57,6 +87,7 @@ import eu.europa.ec.leos.web.support.UrlBuilder;
 import eu.europa.ec.leos.web.support.UuidHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.navigation.Target;
+import eu.europa.ec.leos.web.ui.screen.document.ColumnPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +97,11 @@ import org.springframework.stereotype.Component;
 import javax.inject.Provider;
 import javax.servlet.http.HttpSession;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
 
 @Component
 @Scope("prototype")
@@ -85,8 +120,12 @@ class MemorandumPresenter extends AbstractLeosPresenter {
     private final MessageHelper messageHelper;
     private final Provider<CollectionContext> proposalContextProvider;
     private final CoEditionHelper coEditionHelper;
-    
+    private final Provider<StructureContext> structureContextProvider;
+
     private String strDocumentVersionSeriesId;
+    private String documentId;
+    private String documentRef;
+    private boolean comparisonMode;
     
     private final static SimpleDateFormat dateFormatter = new SimpleDateFormat("dd/MM/yyyy HH:mm");
 
@@ -99,10 +138,13 @@ class MemorandumPresenter extends AbstractLeosPresenter {
                         UrlBuilder urlBuilder,
                         TemplateConfigurationService templateConfigurationService,
                         ComparisonDelegate<Memorandum> comparisonDelegate,
-                        UserHelper userHelper, MessageHelper messageHelper, 
+                        UserHelper userHelper, MessageHelper messageHelper,
                         Provider<CollectionContext> proposalContextProvider,
-                        CoEditionHelper coEditionHelper, EventBus leosApplicationEventBus, UuidHelper uuidHelper) {
-        super(securityContext, httpSession, eventBus, leosApplicationEventBus, uuidHelper);
+                        CoEditionHelper coEditionHelper, EventBus leosApplicationEventBus, UuidHelper uuidHelper,
+                        Provider<StructureContext> structureContextProvider,
+                        PackageService packageService,
+                        WorkspaceService workspaceService) {
+        super(securityContext, httpSession, eventBus, leosApplicationEventBus, uuidHelper, packageService, workspaceService);
         LOG.trace("Initializing memorandum presenter...");
         this.memorandumScreen = memorandumScreen;
         this.memorandumService = memorandumService;
@@ -115,12 +157,13 @@ class MemorandumPresenter extends AbstractLeosPresenter {
         this.messageHelper = messageHelper;
         this.proposalContextProvider = proposalContextProvider;
         this.coEditionHelper = coEditionHelper;
+        this.structureContextProvider = structureContextProvider;
     }
     
     @Override
     public void enter() {
         super.enter();
-        populateViewData();
+        init();
     }
 
     @Override
@@ -129,14 +172,26 @@ class MemorandumPresenter extends AbstractLeosPresenter {
         coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
     }
     
-    private String getDocumentId() {
-        return (String) httpSession.getAttribute(id + "." + SessionAttribute.MEMORANDUM_ID.name());
+    private void init() {
+        try {
+            populateViewData();
+            populateVersionsData();
+        } catch (Exception exception) {
+            LOG.error("Exception occurred in init(): ", exception);
+            eventBus.post(new NotificationEvent(Type.INFO, "unknown.error.message"));
+        }
+    }
+
+    private String getDocumentRef() {
+        return (String) httpSession.getAttribute(id + "." + SessionAttribute.MEMORANDUM_REF.name());
     }
 
     private Memorandum getDocument() {
-        String documentId = getDocumentId();
-        Memorandum memorandum = memorandumService.findMemorandum(documentId);
+        documentRef = getDocumentRef();
+        Memorandum memorandum = memorandumService.findMemorandumByRef(documentRef);
         strDocumentVersionSeriesId = memorandum.getVersionSeriesId();
+        documentId = memorandum.getId();
+        structureContextProvider.get().useDocumentTemplate(memorandum.getMetadata().getOrError(() -> "Memorandum metadata is required!").getDocTemplate());
         return memorandum;
     }
 
@@ -157,25 +212,56 @@ class MemorandumPresenter extends AbstractLeosPresenter {
             eventBus.post(new NotificationEvent(Type.INFO, "error.message", ex.getMessage()));
         }
     }
+    
+    private void populateVersionsData() {
+        final List<VersionVO> allVersions = memorandumService.getAllVersions(documentId, documentRef);
+        memorandumScreen.setDataFunctions(
+                allVersions,
+                this::majorVersionsFn, this::countMajorVersionsFn,
+                this::minorVersionsFn, this::countMinorVersionsFn,
+                this::recentChangesFn, this::countRecentChangesFn);
+    }
+    
+    @Subscribe
+    public void updateVersionsTab(DocumentUpdatedEvent event) {
+        final List<VersionVO> allVersions = memorandumService.getAllVersions(documentId, documentRef);
+        memorandumScreen.refreshVersions(allVersions, comparisonMode);
+    }
+    
+    private Integer countMinorVersionsFn(String currIntVersion) {
+        return memorandumService.findAllMinorsCountForIntermediate(documentRef, currIntVersion);
+    }
+    
+    private List<Memorandum> minorVersionsFn(String currIntVersion, int startIndex, int maxResults) {
+        return memorandumService.findAllMinorsForIntermediate(documentRef, currIntVersion, startIndex, maxResults);
+    }
+    
+    private Integer countMajorVersionsFn() {
+        return memorandumService.findAllMajorsCount(documentRef);
+    }
+    
+    private List<Memorandum> majorVersionsFn(int startIndex, int maxResults) {
+        return memorandumService.findAllMajors(documentRef, startIndex, maxResults);
+    }
+    
+    private Integer countRecentChangesFn() {
+        return memorandumService.findRecentMinorVersionsCount(documentId, documentRef);
+    }
+    
+    private List<Memorandum> recentChangesFn(int startIndex, int maxResults) {
+        return memorandumService.findRecentMinorVersions(documentId, documentRef, startIndex, maxResults);
+    }
 
     private List<TableOfContentItemVO> getTableOfContent(Memorandum memorandum) {
-        return memorandumService.getTableOfContent(memorandum);
+        return memorandumService.getTableOfContent(memorandum, TocMode.NOT_SIMPLIFIED);
     }
 
     @Subscribe
     void getDocumentVersionsList(VersionListRequestEvent<Memorandum> event) {
-        List<Memorandum> memoVersions = memorandumService.findVersions(getDocumentId());
+        List<Memorandum> memoVersions = memorandumService.findVersions(documentId);
         eventBus.post(new VersionListResponseEvent(new ArrayList<>(memoVersions)));
     }
-
-    @Subscribe
-    void getMarkedContent(MarkedContentRequestEvent<Memorandum> event) {
-        String oldVersionId = event.getOldVersion().getId();
-        String newVersionId = event.getNewVersion().getId();
-        String markedContent = comparisonDelegate.getMarkedContent(memorandumService.findMemorandumVersion(oldVersionId), memorandumService.findMemorandumVersion(newVersionId));
-        memorandumScreen.populateMarkedContent(markedContent);
-    }
-
+    
     private String getEditableXml(Memorandum memorandum) {
         securityContext.getPermissions(memorandum);
         return documentContentService.toEditableContent(memorandum,
@@ -183,8 +269,8 @@ class MemorandumPresenter extends AbstractLeosPresenter {
     }
 
     @Subscribe
-    void handleCloseScreenRequest(CloseScreenRequestEvent event) {
-        LOG.trace("Handling close screen request...");
+    void handleCloseDocument(CloseDocumentEvent event) {
+        LOG.trace("Handling close document request...");
         coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
         eventBus.post(new NavigationRequestEvent(Target.PREVIOUS));
     }
@@ -192,6 +278,15 @@ class MemorandumPresenter extends AbstractLeosPresenter {
     @Subscribe
     void handleCloseBrowserRequest(CloseBrowserRequestEvent event) {
         coEditionHelper.removeUserEditInfo(id, strDocumentVersionSeriesId, null, InfoType.DOCUMENT_INFO);
+    }
+
+    @Subscribe
+    void handleCloseScreenRequest(CloseScreenRequestEvent event) {
+        if (memorandumScreen.isTocEnabled()) {
+            eventBus.post(new CloseEditTocEvent());
+        } else {
+            eventBus.post(new CloseDocumentEvent());
+        }
     }
 
     @Subscribe
@@ -238,7 +333,7 @@ class MemorandumPresenter extends AbstractLeosPresenter {
                 return;
             }
 
-            memorandum = memorandumService.updateMemorandum(memorandum, newXmlContent, false, messageHelper.getMessage("operation." + elementTagName + ".updated"));
+            memorandum = memorandumService.updateMemorandum(memorandum, newXmlContent, VersionType.MINOR, messageHelper.getMessage("operation." + elementTagName + ".updated"));
 
             if (memorandum != null) {
                 String elementContent = elementProcessor.getElement(memorandum, elementTagName, elementId);
@@ -265,9 +360,8 @@ class MemorandumPresenter extends AbstractLeosPresenter {
     @Subscribe
     public void getUserGuidance(FetchUserGuidanceRequest event) {
         // KLUGE temporary hack for compatibility with new domain model
-        String documentId = getDocumentId();
         Memorandum memorandum = memorandumService.findMemorandum(documentId);
-        String jsonGuidance = templateConfigurationService.getTempalteConfiguration(memorandum.getMetadata().get().getDocTemplate(), "guidance");
+        String jsonGuidance = templateConfigurationService.getTemplateConfiguration(memorandum.getMetadata().get().getDocTemplate(), "guidance");
         memorandumScreen.setUserGuidance(jsonGuidance);
     }
 
@@ -279,7 +373,7 @@ class MemorandumPresenter extends AbstractLeosPresenter {
             eventBus.post(new MergeSuggestionResponse(messageHelper.getMessage("document.merge.suggestion.failed"), MergeSuggestionResponse.Result.ERROR));
             return;
         }
-        document = memorandumService.updateMemorandum(document, resultXmlContent, false, messageHelper.getMessage("operation.merge.suggestion"));
+        document = memorandumService.updateMemorandum(document, resultXmlContent, VersionType.MINOR, messageHelper.getMessage("operation.merge.suggestion"));
         if (document != null) {
             eventBus.post(new RefreshDocumentEvent());
             eventBus.post(new DocumentUpdatedEvent());
@@ -315,7 +409,7 @@ class MemorandumPresenter extends AbstractLeosPresenter {
 
     @Subscribe
     void showTimeLineWindow(ShowTimeLineWindowEvent event) {
-        List documentVersions = memorandumService.findVersions(getDocumentId());
+        List documentVersions = memorandumService.findVersions(documentId);
         memorandumScreen.showTimeLineWindow(documentVersions);
     }
 
@@ -324,42 +418,86 @@ class MemorandumPresenter extends AbstractLeosPresenter {
         String versionId = event.getVersionId();
         Memorandum version = memorandumService.findMemorandumVersion(versionId);
         byte[] resultXmlContent = getContent(version);
-        memorandumService.updateMemorandum(getDocument(), resultXmlContent, false, messageHelper.getMessage("operation.restore.version", version.getVersionLabel()));
+        memorandumService.updateMemorandum(getDocument(), resultXmlContent, VersionType.MINOR, messageHelper.getMessage("operation.restore.version", version.getVersionLabel()));
 
-        List documentVersions = memorandumService.findVersions(getDocumentId());
+        List documentVersions = memorandumService.findVersions(documentId);
         memorandumScreen.updateTimeLineWindow(documentVersions);
         eventBus.post(new RefreshDocumentEvent());
         eventBus.post(new DocumentUpdatedEvent()); //Document might be updated.
         leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
     }
-
+    
     @Subscribe
-    void versionCompare(ComparisonRequestEvent<Memorandum> event) {
-        String oldVersionId = event.getOldVersion().getId();
-        String newVersionId = event.getNewVersion().getId();
-        int displayMode = event.getDisplayMode();
-        HashMap<Integer, Object> result = comparisonDelegate.versionCompare(memorandumService.findMemorandumVersion(oldVersionId), memorandumService.findMemorandumVersion(newVersionId), displayMode);
+    void cleanComparedContent(CleanComparedContentEvent event) {
+        memorandumScreen.cleanComparedContent();
+    }
+    
+    @Subscribe
+    void showVersion(ShowVersionRequestEvent event) {
+        final Memorandum version = memorandumService.findMemorandumVersion(event.getVersionId());
+        final String versionContent = comparisonDelegate.getDocumentAsHtml(version);
+        final String versionInfo = getVersionInfoAsString(version);
+        memorandumScreen.showVersion(versionContent, versionInfo);
+        eventBus.post(new EnableSyncScrollRequestEvent(true));
+    }
+    
+    @Subscribe
+    void compare(CompareRequestEvent event) {
+        final Memorandum oldVersion = memorandumService.findMemorandumVersion(event.getOldVersionId());
+        final Memorandum newVersion = memorandumService.findMemorandumVersion(event.getNewVersionId());
+        String comparedContent = comparisonDelegate.getMarkedContent(oldVersion, newVersion);
+        final String comparedInfo = messageHelper.getMessage("version.compare.simple", oldVersion.getVersionLabel(), newVersion.getVersionLabel());
+        memorandumScreen.populateComparisonContent(comparedContent, comparedInfo);
+        eventBus.post(new EnableSyncScrollRequestEvent(true));
+    }
+    
+    @Subscribe
+    void compareUpdateTimelineWindow(CompareTimeLineRequestEvent event) {
+        String oldVersionId = event.getOldVersion();
+        String newVersionId = event.getNewVersion();
+        ComparisonDisplayMode displayMode = event.getDisplayMode();
+        HashMap<ComparisonDisplayMode, Object> result = comparisonDelegate.versionCompare(memorandumService.findMemorandumVersion(oldVersionId), memorandumService.findMemorandumVersion(newVersionId), displayMode);
         memorandumScreen.displayComparison(result);        
     }
-
+    
+    private String getVersionInfoAsString(XmlDocument document) {
+        final VersionInfoVO versionInfo = getVersionInfo(document);
+        final String versionInfoString = messageHelper.getMessage(
+                "document.version.caption",
+                versionInfo.getDocumentVersion(),
+                versionInfo.getLastModifiedBy(),
+                versionInfo.getEntity(),
+                versionInfo.getLastModificationInstant()
+        );
+        return versionInfoString;
+    }
+    
     @Subscribe
-    public void showMajorVersionWindow(ShowMajorVersionWindowEvent event) {
-        memorandumScreen.showMajorVersionWindow();
+    public void changeComparisionMode(ComparisonEvent event) {
+        comparisonMode = event.isComparsionMode();
+        LayoutChangeRequestEvent layoutEvent;
+        if (comparisonMode) {
+            memorandumScreen.cleanComparedContent();
+            layoutEvent = new LayoutChangeRequestEvent(ColumnPosition.DEFAULT, ComparisonComponent.class);
+        } else {
+            layoutEvent = new LayoutChangeRequestEvent(ColumnPosition.OFF, ComparisonComponent.class);
+        }
+        eventBus.post(layoutEvent);
+        updateVersionsTab(new DocumentUpdatedEvent());
     }
 
     @Subscribe
-    public void saveMajorVersion(SaveMajorVersionEvent event) {
-        Memorandum memorandum = memorandumService.createVersion(getDocumentId(), event.isMajor(), event.getComments());
-        setMemorandumDocumentId(memorandum.getId());
+    public void showIntermediateVersionWindow(ShowIntermediateVersionWindowEvent event) {
+        memorandumScreen.showIntermediateVersionWindow();
+    }
+
+    @Subscribe
+    public void saveIntermediateVersion(SaveIntermediateVersionEvent event) {
+        Memorandum memorandum = memorandumService.createVersion(documentId, event.getVersionType(), event.getCheckinComment());
         eventBus.post(new NotificationEvent(NotificationEvent.Type.INFO, "document.major.version.saved"));
         eventBus.post(new DocumentUpdatedEvent());
-        leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, strDocumentVersionSeriesId, id));
+        leosApplicationEventBus.post(new DocumentUpdatedByCoEditorEvent(user, memorandum.getVersionSeriesId(), id));
         populateViewData();
-    }
-
-    private void setMemorandumDocumentId(String id) {
-        LOG.trace("Setting memorandum ID in HTTP session... [id={}]", id);
-        httpSession.setAttribute(this.id + "." + SessionAttribute.MEMORANDUM_ID.name(), id);
     }
     
     private byte[] getContent(Memorandum memorandum) {
@@ -371,12 +509,11 @@ class MemorandumPresenter extends AbstractLeosPresenter {
         String userId = document.getLastModifiedBy();
         User user = userHelper.getUser(userId);
 
-        return  new VersionInfoVO(
+        return new VersionInfoVO(
                 document.getVersionLabel(),
-                user!=null? user.getName(): userId,
-                user!=null? user.getEntity(): "",
+                user.getName(), user.getDefaultEntity() != null ? user.getDefaultEntity().getOrganizationName(): "",
                 dateFormatter.format(Date.from(document.getLastModificationInstant())),
-                document.isMajorVersion());
+                document.getVersionType());
     }
 
     private DocumentVO createMemorandumVO(Memorandum memorandum) {
@@ -385,7 +522,10 @@ class MemorandumPresenter extends AbstractLeosPresenter {
                 LeosCategory.MEMORANDUM,
                 memorandum.getLastModifiedBy(),
                 Date.from(memorandum.getLastModificationInstant()));
-
+        if (memorandum.getMetadata().isDefined()) {
+            MemorandumMetadata metadata = memorandum.getMetadata().get();
+            memorandumVO.getMetadata().setInternalRef(metadata.getRef());
+        }
         if(!memorandum.getCollaborators().isEmpty()) {
             memorandumVO.addCollaborators(memorandum.getCollaborators());
         }
@@ -395,10 +535,11 @@ class MemorandumPresenter extends AbstractLeosPresenter {
 
     @Subscribe
     void updateProposalMetadata(DocumentUpdatedEvent event) {
-        CollectionContext context = proposalContextProvider.get();
-        context.useChildDocument(getDocumentId());
-        context.useActionComment(messageHelper.getMessage("operation.metadata.updated"));
-        context.executeUpdateProposalAsync();
+        if (event.isModified()) {
+            CollectionContext context = proposalContextProvider.get();
+            context.useChildDocument(documentId);
+            context.executeUpdateProposalAsync();
+        }
     }
 
     @Subscribe

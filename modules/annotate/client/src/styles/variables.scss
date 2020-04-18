@@ -1,17 +1,3 @@
-//
-// Copyright 2019 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-
 // Colors and shades of gray
 // Names courtesy of http://chir.ag/projects/name-that-color
 
@@ -48,6 +34,8 @@ $button-background-gradient: to bottom, $button-background-start, $button-backgr
 $error-color: #f0480c !default;
 $success-color: #1cbd41 !default;
 
+$filter-choice-bg-color: #f8f8ff;
+$filter-choice-border-color: #d3d3d3;
 
 // Variables for the new color palette
 // ------------------------------------
@@ -138,7 +126,9 @@ $bucket-bar-width: 22px;
 $highlight-color: rgba(255, 255, 60, 0.3);
 $highlight-color-second: rgba(206, 206, 60, 0.4);
 $highlight-color-third: rgba(192, 192, 49, 0.4);
+$highlight-color-fourth: rgba(160, 160, 60, 0.4);
 $highlight-color-focus: rgba(156, 230, 255, 0.5);
+$highlight-color-select: rgba(106, 197, 250, 1);
 $top-bar-height: 40px;
 
 // Mixins

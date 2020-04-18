@@ -23,8 +23,5 @@ public class LeosJavaScriptExtensionState extends JavaScriptExtensionState {
     @NoLayout
     public boolean jsDepsInited = false;
     
-    @NoLayout
-    public String instanceType;
-
     public long dirtyTimestamp = -1L;
 }

@@ -47,26 +47,33 @@ public class JsonGroup {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public boolean isPublic() {
         return publicGroup;
     }
 
+    @Generated
     public void setPublic(final boolean isPublic) {
         this.publicGroup = isPublic;
     }
 
+    @Generated
     public String getName() {
         return name;
     }
 
+    @Generated
     public void setName(final String name) {
         this.name = name;
     }
 
+    @Generated
     public String getId() {
         return id;
     }
 
+    @Generated
     public void setId(final String newId) {
         this.id = newId;
     }

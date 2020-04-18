@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var SearchClient = require('../search-client');
@@ -19,6 +6,9 @@ var isThirdPartyService = require('../util/is-third-party-service');
 var memoize = require('../util/memoize');
 var tabs = require('../tabs');
 var uiConstants = require('../ui-constants');
+//LEOS Change
+var serviceConfig = require('../service-config');
+var LEOS_SYSTEMIDS = require('../../../leos/shared/systemId');
 
 function firstKey(object) {
   for (var k in object) {
@@ -46,8 +36,8 @@ function groupIDFromSelection(selection, results) {
 }
 
 // @ngInject
-function SidebarContentController(
-  $scope, analytics, bridge, store, annotationMapper, api, drafts, features, frameSync,
+function SidebarContentController( // LEOS Change : Added rootScope
+  $scope, $rootScope, analytics, bridge, store, annotationMapper, api, drafts, features, frameSync,
   groups, rootThread, settings, streamer, streamFilter
 ) {
   var self = this;
@@ -87,6 +77,7 @@ function SidebarContentController(
       return;
     }
     frameSync.scrollToAnnotation(annotation.$tag);
+    frameSync.LEOS_selectAnnotation(annotation); //LEOS Change
   }
 
   /**
@@ -159,16 +150,21 @@ function SidebarContentController(
       });
     });
     // LEOS Change
+    var queryJson = {uri: uris, group: group};
     requestSearchMetadata().then( function([metadatasets]) {
+      if(settings.connectedEntity) {
+        queryJson.connectedEntity = settings.connectedEntity;
+      }
       if (metadatasets != null) {
         var leosMetadata = JSON.parse(metadatasets);
-        searchClient.get({uri: uris, group: group, metadatasets: JSON.stringify(leosMetadata)});
+        queryJson.metadatasets = JSON.stringify(leosMetadata);
+        searchClient.get(queryJson);
       }
       else {
-        searchClient.get({uri: uris, group: group});
+        searchClient.get(queryJson);
       }
     }).catch( function(error) {
-      searchClient.get({uri: uris, group: group});
+      searchClient.get(queryJson);
     });
     // ---------------
   }
@@ -225,6 +221,13 @@ function SidebarContentController(
     analytics.track(analytics.events.SIDEBAR_OPENED);
 
     streamer.connect();
+
+    //LEOS Change - make default loaded group as Collaborators
+    var svc = serviceConfig(settings);
+    if(svc && svc.authority && svc.authority !== LEOS_SYSTEMIDS.ISC &&
+        groups.focused() && groups.focused().id !== groups.defaultGroupId()) {
+      groups.focus(groups.defaultGroupId());
+    }
   });
 
   // If the user is logged in, we connect nevertheless
@@ -356,11 +359,16 @@ function SidebarContentController(
     }
 
     store.clearSelectedAnnotations();
+    $rootScope.$broadcast(events.LEOS_CLEAR_SELECTION); //LEOS Change
     store.selectTab(selectedTab);
   };
 
-  // LEOS Change
+  //LEOS Change
+  $scope.$on('LEOS_clearSelectedAnnotations', function (event) {
+    self.clearSelection();
+  });
 
+  // LEOS Change
   $scope.$on('reloadAnnotations', function () {
     store.clearSelectedAnnotations();
     loadAnnotations();

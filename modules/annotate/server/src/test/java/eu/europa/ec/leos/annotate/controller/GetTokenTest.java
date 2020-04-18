@@ -19,6 +19,7 @@ import eu.europa.ec.leos.annotate.helper.SerialisationHelper;
 import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.token.JsonAuthenticationFailure;
 import eu.europa.ec.leos.annotate.model.web.token.JsonTokenResponse;
@@ -144,7 +145,8 @@ public class GetTokenTest {
         params.put("userId", LOGIN1);
 
         // prepare Mockito to return the desired user details
-        final UserDetails details = new UserDetails(LOGIN1, (long) 45, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserEntity entity = new UserEntity("8", "DIGIT", "DIGIT");
+        final UserDetails details = new UserDetails(LOGIN1, (long) 45, "Santa", "Clause", Arrays.asList(entity), "santa@clause.europa.eu", null);
         Mockito.when(restOperations.getForObject(repositoryUrl, UserDetails.class, params)).thenReturn(details);
 
         // send token request

@@ -15,6 +15,7 @@ package eu.europa.ec.leos.domain.cmis.document;
 
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import io.atlassian.fugue.Option;
 
@@ -26,11 +27,11 @@ public final class Bill extends XmlDocument {
     private final Option<BillMetadata> metadata;
 
     public Bill(String id, String name, String createdBy, Instant creationInstant, String lastModifiedBy, Instant lastModificationInstant,
-                String versionSeriesId, String versionLabel, String versionComment, boolean isMajorVersion, boolean isLatestVersion,
+                String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment, VersionType versionType, boolean isLatestVersion,
                 String title, Map<String, String> collaborators, List<String> milestoneComments, Option<Content> content, Option<BillMetadata> metadata) {
 
         super(LeosCategory.BILL, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant,
-                versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion, title, collaborators,
+                versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, title, collaborators,
                 milestoneComments, content);
         this.metadata = metadata;
     }

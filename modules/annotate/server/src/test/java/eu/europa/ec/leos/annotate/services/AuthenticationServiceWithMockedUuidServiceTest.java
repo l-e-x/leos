@@ -17,7 +17,6 @@ import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.User;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotStoreTokenException;
 import eu.europa.ec.leos.annotate.services.impl.AuthenticationServiceImpl;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,6 +39,13 @@ public class AuthenticationServiceWithMockedUuidServiceTest {
      * Test cases on the AuthenticationService; executed using mocked UUIDGeneratorService to simulate desired internal behavior 
      */
 
+    // the UUIDGeneratorService used inside the AuthenticationService is mocked
+    @Mock
+    private UUIDGeneratorService uuidService;
+
+    @InjectMocks
+    private AuthenticationServiceImpl authService;
+
     @Before
     public void setupTests() {
 
@@ -50,13 +56,6 @@ public class AuthenticationServiceWithMockedUuidServiceTest {
     // Required services and repositories
     // -------------------------------------
 
-    // the UUIDGeneratorService used inside the AuthenticationService is mocked
-    @Mock
-    private UUIDGeneratorService uuidService;
-
-    @InjectMocks
-    private AuthenticationServiceImpl authService;
-
     // -------------------------------------
     // Tests
     // -------------------------------------
@@ -64,40 +63,26 @@ public class AuthenticationServiceWithMockedUuidServiceTest {
     /**
      * test that an expected exception is given when invalid access token is tried to be persisted
      */
-    @Test
-    public void testSavingEmptyAccessTokenThrowsException() {
+    @Test(expected = CannotStoreTokenException.class)
+    public void testSavingEmptyAccessTokenThrowsException() throws CannotStoreTokenException {
 
         Mockito.when(uuidService.generateUrlSafeUUID())
-            .thenReturn("")          // first call provides invalid access token
-            .thenReturn("refresh");  // second is ok
+                .thenReturn("")          // first call provides invalid access token
+                .thenReturn("refresh");  // second is ok
 
-        try {
-            authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
-            Assert.fail("Expected exception from AuthenticationService not received");
-        } catch(CannotStoreTokenException cste) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception from AuthenticationService");
-        }
+        authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
     }
-    
+
     /**
      * test that an expected exception is given when invalid refresh token is tried to be persisted
      */
-    @Test
-    public void testSavingEmptyRefreshTokenThrowsException() {
+    @Test(expected = CannotStoreTokenException.class)
+    public void testSavingEmptyRefreshTokenThrowsException() throws CannotStoreTokenException {
 
         Mockito.when(uuidService.generateUrlSafeUUID())
-            .thenReturn("acce$$")          // first call is ok 
-            .thenReturn("");  // second provides invalid access token
+                .thenReturn("acce$$")          // first call is ok
+                .thenReturn("");  // second provides invalid access token
 
-        try {
-            authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
-            Assert.fail("Expected exception from AuthenticationService not received");
-        } catch(CannotStoreTokenException cste) {
-            // OK
-        } catch (Exception e) {
-            Assert.fail("Received unexpected exception from AuthenticationService");
-        }
+        authService.generateAndSaveTokensForUser(new UserInformation(new User("someuser"), "auth"));
     }
 }

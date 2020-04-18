@@ -24,10 +24,7 @@ import eu.europa.ec.leos.annotate.repository.DocumentRepository;
 import eu.europa.ec.leos.annotate.repository.GroupRepository;
 import eu.europa.ec.leos.annotate.repository.UserGroupRepository;
 import eu.europa.ec.leos.annotate.repository.UserRepository;
-import eu.europa.ec.leos.annotate.services.DocumentService;
-import eu.europa.ec.leos.annotate.services.GroupService;
-import eu.europa.ec.leos.annotate.services.MetadataService;
-import eu.europa.ec.leos.annotate.services.UserService;
+import eu.europa.ec.leos.annotate.services.*;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateAnnotationException;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateMetadataException;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationServiceImpl;
@@ -58,6 +55,7 @@ public class AnnotationSaveWithMetadataMockTest {
     @InjectMocks
     private AnnotationServiceImpl annotService; // mocked MetadataService is injected
 
+    @SuppressWarnings({"PMD.UnusedPrivateField"})
     @Mock
     private DocumentRepository documentRepos;
 
@@ -73,6 +71,10 @@ public class AnnotationSaveWithMetadataMockTest {
     @Mock
     private MetadataService metadataService;
 
+    @SuppressWarnings({"PMD.UnusedPrivateField"})
+    @Mock
+    private MetadataMatchingService metadataMatchingService;
+    
     @Mock
     private UserService userService;
 
@@ -108,6 +110,7 @@ public class AnnotationSaveWithMetadataMockTest {
 
     // test creation of an annotation when metadata service has internal failures - annotation creation should throw expected exception
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     @Test(expected = CannotCreateAnnotationException.class)
     public void testCreateAnnotation_MetadataService_Failure() throws CannotCreateAnnotationException, CannotCreateMetadataException {
 

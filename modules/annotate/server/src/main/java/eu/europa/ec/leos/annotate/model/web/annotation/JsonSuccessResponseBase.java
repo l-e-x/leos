@@ -13,6 +13,8 @@
  */
 package eu.europa.ec.leos.annotate.model.web.annotation;
 
+import eu.europa.ec.leos.annotate.Generated;
+
 public abstract class JsonSuccessResponseBase {
 
     /**
@@ -39,10 +41,12 @@ public abstract class JsonSuccessResponseBase {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public String getId() {
         return id;
     }
 
+    @Generated
     public void setId(final String newId) {
         this.id = newId;
     }

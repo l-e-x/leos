@@ -15,6 +15,7 @@ package eu.europa.ec.leos.integration.rest;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import eu.europa.ec.leos.model.user.Entity;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.SecurityUser;
 
@@ -28,8 +29,8 @@ public class UserJSON extends User implements SecurityUser {
 
     @JsonCreator
     public UserJSON(@JsonProperty("login") String login, @JsonProperty("perId") Long perId, @JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("entity") String entity, @JsonProperty("email") String email, @JsonProperty("roles") List<String> roles) {
-        super(perId, login,  lastName + " " + firstName, entity, email,roles);
+            @JsonProperty("entities") List<Entity> entities, @JsonProperty("email") String email, @JsonProperty("roles") List<String> roles) {
+        super(perId, login, lastName + " " + firstName, entities, email, roles);
 
         this.lastName = lastName;
         this.firstName = firstName;

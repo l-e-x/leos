@@ -1,0 +1,283 @@
+@charset "UTF-8";
+/**
+ * Copyright 2019 European Commission
+ *
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * You may not use this work except in compliance with the Licence.
+ * You may obtain a copy of the Licence at:
+ *
+ *     https://joinup.ec.europa.eu/software/page/eupl
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the Licence for the specific language governing permissions and limitations under the Licence.
+ */
+
+@mixin versionsTab {
+
+	#leosAccordion :not(.v-accordion-item-open) .v-accordion-item-caption{
+		background-color: $ACCORDION_HEADER_DESELECTED;
+	}
+
+	.versions-cards-holder-scroller{
+		overflow-y: auto;
+	}
+
+	.versions-cards-holder{
+		padding: 7px 7px 0 7px;
+	}
+
+	.v-accordion-item-caption {
+		background-color: $HEADER_BLUE;
+
+		.v-caption {
+			color: white;
+			border-bottom: none;
+		}
+	}
+	
+	.version-label-no-minors-present {
+		margin-left: -162px;
+	}
+	
+	.version-recent-remove-scrollbar ::-webkit-scrollbar{
+			width: 0px;
+	}	 
+	.version-card {
+		box-sizing: border-box;
+		position: inherit;
+		overflow: hidden;
+		background: $WHITE;
+		font-size: 12px;
+		margin-bottom: 7px;
+		padding: 0px 7px 7px 7px;
+		
+		.v-checkbox{
+			top: 3px;
+			padding-bottom: 8px;
+			
+		}
+		
+		.v-menubar {
+				background:none;
+				border: none;
+				box-shadow: none;
+		}
+
+		&.recent {
+			border: 2px solid $RECENT;
+			border-radius: 10px;
+			&:hover {
+				background: $RECENT_HOVER;
+			}
+		}
+		&.milestone {
+			border: 2px solid $BLUE_MILESTONE_BORDER;
+			border-radius: 10px;
+			&:hover {
+				background: $BLUE_MILESTONE_HOVER;
+			}
+		}
+		&.intermediate {
+			border: 2px solid $INTERMEDIATE;
+			&:hover {
+				background: $INTERMEDIATE_HOVER;
+			}
+		}
+
+		.version-card-header {
+			font-size: 12px;
+			font-weight: bold;
+			border: 0px solid;
+			.recent {
+				color: $RECENT;
+			}
+			.milestone {
+				color: $BLUE_MILESTONE_BORDER;
+			}
+			.intermediate {
+				color: $INTERMEDIATE;
+			}
+		}
+
+		.milestone-tag-block {
+			border: 1px solid $BLUE_MILESTONE_TITLE;
+			background: $BLUE_MILESTONE_TITLE;
+			color: white;
+			font-size: 10px;
+			border-radius: 5px;
+			margin-top: 2px;
+			padding: 0 8px 0 8px;
+		}
+		
+		.author-timestamp {
+			font-size: 9px;
+		}
+
+		.title-description-block {
+			border: 1px solid $TITLE_DESCRIPTION_BLOCK;
+			padding-left: 3px;
+			margin-top: 3px;
+		}
+		.title {
+			font-weight: bold;
+			font-size: 14px;
+			white-space: pre-wrap;
+			word-break: break-word;
+		}
+		.description {
+			white-space: normal;
+			font-size: 11px;
+		}
+
+		.version-actions-icon {
+			background: url('../../icons/16/version_actions.png');
+			background-repeat: no-repeat;
+			background-position: center;
+			height: 16px;
+			width: 16px;
+			border: none;
+			margin-bottom: 2px;
+			margin-right: 10px;
+		}
+		.v-button {
+			&.version-actions-icon {
+				&:hover {
+					background: url('../../icons/16/version_actions.png');
+					background-repeat: no-repeat;
+					background-position: center;
+					border: none;
+				}
+			}
+		}
+
+		.versions-block {
+			margin-top: 3px;
+		}
+
+		.show-versions-block {
+			display: table-caption;
+			cursor: pointer;
+			padding-top: 3px;
+		}
+
+		.show-versions-button {
+			color: $ACCORDION_HEADER;
+			background: transparent;
+			border: none;
+			height: 18px;
+			padding: 0;
+			margin-top: -1px;
+		}
+		.v-button {
+			&.show-versions-button {
+				&:hover {
+					color: $ACCORDION_HEADER_DESELECTED;
+					background: transparent;
+					border: none;
+				}
+			}
+		}
+
+		.show-versions-label {
+			color: $RECENT;
+			font-size: 10px;
+			margin-left: -4px;
+			display: table-caption;
+		}
+
+		.versions-holder {
+			
+			::-webkit-scrollbar-thumb {
+				border-radius: 2px;
+				border: 2px solid transparent;
+				background: rgba(0, 0, 0, 0.3);
+				-webkit-background-clip: content-box;
+			 }
+			 
+			.v-grid-tablewrapper {
+				border: none;
+			}
+			.v-grid-scroller-vertical{
+				border: 1px solid white;
+			}
+			.v-grid-scroller-horizontal{
+				border: 1px solid white;
+			}
+			.v-grid-horizontal-scrollbar-deco{
+				border: 1px solid white;
+			}
+			.v-grid-row-stripe > td {
+				background: $v-background-color;
+			}
+			.v-grid-row > td {
+				border-top: none;
+				border-bottom: none;
+			}
+			.v-grid-row > td:before {
+				border: none;
+			}
+			.v-grid-row {
+				margin: 0 0px 5px 0px;
+			}
+			.v-grid-cell {
+				padding: 0;
+				font-size: 12px;
+			}
+			.v-grid-cell  > * {
+				line-height: 1.70;
+				vertical-align: middle;
+			}
+			.v-grid-row-selected > .v-grid-cell {
+				background: white;
+				border-color: white;
+			}
+		}
+		
+		.versions-holder-row1 {
+			height: 25px !important;
+		}
+		
+		.versions-holder-row2 {
+			height: 50px !important;
+		}
+		
+		.versions-holder-row3 {
+			height: 75px !important;
+		}
+		
+		.versions-holder-row4 {
+			height: 100px !important;
+		}
+		.versions-holder-norow {
+			height: 150px !important;
+		}
+
+		.version-row {
+			border: 1px dashed $VERSIONS_ROW_BORDER;
+			padding: 0px 2px 0px 3px;
+			margin-bottom: 2px;
+
+			&:hover {
+				background: $GREY;
+			}
+			.v-menubar {
+				border: none;
+				background-color: $WHITE;
+				position: fixed;
+				right: 1px;
+				top: 11%;
+				width: 3em;
+				height: 22px;
+			}
+			.v-menubar-submenu-indicator {
+				&+.v-menubar-menuitem-caption {
+					&:after {
+						display: none;
+					}
+				}
+			}
+		}
+		
+	}
+}

@@ -15,10 +15,7 @@
 	
     <!-- XSLT Context -->
     <import resource="classpath:eu/europa/ec/leos/xslt/xsltContext.xml"/>
-    
-    <!-- TOC Context -->
-    <import resource="classpath:eu/europa/ec/leos/toc/tableOfContentContext.xml"/>
-	
+
     <cache:annotation-driven />
  
     <bean id="cacheManager" class="org.springframework.cache.guava.GuavaCacheManager">

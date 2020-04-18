@@ -13,52 +13,74 @@
  */
 package eu.europa.ec.digit.userdata.controllers;
 
-import java.util.Collection;
-import java.util.stream.Collectors;
-
+import eu.europa.ec.digit.userdata.entities.Entity;
 import eu.europa.ec.digit.userdata.entities.User;
+import eu.europa.ec.digit.userdata.repositories.EntityRepository;
 import eu.europa.ec.digit.userdata.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 @RestController
 public class UserController {
 
     private static int MAX_RECORDS = 100;
 
-    @Autowired UserRepository repository;
+    @Autowired
+    UserRepository userRepository;
 
-    @RequestMapping(method = RequestMethod.GET, path="/users")
+    @Autowired
+    EntityRepository entityRepository;
+
+    @RequestMapping(method = RequestMethod.GET, path = "/users")
     @Transactional(readOnly = true)
     public Collection<User> searchUsers(
             @RequestParam(value = "searchKey", required = true) String searchKey) {
-        return repository.findUsersByKey(searchKey.trim().replace(" ", "%").concat("%"))
-                .limit(MAX_RECORDS)
-                .collect(Collectors.toList());
+        return userRepository
+                .findUsersByKey(searchKey.trim().replace(" ", "%").concat("%"))
+                .limit(MAX_RECORDS).collect(Collectors.toList());
     }
 
-    @RequestMapping(method = RequestMethod.GET, path="/users/{userId}")
+    @RequestMapping(method = RequestMethod.GET, path = "/users/{userId}")
     @Transactional(readOnly = true)
     public User getUser(
             @PathVariable(value = "userId", required = true) String userId) {
-        return repository.findByLogin(userId);
+        return userRepository.findByLogin(userId);
     }
 
-    @RequestMapping(method = RequestMethod.GET, path="entities")
+    @RequestMapping(method = RequestMethod.GET, path = "/entities")
     @Transactional(readOnly = true)
-    public Collection<String> getAllEntities() {
-        return repository.findAllEntities()
+    public Collection<String> getAllOrganizations() {
+        return entityRepository.findAllOrganizations()
                 .collect(Collectors.toList());
     }
 
-    @RequestMapping(method = RequestMethod.GET, path="entities/{entity}/users")
+    @RequestMapping(method = RequestMethod.GET, path = "/entities/{org}/users")
     @Transactional(readOnly = true)
-    public Collection<User> searchUsersByEntityIdAndKey(
-            @PathVariable(value = "entity", required = false) String entity,
+    public Collection<User> searchUsersByOrganizationAndKey(
+            @PathVariable(value = "org", required = false) String organization,
             @RequestParam(value = "searchKey", required = true) String searchKey) {
-        return repository.findUsersByKeyAndEntity(searchKey.trim().replace(" ", "%").concat("%"), entity)
-                .limit(MAX_RECORDS)
+        return userRepository
+                .findUsersByKeyAndOrganization(
+                        searchKey.trim().replace(" ", "%").concat("%"),
+                        organization)
+                .limit(MAX_RECORDS).collect(Collectors.toList());
+    }
+
+    @RequestMapping(method = RequestMethod.GET, path = "/entities/{userId}")
+    @Transactional(readOnly = true)
+    public Collection<Entity> getAllFullPathEntitiesForUser(
+            @PathVariable(value = "userId", required = true) String userId) {
+        return entityRepository
+                .findAllFullPathEntities(getUser(userId).getEntities().stream()
+                        .map(e -> e.getId()).collect(Collectors.toList()))
                 .collect(Collectors.toList());
     }
 }

@@ -41,6 +41,13 @@ public class AuthenticationServiceWithMockedTokenReposTest {
      * Test cases on the AuthenticationService; executed using mocked TokenRepository to simulate desired internal behavior 
      */
 
+    // the TokenRepository used inside the AuthenticationService is mocked
+    @Mock
+    private TokenRepository tokenRepos;
+
+    @InjectMocks
+    private AuthenticationServiceImpl authService;
+
     @Before
     public void setupTests() {
 
@@ -50,13 +57,6 @@ public class AuthenticationServiceWithMockedTokenReposTest {
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
-
-    // the TokenRepository used inside the AuthenticationService is mocked
-    @Mock
-    private TokenRepository tokenRepos;
-
-    @InjectMocks
-    private AuthenticationServiceImpl authService;
 
     // -------------------------------------
     // Tests
@@ -68,11 +68,11 @@ public class AuthenticationServiceWithMockedTokenReposTest {
     @Test
     public void testTokenCleanupDoesNotFailWhenInternalExceptionOccurs() {
 
-        User user = new User();
-        
+        final User user = new User();
+
         Mockito.when(tokenRepos.findByUserAndAccessTokenExpiresLessThanEqualAndRefreshTokenExpiresLessThanEqual(
                 Mockito.any(User.class), Mockito.any(LocalDateTime.class), Mockito.any(LocalDateTime.class)))
-            .thenThrow(new RuntimeException());
+                .thenThrow(new RuntimeException());
 
         // cleanup routine should return false, but not throw an exception
         Assert.assertFalse(authService.cleanupExpiredUserTokens(user));

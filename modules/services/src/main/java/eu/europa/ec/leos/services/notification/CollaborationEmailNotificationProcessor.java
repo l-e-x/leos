@@ -13,7 +13,6 @@
  */
 package eu.europa.ec.leos.services.notification;
 
-
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
 import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
 import eu.europa.ec.leos.i18n.MessageHelper;
@@ -32,10 +31,7 @@ import java.util.StringJoiner;
 @Component
 public class CollaborationEmailNotificationProcessor implements EmailNotificationProcessor<CollaboratorEmailNotification> {
     
-    @Autowired
     private MessageHelper messageHelper;
-
-    @Autowired
     private LeosPermissionAuthorityMapHelper authorityMapHelper;
 
     private final ProposalService proposalService;
@@ -43,11 +39,13 @@ public class CollaborationEmailNotificationProcessor implements EmailNotificatio
     private final FreemarkerNotificationProcessor processor;
 
     @Autowired
-    public CollaborationEmailNotificationProcessor(ProposalService proposalService, UserService userService, FreemarkerNotificationProcessor processor, MessageHelper messageHelper) {
+    public CollaborationEmailNotificationProcessor(ProposalService proposalService, UserService userService, FreemarkerNotificationProcessor processor,
+             MessageHelper messageHelper, LeosPermissionAuthorityMapHelper authorityMapHelper) {
         this.proposalService = proposalService;
         this.userService = userService;
         this.processor = processor;
         this.messageHelper = messageHelper;
+        this.authorityMapHelper = authorityMapHelper;
     }
 
     @Override
@@ -66,7 +64,6 @@ public class CollaborationEmailNotificationProcessor implements EmailNotificatio
     }
 
     private void buildEmailBody(CollaboratorEmailNotification collaborationEmailNotification) {
-        User collaborator = collaborationEmailNotification.getRecipient();
         Proposal proposal = proposalService.findProposal(collaborationEmailNotification.getDocumentId());
         collaborationEmailNotification.setLeosAuthorityName(messageHelper.getMessage("notification.collaborator.leosAuthority." + collaborationEmailNotification.getLeosAuthority()));
 
@@ -77,7 +74,7 @@ public class CollaborationEmailNotificationProcessor implements EmailNotificatio
             collaborationEmailNotification.getCollaboratorsMap().put(collaboratorTitle, buildCollaboratorList(proposal, role));
             if(role.isDefaultDocCreationRole()){
                 collaborationEmailNotification.getCollaboratorNoteMap().put(collaboratorTitle, messageHelper.getMessage("notification.collaborator.doc.owner.note"));
-            }else{
+            } else{
                 collaborationEmailNotification.getCollaboratorNoteMap().put(collaboratorTitle, "");
             }
         });
@@ -89,7 +86,7 @@ public class CollaborationEmailNotificationProcessor implements EmailNotificatio
         String proposalId = collaborationEmailNotification.getDocumentId();
         Proposal proposal = proposalService.findProposal(proposalId);
         String title = getProposalTitle(proposal);
-        String entity = collaborationEmailNotification.getRecipient().getEntity();
+        String entity = collaborationEmailNotification.getRecipient().getDefaultEntity() != null ? collaborationEmailNotification.getRecipient().getDefaultEntity().getOrganizationName() : "";
         String role = messageHelper.getMessage("notification.collaborator.leosAuthority." + collaborationEmailNotification.getLeosAuthority());
         collaborationEmailNotification.setLeosAuthorityName(role);
         

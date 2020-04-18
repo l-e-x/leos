@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jaxb:bindings
+    xmlns:jaxb="http://java.sun.com/xml/ns/jaxb" jaxb:version="2.0"
+    xmlns:xjc= "http://java.sun.com/xml/ns/jaxb/xjc" jaxb:extensionBindingPrefixes="xjc"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:ci="http://jaxb.dev.java.net/plugin/code-injector">
+
+    <jaxb:globalBindings generateElementProperty="false">
+        <xjc:simple />
+    </jaxb:globalBindings>
+
+    <jaxb:bindings schemaLocation="structure_1.xsd" node="xs:simpleType[@name='aknTag'] | xs:simpleType[@name='numberingType']" multiple="true">
+        <ci:code>
+    <![CDATA[public String toString() {
+        return this.value();
+    }]]>
+        </ci:code>
+    </jaxb:bindings>
+
+</jaxb:bindings>

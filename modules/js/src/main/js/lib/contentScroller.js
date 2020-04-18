@@ -68,10 +68,10 @@ define(function contentScrollerModule(require) {
         var $markedContainer = $(".leos-marked-content");
         if($markedContainer.length) {
             var $docContainer = $(".leos-doc-content");
-            var docElement = document.getElementById(elementId);
-            var markedElement = document.getElementById("marked-" + elementId);
+            var $docElement = $docContainer.find("#"+elementId);
+            var $markedElement = $markedContainer.find("#marked-" + elementId);
             $markedContainer.animate({
-                scrollTop: _calculateMarkedElementPosition(docElement, markedElement, $docContainer.get(0), $markedContainer.get(0))
+                scrollTop: _calculateMarkedElementPosition($docElement.get(0), $markedElement.get(0), $docContainer.get(0), $markedContainer.get(0))
             }, 500, "swing");
         }
     }

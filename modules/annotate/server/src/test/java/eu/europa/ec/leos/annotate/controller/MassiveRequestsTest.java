@@ -19,6 +19,7 @@ import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.helper.TestHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
@@ -221,6 +222,7 @@ public class MassiveRequestsTest {
 
     private List<UserInformation> createUserInfos(final List<User> theUsers) {
         
+        final UserEntity theEntity = new UserEntity("9", "someentity", "orgEntity");
         final List<UserInformation> userInfos = new ArrayList<UserInformation>();
         for (final User u : theUsers) {
             final UserInformation userInfo = new UserInformation(new Token(u, Authorities.EdiT, "acc" + u.getId(), LocalDateTime.now().plusHours(1),
@@ -232,7 +234,8 @@ public class MassiveRequestsTest {
 
             // finally cache user infos
             userDetailsCache.cache(u.getLogin(),
-                    new UserDetails(u.getLogin(), u.getId(), "first_" + u.getLogin(), "last_" + u.getLogin(), "someentity", u.getLogin() + "@eu", null));
+                    new UserDetails(u.getLogin(), u.getId(), "first_" + u.getLogin(), "last_" + u.getLogin(), 
+                            Arrays.asList(theEntity), u.getLogin() + "@eu", null));
         }
         return userInfos;
     }

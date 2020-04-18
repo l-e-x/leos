@@ -33,7 +33,7 @@ class MemorandumViewImpl extends AbstractLeosView<MemorandumScreenImpl> implemen
 
     @Override
     protected String[] getParameterKeys() {
-        String[] PARAM_KEYS = {SessionAttribute.MEMORANDUM_ID.name()};
+        String[] PARAM_KEYS = {SessionAttribute.MEMORANDUM_REF.name()};
         return PARAM_KEYS;
     }
 }

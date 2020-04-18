@@ -24,11 +24,11 @@ $PAGE-MARGIN-HORIZONTAL: 2.5cm;
 %pageLayout {
     position: relative;
     display: block;
-    margin: 0.5cm auto;
+    margin: 0.5cm 0.5cm 0.5cm 0.8%;
     width: $A4-PAGE_WIDTH;
     min-height: $A4-PAGE_HEIGHT;
     padding: $PAGE-MARGIN-VERTICAL $PAGE-MARGIN-HORIZONTAL;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 0 11px rgba(0, 0, 0, 0.5);
     white-space: normal;
     background-color: white;
 }
@@ -42,9 +42,9 @@ $PAGE-MARGIN-HORIZONTAL: 2.5cm;
         background-color: white;
         padding-left: $PAGE-MARGIN-HORIZONTAL;
         padding-right: $PAGE-MARGIN-HORIZONTAL;
-        margin-left: auto;
+        margin-left: 0.8%;
         margin-right: auto;
-        box-shadow: 0 20px 20px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 11px 11px rgba(0, 0, 0, 0.5);
     }
 
     & > preface {

@@ -33,6 +33,7 @@ public class AppController {
 
     @NoAuthAnnotation
     @RequestMapping(value = {"app.html"}, produces = MediaType.TEXT_HTML_VALUE)
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     public ModelAndView getAppHtml(final HttpServletRequest request, final HttpServletResponse response) throws Exception {
         final ModelAndView modelAndView = new ModelAndView("app");
         final ModelMap model = new ModelMap();

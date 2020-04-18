@@ -18,18 +18,23 @@ import java.util.List;
 public class ReferenceLabelRequestEvent {
     private final List<String> references;
     private final String currentElementID;
-    
-    public ReferenceLabelRequestEvent(List<String> references,String currentElementID) {
+    private final String documentRef;
+
+    public ReferenceLabelRequestEvent(List<String> references, String currentElementID, String documentRef) {
         this.references = references;
         this.currentElementID = currentElementID;
+        this.documentRef = documentRef;
     }
 
     public List<String> getReferences() {
         return references;
     }
-    
+
     public String getCurrentElementID() {
         return currentElementID;
     }
-}
 
+    public String getDocumentRef() {
+        return documentRef;
+    }
+}

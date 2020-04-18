@@ -16,64 +16,79 @@ define(function listItemNumberModule(require) {
     "use strict";
 
     var UTILS = require("core/leosUtils");
-
+    var ckEditor;
     var DATA_AKN_NUM = "data-akn-num";
     var ORDER_LIST_ELEMENT = "ol";
     var defaultList = [];
+    var listNumberConfig;
+    var numberingConfigs;
 
     var sequenceMap = [
         {
-            type: "alpha",
+            type: "ALPHA",
             inDefault: true,
-            format: "(x)",
+            format: "x",
+            prefix: "(",
+            suffix: ")",
             name: 'Alphabets',
             generator: function generateSequenceForAlpha(list, item, idx) {
-                return this.format.replace('x', generateAlpha(idx));
+                return this.prefix+this.format.replace('x', generateAlpha(idx))+this.suffix;
             }
         }, {
-            type: "arabic",
+            type: "ARABIC-PARENTHESIS",
             inDefault: true,
-            format: "(x)",
+            format: "x",
+            prefix: "(",
+            suffix: ")",
             name: 'Arabic',
             generator: function generateSequenceForArabic(list, item, idx) {
-                return this.format.replace('x', idx + 1);
+                return this.prefix+this.format.replace('x', idx + 1)+this.suffix;
             }
         }, {
-            type: "roman",
+            type: "ARABIC-POSTFIX",
             inDefault: true,
-            format: "(x)",
+            format: "x",
+            prefix: "",
+            suffix: ".",
+            name: 'Arabic',
+            generator: function generateSequenceForArabic(list, item, idx) {
+                return this.prefix+this.format.replace('x', idx + 1)+this.suffix;
+            }
+        }, {
+            type: "ROMAN-LOWER",
+            inDefault: true,
+            format: "x",
+            prefix: "(",
+            suffix: ")",
             name: 'Roman',
             generator: function generateSequenceForRoman(list, item, idx) {
-                return this.format.replace('x', romanize(idx + 1));
+                return this.prefix+this.format.replace('x', romanize(idx + 1))+this.suffix;
             }
         }, {
-            type: "indent",
+            type: "INDENT",
             inDefault: true,
             format: "-",
+            prefix: "",
+            suffix: "",
             name: 'IndentDash',
             generator: function generateSequenceForIndent(list, item, idx) {
-                return this.format.replace('x', '-');
+                return this.prefix+this.format.replace('x', '-')+this.suffix;
             }
         }
     ];
 
-    var paragraphSequence = {
-        type: "paragraph",
-        inDefault: false,
-        format: "x.",
-        initValue: /\d+?\./,
-        name: 'Paragraph',
-        generator: function (list, item, idx) {
-            return this.format.replace('x', idx + 1);
-        }
-    };
-
     function _getSequences(seqName) {
         if (seqName && seqName === 'Paragraph') {
+            var paragraphTocItem = ckEditor.LEOS.tocItemsList.find(function(e){return e.aknTag === 'paragraph'});
+            var paraNumTypeName = paragraphTocItem.numberingType;
+            var paragraphNumType = numberingConfigs.find(function(e){return e.type === paraNumTypeName});
+            var paragraphSequence = sequenceMap.find(function(el){return el.type === paraNumTypeName});
+            paragraphSequence.format = 'x';
+            paragraphSequence.suffix = paragraphNumType.suffix;
             return paragraphSequence;
         }
         else if (seqName) {
-            return sequenceMap.find(function(el){return el.name === seqName});
+            return defaultList.find(function(el){return el.name === seqName});
         }
         else {//return all sequences
             return sequenceMap;
@@ -125,47 +140,11 @@ define(function listItemNumberModule(require) {
      * To identify the sequence first point in the list is used
      */
     function identifySequence(listItems, currentNestingLevel) {
-        //Strip .,) and (.
-        //To differentiate between 1ab, ab -> remove everything except first char
-        //ignore whatever is not matching like  #
-
-        //If a digit is found , it is arabic
-        //if - is found it is IndentDash
-        //Now check for existence for any char other than roman, if it does then it is alpha
-        //if only roman numerals exist then it is roman
-        //if none is found then we take default
-
-        var nums = [];
-        for (var i = 0; i < listItems.length; i++) {
-            var num = listItems[i].getAttribute(DATA_AKN_NUM);
-            num = num ? num.replace(/[\s\(\),\.]+?/, '') : '';
-            num = num.length > 1 && num.charAt(0) === '-' ? num.substring(1) : num; //for -2ab
-            nums.push(num.length > 0 ? num.charAt(0) : num);
-        }
-        nums = nums.filter(function (val) { return !val.match(/#/); });
-
-        var sequence;
-        for (var idx=0; idx< nums.length; idx++ ){
-            var value = nums[idx];
-            if (value.match(/\d/)) {
-                sequence =  _getSequences('Arabic');
-                break;
-            } else if (value === '-') {
-                sequence = _getSequences('IndentDash');
-                break;
-            } else if (value.match(/(?=[^ivx])([a-z])+?/)) {
-                sequence = _getSequences('Alphabets');
-                break;
-            } else if (value.match(/[ivxcdlm]+?/)) {
-                sequence = _getSequences('Roman');
-                break;
-            }
-        }
-
-        return sequence ? sequence: getSequenceFromDefaultList(currentNestingLevel);
+        return getSequenceFromDefaultList(currentNestingLevel);
     }
 
     function _initialize(editor) {
+        ckEditor = editor;
         _initializeDefaultList(editor);
     }
 
@@ -174,9 +153,15 @@ define(function listItemNumberModule(require) {
      */
     function _initializeDefaultList(editor) {
         var sequences = _getSequences();
-        for (var i = 0; i < sequences.length; i++) {
+        listNumberConfig = editor.LEOS.listNumberConfig;
+        numberingConfigs = editor.LEOS.numberingConfigs;
+        for (var i = 0; i < listNumberConfig.length; i++) {
             if (sequences[i].inDefault) {
-                defaultList[i] = sequences[i];
+                var numberType = numberingConfigs.find(function(e){return e.type === listNumberConfig[i].numberingType});
+                var defaultListItem = sequences.find(function(e){return e.type ===  numberType.type});
+                defaultListItem.prefix = numberType.prefix;
+                defaultListItem.suffix = numberType.suffix;
+                defaultList[listNumberConfig[i].depth-1] = defaultListItem;
             }
         }
     }

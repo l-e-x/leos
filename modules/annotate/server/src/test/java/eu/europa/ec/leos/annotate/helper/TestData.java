@@ -25,13 +25,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class TestData {
+public final class TestData {
 
     /**
      * Class containing functions for providing test data
      */
 
+    private TestData() {
+        // private constructor to have class be considered an utility class
+    }
+    
     @SuppressFBWarnings(value = "NP_NULL_ON_SOME_PATH_EXCEPTION")
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public static JsonAnnotation getTestAnnotationObject(final String username) {
 
         URI uri = null;

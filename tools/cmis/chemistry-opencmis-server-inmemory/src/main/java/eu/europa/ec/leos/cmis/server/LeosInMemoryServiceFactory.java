@@ -1,7 +1,17 @@
 package eu.europa.ec.leos.cmis.server;
 
-import eu.europa.ec.leos.cmis.LeosCallContext;
-import eu.europa.ec.leos.cmis.types.LeosSecondaryTypesTypeSystemCreator;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
+
 import org.apache.chemistry.opencmis.commons.PropertyIds;
 import org.apache.chemistry.opencmis.commons.data.ContentStream;
 import org.apache.chemistry.opencmis.commons.data.ObjectData;
@@ -9,7 +19,11 @@ import org.apache.chemistry.opencmis.commons.enums.BaseTypeId;
 import org.apache.chemistry.opencmis.commons.enums.IncludeRelationships;
 import org.apache.chemistry.opencmis.commons.exceptions.CmisObjectNotFoundException;
 import org.apache.chemistry.opencmis.commons.impl.Constants;
-import org.apache.chemistry.opencmis.commons.impl.dataobjects.*;
+import org.apache.chemistry.opencmis.commons.impl.dataobjects.ContentStreamImpl;
+import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertiesImpl;
+import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertyIdImpl;
+import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertyIntegerImpl;
+import org.apache.chemistry.opencmis.commons.impl.dataobjects.PropertyStringImpl;
 import org.apache.chemistry.opencmis.commons.server.CmisService;
 import org.apache.chemistry.opencmis.inmemory.ConfigConstants;
 import org.apache.chemistry.opencmis.inmemory.server.InMemoryServiceFactoryImpl;
@@ -17,9 +31,8 @@ import org.apache.chemistry.opencmis.inmemory.storedobj.api.Filing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.util.*;
+import eu.europa.ec.leos.cmis.LeosCallContext;
+import eu.europa.ec.leos.cmis.types.LeosSecondaryTypesTypeSystemCreator;
 
 public class LeosInMemoryServiceFactory extends InMemoryServiceFactoryImpl {
 
@@ -45,6 +58,8 @@ public class LeosInMemoryServiceFactory extends InMemoryServiceFactoryImpl {
         PROPS_KEY_MAPPING.put("metadata.docStage", "metadata:docStage");
         PROPS_KEY_MAPPING.put("metadata.docType", "metadata:docType");
         PROPS_KEY_MAPPING.put("metadata.docPurpose", "metadata:docPurpose");
+        PROPS_KEY_MAPPING.put("metadata.procedureType", "metadata:procedureType");
+        PROPS_KEY_MAPPING.put("metadata.actType", "metadata:actType");
         PROPS_KEY_MAPPING.put("metadata.ref", "metadata:ref");
         // TODO leos MEMORANDUM specific metadata properties
         // use sub-key metadata.memorandum.<>

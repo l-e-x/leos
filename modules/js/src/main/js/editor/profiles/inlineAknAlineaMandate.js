@@ -52,6 +52,7 @@ define(function aknInlikeAlineaMandateProfileModule(require) {
     plugins.push(require("plugins/leosElementSplitHandler/leosElementSplitHandlerPlugin"));
     plugins.push(require("plugins/leosElementMergeHandler/leosElementMergeHandlerPlugin"));
     plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+    plugins.push(require("plugins/leosPreventSelectAll/leosPreventSelectAllPlugin"));
 
     var pluginNames=[];
     var specificConfig={
@@ -93,10 +94,6 @@ define(function aknInlikeAlineaMandateProfileModule(require) {
         forcePasteAsPlainText: false,
         //Use native spellchecker
         disableNativeSpellChecker: false,
-        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements
-        blockedKeystrokes: [
-            CKEDITOR.CTRL + 65 //CTRL +A
-        ],
         // toolbar groups arrangement, optimized for a single toolbar row
         toolbar : [
         	{ name: 'save', items: [ 'leosInlineSave' , 'leosInlineSaveClose', 'leosInlineCancel' ] },

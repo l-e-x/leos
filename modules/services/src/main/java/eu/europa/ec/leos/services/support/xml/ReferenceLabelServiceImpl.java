@@ -13,17 +13,19 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
-import com.google.common.base.Stopwatch;
 import com.ximpleware.VTDNav;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.domain.common.ErrorCode;
 import eu.europa.ec.leos.domain.common.Result;
 import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.services.content.ReferenceLabelService;
+import eu.europa.ec.leos.services.store.PackageService;
+import eu.europa.ec.leos.services.store.WorkspaceService;
 import eu.europa.ec.leos.services.support.xml.ref.LabelHandler;
 import eu.europa.ec.leos.services.support.xml.ref.Ref;
 import eu.europa.ec.leos.services.support.xml.ref.TreeHelper;
 import eu.europa.ec.leos.services.support.xml.ref.TreeNode;
-import eu.europa.ec.leos.i18n.MessageHelper;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,79 +35,189 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-import static eu.europa.ec.leos.services.support.xml.ref.TreeHelper.*;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.ref.TreeHelper.createTree;
+import static eu.europa.ec.leos.services.support.xml.ref.TreeHelper.findCommonAncestor;
+import static eu.europa.ec.leos.services.support.xml.ref.TreeHelper.getLeaves;
 
-abstract class ReferenceLabelServiceImpl implements ReferenceLabelProcessor, ReferenceLabelService {
+abstract class ReferenceLabelServiceImpl implements ReferenceLabelService {
     private static final Logger LOG = LoggerFactory.getLogger(ReferenceLabelServiceImpl.class);
     
     @Autowired
     private LanguageHelper languageHelper;
-    
     @Autowired
     protected MessageHelper messageHelper;
-    
     @Autowired
-    private List<LabelHandler> labelHandlers;
-
-    private static final String ARTICLE_NODE = "article";
-
+    protected List<LabelHandler> labelHandlers;
+    @Autowired
+    protected WorkspaceService workspaceService;
+    @Autowired
+    protected PackageService packageService;
+    
+    /**
+     * Generates the multi references label.
+     * This method is used when you don't need real <code>html</code> ref, instead you want only the label.
+     * Example of generated label: Article 1(1), point (a)(1)(i), second indent
+     * Overloads: {@link #generateLabel(List, String, String, byte[], byte[], String, boolean)}
+     *
+     * @param refs              element ids selected by the user
+     * @param sourceBytes       bytes of the source document
+     * @return: returns the label
+     */
     @Override
-    public Result<String> generateLabel(List<String> references, String referenceLocation, byte[] xmlBytes) throws Exception {
-        Stopwatch watch = Stopwatch.createStarted();
+    public Result<String> generateLabel(List<Ref> refs, byte[] sourceBytes){
+        return generateLabel(refs, "", "", sourceBytes, sourceBytes, null, false);
+    }
+    @Override
+    public Result<String> generateLabelStringRef(List<String> refsString, String sourceDocumentRef, byte[] sourceBytes){
+        final List refs = buildRefs(refsString, sourceDocumentRef);
+        return generateLabel(refs, sourceBytes);
+    }
+    
+    /**
+     * Generates the multi references label.
+     * Uses <code>documentRef</code> of the <code>refs</code> list to fetch the target document from the repository.
+     * Once getting the target data, overloads: {@link #generateLabel(List, String, String, byte[], byte[], String, boolean)}
+     *
+     * @param refs              element ids selected by the user
+     * @param sourceRefId       element id being edited
+     * @param sourceDocumentRef document reference of the source document
+     * @param sourceBytes       bytes of the source document
+     * @return: returns the label if multi ref is valid or an error code otherwise.
+     */
+    @Override
+    public Result<String> generateLabel(List<Ref> refs, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes) {
+        // fetch the target only if is different from the source
+        XmlDocument targetDocument;
         try {
-            VTDNav vtdNav = VTDUtils.setupVTDNav(xmlBytes, true);
-
-            List<Ref> refs = references
-                    .stream()
-                    .map(ref -> {
-                        String[] strs = ref.split(",");
-                        return new Ref(strs[0], strs[1]);
-                    })
-                    .filter(ref -> !StringUtils.isEmpty(ref.getHref()))
-                    .collect(Collectors.toList());
-            return generateLabel(refs, referenceLocation, vtdNav);
-        } finally {
-            LOG.trace("Label generation finished in {} ms", watch.elapsed(TimeUnit.MILLISECONDS));
+            targetDocument = refs.stream()
+                    .filter(ref -> !ref.getDocumentref().equals(sourceDocumentRef))
+                    .findFirst()
+                    .map(ref -> workspaceService.findDocumentByRef(ref.getDocumentref(), XmlDocument.class))
+                    .orElse(null);
+        } catch(Exception e){
+            LOG.warn("Error fetching target document. {}", e.getMessage());
+            return new Result<>("", ErrorCode.DOCUMENT_REFERENCE_NOT_VALID);
         }
+        
+        byte[] targetBytes = sourceBytes;
+        String targetDocType = "";
+        if (targetDocument != null) {
+            targetBytes = targetDocument.getContent().get().getSource().getBytes();
+            targetDocType = packageService.calculateDocType(targetDocument);
+        }
+        return generateLabel(refs, sourceDocumentRef, sourceRefId, sourceBytes, targetBytes, targetDocType, true);
     }
-
     @Override
-    public Result<String> generateLabel(List<Ref> references, String referenceLocation, VTDNav xmlNav) throws Exception {
-        TreeNode tree;
-        tree = createTree(xmlNav, null, references);
-        List<TreeNode> leaves = getLeaves(tree);//in xml order
-
-        //Validate
-        boolean valid = RefValidator.validate(leaves, references);
-
-        //If invalid references, mark mref as broken and return
-        if (!valid) {
-            return new Result<String>(null, ErrorCode.DOCUMENT_REFERENCE_NOT_VALID);
-        }
-
-        TreeNode fullTree = createTree(xmlNav, null, Arrays.asList(new Ref("", referenceLocation)));
-        TreeNode sourceNode = TreeHelper.find(fullTree, TreeNode::getIdentifier, referenceLocation);
-
-        List<TreeNode> mrefCommonNodes = findCommonAncestor(xmlNav, referenceLocation, tree);
-        //If Valid, generate, Tree is already sorted
-        return new Result<String>(createLabel(leaves, mrefCommonNodes, sourceNode), null);
+    public Result<String> generateLabelStringRef(List<String> refsString, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes) {
+        final List refs = buildRefs(refsString, sourceDocumentRef);
+        return generateLabel(refs, sourceDocumentRef, sourceRefId, sourceBytes);
     }
+    
+    /**
+     * Generates the multi references label composed by the href for navigation purpose.
+     * If the selected elements are located in different documents(source!=target), the algorithm add the suffix (@param targetDocType)
+     * to the generated label.
+     * Example of generated label: Article 1(1), point (a)(1)(i), <ref xml:id="" href="art_1_6FvZwH" documentref="bill_ck67vo25e0004dc9682dmo307">second</ref> indent
+     *
+     * @param refs              element ids selected by the user
+     * @param sourceRefId       element id being edited
+     * @param sourceDocumentRef document reference of the source document
+     * @param sourceBytes       bytes of the source document
+     * @param targetBytes       bytes of the target document
+     * @param targetDocType     Prefix for the target document. (Ex: Annex, Regulation, Decision, etc)
+     * @param withAnchor        true if the label should be a html anchor for navigation purpose
+     *
+     * @return: returns the label if multi ref is valid or an error code otherwise.
+     */
+    @Override
+    public Result<String> generateLabel(List<Ref> refs, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes, byte[] targetBytes, String targetDocType, boolean withAnchor) {
+        try {
+            VTDNav targetVtdNav = VTDUtils.setupVTDNav(targetBytes);
+            TreeNode targetTree = createTree(targetVtdNav, null, refs);
+            List<TreeNode> targetNodes = getLeaves(targetTree);//in xml order
 
-    private String createLabel(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode) {
+            //Validate
+            boolean valid = RefValidator.validate(targetNodes, refs);
+            //If invalid references, mark mref as broken and return
+            if (!valid) {
+                return new Result<>("", ErrorCode.DOCUMENT_REFERENCE_NOT_VALID);
+            }
+
+            VTDNav sourceVtdNav = VTDUtils.setupVTDNav(sourceBytes, true);
+            TreeNode sourceTree = createTree(sourceVtdNav, null, Arrays.asList(new Ref("", sourceRefId, sourceDocumentRef)));
+            TreeNode sourceNode = TreeHelper.find(sourceTree, TreeNode::getIdentifier, sourceRefId);
+    
+            List<TreeNode> commonNodes = findCommonAncestor(sourceVtdNav, sourceRefId, targetTree);
+            //If Valid, generate, Tree is already sorted
+            return new Result<>(createLabel(targetNodes, commonNodes, sourceNode, targetDocType, withAnchor), null);
+        } catch (IllegalStateException e) {
+            return new Result<>("", ErrorCode.DOCUMENT_REFERENCE_NOT_VALID);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error generation Labels for sourceRefId: " + sourceRefId + " and references: " + refs, e);
+        }
+    }
+    @Override
+    public Result<String> generateLabelStringRef(List<String> refsString, String sourceDocumentRef, String sourceRefId, byte[] sourceBytes, String targetDocumentRef, boolean withAnchor) {
+        final XmlDocument targetDocument = getTargetDocument(sourceDocumentRef, targetDocumentRef);
+        
+        byte[] targetBytes = sourceBytes;
+        String targetDocType = "";
+        if (targetDocument != null) {
+            targetBytes = targetDocument.getContent().get().getSource().getBytes();
+            targetDocType = packageService.calculateDocType(targetDocument);
+        }
+        
+        final List<Ref> refs = buildRefs(refsString, targetDocumentRef);
+        return generateLabel(refs, sourceDocumentRef, sourceRefId, sourceBytes, targetBytes, targetDocType, true);
+    }
+    
+    private XmlDocument getTargetDocument(String sourceDocumentRef, String targetDocumentRef){
+        XmlDocument targetDocument = null;
+        if(!targetDocumentRef.equals(sourceDocumentRef)){
+            targetDocument = workspaceService.findDocumentByRef(targetDocumentRef, XmlDocument.class);
+        }
+        return targetDocument;
+    }
+    
+    private String createLabel(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, String docType, boolean withAnchor) {
         labelHandlers.sort(Comparator.comparingInt(LabelHandler::getOrder));
         StringBuffer accumulator = new StringBuffer();
         for (LabelHandler rule : labelHandlers) {
-            boolean finish = rule.process(refs, mrefCommonNodes, sourceNode, accumulator, languageHelper.getCurrentLocale());
-            if (finish) {
+            if(rule.canProcess(refs)) {
+                rule.addPreffix(accumulator, docType);
+                rule.process(refs, mrefCommonNodes, sourceNode, accumulator, languageHelper.getCurrentLocale(), withAnchor);
                 break;
             }
         }
         return accumulator.toString();
     }
+    
+    private List<Ref> buildRefs(List<String> refs, String targetDocumentRef) {
+        return refs
+                .stream()
+                .map(r -> {
+                    String[] strs = r.split(",");
+                    String refId;
+                    String refHref;
+                    if (strs.length == 0) {
+                        throw new RuntimeException("references list is empty");
+                    } else if (strs.length == 1) {
+                        refId = "";
+                        refHref = strs[0];
+                    } else {
+                        refId = strs[0];
+                        refHref = strs[1];
+                    }
+                    return new Ref(refId, refHref, targetDocumentRef);
+                })
+                .filter(ref -> !StringUtils.isEmpty(ref.getHref()))
+                .collect(Collectors.toList());
+    }
+    
 
     static class RefValidator {
         private static final List<BiFunction<List<TreeNode>, List<Ref>, Boolean>> validationRules = new ArrayList<>();
@@ -130,10 +242,7 @@ abstract class ReferenceLabelServiceImpl implements ReferenceLabelProcessor, Ref
         }
 
         private static boolean checkEmpty(List<TreeNode> refs, List<Ref> oldRefs) {
-            if (refs.isEmpty()) {
-                return false;
-            }
-            return true;
+            return !refs.isEmpty();
         }
 
         private static boolean checkSameParentAndSameType(List<TreeNode> refs, List<Ref> oldRefs) {
@@ -144,12 +253,11 @@ abstract class ReferenceLabelServiceImpl implements ReferenceLabelProcessor, Ref
             for (int i = 1; i < refs.size(); i++) {
                 TreeNode ref= refs.get(i);
                 if (!ref.getParent().equals(parent)
-                        && !(ref.getType().equals(type) && (ref.getDepth() == depth || type.equalsIgnoreCase(ARTICLE_NODE)))) {
+                        && !(ref.getType().equals(type) && (ref.getDepth() == depth || type.equalsIgnoreCase(ARTICLE)))) {
                     return false;
                 }
             }
             return true;
         }
     }
-
 }

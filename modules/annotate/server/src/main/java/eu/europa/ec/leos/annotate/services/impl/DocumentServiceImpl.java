@@ -16,9 +16,9 @@ package eu.europa.ec.leos.annotate.services.impl;
 import eu.europa.ec.leos.annotate.model.entity.Document;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationDocument;
 import eu.europa.ec.leos.annotate.repository.DocumentRepository;
-import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteDocumentException;
 import eu.europa.ec.leos.annotate.services.DocumentService;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateDocumentException;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotDeleteDocumentException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,10 +56,10 @@ public class DocumentServiceImpl implements DocumentService {
             LOG.error("Cannot search for document as given URI is empty");
             return null;
         }
-        
+
         return findDocumentByUri(uri.toString());
     }
-    
+
     /**
      * search for a document based on its URI (as String)
      * 
@@ -68,7 +68,7 @@ public class DocumentServiceImpl implements DocumentService {
      */
     @Override
     public Document findDocumentByUri(final String uri) {
-        
+
         final Document doc = documentRepos.findByUri(uri);
         LOG.debug("Found document with uri '{}':{} ", uri, doc != null);
         return doc;
@@ -83,6 +83,7 @@ public class DocumentServiceImpl implements DocumentService {
      *        exception is thrown when data cannot be created due to missing data
      */
     @Override
+    @SuppressWarnings("PMD.AvoidLiteralsInIfCondition")
     public Document createNewDocument(final JsonAnnotationDocument document) throws CannotCreateDocumentException {
 
         if (document == null) {
@@ -146,12 +147,12 @@ public class DocumentServiceImpl implements DocumentService {
      */
     @Override
     public void deleteDocument(final Document doc) throws CannotDeleteDocumentException {
-        
-        if(doc == null) {
+
+        if (doc == null) {
             LOG.error("Cannot delete document, given document is null");
             throw new CannotDeleteDocumentException(new IllegalArgumentException("No document URI given"));
         }
-        
+
         try {
             documentRepos.delete(doc);
         } catch (Exception e) {

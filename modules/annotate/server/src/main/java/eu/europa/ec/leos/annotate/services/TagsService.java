@@ -21,13 +21,41 @@ import java.util.List;
 
 public interface TagsService {
 
-    // conversion of string list of tags to Tag objects associated to an annotation
+    /**
+     * conversion of string list of tags to {@link Tag} objects associated to an annotation
+     * 
+     * @param tags
+     *        list of tag names to be converted
+     * @param annotation
+     *        the {@link Annotation} to which the tags are to be assigned after conversion
+     * @return converted list of tags
+     */
     List<Tag> getTagList(List<String> tags, Annotation annotation);
 
-    // removal of Tag objects
+    /**
+     * removal of Tag objects from the database
+     * 
+     * @param tagsToRemove
+     *        list of {@link Tag} items to remove
+     */
     @Transactional
     void removeTags(List<Tag> tagsToRemove);
 
-    // check if a tag identifying an annotation as a suggestion is present in a list of tags
+    /**
+     * check if a tag identifying an annotation as a suggestion is present in a given list of tags
+     *  
+     * @param tags
+     *        list of tags to be examined
+     * @return flag indicating whether any of the tags can be identified as a suggestion tag
+     */
     boolean hasSuggestionTag(List<Tag> itemTags);
+    
+    /**
+     * check if a tag identifying an annotation as a highlight is present in a given list of tags
+     *  
+     * @param tags
+     *        list of tags to be examined
+     * @return flag indicating whether any of the tags can be identified as a highlight tag
+     */
+    boolean hasHighlightTag(List<Tag> tags);
 }

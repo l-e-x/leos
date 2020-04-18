@@ -1,0 +1,82 @@
+{
+  "guidance": [
+    {
+      "targets": [
+        {
+          "destinationId": "cit_3",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-3\" class=\"guidance-green-block\"><span id=\"cit-3-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "cit_4",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-4\" class=\"guidance-green-block\"><span id=\"cit-4-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "cit_5",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-5\" class=\"guidance-green-block\"><span id=\"cit-5-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "cit_6",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-6\" class=\"guidance-green-block\"><span id=\"cit-6-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "cit_7",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-cit-7\" class=\"guidance-green-block\"><span id=\"cit-7-guidance\">[where necessary]</span></guidance>"
+    },
+    {
+      "targets": [
+        {
+          "destinationId": "clause_1",
+          "position": "AFTER-WRAPPER"
+        }
+      ],
+      "content": "<guidance id=\"guidance-clause-1\" class=\"guidance-green-block\"><span id=\"clause-1-guidance\">[Choose between the three options, depending on the addressees of the act.]</span></guidance>"
+    }
+  ],
+  "alternatives": [
+    {
+      "name": "listOption1",
+      "list": [
+        {
+          "index": "1",
+          "content": "This Decision is addressed to the Member States."
+        },
+        {
+          "index": "2",
+          "content": "This Decision is addressed to the Member States in accordance with the Treaties."
+        },
+        {
+          "index": "3",
+          "content": "This Decision is addressed to […]."
+        }
+      ]
+    }
+  ],
+  "structure": [
+    {
+      "name": "structure_01"
+    }
+  ]
+}

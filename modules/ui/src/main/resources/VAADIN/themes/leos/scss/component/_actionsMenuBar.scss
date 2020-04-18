@@ -28,7 +28,12 @@
         background: $WHITE;
         color: $DARK_SLATE_GREY;
         padding: 5px 0px;
+        outline:none;
     }
+    
+    .leos-actions-sub-menu-item:hover {
+        background: $PALE_BG_BLUE;
+     }
 
     .leos-actions-custom-separator {
         font-size: 10px;
@@ -110,6 +115,7 @@
         padding-right: 5px;
         height: 25px;
         margin-top: -1px;
+        outline: none;
     }
 
     .leos-actions-sub-menu-item.v-menubar-menuitem-checked {

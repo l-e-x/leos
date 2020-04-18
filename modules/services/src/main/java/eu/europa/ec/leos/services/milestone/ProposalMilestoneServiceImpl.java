@@ -18,16 +18,14 @@ import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.services.export.ExportOptions;
-import eu.europa.ec.leos.services.export.ExportResource;
 import eu.europa.ec.leos.services.export.ExportService;
-import eu.europa.ec.leos.services.store.PackageService;
-import io.atlassian.fugue.Pair;
+import eu.europa.ec.leos.services.export.LegPackage;
+import eu.europa.ec.leos.services.store.LegService;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
-import java.io.File;
 import java.io.IOException;
 
 @Service
@@ -37,22 +35,22 @@ public class ProposalMilestoneServiceImpl extends AbstractMilestoneService {
     protected ExportService exportService;
 
     @Autowired
-    public ProposalMilestoneServiceImpl(ExportService exportService, PackageService packageService) {
-        super(packageService);
+    public ProposalMilestoneServiceImpl(ExportService exportService, LegService legService) {
+        super(legService);
         this.exportService = exportService;
     }
 
     @Override
     @Nonnull
-    public LegDocument createLegDocument(String proposalId, String milestoneComment, Pair<File, ExportResource> legPackage) throws Exception {
+    public LegDocument createLegDocument(String proposalId, LegPackage legPackage) throws Exception {
         Validate.notNull(exportService, "Export Service is not available!!");
-        Validate.notNull(packageService, "Package Service is not available!!");
+        Validate.notNull(legService, "LegService Service is not available!!");
         String jobId = exportService.exportLegPackage(proposalId, legPackage);
-        return packageService.createLegDocument(proposalId, jobId, milestoneComment, legPackage.left(), LeosLegStatus.IN_PREPARATION);
+        return legService.createLegDocument(proposalId, jobId, legPackage, LeosLegStatus.IN_PREPARATION);
     }
 
     @Override
-    protected Pair<File, ExportResource> createLegPackage(String proposalId) throws IOException {
-        return packageService.createLegPackage(proposalId, ExportOptions.TO_WORD_MILESTONE_LW);
+    protected LegPackage createLegPackage(String proposalId) throws IOException {
+        return legService.createLegPackage(proposalId, ExportOptions.TO_WORD_MILESTONE_LW);
     }
 }

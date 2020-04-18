@@ -1,7 +1,7 @@
 /**
- * Copyright 2019 European Commission
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.2 or â€“ as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -48,6 +48,7 @@ $v-included-components: remove($v-included-components, twincolselect);
 $v-included-components: remove($v-included-components, upload);
 
 @import "scss/extension/_treegrid-ext";
+@import "scss/extension/_tabsheet-ext";
 @import "scss/extension/_optiongroup-ext";
 @import "scss/extension/_button-ext";
 @import "scss/extension/_menu-ext";
@@ -62,7 +63,8 @@ $v-included-components: remove($v-included-components, upload);
     $v-border: 1px solid $MAIN_BLUE;
     @include leos-button-ext();
     @include leos-menu-ext();
-    
+    @include leos-tabsheet-ext();
+        
     $v-grid-row-height: 21px;
     $v-line-height:$v-grid-row-height;
     $v-grid-row-stripe-background-color:$WHITE;
@@ -71,7 +73,5 @@ $v-included-components: remove($v-included-components, upload);
     $v-grid-cell-horizontal-border:$v-grid-border;
     
     @include leos-treegrid-ext();
-    
-    
 }
 

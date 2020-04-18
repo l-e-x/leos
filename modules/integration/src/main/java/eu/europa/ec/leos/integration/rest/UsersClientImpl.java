@@ -62,7 +62,7 @@ class UsersClientImpl implements UsersProvider {
             ResponseEntity<List<UserJSON>> entity = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<UserJSON>>() {}, params);
             results = entity.getBody();
         } catch (RestClientException e) {
-            LOG.warn("Exception while getting searching user: {}", e.getMessage());
+            LOG.warn("Exception while getting searching user. Failed calling: {}, Exception: () ",  uri, e.getMessage());
             throw new RuntimeException("Unable to search for user", e);
         }
         List<User> users = (List<User>) (List<? extends User>) results;
@@ -81,7 +81,7 @@ class UsersClientImpl implements UsersProvider {
             LOG.debug("Searching for user: {}", userId);
             result = restTemplate.getForObject(uri, UserJSON.class, params);
         } catch (RestClientException e) {
-            LOG.warn("Exception while getting user by login: {}", e.getMessage());
+            LOG.warn("Exception while getting user by login. Failed calling: {}, Exception: () ",  uri, e.getMessage());
             throw new RuntimeException("Unable to look at user with login ", e);
         }
 
@@ -104,7 +104,7 @@ class UsersClientImpl implements UsersProvider {
         try {
             results = restTemplate.exchange(uri, HttpMethod.GET, null, new ParameterizedTypeReference<List<String>>() {}).getBody();
         } catch (RestClientException e) {
-            LOG.warn("Exception while searching for users in an entity : {}", e.getMessage());
+            LOG.warn("Exception while searching for users in an entity. Failed calling: {}, Exception: () ",  uri, e.getMessage());
             throw new RuntimeException("Unable to search for users in an entity ", e);
         }
 

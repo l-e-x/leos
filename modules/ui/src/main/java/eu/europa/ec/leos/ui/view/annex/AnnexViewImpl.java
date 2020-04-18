@@ -35,7 +35,7 @@ class AnnexViewImpl extends AbstractLeosView<AnnexScreenImpl> implements AnnexVi
 
     @Override
     protected String[] getParameterKeys() {
-        String[] PARAM_KEYS = {SessionAttribute.ANNEX_ID.name()};
+        String[] PARAM_KEYS = {SessionAttribute.ANNEX_REF.name()};
         return PARAM_KEYS;
     }
 }

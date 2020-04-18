@@ -13,6 +13,9 @@
  */
 package eu.europa.ec.leos.ui.extension;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.vaadin.annotations.JavaScript;
@@ -22,10 +25,32 @@ import com.vaadin.ui.JavaScriptFunction;
 import elemental.json.JsonArray;
 import elemental.json.JsonObject;
 import elemental.json.JsonValue;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.LeosMetadata;
 import eu.europa.ec.leos.ui.event.CloseBrowserRequestEvent;
 import eu.europa.ec.leos.ui.event.MergeElementRequestEvent;
-import eu.europa.ec.leos.web.event.view.document.*;
+import eu.europa.ec.leos.vo.toc.Level;
+import eu.europa.ec.leos.vo.toc.NumberingConfig;
+import eu.europa.ec.leos.vo.toc.NumberingType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
+import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent;
 import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent.Action;
+import eu.europa.ec.leos.web.event.view.document.CloseElementEvent;
+import eu.europa.ec.leos.web.event.view.document.DeleteElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.EditElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.EditElementResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchCrossRefTocRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchCrossRefTocResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.FetchElementResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.InsertElementRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.ReferenceLabelRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.ReferenceLabelResponseEvent;
+import eu.europa.ec.leos.web.event.view.document.RefreshElementEvent;
+import eu.europa.ec.leos.web.event.view.document.SaveElementRequestEvent;
 import eu.europa.ec.leos.web.event.window.CloseElementEditorEvent;
 import eu.europa.ec.leos.web.model.UserVO;
 import eu.europa.ec.leos.web.support.LeosCacheToken;
@@ -34,14 +59,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @JavaScript({"vaadin://../js/editor/leosEditorConnector.js" + LeosCacheToken.TOKEN})
 public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaScriptExtension {
 
     private EventBus eventBus;
 
-    public LeosEditorExtension(T target, EventBus eventBus, ConfigurationHelper cfgHelper) {
+    public LeosEditorExtension(T target, EventBus eventBus, ConfigurationHelper cfgHelper, List<TocItem> tocItemList, List<NumberingConfig> numberingConfigs, List<XmlDocument> documents, String documentRef) {
         super();
         this.eventBus = eventBus;
 
@@ -49,6 +76,11 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
         getState().isSpellCheckerEnabled = Boolean.valueOf(cfgHelper.getIntegrationProperty("leos.spell.checker.enabled"));
         getState().spellCheckerServiceUrl = cfgHelper.getIntegrationProperty("leos.spell.checker.service.url");
         getState().spellCheckerSourceUrl = cfgHelper.getIntegrationProperty("leos.spell.checker.source.url");
+        getState().tocItemsJsonArray = toJsonString(tocItemList);
+        getState().numberingConfigsJsonArray = toJsonString(numberingConfigs);
+        getState().listNumberConfigJsonArray = toJsonString(getListNumberConfig(numberingConfigs, NumberingType.MULTILEVEL));
+        getState().documentsMetadataJsonArray = toJsonString(getMetadataDocuments(documents));
+        getState().documentRef = documentRef;
 
         registerServerSideAPI();
         extend(target);
@@ -88,19 +120,19 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
     @Subscribe
     public void receiveElement(FetchElementResponseEvent event) {
         LOG.trace("Receiving element...");
-        callFunction("receiveElement", event.getElementId(), event.getElementTagName(), event.getElementFragment());
+        callFunction("receiveElement", event.getElementId(), event.getElementTagName(), event.getElementFragment(), event.getDocumentRef());
     }
 
     @Subscribe
     public void receiveToc(FetchCrossRefTocResponseEvent event) {
         LOG.trace("Receiving table of content...");
-        callFunction("receiveToc", convertToJson(event.getTocAndAncestorsVO()));
+        callFunction("receiveToc", toJsonString(event.getTocAndAncestorsVO()));
     }
 
     @Subscribe
     public void receiveReferenceLabel(ReferenceLabelResponseEvent event) {
         LOG.trace("Receiving references...");
-        callFunction("receiveRefLabel", event.getLabel().replaceAll("xml:id=", "id="));
+        callFunction("receiveRefLabel", event.getLabel().replaceAll("xml:id=", "id="), event.getDocumentRef());
     }
 
     @Subscribe
@@ -187,7 +219,8 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
                 JsonObject data = arguments.get(0);
                 String elementId = data.getString("elementId");
                 String elementType = data.getString("elementType");
-                eventBus.post(new FetchElementRequestEvent(elementId, elementType));
+                String documentRef = data.getString("documentRef");
+                eventBus.post(new FetchElementRequestEvent(elementId, elementType, documentRef));
             }
         });
         addFunction("requestToc", new JavaScriptFunction() {
@@ -210,11 +243,12 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
                 JsonObject data = arguments.get(0);
                 String currentElementId = data.hasKey("currentEditPosition") ? data.getString("currentEditPosition") : null;
                 JsonArray refs = data.hasKey("references") ? data.getArray("references") : null;
+                String documentRef = data.hasKey("documentRef") ? data.getString("documentRef") : null;
                 List<String> references = new ArrayList<>();
                 for (int index = 0; refs != null && index < refs.length(); index++) {
                     references.add(refs.getString(index));
                 }
-                eventBus.post(new ReferenceLabelRequestEvent(references, currentElementId));
+                eventBus.post(new ReferenceLabelRequestEvent(references, currentElementId, documentRef));
             }
         });
         addFunction("closeBrowser", arguments -> {
@@ -234,8 +268,37 @@ public class LeosEditorExtension<T extends AbstractComponent> extends LeosJavaSc
 
     }
 
-    private JsonValue convertToJson(Object bean) {
-        // Ref to https://dev.vaadin.com/ticket/15446
-        return JsonCodec.encode(bean, null, bean.getClass(), null).getEncodedValue();
+    private List<Level> getListNumberConfig(List<NumberingConfig> numberingConfigs, NumberingType numberingType) {
+        if (numberingConfigs != null && !numberingConfigs.isEmpty()) {
+            NumberingConfig numberingConfig = TocItemUtils.getNumberingConfig(numberingConfigs, numberingType);
+            return numberingConfig != null ? numberingConfig.getLevels().getLevels() : null;
+        }
+        return null;
     }
+
+    private String toJsonString(Object o) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING);
+            return mapper.writeValueAsString(o);
+        } catch (JsonProcessingException e) {
+            return "null";
+        }
+    }
+
+    private List<LeosMetadata> getMetadataDocuments(List<XmlDocument> documents) {
+        Comparator<XmlDocument> annexIndexComparator = Comparator.comparing(o -> {
+            if (o instanceof Annex) {
+                Annex annex = (Annex) o;
+                return annex.getMetadata().get().getIndex();
+            }
+            return 0;
+        });
+        return documents.stream()
+                .filter(p -> p.getCategory() != LeosCategory.PROPOSAL)
+                .sorted(Comparator.<XmlDocument, String>comparing(o -> o.getCategory().name(), Comparator.reverseOrder())
+                        .thenComparing(annexIndexComparator))
+                .map(p -> p.getMetadata().get()).collect(Collectors.toList());
+    }
+
 }

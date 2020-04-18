@@ -44,6 +44,7 @@ define(function aknNumberedParagraphPluginModule(require) {
     var pluginDefinition = {
         icons: pluginName.toLowerCase(),
         init : function init(editor) {
+            renumberModule.init(editor);
             
             editor.ui.addButton(pluginName, {
                 label: 'Paragraph mode',
@@ -71,7 +72,11 @@ define(function aknNumberedParagraphPluginModule(require) {
                     var olElementFromArticle = article.find(">ol");
                     if (olElementFromArticle.length === 0) {
                         //TODO
-                        article.append("<ol><li data-akn-num='1.'><br></li></ol>");
+                        if(PARA_MODE === NUMBERED){
+                            article.append("<ol><li data-akn-num='1.'><br></li></ol>");
+                        }else {
+                            article.append("<ol><li ><br></li></ol>");
+                        }
                         event.editor.getSelection().selectElement(new CKEDITOR.dom.node(article.find(">ol>li>br")[0]));
                     }
                 }
@@ -359,14 +364,14 @@ define(function aknNumberedParagraphPluginModule(require) {
                 akn : "leos:origin",
                 html : "data-origin"
             }, {
-            	akn : "leos:softaction",
-            	html : "data-akn-attr-softaction"
+                akn : "leos:softaction",
+                html : "data-akn-attr-softaction"
             }, {
                 akn : "leos:softactionroot",
                 html : "data-akn-attr-softactionroot"
             }, {
-            	akn : "leos:softuser",
-            	html : "data-akn-attr-softuser"
+                akn : "leos:softuser",
+                html : "data-akn-attr-softuser"
             }, {
                 akn : "leos:softdate",
                 html : "data-akn-attr-softdate"

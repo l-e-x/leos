@@ -28,7 +28,14 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 
-import static eu.europa.ec.leos.services.compare.ContentComparatorService.*;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.ATTR_NAME;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.CONTENT_ADDED_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.CONTENT_REMOVED_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.DOUBLE_COMPARE_ADDED_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.DOUBLE_COMPARE_REMOVED_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.DOUBLE_COMPARE_RETAIN_CLASS;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.DOUBLE_COMPARE_INTERMEDIATE_STYLE;
+import static eu.europa.ec.leos.services.compare.ContentComparatorService.DOUBLE_COMPARE_ORIGINAL_STYLE;
 
 @Component
 @Scope("prototype")
@@ -48,70 +55,58 @@ public class ComparisonDelegate<T extends XmlDocument> {
         this.urlBuilder = urlBuilder;
         this.securityContext = securityContext;
     }
-
+    
     public String getMarkedContent(T oldVersion, T newVersion) {
-        //FIXME collect list of processing to be done on comparison output and do it at single place.
-        String cxtPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
-        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath, securityContext.getPermissions(oldVersion))
-                .replaceAll("(?i)(href|onClick)=\".*?\"", "");// removing the links
-        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath, securityContext.getPermissions(newVersion))
-                .replaceAll("(?i)(href|onClick)=\".*?\"", "");
-
-        //FIXME Shortcut to replace all the original Ids in document. Need a discussion.
-        return compareService.compareContents(new ContentComparatorContext.Builder(firstItemHtml, secondItemHtml)
-                .withAttrName(ATTR_NAME)
-                .withRemovedValue(CONTENT_REMOVED_CLASS)
-                .withAddedValue(CONTENT_ADDED_CLASS)
-                .build())
-                .replaceAll("(?i) id=\"", " id=\"marked-");
+        final String comparedContent = getComparedContent(oldVersion, newVersion);
+        return comparedContent.replaceAll("(?i) id=\"", " id=\"marked-");
     }
-
-    public HashMap<Integer, Object> versionCompare(T oldVersion, T newVersion, int displayMode) {
-        final int SINGLE_COLUMN_MODE = 1;
-        final int TWO_COLUMN_MODE = 2;
-
+    
+    public HashMap<ComparisonDisplayMode, Object> versionCompare(T oldVersion, T newVersion, ComparisonDisplayMode displayMode) {
         long startTime = System.currentTimeMillis();
-        HashMap<Integer, Object> htmlCompareResult = new HashMap<>();
-
-        String cxtPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
-        String firstItemHtml = transformerService.formatToHtml(oldVersion, cxtPath, securityContext.getPermissions(oldVersion))
-                .replaceAll("(?i)(href|onClick)=\".*?\"", "");//removing the links
-        String secondItemHtml = transformerService.formatToHtml(newVersion, cxtPath, securityContext.getPermissions(newVersion))
-                .replaceAll("(?i)(href|onClick)=\".*?\"", "");
-
-        if(displayMode==SINGLE_COLUMN_MODE){
-            htmlCompareResult.put(SINGLE_COLUMN_MODE, compareService.compareContents(new ContentComparatorContext.Builder(firstItemHtml, secondItemHtml)
-                    .withAttrName(ATTR_NAME)
-                    .withRemovedValue(CONTENT_REMOVED_CLASS)
-                    .withAddedValue(CONTENT_ADDED_CLASS)
-                    .build()));
+        HashMap<ComparisonDisplayMode, Object> htmlCompareResult = new HashMap<>();
+        
+        switch (displayMode) {
+            case SINGLE_COLUMN_MODE:
+                final String singleResult = getComparedContent(oldVersion, newVersion);
+                htmlCompareResult.put(displayMode, singleResult);
+                break;
+            case TWO_COLUMN_MODE:
+                final String firstItemHtml = getDocumentAsHtml(oldVersion);
+                final String secondItemHtml = getDocumentAsHtml(newVersion);
+                final String[] doubleResult = compareService.twoColumnsCompareContents(new ContentComparatorContext.Builder(firstItemHtml, secondItemHtml).build());
+                htmlCompareResult.put(displayMode, doubleResult);
         }
-        else if(displayMode==TWO_COLUMN_MODE){
-            htmlCompareResult.put(TWO_COLUMN_MODE, compareService.twoColumnsCompareContents(new ContentComparatorContext.Builder(firstItemHtml, secondItemHtml).build()));
-        }
-
         LOG.debug("Diff exec time: {} ms", (System.currentTimeMillis() - startTime));
         return htmlCompareResult;
     }
     
+    private String getComparedContent(T oldVersion, T newVersion) {
+        final String firstItemHtml = getDocumentAsHtml(oldVersion);
+        final String secondItemHtml = getDocumentAsHtml(newVersion);
+        return compareService.compareContents(new ContentComparatorContext.Builder(firstItemHtml, secondItemHtml)
+                .withAttrName(ATTR_NAME)
+                .withRemovedValue(CONTENT_REMOVED_CLASS)
+                .withAddedValue(CONTENT_ADDED_CLASS)
+                .build());
+    }
+    
     public String doubleCompareHtmlContents(T originalProposal, T intermediateMajor, T current, boolean threeWayEnabled) {
         //FIXME collect list of processing to be done on comparison output and do it at single place.
-        String ctxPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
-        
-        String currentHtml = transformerService.formatToHtml(current, ctxPath, securityContext.getPermissions(current))
-                .replaceAll("(?i)(href|onClick)=\".*?\"", "");
+        final String currentHtml = getDocumentAsHtml(current);
         
         if(threeWayEnabled) {
-            String proposalHtml = transformerService.formatToHtml(originalProposal, ctxPath, securityContext.getPermissions(originalProposal))
-                    .replaceAll("(?i)(href|onClick)=\".*?\"", "");// removing the links
-            
-            String intermediateMajorHtml = transformerService.formatToHtml(intermediateMajor, ctxPath, securityContext.getPermissions(intermediateMajor))
-                    .replaceAll("(?i)(href|onClick)=\".*?\"", "");// removing the links
+            final String proposalHtml = getDocumentAsHtml(originalProposal);
+            final String intermediateMajorHtml = getDocumentAsHtml(intermediateMajor);
             
             return compareService.compareContents(new ContentComparatorContext.Builder(proposalHtml, currentHtml, intermediateMajorHtml)
                     .withAttrName(ATTR_NAME)
                     .withRemovedValue(DOUBLE_COMPARE_REMOVED_CLASS)
                     .withAddedValue(DOUBLE_COMPARE_ADDED_CLASS)
+                    .withRemovedIntermediateValue(DOUBLE_COMPARE_REMOVED_CLASS + DOUBLE_COMPARE_INTERMEDIATE_STYLE)
+                    .withAddedIntermediateValue(DOUBLE_COMPARE_ADDED_CLASS + DOUBLE_COMPARE_INTERMEDIATE_STYLE)
+                    .withRemovedOriginalValue(DOUBLE_COMPARE_REMOVED_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
+                    .withAddedOriginalValue(DOUBLE_COMPARE_ADDED_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
+                    .withRetainOriginalValue(DOUBLE_COMPARE_RETAIN_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
                     .withDisplayRemovedContentAsReadOnly(Boolean.TRUE)
                     .withThreeWayDiff(threeWayEnabled)
                     .build())
@@ -122,23 +117,29 @@ public class ComparisonDelegate<T extends XmlDocument> {
 
         return currentHtml;
     }
+    
+    public String getDocumentAsHtml(T xmlDocument) {
+        final String ctxPath = urlBuilder.getWebAppPath(VaadinServletService.getCurrentServletRequest());
+        return transformerService.formatToHtml(xmlDocument, ctxPath, securityContext.getPermissions(xmlDocument))
+                .replaceAll("(?i)(href|onClick)=\".*?\"", "");
+    }
 
     public String doubleCompareXmlContents(T originalProposal, T intermediateMajor, T current, boolean threeWayEnabled) {
-        
-        String currentXml = current.getContent().getOrError(() -> "Current document content is required!")
-                .getSource().toString();
+        final String currentXml = current.getContent().getOrError(() -> "Current document content is required!").getSource().toString();
         
         if(threeWayEnabled) {
-            String proposalXml = originalProposal.getContent().getOrError(() -> "Proposal document content is required!")
-                    .getSource().toString();
-            
-            String intermediateMajorXml = intermediateMajor.getContent().getOrError(() -> "Intermadiate Major Version document content is required!")
-                    .getSource().toString();
+            final String proposalXml = originalProposal.getContent().getOrError(() -> "Proposal document content is required!").getSource().toString();
+            final String intermediateMajorXml = intermediateMajor.getContent().getOrError(() -> "Intermadiate Major Version document content is required!").getSource().toString();
             
             return compareService.compareContents(new ContentComparatorContext.Builder(proposalXml, currentXml, intermediateMajorXml)
                     .withAttrName(ATTR_NAME)
                     .withRemovedValue(DOUBLE_COMPARE_REMOVED_CLASS)
                     .withAddedValue(DOUBLE_COMPARE_ADDED_CLASS)
+                    .withRemovedIntermediateValue(DOUBLE_COMPARE_REMOVED_CLASS + DOUBLE_COMPARE_INTERMEDIATE_STYLE)
+                    .withAddedIntermediateValue(DOUBLE_COMPARE_ADDED_CLASS + DOUBLE_COMPARE_INTERMEDIATE_STYLE)
+                    .withRemovedOriginalValue(DOUBLE_COMPARE_REMOVED_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
+                    .withAddedOriginalValue(DOUBLE_COMPARE_ADDED_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
+                    .withRetainOriginalValue(DOUBLE_COMPARE_RETAIN_CLASS + DOUBLE_COMPARE_ORIGINAL_STYLE)
                     .withDisplayRemovedContentAsReadOnly(Boolean.TRUE)
                     .withThreeWayDiff(threeWayEnabled)
                     .build());

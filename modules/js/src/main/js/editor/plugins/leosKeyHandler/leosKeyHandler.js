@@ -18,6 +18,10 @@ define(function leosKeyHandler(require) {
     var CKEDITOR = require("promise!ckEditor");
     var LOG = require("logger");
     var REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX = /\u200B/g;
+    var SPAN = "span";
+    var BOGUS = "br";
+    var SCAYT_MISSPELL_WORD_CLASS = "scayt-misspell-word";
+    var SCAYT_GRAMM_PROBLEM_CLASS = "gramm-problem";
 
     var on = function onKey(onKeyContext) {
         onKeyContext.editor.on(onKeyContext.eventType, function(event) {
@@ -42,10 +46,8 @@ define(function leosKeyHandler(require) {
     // Entry parameter of type: CKEDITOR.dom.node
     var getSelectedElement = function getSelectedElement(selection) {
         var selectedElement = selection.getStartElement();
-        if (selectedElement) {
-            while (CKEDITOR.dtd.$inline.hasOwnProperty(selectedElement.getName())) {
-                selectedElement = selectedElement.getParent();
-            }
+        while (selectedElement && CKEDITOR.dtd.$inline.hasOwnProperty(selectedElement.getName())) {
+            selectedElement = selectedElement.getParent();
         }
         return selectedElement;
     };
@@ -54,38 +56,27 @@ define(function leosKeyHandler(require) {
     // Empty means:
     // 1. No text (spaces or no characters)
     // 2. Contains only one "br"
+    // 3. Contains "span" spellchecker tag with no text or with a "br"
     // Entry parameter of type : CKEDITOR.dom.element or CKEDITOR.dom.text
     var isContentEmptyTextNode = function isContentEmptyTextNode(element) {
-        if (element ) {
+        if (element) {
             if (element instanceof CKEDITOR.dom.element || element instanceof CKEDITOR.dom.documentFragment) {
-                switch (element.getChildCount()) {
-                    case 0:
-                        return true;
-                    case 1:
-                        var childElement = element.getChild(0);
-                        if ((childElement.type === CKEDITOR.NODE_TEXT) &&
-                            (childElement.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') === "")) {
-                            return true;
+                for (var i = 0;i < element.getChildCount(); i++) {
+                    var childElement = element.getChildren().getItem(i);
+                    if ((childElement.type === CKEDITOR.NODE_TEXT) &&
+                            (childElement.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') !== "")) {
+                        return false;
+                    } else if ((childElement.type !== CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() === SPAN) &&
+                            (childElement.hasClass(SCAYT_MISSPELL_WORD_CLASS) || childElement.hasClass(SCAYT_GRAMM_PROBLEM_CLASS))) {
+                        if (!isContentEmptyTextNode(childElement)) {
+                            return false;
                         }
-                        //If element contains only a "br" element, it should be considered as empty
-                        else if ((childElement.type !== CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() === "br")) {
-                            return true;
-                        }
-                        break;
-                    default :
-                        for (var i = 0;i < element.getChildCount(); i++) {
-                            var childElement = element.getChildren().getItem(i);
-                            if ((childElement.type !== CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() !== "br")) {
-                                return false;
-                            }
-                            if ((childElement.type === CKEDITOR.NODE_TEXT) && (childElement.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') !== "")) {
-                                return false;
-                            }
-                        }
-                        return true;
+                    } else if ((childElement.type !== CKEDITOR.NODE_TEXT) && (childElement.getName().toLowerCase() !== BOGUS)) {
+                        return false;
+                    }
                 }
-            }
-            else if (element instanceof CKEDITOR.dom.text) {
+                return true;
+            } else if (element instanceof CKEDITOR.dom.text) {
                 return (element.getText().trim().replace(REG_EXP_FOR_UNICODE_ZERO_WIDTH_SPACE_IN_HEX, '') === "");
             }
         }

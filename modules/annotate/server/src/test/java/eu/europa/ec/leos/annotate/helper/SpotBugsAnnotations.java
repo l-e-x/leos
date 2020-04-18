@@ -17,13 +17,14 @@ public class SpotBugsAnnotations {
 
     public static final String FieldNotInitialized = "UWF_FIELD_NOT_INITIALIZED_IN_CONSTRUCTOR";
     public static final String FieldNotInitializedReason = "initialised in before-test setup function called by junit";
-    
+
     public static final String ExceptionIgnored = "DE_MIGHT_IGNORE";
     public static final String ExceptionIgnoredReason = "Intended for test";
-    
+
     public static final String KnownNullValue = "NP_LOAD_OF_KNOWN_NULL_VALUE";
     public static final String KnownNullValueReason = "by intention for test purposes";
-    
+
     public static final String ReturnValueIgnored = "RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT";
     public static final String ReturnValueIgnoredReason = "Calls verified for test purposes";
+
 }

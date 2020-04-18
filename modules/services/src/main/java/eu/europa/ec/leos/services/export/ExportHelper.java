@@ -13,16 +13,9 @@
  */
 package eu.europa.ec.leos.services.export;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.HashMap;
-import java.util.Map;
-
-import javax.xml.bind.JAXBException;
-
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,9 +23,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import freemarker.template.Configuration;
-import freemarker.template.Template;
-import freemarker.template.TemplateException;
+import javax.xml.bind.JAXBException;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Component
 class ExportHelper {
@@ -57,6 +56,12 @@ class ExportHelper {
 
     @Value("${leos.freemarker.ftl.export.docuwrite.word}")
     private String exportTemplateDW_word;
+
+    @Value("${leos.freemarker.ftl.export.docuwrite.word_annex}")
+    private String exportTemplateDW_wordAnnex;
+
+    @Value("${leos.freemarker.ftl.export.docuwrite.pdf_annex}")
+    private String exportTemplateDW_pdfAnnex;
 
     @Autowired
     public ExportHelper (Configuration freemarkerConfiguration) {
@@ -91,6 +96,12 @@ class ExportHelper {
                     break;
                 case TO_WORD_DW:
                     template = freemarkerConfiguration.getTemplate(exportTemplateDW_word);
+                    break;
+                case TO_PDF_DW_ANNEX:
+                    template = freemarkerConfiguration.getTemplate(exportTemplateDW_pdfAnnex);
+                    break;
+                case TO_WORD_DW_ANNEX:
+                    template = freemarkerConfiguration.getTemplate(exportTemplateDW_wordAnnex);
                     break;
                 default:
                     throw new Exception("Export Options not valid");

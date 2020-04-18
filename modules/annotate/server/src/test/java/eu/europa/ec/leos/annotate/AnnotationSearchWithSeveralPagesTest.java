@@ -95,16 +95,17 @@ public class AnnotationSearchWithSeveralPagesTest {
     private static final String ID_11_PUB = "id11";
     private static final String ID_12_PUB = "id12";
 
-    private User user, secondUser;
-
+    private User secondUser;
+    
     @Before
+    @SuppressWarnings({"PMD.SignatureDeclareThrowsException"})
     public void cleanDatabaseBeforeTests() throws Exception {
 
         TestDbHelper.cleanupRepositories(this);
         final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
 
         // insert user, assign to the default group
-        user = new User(FIRST_USER_LOGIN);
+        final User user = new User(FIRST_USER_LOGIN);
         secondUser = new User(SECOND_USER_LOGIN);
         userRepos.save(Arrays.asList(user, secondUser));
         userGroupRepos.save(new UserGroup(user.getId(), defaultGroup.getId()));

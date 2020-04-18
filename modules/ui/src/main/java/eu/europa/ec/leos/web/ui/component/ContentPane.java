@@ -15,7 +15,7 @@ package eu.europa.ec.leos.web.ui.component;
 
 import com.vaadin.ui.Component;
 
-public interface ContentPane extends Component{
+public interface ContentPane extends Component {
 
     /**
      * Called when defining horizontal splitter position.
@@ -44,6 +44,4 @@ public interface ContentPane extends Component{
         }
         return featureWidth;
     }
-
-    Class getChildClass();
 }

@@ -23,7 +23,6 @@ import org.junit.Test;
 import com.google.common.eventbus.EventBus;
 import com.vaadin.spring.navigator.SpringNavigator;
 import eu.europa.ec.leos.test.support.LeosTest;
-import eu.europa.ec.leos.ui.view.repository.RepositoryView;
 import eu.europa.ec.leos.web.event.NavigationRequestEvent;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;

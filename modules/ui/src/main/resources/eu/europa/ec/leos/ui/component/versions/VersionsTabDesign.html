@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="package-mapping" content="component:eu.europa.ec.leos.ui.component.versions"/>
+</head>
+<body>
+
+<vaadin-vertical-layout id="versionsTabVerticalLayout" size-full spacing="false" margin="false">
+    <vaadin-horizontal-layout style-name="leos-accordion-tab-header" width="100%" spacing="true">
+        <vaadin-button _id="compareModeButton" id="compareModeButton" style-name="link reset-button"></vaadin-button>
+        <vaadin-button _id="searchButton" id="searchButton" style-name="link reset-button"></vaadin-button>
+        <vaadin-label id="spacerLabel" :expand="1.0" :middle :left></vaadin-label>
+    </vaadin-horizontal-layout>
+
+    <v-vertical-layout style-name="versions-cards-holder-scroller" size-full :expand="1.0" spacing="false" margin="false">
+        <v-vertical-layout _id="versionsCardsHolder" style-name="versions-cards-holder" :expand="1.0" spacing="false" margin="false">
+        </v-vertical-layout>
+    </v-vertical-layout>
+</vaadin-vertical-layout>
+</body>
+</html>

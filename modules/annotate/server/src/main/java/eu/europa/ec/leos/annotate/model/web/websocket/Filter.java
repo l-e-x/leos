@@ -48,26 +48,32 @@ public class Filter {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public String getMatch_policy() {
         return match_policy;
     }
 
+    @Generated
     public void setMatch_policy(final String match_policy) {
         this.match_policy = match_policy;
     }
 
+    @Generated
     public Map<String, Boolean> getActions() {
         return actions;
     }
 
+    @Generated
     public void setActions(final Map<String, Boolean> actions) {
         this.actions = actions;
     }
 
+    @Generated
     public List<Clause> getClauses() {
         return clauses;
     }
 
+    @Generated
     public void setClauses(final List<Clause> clauses) {
         this.clauses = clauses;
     }
@@ -117,7 +123,7 @@ public class Filter {
 
     @Generated
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (this == obj) {
             return true;
         }

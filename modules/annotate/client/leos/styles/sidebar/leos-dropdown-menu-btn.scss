@@ -1,0 +1,9 @@
+.dropdown-menu-btn {
+  $hover-background-color: $leos-hover-btn-text-color;
+
+  &__dropdown-arrow {
+    &:hover {
+      background-color: $hover-background-color;
+    }
+  }
+}

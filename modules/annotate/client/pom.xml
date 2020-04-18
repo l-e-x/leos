@@ -23,7 +23,7 @@
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>annotate</artifactId>
-        <version>2.1.0</version>
+        <version>3.0.0</version>
     </parent>
 
     <name>anot-client</name>
@@ -34,7 +34,7 @@
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
-                <version>1.6</version>
+                <version>1.9.0</version>
                 <executions>
                     <execution>
                         <id>install node and yarn</id>
@@ -43,8 +43,8 @@
                         </goals>
                         <phase>${execute.yarn.phase}</phase>
                         <configuration>
-                            <nodeVersion>v8.4.0</nodeVersion>
-                            <yarnVersion>v1.2.1</yarnVersion>
+                            <nodeVersion>v10.13.0</nodeVersion>
+                            <yarnVersion>v1.21.1</yarnVersion>
                             <installDirectory>target</installDirectory>
                         </configuration>
                     </execution>

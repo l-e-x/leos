@@ -27,16 +27,24 @@
 @import 'shared/compare';
 @import 'shared/doubleCompare';
 @import 'shared/higherElements';
+@import 'shared/elementHeading';
 @import 'shared/image';
 @import 'shared/soft';
 @import 'shared/print';
+@import 'shared/exportPdf';
+
+@import 'shared/article';
+@import 'shared/articleAlinea';
+@import 'shared/articleParagraph';
+@import 'shared/articleSubParagraph';
+@import 'shared/reference';
 
 @import 'annex/modules/paragraph';
 @import 'annex/modules/list';
-@import 'annex/modules/division';
+@import 'annex/modules/level';
 @import 'annex/modules/coverPage';
 @import 'annex/editor';
 @import 'annex/xml';
+@import 'annex/modules/levelSubParagraph';
 
 @include xml;
-

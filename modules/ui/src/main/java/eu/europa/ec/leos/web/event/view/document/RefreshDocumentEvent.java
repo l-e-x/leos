@@ -13,7 +13,20 @@
  */
 package eu.europa.ec.leos.web.event.view.document;
 
+import eu.europa.ec.leos.domain.common.TocMode;
 
 public class RefreshDocumentEvent {
+    private TocMode mode;
 
+    public RefreshDocumentEvent() {
+        this.mode = TocMode.SIMPLIFIED;
+    }
+
+    public RefreshDocumentEvent(TocMode mode) {
+        this.mode = mode;
+    }
+
+    public TocMode getTocMode() {
+        return this.mode;
+    }
 }

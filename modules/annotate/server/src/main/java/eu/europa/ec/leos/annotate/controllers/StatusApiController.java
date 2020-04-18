@@ -13,18 +13,21 @@
  */
 package eu.europa.ec.leos.annotate.controllers;
 
+import eu.europa.ec.leos.annotate.model.PublishContributionsResult;
+import eu.europa.ec.leos.annotate.model.ResponseStatusUpdateResult;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
+import eu.europa.ec.leos.annotate.model.web.PublishContributionsRequest;
 import eu.europa.ec.leos.annotate.model.web.StatusUpdateRequest;
+import eu.europa.ec.leos.annotate.model.web.status.PublishContributionsSuccessResponse;
 import eu.europa.ec.leos.annotate.model.web.status.StatusUpdateSuccessResponse;
-import eu.europa.ec.leos.annotate.services.AnnotationService;
-import eu.europa.ec.leos.annotate.services.MetadataService;
+import eu.europa.ec.leos.annotate.services.StatusUpdateService;
+import eu.europa.ec.leos.annotate.services.exceptions.CannotPublishContributionsException;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotUpdateAnnotationStatusException;
 import eu.europa.ec.leos.annotate.services.exceptions.MissingPermissionException;
 import eu.europa.ec.leos.annotate.services.impl.AuthenticatedUserStore;
 import eu.europa.ec.leos.annotate.websockets.MessageBroker;
-//import eu.europa.ec.leos.annotate.websockets.MessageBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,7 +41,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -49,11 +51,9 @@ public class StatusApiController {
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
-    @Autowired
-    private MetadataService metadataService;
 
     @Autowired
-    private AnnotationService annotService;
+    private StatusUpdateService statusService;
 
     @Autowired
     private AuthenticatedUserStore authUser;
@@ -68,8 +68,10 @@ public class StatusApiController {
     /**
      * Endpoint for updating the response status of annotations matching given criteria
      *
-     * @param request Incoming request
-     * @param response Outgoing response
+     * @param request 
+     *        Incoming request
+     * @param response 
+     *        Outgoing response
      * @param uri (request parameter)
      *        URI of the annotations' document
      * @param group (request parameter)
@@ -80,9 +82,9 @@ public class StatusApiController {
      *        map (string/string) of further metadata that the annotations to be updated must have at least
      *
      * @return
-     * in case of success: HTTP status 200, JSON based response success response ({@link StatusUpdateSuccessResponse})
-     * in case of failure due to missing permissions or other unfulfilled conditions: HTTP status 404 with error description
-     * in case of other failures: HTTP status 400, JSON based response with error description
+     * - in case of success: HTTP status 200, JSON based response success response ({@link StatusUpdateSuccessResponse})
+     * - in case of failure due to missing permissions or other unfulfilled conditions: HTTP status 404 with error description
+     * - in case of other failures: HTTP status 400, JSON based response with error description
      *
      * @throws IOException
      * @throws ServletException
@@ -102,14 +104,14 @@ public class StatusApiController {
 
         try {
             final UserInformation userInfo = authUser.getUserInfo();
-            final List<Long> metadataIds = metadataService.updateMetadata(updateRequest, userInfo);
+            final ResponseStatusUpdateResult rsur = statusService.updateAnnotationResponseStatus(updateRequest, userInfo);
 
             // we send an update for all annotations associated to this metadata
-            final List<String> annotIds = annotService.getAnnotationIdsOfMetadata(metadataIds);
             final String header = request.getHeader("x-client-id");
 
             // publish changes via websockets
-            annotIds.stream().forEach(annotId -> messageBroker.publish(annotId, MessageBroker.ACTION.UPDATE, header));
+            rsur.getUpdatedAnnotIds().stream().forEach(annotId -> messageBroker.publish(annotId, MessageBroker.ACTION.UPDATE, header));
+            rsur.getDeletedAnnotIds().stream().forEach(annotId -> messageBroker.publish(annotId, MessageBroker.ACTION.DELETE, header));
 
             LOG.debug("Annotation metadata status update successful, return Http status 200");
             return new ResponseEntity<Object>(new StatusUpdateSuccessResponse(), HttpStatus.OK);
@@ -131,4 +133,61 @@ public class StatusApiController {
         return new ResponseEntity<Object>(new JsonFailureResponse("The annotation status could not be updated: " + errorMsg), httpStatusToSend);
     }
 
+    /**
+     * Endpoint for publishing the private annotations of a contributor (ISC context) in a group
+     * 
+     * @param request 
+     *        Incoming request
+     * @param response 
+     *        Outgoing response
+     * @param publishRequest (request parameter)
+     *        details on which document/group the annotations are in, which user and ISC reference are affected
+     * @return
+     * - in case of success: HTTP status 200, JSON based response success response ({@link PublishContributionsSuccessResponse})
+     * - in case of failure due to missing permissions or other unfulfilled conditions: HTTP status 404 with error description
+     * - in case of other failures: HTTP status 400, JSON based response with error description
+     * 
+     * @throws IOException
+     * @throws ServletException
+     */
+    @RequestMapping(value = "/publishContrib", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ResponseEntity<Object> publishContributions(final HttpServletRequest request, final HttpServletResponse response,
+            final PublishContributionsRequest publishRequest)
+            throws IOException, ServletException {
+        
+        LOG.debug("Received request to publish annotations of a contributor within a group");
+        
+        String errorMsg = "";
+        HttpStatus httpStatusToSend;
+        
+        try {
+            final UserInformation userInfo = authUser.getUserInfo();
+            final PublishContributionsResult publishResult = statusService.publishContributions(publishRequest, userInfo);
+
+            // we send an update for all annotations associated to this metadata
+            final String header = request.getHeader("x-client-id");
+
+            // publish changes via websockets
+            publishResult.getUpdatedAnnotIds().stream().forEach(annotId -> messageBroker.publish(annotId, MessageBroker.ACTION.UPDATE, header));
+
+            LOG.debug("Annotation metadata status update successful, return Http status 200");
+            return new ResponseEntity<Object>(new PublishContributionsSuccessResponse(), HttpStatus.OK);
+
+        } catch (CannotPublishContributionsException | MissingPermissionException e) {
+
+            httpStatusToSend = HttpStatus.NOT_FOUND;
+            LOG.error("The contributor annotations could not be published", e);
+            errorMsg = e.getMessage();
+
+        } catch (Exception e) { // e.g. the CannotCreateMetadataException
+
+            httpStatusToSend = HttpStatus.BAD_REQUEST;
+            LOG.error("Error while trying to publish annotations of a contributor", e);
+            errorMsg = e.getMessage();
+        }
+
+        LOG.warn("There was a problem while publishing annotation of a contributor, return and failure notice");
+        return new ResponseEntity<Object>(new JsonFailureResponse("The contributor annotations could not be published: " + errorMsg), httpStatusToSend);
+    }
 }

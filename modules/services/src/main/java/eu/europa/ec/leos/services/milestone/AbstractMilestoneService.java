@@ -16,9 +16,8 @@ package eu.europa.ec.leos.services.milestone;
 
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
-import eu.europa.ec.leos.services.export.ExportResource;
-import eu.europa.ec.leos.services.store.PackageService;
-import io.atlassian.fugue.Pair;
+import eu.europa.ec.leos.services.export.LegPackage;
+import eu.europa.ec.leos.services.store.LegService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,32 +30,35 @@ public abstract class AbstractMilestoneService implements MilestoneService{
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractMilestoneService.class);
 
-    protected final PackageService packageService;
+    protected final LegService legService;
 
     private final StampedLock updateMilestoneLock = new StampedLock();
 
-    public AbstractMilestoneService(PackageService packageService) {
-        this.packageService = packageService;
+    public AbstractMilestoneService(LegService legService) {
+        this.legService = legService;
     }
 
     @Nonnull
-    protected abstract LegDocument createLegDocument(String proposalId, String milestoneComment, Pair<File, ExportResource> legPackage) throws Exception;
+    protected abstract LegDocument createLegDocument(String proposalId, LegPackage legPackage) throws Exception;
 
-    protected abstract Pair<File, ExportResource> createLegPackage(String proposalId) throws IOException;
+    protected abstract LegPackage createLegPackage(String proposalId) throws IOException;
 
     @Override
     public LegDocument createMilestone(String proposalId, String milestoneComment) throws Exception {
         LOG.trace("Creating Milestone for Proposal... [proposalId={}]", proposalId);
         File legFileAsZip = null;
         try{
-            Pair<File, ExportResource> legPackage = createLegPackage(proposalId);
-            legFileAsZip = legPackage.left();
-            LegDocument legDocument = createLegDocument(proposalId, milestoneComment, legPackage);
+            LegPackage legPackage = createLegPackage(proposalId);
+            legPackage.addMilestoneComment(milestoneComment);
+            legFileAsZip = legPackage.getFile();
+            LegDocument legDocument = createLegDocument(proposalId, legPackage);
             LOG.trace("Created LegDocument... [legDocumentId={}]", legDocument.getId());
             return legDocument;
         } finally {
             if (legFileAsZip != null && legFileAsZip.exists()) {
-                legFileAsZip.delete();
+                if (!legFileAsZip.delete()) {
+                    LOG.warn("Couldn't delete the leg file {} for proposal {}", legFileAsZip.getName(), proposalId);
+                }
             }
         }
     }
@@ -67,7 +69,7 @@ public abstract class AbstractMilestoneService implements MilestoneService{
         if(legId != null && !legId.isEmpty()){
             long stamp = updateMilestoneLock.writeLock();
             try{
-                return packageService.updateLegDocument(legId, status);
+                return legService.updateLegDocument(legId, status);
             } finally {
                 updateMilestoneLock.unlockWrite(stamp);
             }
@@ -114,10 +116,10 @@ public abstract class AbstractMilestoneService implements MilestoneService{
 
     private LegDocument updateMilestone(String documentId, String jobId) {
         LOG.trace("Updating the status to {} of the Leg document that has jobId={} and is in the same package with any document that has documentId={}.",LeosLegStatus.FILE_ERROR.name(), jobId, documentId);
-        LegDocument legDocument = packageService.findLegDocumentByAnyDocumentIdAndJobId(documentId, jobId);
+        LegDocument legDocument = legService.findLegDocumentByAnyDocumentIdAndJobId(documentId, jobId);
         if(legDocument != null ){
             if(!LeosLegStatus.FILE_ERROR.equals(legDocument.getStatus())){
-                return packageService.updateLegDocument(legDocument.getId(), LeosLegStatus.FILE_ERROR);
+                return legService.updateLegDocument(legDocument.getId(), LeosLegStatus.FILE_ERROR);
             } else {
                 return legDocument;
             }
@@ -128,10 +130,10 @@ public abstract class AbstractMilestoneService implements MilestoneService{
 
     private LegDocument updateMilestone(String documentId, String jobId, byte[] pdfJobZip, byte[] wordJobZip) {
         LOG.trace("Updating status to {} and content with pdf and word renditions of the Leg document that has jobId={} and is in the same package with any document that has documentId={}.", LeosLegStatus.FILE_READY.name(), jobId, documentId);
-        LegDocument legDocument = packageService.findLegDocumentByAnyDocumentIdAndJobId(documentId, jobId);
+        LegDocument legDocument = legService.findLegDocumentByAnyDocumentIdAndJobId(documentId, jobId);
         if(legDocument != null){
             if(LeosLegStatus.IN_PREPARATION.equals(legDocument.getStatus())){
-                return packageService.updateLegDocument(legDocument.getId(), pdfJobZip, wordJobZip);
+                return legService.updateLegDocument(legDocument.getId(), pdfJobZip, wordJobZip);
             } else {
                 return legDocument;
             }

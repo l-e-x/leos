@@ -53,7 +53,7 @@ $LIST_SPACING: 40px;
     }
 }
 
-point {
+point, indent {
     @extend %padList;
 }
 
@@ -123,8 +123,8 @@ num + div > ol[data-akn-name=aknSubParagraphMandate] > li::before {
         }
     }
 
-    li > ul {
-        & li {
+    li > ol {
+        & li[data-akn-num="-"] {
             @include blockOutline("INDENT", $LIST_SPACING);
         }
     }

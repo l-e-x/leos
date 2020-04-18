@@ -13,27 +13,34 @@
  */
 package eu.europa.ec.leos.services.support.xml.ref;
 
-import eu.europa.ec.leos.i18n.LanguageHelper;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
 
 @Component
 public class LabelArticlesOrRecitalsOnly extends LabelHandler {
 
-    private static final List<String> TOP_LEVEL_NODES = Arrays.asList("article", "recital");
+    private static final List<String> NODES_TO_CONSIDER = Arrays.asList(ARTICLE, RECITAL);
     
     @Override
-    public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale) {
-        //if all refs are higher than article generate and leave
-        for (TreeNode ref : refs) {
-            if (!TOP_LEVEL_NODES.contains(ref.getType())) {
-                return false;//break and let other rules handle 
-            }
-        }
-
+    public boolean canProcess(List<TreeNode> refs) {
+        boolean canProcess = refs.stream()
+                .allMatch(ref -> NODES_TO_CONSIDER.contains(ref.getType()));
+        return canProcess;
+    }
+    
+    @Override
+    public void process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale, boolean withAnchor) {
         Map<TreeNode, StringBuffer> buffers = new HashMap<>();
         refs.forEach(ref -> buffers.put(ref, new StringBuffer()));
 
@@ -50,7 +57,7 @@ public class LabelArticlesOrRecitalsOnly extends LabelHandler {
             TreeNode node = toBeTreatedNodes.get(i);
             if (!mrefCommonNodes.contains(node) || toBeTreatedNodes.size() > 1) {
                 if (node.getChildren().isEmpty()) {
-                    buffers.get(node).insert(0, createAnchor(node, locale));
+                    buffers.get(node).insert(0, createAnchor(node, locale, withAnchor));
                 } else {
                     buffers.get(node).insert(0, NumFormatter.formattedNum(node, locale));
                 }
@@ -63,7 +70,7 @@ public class LabelArticlesOrRecitalsOnly extends LabelHandler {
                 for (int j = i + 1; j < toBeTreatedNodes.size(); ) {
                     TreeNode jNode = toBeTreatedNodes.get(j);
 
-                    if (TOP_LEVEL_NODES.contains(iNode.getType()) && TOP_LEVEL_NODES.contains(jNode.getType())) {
+                    if (NODES_TO_CONSIDER.contains(iNode.getType()) && NODES_TO_CONSIDER.contains(jNode.getType())) {
                         buffers.get(iNode).insert(0, AND ? " and " : ", ");
                         buffers.get(iNode).insert(0, buffers.get(jNode));
                         plural = 0;
@@ -89,8 +96,6 @@ public class LabelArticlesOrRecitalsOnly extends LabelHandler {
             }
             label.insert(0, buffers.get(node));
         }
-
-        return true;
     }
 
     @Override

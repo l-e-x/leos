@@ -16,6 +16,7 @@ package eu.europa.ec.leos.ui.view.collection;
 import com.google.common.eventbus.EventBus;
 import com.vaadin.server.FileDownloader;
 import com.vaadin.server.FileResource;
+import com.vaadin.server.Resource;
 import com.vaadin.server.VaadinRequest;
 import com.vaadin.server.VaadinResponse;
 import com.vaadin.spring.annotation.SpringComponent;
@@ -23,16 +24,17 @@ import com.vaadin.spring.annotation.ViewScope;
 import com.vaadin.ui.MenuBar;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.security.LeosPermission;
 import eu.europa.ec.leos.security.SecurityContext;
 import eu.europa.ec.leos.services.export.ExportOptions;
-import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.ui.event.view.collection.DeleteCollectionEvent;
 import eu.europa.ec.leos.ui.event.view.collection.DownloadMandateEvent;
 import eu.europa.ec.leos.ui.event.view.collection.ExportMandateEvent;
 import eu.europa.ec.leos.web.support.UrlBuilder;
-import eu.europa.ec.leos.i18n.LanguageHelper;
-import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,14 +48,15 @@ import java.io.IOException;
 @SpringComponent
 @Instance(InstanceType.COUNCIL)
 public class MandateCollectionScreenImpl extends CollectionScreenImpl {
+    private static final long serialVersionUID = 8863585776380925364L;
 
     private static final Logger LOG = LoggerFactory.getLogger(MandateCollectionScreenImpl.class);
 
     protected MenuBar.MenuItem exportCollectionToDocuwrite;
 
     MandateCollectionScreenImpl(UserHelper userHelper, MessageHelper messageHelper, EventBus eventBus, LanguageHelper langHelper,
-            WebApplicationContext webApplicationContext, SecurityContext securityContext, UrlBuilder urlBuilder) {
-        super(userHelper, messageHelper, eventBus, langHelper, webApplicationContext, securityContext, urlBuilder);
+            ConfigurationHelper cfgHelper, WebApplicationContext webApplicationContext, SecurityContext securityContext, UrlBuilder urlBuilder) {
+        super(userHelper, messageHelper, eventBus, langHelper, cfgHelper, webApplicationContext, securityContext, urlBuilder);
 
         initMandateStaticData();
     }
@@ -107,7 +110,7 @@ public class MandateCollectionScreenImpl extends CollectionScreenImpl {
     protected void resetBasedOnPermissions(DocumentVO proposalVO) {
         super.resetBasedOnPermissions(proposalVO);
 
-        boolean enableExportToDocuwrite = securityContext.hasPermission(proposalVO, LeosPermission.CAN_PRINT_DW);
+        boolean enableExportToDocuwrite = securityContext.hasPermission(proposalVO, LeosPermission.CAN_EXPORT_DW);
         exportCollectionToDocuwrite.setVisible(enableExportToDocuwrite);
     }
 
@@ -132,5 +135,9 @@ public class MandateCollectionScreenImpl extends CollectionScreenImpl {
             }
         };
         fileDownloader.extend(downloadCollection);
+    }
+
+    @Override
+    public void setExportPdfStreamResource(Resource exportPdfStreamResource) {
     }
 }

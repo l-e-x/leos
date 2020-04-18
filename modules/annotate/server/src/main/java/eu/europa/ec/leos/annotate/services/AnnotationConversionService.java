@@ -17,7 +17,6 @@ import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchOptions;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchResult;
-import eu.europa.ec.leos.annotate.model.search.SearchModel;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationStatus;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonSearchResult;
@@ -26,12 +25,38 @@ import java.util.List;
 
 public interface AnnotationConversionService {
 
-    // conversion of annotations to model representation later for Json responses
+    /**
+     * convert a given {@link Annotation} object into {@link JsonAnnotation} format
+     * 
+     * @param annot
+     *        the Annotation object to be converted
+     * @param userInfo
+     *        user information about the user requesting the action
+     * @return the wrapped JsonAnnotation object
+     */
     JsonAnnotation convertToJsonAnnotation(Annotation annot, UserInformation userInfo);
-    JsonAnnotation convertToJsonAnnotation(Annotation annot, SearchModel searchModel, UserInformation userInfo);
-
+    
+    /**
+     * convert a given list of Annotation objects into JsonSearchResult format, taking search options into account
+     * (e.g. whether replies should be listed separately)
+     * 
+     * @param annotationResult
+     *        the wrapper object containing the list of Annotations objects to be converted
+     * @param replies 
+     *        the replies belonging to the found annotations
+     * @param options 
+     *        search options that might influence the result, e.g. whether replies should be listed separately
+     * @return the wrapped JsonSearchResult object
+     */
     JsonSearchResult convertToJsonSearchResult(AnnotationSearchResult annotations, List<Annotation> replies, 
             AnnotationSearchOptions options, UserInformation userInfo);
 
+    /**
+     * assemble the status information of an annotation in JSON format
+     * 
+     * @param annot 
+     *        Annotation for which to assemble the information
+     * @return filled-in {@link JsonAnnotationStatus} object
+     */
     JsonAnnotationStatus getJsonAnnotationStatus(Annotation annot);
 }

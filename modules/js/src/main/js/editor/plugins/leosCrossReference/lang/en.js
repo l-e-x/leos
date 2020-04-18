@@ -19,5 +19,9 @@ CKEDITOR.plugins.setLang( 'leosCrossReference', 'en', {
    movedOrDeletedElementsMessage : 'Internal reference is not allowed on moved/deleted element(s)',
    selectionNotAllowed : 'Only siblings can be selected of same type',
    existingRef : 'Existing reference: ',
-   brokenRef : 'Existing reference is invalid. Please update the reference'
+   brokenRef : 'Existing reference is invalid. Please update the reference',
+   memorandum: 'Explanatory Memorandum',
+   bill: 'Legal Text',
+   annex: 'Annex',
+   levelDescription: 'Point'
 });

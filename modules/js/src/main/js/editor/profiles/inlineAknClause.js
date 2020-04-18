@@ -33,6 +33,7 @@ define(function aknInlineClauseProfileModule(require) {
     plugins.push(require("plugins/leosTransformer/leosTransformerPlugin"));
     plugins.push(require("plugins/leosFixNestedPs/leosFixNestedPsPlugin"));
     plugins.push(require("plugins/leosTextCaseChanger/leosTextCaseChangerPlugin"));
+    plugins.push(require("plugins/leosPreventSelectAll/leosPreventSelectAllPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -72,10 +73,6 @@ define(function aknInlineClauseProfileModule(require) {
         disableNativeSpellChecker: false,
         // LEOS-2887 removing tooltip title 
         title: false,
-        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements
-        blockedKeystrokes: [
-            CKEDITOR.CTRL + 65 //CTRL +A
-        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"

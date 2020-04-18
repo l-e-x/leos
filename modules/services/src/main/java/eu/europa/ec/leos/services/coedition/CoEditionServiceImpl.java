@@ -40,7 +40,7 @@ public class CoEditionServiceImpl implements CoEditionService {
         Validate.notNull(user, "user must not be null");
         Validate.notNull(documentId, "documentId must not be null");
 
-        CoEditionVO coEditionVo = new CoEditionVO(sessionId, presenterId, user.getLogin(), user.getName(), user.getEntity(), user.getEmail(), documentId,
+        CoEditionVO coEditionVo = new CoEditionVO(sessionId, presenterId, user.getLogin(), user.getName(), user.getDefaultEntity() != null ? user.getDefaultEntity().getOrganizationName() : "", user.getEmail(), documentId,
                 elementId, infoType, System.currentTimeMillis());
         long stamp = infoHandlerLock.writeLock();
         try {

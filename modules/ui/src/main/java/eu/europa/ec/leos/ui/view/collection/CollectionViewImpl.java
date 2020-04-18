@@ -31,7 +31,7 @@ class CollectionViewImpl extends AbstractLeosView<CollectionScreenImpl> implemen
 
     @Override
     protected String[] getParameterKeys() {
-        String[] PARAM_KEYS = {SessionAttribute.PROPOSAL_ID.name()};
+        String[] PARAM_KEYS = {SessionAttribute.PROPOSAL_REF.name()};
         return PARAM_KEYS;
     }
 }

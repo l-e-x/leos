@@ -21,26 +21,9 @@ define(function elementEditorModule(require) {
     var log = require("logger");
     var CKEDITOR = require("promise!ckEditor");
     var UTILS = require("core/leosUtils");
-
-    // configuration of the profiles (element tag name + document type name separated by '_' all lower case +
-    // instance context separated by '_' all lower case (defaults to blank = ec))
-    var PROFILES_CFG = {
-        clause_bill: "inlineAknClause",
-        citations_bill: "inlineAknCitations",
-        recitals_bill: "inlineAknRecitals",
-        article_bill: "inlineAknArticle",
-        article_bill_council: "inlineAknArticleMandate",
-        division_annex: "inlineAknAnnexDivision",
-        blockcontainer_memorandum: "inlineAknEMBlockContainer",
-        citation_bill: "inlineAknCitation",
-        citation_bill_council: "inlineAknCitationMandate",
-        recital_bill: "inlineAknRecital",
-        recital_bill_council: "inlineAknRecitalMandate",
-        paragraph_bill_council: "inlineAknParagraphMandate",
-        subparagraph_bill_council: "inlineAknSubParagraphMandate",
-        point_bill_council: "inlineAknPointMandate",
-        alinea_bill_council: "inlineAknAlineaMandate"
-    };
+    var pluginTools = require("../plugins/pluginTools");
+    var dialogDefinition = require("./leosEmptyElementDialog");
+    var ZERO_WIDTH_SPACE = "^\u200B{7}$";
 
     function _setupElementEditor(connector) {
         log.debug("Setting up element editor...");
@@ -69,27 +52,27 @@ define(function elementEditorModule(require) {
         // restrict scope to the extended target
         _scopeEvents(placeholder);
 
+        var tocItemsList = JSON.parse(connector.getState().tocItemsJsonArray);
+        var numberingConfigs = JSON.parse(connector.getState().numberingConfigsJsonArray);
+        var listNumberConfig = JSON.parse(connector.getState().listNumberConfigJsonArray);
+
         docType = docType.toLowerCase();
-        let profileId = _getEditorProfileId(docType, elementType, instanceType);
+        let profileId = _getEditorProfileId(tocItemsList, elementType);
 
         if (profileId) {
             // load the specific profile and initialize the editor
             require(["profiles/" + profileId],
-                _initEditor.bind(undefined, connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives));
+                _initEditor.bind(undefined, connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives, tocItemsList, numberingConfigs, listNumberConfig));
         } else {
             throw new Error("Unknown element editor profile!");
         }
     }
 
-    function _getEditorProfileId(docType, elementType, instanceType) {
-        docType = "_".concat(docType);
-        instanceType = (instanceType && instanceType === "COUNCIL") ? "_".concat(instanceType.toLowerCase()) : ""; //default instanceType is commission and left as blank
-        let propertyName = elementType.toLowerCase() + docType;    // elementType should not be used as lower case in further calls because
-        let propertyNameWithInstance = propertyName + instanceType;                                                                 // as for BlockContainer tag, it needs the capitals to be matched. 
-        return PROFILES_CFG[propertyNameWithInstance] ? PROFILES_CFG[propertyNameWithInstance] : PROFILES_CFG[propertyName];
+    function _getEditorProfileId(tocItemsList, elementType) {
+        return tocItemsList.find(function(e){return e.aknTag.toLowerCase() === elementType.toLowerCase()}).profile;
     }
-    
-    function _initEditor(connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives, profile ) {
+
+    function _initEditor(connector, elementId, elementType, elementFragment, placeholder, docType, instanceType, alternatives, tocItemsList, numberingConfigs, listNumberConfig, profile ) {
         log.debug("Initializing element editor with %s profile...", profile.name);
         // retrieve the current user
         var user = connector.getState().user;
@@ -121,7 +104,12 @@ define(function elementEditorModule(require) {
                 isSpellCheckerEnabled: connector.getState().isSpellCheckerEnabled,
                 spellCheckerServiceUrl: connector.getState().spellCheckerServiceUrl,
                 spellCheckerSourceUrl: connector.getState().spellCheckerSourceUrl,
-                alternatives: alternatives
+                alternatives: alternatives,
+                tocItemsList : tocItemsList,
+                numberingConfigs : numberingConfigs,
+                listNumberConfig : listNumberConfig,
+                documentsMetadata: JSON.parse(connector.getState().documentsMetadataJsonArray),
+                documentRef: connector.getState().documentRef
             };
             // register editor event callbacks
             editor.on("close", _destroyEditor.bind(undefined, connector, elementId, elementType));
@@ -141,6 +129,9 @@ define(function elementEditorModule(require) {
                 }
             };
             editor.setData(elementFragment, options);
+
+            // register EmptyTrimSelector
+            UTILS.registerEmptyTrimSelector(tocItemsList);
         } else {
             throw new Error("Unable to initialize the element editor!");
         }
@@ -177,7 +168,7 @@ define(function elementEditorModule(require) {
     var _setEventType = function (event) {
         event.hostEventType = "ckEvent";
     };
-    
+
     function _scopeEvents(contentWrap) {
         // Scope all events from editor by a specific type
         for(var key in contentWrap){
@@ -246,33 +237,58 @@ define(function elementEditorModule(require) {
         var editor = event.editor;
         // LEOS-3418 : to save modification in the Alternatives clause.
         if (!editor.readOnly||editor.config.isClause) {
-        	// set read-only to prevent changes
-        	editor.setReadOnly(true);
-        	// save the element being edited
-        	var data = {
-        			elementId: elementId,
-        			elementType: elementType,
-        			elementFragment: event.data.data,
-        			isSaveAndClose: event.data.isSaveAndClose ? true : false
-        	};
-        	connector.saveElement(data);
+            _removeZeroWidthSpaces(elementId);
+            if (!_isEmptyElement(elementId, editor)) {
+                // set read-only to prevent changes
+                editor.setReadOnly(true);
+                // save the element being edited
+                var data = {
+                    elementId: elementId,
+                    elementType: elementType,
+                    elementFragment: event.data.data,
+                    isSaveAndClose: event.data.isSaveAndClose ? true : false
+                };
+                connector.saveElement(data);
+                return true;
+            }
         }
+        return false;
+    }
+
+    function _removeZeroWidthSpaces(elementId) {
+        $("#" + elementId).find("*").addBack().contents().filter(function() {
+            if (this.nodeType === Node.TEXT_NODE && this.textContent) {
+                return this.textContent.match(ZERO_WIDTH_SPACE);
+            }
+            return false;
+        }).remove();
+    }
+
+    function _isEmptyElement(elementId, editor) {
+        var emptyElements = $("#" + elementId + ", h2[data-akn-heading-id='" + elementId + "']").find(":emptyTrim").addBack(":emptyTrim");
+        if (emptyElements.length > 0) {
+            pluginTools.addDialog(dialogDefinition.dialogName, dialogDefinition.initializeDialog);
+            var dialogCommand = editor.addCommand(dialogDefinition.dialogName, new CKEDITOR.dialogCommand(dialogDefinition.dialogName));
+            dialogCommand.exec();
+            return true;
+        }
+        return false;
     }
 
     function _refreshElement(elementId, elementType, elementFragment) {
         log.debug("Refreshing element editor...");
-        var editor = CKEDITOR.currentInstance;
-        // set editable to allow changes
-        if(editor){
+        var editor = _getEditor();
+        if (editor) {
+            // set editable to allow changes
             editor.setReadOnly(false);
             // reload XML fragment in editor
             var options = {
-                callback: function() {
-                    var editor = this;
-                    editor.fire("receiveData", elementFragment);
-                    // reset dirty state as for unchanged content
-                    editor.resetDirty();
-                }
+                    callback: function() {
+                        var editor = this;
+                        editor.fire("receiveData", elementFragment);
+                        // reset dirty state as for unchanged content
+                        editor.resetDirty();
+                    }
             };
             editor.setData(elementFragment, options);
         }
@@ -282,20 +298,22 @@ define(function elementEditorModule(require) {
         log.debug("Requesting element...");
         var data = {
             elementId: event.data.elementId,
-            elementType: event.data.elementType
+            elementType: event.data.elementType,
+            documentRef: event.data.documentRef
         };
         connector.requestElement(data);
     }
 
-    function _receiveElement(elementId, elementType, elementFragment) {
+    function _receiveElement(elementId, elementType, elementFragment, documentRef) {
         log.debug("Received element...");
-        var editor = CKEDITOR.currentInstance;
+        var editor = _getEditor();
         var data = {
             elementId :elementId,
             elementType: elementType,
-            elementFragment: elementFragment
+            elementFragment: elementFragment,
+            documentRef: documentRef
         };
-        editor.fire("receiveElement", data );
+        editor.fire("receiveElement", data);
     }
 
     function _requestToc(connector, event) {
@@ -308,7 +326,7 @@ define(function elementEditorModule(require) {
 
     function _receiveToc(tocWrapper) {
         log.debug("Received toc...");
-        var editor = CKEDITOR.currentInstance;
+        var editor = _getEditor();
         editor.fire("receiveToc", tocWrapper );
     }
 
@@ -317,21 +335,25 @@ define(function elementEditorModule(require) {
         connector.requestRefLabel(event.data);
     }
 
-    function _receiveRefLabel(references) {
+    function _receiveRefLabel(references, documentRef) {
         log.debug("Received reference labels...");
-        var editor = CKEDITOR.currentInstance;
-        editor.fire("receiveRefLabel", references);
+        var editor = _getEditor();
+        var data = {
+            references: references,
+            documentRef: documentRef
+        };
+        editor.fire("receiveRefLabel", data);
     }
 
     function _closeElement() {
         log.debug("Requesting close element...");
         for (var name in CKEDITOR.instances) {
-        	if (CKEDITOR.instances.hasOwnProperty(name)) {
-        		var editor = CKEDITOR.instances[name];
-        		if (editor) {
-        			editor.fire("close");
-        		}
-        	}
+            if (CKEDITOR.instances.hasOwnProperty(name)) {
+                var editor = CKEDITOR.instances[name];
+                if (editor) {
+                    editor.fire("close");
+                }
+            }
         }
     }
 
@@ -354,11 +376,25 @@ define(function elementEditorModule(require) {
         log.debug("Merging element...");
         var editor = event.editor;
         var data = {
-        	elementId: elementId,
-        	elementType: elementType,
-        	elementFragment: event.data.data
+            elementId: elementId,
+            elementType: elementType,
+            elementFragment: event.data.data
         };
         connector.mergeElement(data);
+    }
+
+    function _getEditor() {
+        var editor = CKEDITOR.currentInstance;
+        if (!editor) {
+            for (var name in CKEDITOR.instances) {
+                if (CKEDITOR.instances.hasOwnProperty(name)) {
+                    editor = CKEDITOR.instances[name];
+                    editor.focus();
+                    break;
+                }
+            }
+        }
+        return editor;
     }
 
     return {

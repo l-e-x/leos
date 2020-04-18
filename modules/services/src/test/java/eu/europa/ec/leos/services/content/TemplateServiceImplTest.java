@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.services.content;
 
+import eu.europa.ec.leos.services.util.TestUtils;
 import eu.europa.ec.leos.vo.catalog.CatalogItem;
 import eu.europa.ec.leos.vo.catalog.CatalogItem.ItemType;
 import org.apache.commons.io.IOUtils;
@@ -34,7 +35,7 @@ public class TemplateServiceImplTest {
     @Ignore
     public void testGetTemplatesCatalog() throws Exception {
 
-        InputStream fileContent = IOUtils.toInputStream(new String(getFileContent("/catalogTest.xml")));
+        InputStream fileContent = IOUtils.toInputStream(new String(TestUtils.getFileContent("/catalogTest.xml")));
 
         // DO THE ACTUAL TEST
         // FIXME uncomment code and implement test
@@ -46,18 +47,8 @@ public class TemplateServiceImplTest {
 //        assertThat(catalogItems.get(0).getItems().get(0).getId(), is("c1.1.1"));
 //        assertThat(catalogItems.get(0).getItems().get(0).getItems().size(), is(2));
 //        assertThat(catalogItems.get(0).getItems().get(0).getItems().get(0).getName("FR"),
-//                is("SJ-023 - Proposition de règlement du Parlement européen et du Conseil"));
-//        assertThat(catalogItems.get(0).getItems().get(0).getItems().get(1).getType(), is(ItemType.TEMPLATE));
+//                is("SJ-023 - Proposition de rÃ¨glement du Parlement europÃ©en et du Conseil"));
+//        assertThat(catalogItems.get(0).getItems().get(0).getItems().get(1).getTocItem(), is(ItemType.TEMPLATE));
     }
 
-    private byte[] getFileContent(String fileName) throws IOException {
-        InputStream inputStream = this.getClass().getResource(fileName).openStream();
-
-        byte[] content = new byte[inputStream.available()];
-        inputStream.read(content);
-
-        inputStream.close();
-
-        return content;
-    }
 }

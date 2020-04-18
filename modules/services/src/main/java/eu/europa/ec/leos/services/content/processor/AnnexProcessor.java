@@ -13,6 +13,10 @@
  */
 package eu.europa.ec.leos.services.content.processor;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+
 public interface AnnexProcessor {
 
     /**
@@ -22,5 +26,9 @@ public interface AnnexProcessor {
      * @param before true if the new block needs to be inserted before the given block, false if it needs to be inserted after.
      * @return The updated document
      */
-    byte[] insertAnnexBlock(byte[] content, String elementId, String tagName, boolean before);
+    @PreAuthorize("hasPermission(#document, 'CAN_UPDATE')")
+    byte[] insertAnnexBlock(Annex document, String elementId, String tagName, boolean before);
+    
+    @PreAuthorize("hasPermission(#document, 'CAN_UPDATE')")
+    byte[] deleteAnnexBlock(Annex document, String elementId, String tagName);
 }

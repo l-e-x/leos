@@ -15,13 +15,16 @@ package eu.europa.ec.leos.repository;
 
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
 import eu.europa.ec.leos.domain.cmis.metadata.LeosMetadata;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * LEOS Repository *generic* interface.
@@ -66,7 +69,8 @@ public interface LeosRepository {
      * @param status            the leg document status
      * @return the created leg document.
      */
-    LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status);
+    LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status,
+                                             List<String> containedDocuments);
 
     /**
      * Updating Leg document status and content.
@@ -74,11 +78,11 @@ public interface LeosRepository {
      * @param id           the leg document id.
      * @param status       the updated status.
      * @param contentBytes the leg document content
-     * @param major        true if the updated version must be major
+     * @param versionType  the version type to be created
      * @param comment      the updated version comment
      * @return the updated Leg document
      */
-    LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] contentBytes, boolean major, String comment);
+    LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] contentBytes, VersionType versionType, String comment);
 
     /**
      * Updating Leg document status.
@@ -104,18 +108,16 @@ public interface LeosRepository {
      *
      * @param id      the ID of the document to update.
      * @param content the content of the document.
-     * @param major   creates a *major version* of the document, when *true*.
+     * @param versionType the version type to be created
      * @param comment the comment of the update, optional.
      * @param type    the type class of the document.
      * @return the updated document.
      */
-    <D extends LeosDocument> D updateDocument(String id, byte[] content, boolean major, String comment, Class<? extends D> type);
+    <D extends LeosDocument> D updateDocument(String id, byte[] content, VersionType versionType, String comment, Class<? extends D> type);
 
-    <D extends LeosDocument> D updateMilestoneComments(String id, byte[] content, List<String> milestoneComments, boolean major, String comment, Class<? extends D> type);
+    <D extends LeosDocument> D updateMilestoneComments(String id, byte[] content, List<String> milestoneComments, VersionType versionType, String comment, Class<? extends D> type);
 
     <D extends LeosDocument> D updateMilestoneComments(String id, List<String> milestoneComments, Class<? extends D> type);
-
-    <D extends LeosDocument> D updateInitialCreationProperties(String id, String initialCreatedBy, Instant initialCreationInstant, Class<? extends D> type);
 
     /**
      * Updates a document with the given metadata and content.
@@ -123,12 +125,12 @@ public interface LeosRepository {
      * @param id       the ID of the document to update.
      * @param metadata the metadata of the document.
      * @param content  the content of the document.
-     * @param major    creates a *major version* of the document, when *true*.
+     * @param versionType  the version type to be created
      * @param comment  the comment of the update, optional.
      * @param type     the type class of the document.
      * @return the updated document.
      */
-    <D extends LeosDocument, M extends LeosMetadata> D updateDocument(String id, M metadata, byte[] content, boolean major, String comment, Class<? extends D> type);
+    <D extends LeosDocument, M extends LeosMetadata> D updateDocument(String id, M metadata, byte[] content, VersionType versionType, String comment, Class<? extends D> type);
 
     /**
      * Updates a document with the given collaborators.
@@ -235,4 +237,33 @@ public interface LeosRepository {
      * @return the found document.
      */
     <D extends LeosDocument> List<D> findDocumentsByUserId(String userId, Class<? extends D> type, String leosAuthority);
+
+    <D extends LeosDocument> Stream<D> findPagedDocumentsByParentPath(String path, Class<? extends D> type, boolean descendants, boolean fetchContent,
+                                                                      int startIndex, int maxResults, QueryFilter workspaceFilter);
+
+    <D extends LeosDocument> int findDocumentCountByParentPath(String path, Class<? extends D> type, boolean descendants, QueryFilter workspaceFilter);
+
+    /**
+     * Finds a document with the specified metadata reference.
+     *
+     * @param ref the metadata reference of the document.
+     * @param type the type class of the document.
+     * @return the found document.
+     */
+    <D extends LeosDocument> D findDocumentByRef(String ref, Class<? extends D> type);
+    
+    <D extends LeosDocument> List<D> findAllMinorsForIntermediate(Class<? extends D> type, String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults);
+    
+    <D extends LeosDocument> int findAllMinorsCountForIntermediate(Class<? extends D> type, String docRef, String currIntVersion, String prevIntVersion);
+
+    <D extends LeosDocument> Integer findAllMajorsCount(Class<? extends D> type, String docRef);
+
+    <D extends LeosDocument> List<D> findAllMajors(Class<? extends D> type, String docRef, int startIndex, int maxResult);
+    
+    <D extends LeosDocument> D findLatestMajorVersionById(Class<? extends D> type, String documentId);
+
+    <D extends LeosDocument> List<D> findRecentMinorVersions(Class<? extends D> type, String documentRef, String versionLabel, int startIndex, int maxResults);
+
+    <D extends LeosDocument> Integer findRecentMinorVersionsCount(Class<? extends D> type, String documentRef, String versionLabel);
+
 }

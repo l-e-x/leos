@@ -1,0 +1,11 @@
+                      COMPARE VERSIONS - HOWTO
+--------------------------------------------------------------------------------
+
+1. In the document viewer, click on the "Versions" pane below the navigation panel.
+	Click on the icon on the tool-bar with label 'Compare versions'.
+
+2. Now it is possible to select two versions to be compared. Just click in the check
+	boxes to select a version.
+
+3. The comparison result displays will be updated with the addition of the text in 
+	'Green' colour and deletion of text in 'Red' colour with a strike-through.

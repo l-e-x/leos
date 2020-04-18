@@ -13,16 +13,18 @@
  */
 package eu.europa.ec.leos.repository.document;
 
-import eu.europa.ec.leos.domain.cmis.LeosCategory;
-import eu.europa.ec.leos.domain.cmis.document.Proposal;
-import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
-import eu.europa.ec.leos.repository.LeosRepository;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.domain.cmis.document.Proposal;
+import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
+import eu.europa.ec.leos.repository.LeosRepository;
 
 /**
  * Proposal Repository implementation.
@@ -44,15 +46,13 @@ public class ProposalRepositoryImpl implements ProposalRepository {
     @Override
     public Proposal createProposal(String templateId, String path, String name, ProposalMetadata metadata) {
         logger.debug("Creating Proposal... [template=" + templateId + ", path=" + path + ", name=" + name + "]");
-        Proposal proposal = leosRepository.createDocument(templateId, path, name, metadata, Proposal.class);
-        return leosRepository.updateInitialCreationProperties(proposal.getId(), proposal.getCreatedBy(), proposal.getCreationInstant(), Proposal.class);
+        return leosRepository.createDocument(templateId, path, name, metadata, Proposal.class);
     }
 
     @Override
     public Proposal createProposalFromContent(String path, String name, ProposalMetadata metadata, byte[] contentBytes) {
         logger.debug("Creating Proposal With Content... [path=" + path + ", name=" + name + "]");
-        Proposal proposal = leosRepository.createDocumentFromContent(path, name, metadata, Proposal.class, LeosCategory.PROPOSAL.name(), contentBytes);
-        return leosRepository.updateInitialCreationProperties(proposal.getId(), proposal.getCreatedBy(), proposal.getCreationInstant(), Proposal.class);
+        return leosRepository.createDocumentFromContent(path, name, metadata, Proposal.class, LeosCategory.PROPOSAL.name(), contentBytes);
     }
 
     @Override
@@ -62,9 +62,9 @@ public class ProposalRepositoryImpl implements ProposalRepository {
     }
 
     @Override
-    public Proposal updateProposal(String id, List<String> milestoneComments, byte[] content, boolean major, String comment) {
+    public Proposal updateProposal(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment) {
         logger.debug("Updating Proposal metadata... [id=" + id + "]");
-        return leosRepository.updateMilestoneComments(id, content, milestoneComments, major, comment, Proposal.class);
+        return leosRepository.updateMilestoneComments(id, content, milestoneComments, versionType, comment, Proposal.class);
     }
 
     @Override
@@ -76,18 +76,24 @@ public class ProposalRepositoryImpl implements ProposalRepository {
     @Override
     public Proposal updateProposal(String id, byte[] content) {
         logger.debug("Updating Proposal content... [id=" + id + "]");
-        return leosRepository.updateDocument(id, content, false, "Content updated.", Proposal.class);
+        return leosRepository.updateDocument(id, content, VersionType.MINOR, "Content updated.", Proposal.class);
     }
 
     @Override
-    public Proposal updateProposal(String id, ProposalMetadata metadata, byte[] content, boolean major, String comment) {
-        logger.debug("Updating Proposal metadata and content... [id=" + id + ", major=" + major + "]");
-        return leosRepository.updateDocument(id, metadata, content, major, comment, Proposal.class);
+    public Proposal updateProposal(String id, ProposalMetadata metadata, byte[] content, VersionType versionType, String comment) {
+        logger.debug("Updating Proposal metadata and content... [id=" + id + ", major=" + versionType + "]");
+        return leosRepository.updateDocument(id, metadata, content, versionType, comment, Proposal.class);
     }
 
     @Override
     public Proposal findProposalById(String id, boolean latest) {
         logger.debug("Finding Proposal by ID... [id=" + id + ", latest=" + latest + "]");
         return leosRepository.findDocumentById(id, Proposal.class, latest);
+    }
+
+    @Override
+    public Proposal findProposalByRef(String ref) {
+        logger.debug("Finding Proposal by ref... [ref=" + ref + "]");
+        return leosRepository.findDocumentByRef(ref, Proposal.class);
     }
 }

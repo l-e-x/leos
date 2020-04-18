@@ -12,16 +12,17 @@
 
 3. Lower section of the viewer is divided into 2 areas.
 
-4. In the left one you first have the proposal details, 
+4. In the left area you first have the proposal details, 
 
-5. Then have the section dedicated to the Explanatory memorandum and the
+5. This is followed by the section dedicated to the Explanatory memorandum and the
    Legal text area. Clicking "Open" next to each element will launch the
    document viewer for their respective edition.
    
-6. Followed by the Annex part. Clicking on the +" next to the "Annex" title
+6. Lastly there is the Annex part. Clicking on the +" next to the "Annex" title
    will let you add annexes. Once an annexe is there a "-" icon exist to 
    delete it and an "Open" button to launch the document viewer for its
    edition.
 
 7. To the right you have the collaborators area.
-   See the "Manage contributors" section.
+   For more information see the "Manage contributors" section.
+   

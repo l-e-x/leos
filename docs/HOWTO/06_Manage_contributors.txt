@@ -2,8 +2,8 @@
 --------------------------------------------------------------------------------
 
 1.  The owner/author of a document can choose to share the document with other 
-    users who can then view and edit content of the document. These additional 
-    users are called collaborators in LEOS.
+    users giving them the permission to view and edit content of the document. 
+	These additional users are called collaborators in LEOS.
 
 2.  If a user is owner of a document, once the document is opened, a +" icon is
     available next to the Collaborators title to add users.  
@@ -26,4 +26,4 @@
                             USER ROLES - HOWTO
 --------------------------------------------------------------------------------
 For LEOS user roles description 
-                - refer to User Roles HOWTO
+                - refer to User Roles HOWTO 

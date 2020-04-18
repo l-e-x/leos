@@ -47,6 +47,7 @@ public class SuggestionCheckTest {
     // -------------------------------------
     // Tests
     // -------------------------------------
+    
     /**
      * test successful recognition of an annotation as a suggestion
      */

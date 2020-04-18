@@ -1,0 +1,49 @@
+@mixin leos-tabsheet-ext() {
+    @include valo-tabsheet();
+    .leos-tabsheet {
+        &.v-tabsheet-framed {
+            &.padded-tabbar {
+                & > .v-tabsheet-tabcontainer {
+                    border: none;
+                    border-bottom:none;
+                    background: $WHITE;
+                    padding-top: 0px;
+                    
+                    .v-tabsheet-tabs {
+                        padding: 0;
+                    }
+                
+                    .v-tabsheet-tabitem {
+                        .v-caption {
+                            background: #F7F7F7;
+                            border-top-right-radius: 5px;
+                            border-top-left-radius: 5px;    
+                        }        
+                    }
+                
+                    .v-tabsheet-tabitem-selected {
+                        .v-caption {
+                           background:$MAIN_BLUE;
+                           font-weight:bold;
+                           color: $WHITE;
+                        }
+                    }
+                }
+            }
+        
+            & > .v-tabsheet-content {
+               border: 1px solid $MAIN_BLUE;
+               border-top:none;
+               
+               & > div {
+                  background:transparent; 
+               }
+            }
+        
+        }
+    
+        .leos-milestone-toc-toolbar {
+            background: $GREY;
+        }
+    }
+}

@@ -13,12 +13,21 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
+import com.google.common.collect.ImmutableMap;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.services.support.ByteArrayBuilder;
 import eu.europa.ec.leos.services.support.IdGenerator;
+import eu.europa.ec.leos.vo.toc.OptionsType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -26,41 +35,71 @@ public class XmlHelper {
     private final static byte[] OPEN_END_TAG = "</".getBytes(UTF_8);
     private final static byte[] CLOSE_TAG = ">".getBytes(UTF_8);
 
-    private static final String BILL = "bill";
-    public static final String BODY = "body";
-    public static final String AUTHORIAL_NOTE = "authorialNote";
+    public static final String OPEN_START_TAG = "<";
     public static final String MREF = "mref";
     public static final String REF = "ref";
     public static final String MARKER_ATTRIBUTE = "marker";
+    
+    public static final String AKNBODY = "aknbody";
+    public static final String DOC = "doc";
+    public static final String BILL = "bill";
+    public static final String AKOMANTOSO = "akomaNtoso";
+    public static final String META = "meta";
+    public static final String BLOCKCONTAINER = "blockContainer";
+    public static final String AUTHORIAL_NOTE = "authorialNote";
+    public static final String INLINE = "inline";
     public static final String FORMULA = "formula";
     public static final String INTRO = "intro";
-    public static final String CLAUSE = "clause";
-
     public static final String HEADING = "heading";
     public static final String NUM = "num";
     
-    public static final String ARTICLE = "article";
+    public static final String EC = "ec";
+    public static final String CN = "cn";
+    
+    public static final String PREFACE = "preface";
+    public static final String PREAMBLE = "preamble";
+    public static final String CITATIONS = "citations";
+    public static final String CITATION = "citation";
     public static final String RECITALS = "recitals";
     public static final String RECITAL = "recital";
-    public static final String CITATION = "citation";
-    public static final String CITATIONS = "citations";
-    public static final String BLOCKCONTAINER = "blockContainer";
-    public static final String PREFACE = "preface";
-    public static final String AKOMANTOSO = "akomaNtoso";
-    public static final String META = "meta";
-    
-    public static final String LEOS_REF_BROKEN_ATTR = "leos:broken";
-
+    public static final String BODY = "body";
+    public static final String PART = "part";
+    public static final String TITLE = "title";
+    public static final String CHAPTER = "chapter";
+    public static final String SECTION = "section";
+    public static final String ARTICLE = "article";
     public static final String PARAGRAPH = "paragraph";
     public static final String SUBPARAGRAPH = "subparagraph";
     public static final String LIST = "list";
     public static final String POINT = "point";
+    public static final String INDENT = "indent";
     public static final String SUBPOINT = "alinea";
-
-    public static final String LEOS_ORIGIN_ATTR_CN = "cn";
-    public static final String LEOS_ORIGIN_ATTR_EC = "ec";
+    public static final String SUBPOINT_LABEL = "sub-point";
+    public static final String CLAUSE = "clause";
+    public static final String CONCLUSIONS = "conclusions";
+    public static final String MAINBODY = "mainBody";
+    public static final String TBLOCK = "tblock";
+    public static final String LEVEL = "level";
+    public static final String CONTENT = "content";
     
-    public static final List<String> ELEMENTS_TO_BE_PROCESSED_FOR_NUMBERING = Arrays.asList(ARTICLE, PARAGRAPH, POINT); 
+    private static final String ID_PLACEHOLDER = "${id}";
+    private static final String ID_PLACEHOLDER_ESCAPED = "\\Q${id}\\E";
+    private static final String NUM_PLACEHOLDER = "${num}";
+    private static final String NUM_PLACEHOLDER_ESCAPED = "\\Q${num}\\E";
+    private static final String HEADING_PLACEHOLDER = "${heading}";
+    private static final String HEADING_PLACEHOLDER_ESCAPED = "\\Q${heading}\\E";
+    private static final String CONTENT_TEXT_PLACEHOLDER = "${default.content.text}";
+    private static final String CONTENT_TEXT_PLACEHOLDER_ESCAPED = "\\Q${default.content.text}\\E";
+    
+    public static final String LEVEL_NUM_SEPARATOR = ".";
+
+    public static final List<String> ELEMENTS_TO_BE_PROCESSED_FOR_NUMBERING = Arrays.asList(ARTICLE, PARAGRAPH, POINT, INDENT);
+    
+    public static final String XML_NAME = "name";
+    public static final String XML_DOC_TYPE = "docType";
+    public static final String XML_TLC_REFERENCE = "TLCReference";
+    public static final String XML_SHOW_AS = "showAs";
+    public static final String ANNEX = "Annex";
 
     public static byte[] buildTag(byte[] startTag, byte[] tagName, byte[] value) {
         ByteArrayBuilder tag = new ByteArrayBuilder();
@@ -74,160 +113,111 @@ public class XmlHelper {
         return tag.getContent();
     }
 
-    public static String buildTag(String tagName, String value) {
-        StringBuilder tag = new StringBuilder();
-        tag.append("<").append(tagName).append(">");
-        tag.append(value);
-        tag.append("</").append(tagName).append(">");
-        return tag.toString();
-    }
-
-    public static String getCitationTemplate() {
-        String id = IdGenerator.generateId("cit_",7);
-        StringBuilder template = new StringBuilder();
-        template.append("            <citation refersTo=\"~legalBasis\" xml:id=\"").append(id).append("\" leos:editable=\"true\">");
-        template.append("               <p>Citation...</p>");
-        template.append("            </citation>");
-        return template.toString();
-    }
-    
-    public static String getRecitalTemplate(String num) {
-        String id = IdGenerator.generateId("rec_",7);
-        StringBuilder template = new StringBuilder();
-        template.append("            <recital xml:id=\"").append(id).append("\" leos:editable=\"true\">");
-        template.append("              <num leos:editable=\"false\">").append((num != null) ? num : "").append("</num>");
-        template.append("                  <p>Recital...</p>");
-        template.append("            </recital>");
-        return template.toString();
-    }
-    
-    public static String getArticleTemplate(String num, String heading) {
-        String id = IdGenerator.generateId("akn_art",7);
-        StringBuilder template = new StringBuilder();
-        template.append("            <article xml:id=\"").append(id).append("\" leos:editable=\"true\"  leos:deletable=\"true\">");
-        template.append("              <num leos:editable=\"false\">").append("Article ").append((num != null) ? num : "").append("</num>");
-        template.append("              <heading>").append((heading != null) ? heading : "").append("</heading>");
-        template.append("              <paragraph xml:id=\"").append(id).append("-par1\">");
-        template.append("                <num>1.</num>");
-        template.append("                <content>");
-        template.append("                  <p>Text...</p>");
-        template.append("                </content>");
-        template.append("              </paragraph>");
-        template.append("            </article>");
-        return template.toString();
-    }
-
-    public static String getParagraphTemplate(String num) {
-        String id = IdGenerator.generateId("akn_art_para",7);
-        StringBuilder template = new StringBuilder();
-        template.append("              <paragraph xml:id=\"").append(id).append("\">");
-        if(num != null) {
-            template.append("                <num leos:editable=\"false\">").append(num).append("</num>");
-        }
-        template.append("                <content>");
-        template.append("                  <p>Text...</p>");
-        template.append("                </content>");
-        template.append("              </paragraph>");
-        return template.toString();
-    }
-
-    public static String getSubParagraphTemplate(String content) {
-        String id = IdGenerator.generateId("akn_art_subpara",7);
-        StringBuilder template = new StringBuilder();
-        template.append("              <subparagraph xml:id=\"").append(id).append("\">");
-        
-        if (content != null) {
-        	if (content.indexOf("<content") != -1) {
-        		template.append(content, content.indexOf("<content"), content.indexOf("</content>") + "</content>".length());
-        	} else {
-                template.append("                <content>");
-                template.append("                  <p></p>");
-                template.append("                </content>");
-        	}
+    public static String getTemplateWithExtractedContent(TocItem tocItem, String content, MessageHelper messageHelper) {
+        String template;
+        if ((content != null) && (content.indexOf("<content") != -1)) {
+            template = getTemplate(tocItem, ImmutableMap.of(NUM, Collections.emptyMap(), HEADING, Collections.emptyMap(), CONTENT,
+                    Collections.singletonMap("<content.*?" + CONTENT_TEXT_PLACEHOLDER_ESCAPED + "</p></content>", content.substring(content.indexOf("<content"), content.indexOf("</content>") + "</content>".length()))));
         } else {
-            template.append("                <content>");
-            template.append("                  <p>Text...</p>");
-            template.append("                </content>");
+            template = getTemplate(tocItem, ImmutableMap.of(NUM, Collections.emptyMap(), HEADING, Collections.emptyMap(), CONTENT,
+                    Collections.singletonMap(CONTENT_TEXT_PLACEHOLDER_ESCAPED, getDefaultContentText(tocItem.getAknTag().value(), messageHelper))));
         }
-        
-        template.append("              </subparagraph>");
+        return template;
+    }
+
+    public static String getTemplate(TocItem tocItem, MessageHelper messageHelper) {
+        return getTemplate(tocItem, ImmutableMap.of(NUM, Collections.emptyMap(), HEADING, Collections.emptyMap(),
+                CONTENT, Collections.singletonMap(CONTENT_TEXT_PLACEHOLDER_ESCAPED, getDefaultContentText(tocItem.getAknTag().value(), messageHelper))));
+    }
+
+    public static String getTemplate(TocItem tocItem, String num, MessageHelper messageHelper) {
+        return getTemplate(tocItem, ImmutableMap.of(NUM, Collections.singletonMap(NUM_PLACEHOLDER_ESCAPED, StringUtils.isNotEmpty(num) && tocItem.isNumWithType() ? StringUtils.capitalize(tocItem.getAknTag().value()) + " " + num : num),
+                HEADING, Collections.singletonMap(HEADING_PLACEHOLDER_ESCAPED, StringUtils.EMPTY), CONTENT, Collections.singletonMap(CONTENT_TEXT_PLACEHOLDER_ESCAPED, getDefaultContentText(tocItem.getAknTag().value(), messageHelper))));
+    }
+
+    public static String getTemplate(TocItem tocItem, String num, String heading, MessageHelper messageHelper) {
+        return getTemplate(tocItem, ImmutableMap.of(NUM, Collections.singletonMap(NUM_PLACEHOLDER_ESCAPED, StringUtils.isNotEmpty(num) && tocItem.isNumWithType() ? StringUtils.capitalize(tocItem.getAknTag().value()) + " " + num : num),
+                HEADING, Collections.singletonMap(HEADING_PLACEHOLDER_ESCAPED, heading), CONTENT, Collections.singletonMap(CONTENT_TEXT_PLACEHOLDER_ESCAPED, getDefaultContentText(tocItem.getAknTag().value(), messageHelper))));
+    }
+
+    private static String getTemplate(TocItem tocItem, Map<String, Map<String, String>> templateItems) {
+        StringBuilder template = tocItem.getTemplate() != null ? new StringBuilder(tocItem.getTemplate()) : getDefaultTemplate(tocItem);
+        replaceAll(template, ID_PLACEHOLDER_ESCAPED, IdGenerator.generateId("akn_" + tocItem.getAknTag().value(), 7));
+
+        replaceTemplateItems(template, NUM, tocItem.getItemNumber(), templateItems.get(NUM));
+        replaceTemplateItems(template, HEADING, tocItem.getItemHeading(), templateItems.get(HEADING));
+        replaceTemplateItems(template, CONTENT, OptionsType.MANDATORY, templateItems.get(CONTENT));
+
         return template.toString();
     }
 
-    public static String getSubpointTemplate(String content) {
-        String id = IdGenerator.generateId("akn_art_alinea",7);
-        StringBuilder template = new StringBuilder();
-        template.append("              <alinea xml:id=\"").append(id).append("\">");
-
-        if (content != null) {
-        	if (content.indexOf("<content") != -1) {
-        		template.append(content, content.indexOf("<content"), content.indexOf("</content>") + "</content>".length());
-        	} else {
-                template.append("                <content>");
-                template.append("                  <p></p>");
-                template.append("                </content>");
-        	}
-        } else {
-            template.append("                <content>");
-            template.append("                  <p>Text...</p>");
-            template.append("                </content>");
+    private static StringBuilder getDefaultTemplate(TocItem tocItem) {
+        StringBuilder defaultTemplate = new StringBuilder("<" + tocItem.getAknTag().value() + " xml:id=\"" + ID_PLACEHOLDER + "\">");
+        if (OptionsType.MANDATORY.equals(tocItem.getItemNumber()) || OptionsType.OPTIONAL.equals(tocItem.getItemNumber())) {
+            defaultTemplate.append(tocItem.isNumberEditable() ? "<num>" + NUM_PLACEHOLDER + "</num>" : "<num leos:editable=\"false\">" + NUM_PLACEHOLDER + "</num>");
         }
-        
-        template.append("              </alinea>");
-        return template.toString();
+        if (OptionsType.MANDATORY.equals(tocItem.getItemHeading()) || OptionsType.OPTIONAL.equals(tocItem.getItemHeading())) {
+            defaultTemplate.append("<heading>" + HEADING_PLACEHOLDER + "</heading>");
+        }
+        defaultTemplate.append("<content><p>" + CONTENT_TEXT_PLACEHOLDER + "</p></content></" + tocItem.getAknTag().value() + ">");
+        return defaultTemplate;
     }
 
-    public static String getPointTemplate(String num) {
-        String id = IdGenerator.generateId("akn_art_point",7);
-        StringBuilder template = new StringBuilder();
-        template.append("              <point xml:id=\"").append(id).append("\">");
-        template.append("                <num leos:editable=\"false\">").append(num).append("</num>");
-        template.append("                <content>");
-        template.append("                  <p>Text...</p>");
-        template.append("                </content>");
-        template.append("              </point>");
-        return template.toString();
-    }
-    
-    public static String getAnnexTemplate() {
-        String id = IdGenerator.generateId("akn_annex",7);
-        StringBuilder template = new StringBuilder();
-        template.append("         <division xml:id=\"").append(id).append("\" leos:editable=\"true\"  leos:deletable=\"true\">");
-        template.append("                <content>");
-        template.append("                  <p xml:id=\"").append(id).append("_par1\">");
-        template.append("                     Text...");
-        template.append("                  </p>");
-        template.append("                </content>");
-        template.append("         </division>");
-        return template.toString();
-    }
-    
-    public static String stripAllTags(String tag) {
-        return tag.replaceAll("<[^>]+>", " ");
+    private static void replaceTemplateItems(StringBuilder template, String itemName, OptionsType itemOption, Map<String, String> templateItem) {
+        if (OptionsType.MANDATORY.equals(itemOption)) {
+            templateItem.forEach((itemPlaceHolder, itemValue) -> {
+                replaceAll(template, itemPlaceHolder, StringUtils.isEmpty(itemValue) ? "" : itemValue);
+            });
+        } else if (OptionsType.OPTIONAL.equals(itemOption)) {
+            templateItem.forEach((itemPlaceHolder, itemValue) -> {
+                if (StringUtils.isEmpty(itemValue)) {
+                    replaceAll(template, "<" + itemName + ".*?" + itemPlaceHolder + "</" + itemName + ">", "");
+                } else {
+                    replaceAll(template, itemPlaceHolder, itemValue);
+                }
+            });
+        }
     }
 
-    private static final ArrayList<String> prefixTobeUsedForChildren= new ArrayList<String>(Arrays.asList(ARTICLE, RECITALS, CITATIONS));
-    public static String determinePrefixForChildren(String tagName,String idOfNode,String parentPrefix){
-        return prefixTobeUsedForChildren.contains(tagName)?idOfNode: parentPrefix;  //if(root Node Name is in Article/Reictals/Citations..set the prefix)
+    private static void replaceAll(StringBuilder sb, String toReplace, String replacement) {
+        int start = 0;
+        Matcher m = Pattern.compile(toReplace).matcher(sb);
+        while (m.find(start)) {
+            sb.replace(m.start(), m.end(), replacement);
+            start = m.start() + replacement.length();
+        }
     }
 
-    private static final ArrayList<String> nodeToSkip= new ArrayList<String>(Arrays.asList(META));
+    private static String getDefaultContentText(String tocTagName, MessageHelper messageHelper) {
+        String defaultTextContent = messageHelper.getMessage("toc.item.template." + tocTagName + ".content.text");
+        if (defaultTextContent.equals("toc.item.template." + tocTagName + ".content.text")) {
+            defaultTextContent = messageHelper.getMessage("toc.item.template.default.content.text");
+        }
+        return defaultTextContent;
+    }
+
+    private static final ArrayList<String> prefixTobeUsedForChildren = new ArrayList<String>(Arrays.asList(ARTICLE, RECITALS, CITATIONS));
+    public static String determinePrefixForChildren(String tagName, String idOfNode, String parentPrefix){
+        return prefixTobeUsedForChildren.contains(tagName) ? idOfNode : parentPrefix;  //if(root Node Name is in Article/Reictals/Citations..set the prefix)
+    }
+
+    private static final ArrayList<String> nodeToSkip = new ArrayList<String>(Arrays.asList(META));
     public static  boolean skipNodeAndChildren(String tagName){
-        return nodeToSkip.contains(tagName)?true: false;
+        return nodeToSkip.contains(tagName) ? true : false;
     }
     
-    private static final ArrayList<String> tagNamesToSkip= new ArrayList<String>(Arrays.asList(AKOMANTOSO, BILL, "documentCollection", "doc", "attachments"));
-    public static  boolean skipNodeOnly(String tagName){
-        return tagNamesToSkip.contains(tagName)?true: false;
+    private static final ArrayList<String> tagNamesToSkip = new ArrayList<String>(Arrays.asList(AKOMANTOSO, BILL, "documentCollection", "doc", "attachments"));
+    public static  boolean skipNodeOnly(String tagName) {
+        return tagNamesToSkip.contains(tagName) ? true : false;
     }
     
     private static final ArrayList<String> parentEditableNodes= new ArrayList<String>(Arrays.asList(ARTICLE, RECITALS, CITATIONS, BLOCKCONTAINER));
-    public static  boolean isParentEditableNode(String tagName){
-        return parentEditableNodes.contains(tagName)?true: false;
+    public static  boolean isParentEditableNode(String tagName) {
+        return parentEditableNodes.contains(tagName) ? true : false;
     }
     
     private static final ArrayList<String> exclusionList= new ArrayList<String>(Arrays.asList(AUTHORIAL_NOTE, NUM, CLAUSE));
     public static  boolean isExcludedNode(String tagName) {
-        return exclusionList.contains(tagName)?true: false;
+        return exclusionList.contains(tagName) ? true : false;
     }
 }

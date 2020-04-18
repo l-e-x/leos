@@ -13,14 +13,16 @@
  */
 package eu.europa.ec.leos.web.event.component;
 
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
+
 import java.util.HashMap;
 
 public class ComparisonResponseEvent {
 
-    private HashMap<Integer, Object> result;
+    private HashMap<ComparisonDisplayMode, Object> result;
     private String leosCategory;
 
-    public HashMap<Integer, Object> getResult() {
+    public HashMap<ComparisonDisplayMode, Object> getResult() {
         return result;
     }
 
@@ -28,8 +30,9 @@ public class ComparisonResponseEvent {
         return leosCategory;
     }
 
-    public ComparisonResponseEvent(HashMap<Integer, Object> result, String leosCategory) {
+    public ComparisonResponseEvent(HashMap<ComparisonDisplayMode, Object> result, String leosCategory) {
         this.result = result;
         this.leosCategory = leosCategory;
     }
 }
+

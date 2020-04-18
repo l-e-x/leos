@@ -18,10 +18,12 @@ import java.util.Objects;
 public class Ref {
     private final String id;
     private final String href;
+    private final String documentref;
 
-    public Ref(String id, String href) {
+    public Ref(String id, String href, String documentref) {
         this.id = id;
         this.href = href;
+        this.documentref = documentref;
     }
 
     public String getId() {
@@ -32,17 +34,22 @@ public class Ref {
         return href;
     }
 
+    public String getDocumentref() {
+        return documentref;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Ref)) return false;
+        if (o == null || getClass() != o.getClass()) return false;
         Ref ref = (Ref) o;
         return Objects.equals(id, ref.id) &&
-                Objects.equals(href, ref.href);
+                Objects.equals(href, ref.href) &&
+                Objects.equals(documentref, ref.documentref);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, href);
+        return Objects.hash(id, href, documentref);
     }
 }

@@ -27,6 +27,6 @@
     provide the title of the new document. The title has to be a unique name 
     else document will not be created.
    
-6.  Click 'Finish' to create a document. The dialog box will be closed and a new
+6.  Click 'Create' to create a document. The dialog box will be closed and a new
     document will be created. This new document will be available in repository
     browser.     

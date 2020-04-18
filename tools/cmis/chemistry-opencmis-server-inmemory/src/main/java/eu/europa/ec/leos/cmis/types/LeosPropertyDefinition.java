@@ -1,12 +1,11 @@
 package eu.europa.ec.leos.cmis.types;
 
+import java.math.BigInteger;
+import java.util.GregorianCalendar;
+
 import org.apache.chemistry.opencmis.commons.definitions.PropertyDefinition;
 import org.apache.chemistry.opencmis.commons.enums.Updatability;
 import org.apache.chemistry.opencmis.inmemory.types.PropertyCreationHelper;
-
-import java.util.GregorianCalendar;
-
-import java.math.BigInteger;
 
 class LeosPropertyDefinition {
 
@@ -52,6 +51,12 @@ class LeosPropertyDefinition {
     static final PropertyDefinition<String> LEOS_METADATA_DOC_PURPOSE =
             PropertyCreationHelper.createStringDefinition("metadata:docPurpose", "Document Purpose", Updatability.READWRITE);
 
+    static final PropertyDefinition<String> LEOS_METADATA_PROCEDURE_TYPE =
+            PropertyCreationHelper.createStringDefinition("metadata:procedureType", "Procedure Type", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_METADATA_ACT_TYPE =
+            PropertyCreationHelper.createStringDefinition("metadata:actType", "Act Type", Updatability.READWRITE);
+
     static final PropertyDefinition<BigInteger> LEOS_ANNEX_DOC_INDEX =
             PropertyCreationHelper.createIntegerDefinition("annex:docIndex", "Annex Index", Updatability.READWRITE);
 
@@ -66,5 +71,14 @@ class LeosPropertyDefinition {
 
     static final PropertyDefinition<GregorianCalendar> LEOS_INITIAL_CREATION_DATE =
             PropertyCreationHelper.createDateTimeDefinition("leos:initialCreationDate", "LEOS Initial Creation Date", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_VERSION_LABEL =
+            PropertyCreationHelper.createStringDefinition("leos:versionLabel", "LEOS Version Label", Updatability.READWRITE);
+
+    static final PropertyDefinition<BigInteger> LEOS_VERSION_TYPE =
+            PropertyCreationHelper.createIntegerDefinition("leos:versionType", "LEOS Version Type", Updatability.READWRITE);
+
+    static final PropertyDefinition<String> LEOS_CONTAINED_DOCUMENTS =
+            PropertyCreationHelper.createStringMultiDefinition("leos:containedDocuments", "LEOS contained documents", Updatability.READWRITE);
 
 }

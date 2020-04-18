@@ -15,6 +15,7 @@ package eu.europa.ec.leos.annotate.services.impl;
 
 import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -35,14 +36,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * Service responsible for managing annotating users Note: communicates with external UD-repo for retrieval of user
@@ -62,6 +63,10 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     // URL to the external user repository
     @Value("${user.repository.url}")
     private String repositoryUrl;
+
+    // URL to the external user repository's entities API
+    @Value("${user.repository.url.entities}")
+    private String repositoryUrlEntities;
 
     @Autowired
     private UserRepository userRepository;
@@ -208,31 +213,59 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
         final UserDetails userDetails = userInfo.getUserDetails();
         Assert.notNull(userDetails, "Received invalid user details object when trying to assign user to entity-based group");
 
-        if (StringUtils.isEmpty(userDetails.getEntity())) {
-            LOG.debug("User '{}' does not have an entity assigned; won't assign to any further group though", userDetails.getLogin());
+        if (CollectionUtils.isEmpty(userDetails.getEntities())) {
+            LOG.debug("User '{}' does not have any entity assigned; won't assign to any further group though", userDetails.getLogin());
             return false;
         }
 
-        // if we reach this point, the user is associated to an entity
-        // -> retrieve the corresponding group
-        Group entityGroup = groupService.findGroupByName(userDetails.getEntity());
-        if (entityGroup == null) {
+        boolean result = true;
+        final List<UserEntity> entitiesToAssign = Collections.synchronizedList(userDetails.getEntities());
 
-            // group not yet defined, so this must be the first user associated to the entity logging in -> create non-public group
-            try {
-                entityGroup = groupService.createGroup(userDetails.getEntity(), false);
-            } catch (Exception e) {
-                LOG.error("Received error creating group:", e);
+        synchronized (entitiesToAssign) {
+            if (!CollectionUtils.isEmpty(userDetails.getAllEntities())) {
+                entitiesToAssign.addAll(userDetails.getAllEntities());
             }
-            if (entityGroup == null) {
-                LOG.warn("It seems the new group with name '{}' could not be created! Cannot assign user '{}' to it.", userDetails.getEntity(),
-                        userDetails.getLogin());
-                return false;
+
+            // if we reach this point, the user is associated to at least one entity
+            // -> for each entity: retrieve or create the corresponding group, and assign
+            for (final UserEntity entity : entitiesToAssign) {
+                Group entityGroup = groupService.findGroupByName(entity.getName());
+                if (entityGroup == null) {
+
+                    // group not yet defined, so this must be the first user associated to the entity logging in -> create non-public group
+                    try {
+                        entityGroup = groupService.createGroup(entity.getName(), false);
+                    } catch (Exception e) {
+                        LOG.error("Received error creating group:", e);
+                    }
+                    if (entityGroup == null) {
+                        LOG.warn("It seems the new group with name '{}' could not be created! Cannot assign user '{}' to it.", entity.getName(),
+                                userDetails.getLogin());
+                        return false;
+                    }
+                }
+
+                // now the group is available - either was already, or has newly been created -> assign user
+                result = groupService.assignUserToGroup(user, entityGroup) && result;
             }
         }
 
-        // now the group is available - either was already, or has newly been created -> assign user
-        return groupService.assignUserToGroup(user, entityGroup);
+        // remove all group memberships not covered by the given entities any more
+        // to identify these, get all groups and filter out the ones given from UD-repo and the default group
+        final List<Group> groupsOfUser = groupService.getGroupsOfUser(user);
+
+        // note: as the group name might have been modified in order to be URL-compliant, we need to map these group names in the same way
+        final List<String> entityNames = userDetails.getEntities().stream().map(ent -> groupService.getInternalGroupName(ent.getName()))
+                .collect(Collectors.toList());
+        
+        final String defGroupName = groupService.getDefaultGroupName();
+        final List<Group> superfluousGroups = groupsOfUser.stream().filter(
+                grp -> !grp.getName().equals(defGroupName) && !entityNames.contains(grp.getName()))
+                .collect(Collectors.toList());
+
+        superfluousGroups.forEach(group -> groupService.removeUserFromGroup(user, group));
+
+        return result;
     }
 
     /**
@@ -309,16 +342,16 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      */
     @Override
     public String getHypothesisUserAccountFromUserId(final long userId, final String authority) {
-        
+
         final User user = userRepository.findById(userId);
-        if(user == null) {
+        if (user == null) {
             LOG.error("Cannot determine annotate/hypothesis user account: user not found in database!");
             return "";
         }
-        
+
         return getHypothesisUserAccountFromUser(user, authority);
     }
-    
+
     /**
      * search for a user given its login name
      *
@@ -334,6 +367,20 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
     }
 
     /**
+     * search for a user given its ID
+     * 
+     * @param userId the user's ID
+     * @return found user, or {@literal null}
+     */
+    @Override
+    public User getUserById(final Long userId) {
+
+        final User foundUser = userRepository.findById(userId);
+        LOG.debug("Found user based on id: {}", foundUser != null);
+        return foundUser;
+    }
+
+    /**
      * retrieve the full user profile for the hypothes.is client
      *
      * @param userInfo the user for which the profile is to be retrieved
@@ -342,7 +389,7 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
      */
     @Override
     public JsonUserProfile getUserProfile(final UserInformation userInfo) throws UserNotFoundException {
-        
+
         Assert.notNull(userInfo, "userInfo undefined");
 
         final User user = userInfo.getUser();
@@ -359,18 +406,18 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
         final UserDetails userInfoFromRepo = getUserDetailsFromUserRepo(user.getLogin());
         if (userInfoFromRepo != null) {
             profile.setDisplayName(userInfoFromRepo.getDisplayName());
-            profile.setEntityName(userInfoFromRepo.getEntity());
+            profile.setEntityName(userInfoFromRepo.getEntities().get(0).getName()); // report the first one (FN, 13.06.2019)
         }
 
         final List<Group> groups = groupService.getGroupsOfUser(user);
         if (groups != null) {
-            
-            if(Authorities.isIsc(userInfo.getAuthority())) {
+
+            if (Authorities.isIsc(userInfo.getAuthority())) {
                 // for ISC, we should not return the default group -> filter out
                 LOG.debug("Remove default group for ISC user {}", user.getLogin());
                 groups.remove(groupService.findDefaultGroup());
             }
-            
+
             for (final Group g : groups) {
                 profile.addGroup(new JsonGroup(g.getDisplayName(), g.getName(), g.isPublicGroup()));
             }
@@ -427,13 +474,28 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
             return cachedDetails;
         }
 
-        final Map<String, String> params = new HashMap<String, String>();
+        final Map<String, String> params = new ConcurrentHashMap<String, String>();
         params.put("userId", login);
 
         // contact the ud-repo and cache the result
         try {
             LOG.debug("Searching for user '{}' in user repository", login);
             final UserDetails foundUser = restOperations.getForObject(repositoryUrl, UserDetails.class, params);
+
+            if (foundUser != null) {
+                try {
+                    // additionally retrieve the list of total entities
+                    // note: using a wrapper class didn't work, JSON deserialisation problem;
+                    // so we use an array for simplicity
+                    final UserEntity[] allEnts = restOperations.getForObject(repositoryUrlEntities, UserEntity[].class, params);
+                    if (allEnts != null) {
+                        foundUser.setAllEntities(Arrays.asList(allEnts));
+                    }
+                } catch (RestClientException rce) {
+                    LOG.warn("Exception while getting user entities: {}", rce.getMessage());
+                }
+            }
+
             userDetailsCache.cache(login, foundUser);
             return foundUser;
         } catch (RestClientException e) {
@@ -441,5 +503,4 @@ public class UserServiceImpl implements UserService, UserServiceWithTestFunction
             return null;
         }
     }
-
 }

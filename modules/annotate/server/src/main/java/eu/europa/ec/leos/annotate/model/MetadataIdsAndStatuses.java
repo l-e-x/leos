@@ -44,10 +44,12 @@ public class MetadataIdsAndStatuses {
     // Getters
     // -------------------------------------
 
+    @Generated
     public List<Long> getMetadataIds() {
         return metadataIds;
     }
 
+    @Generated
     public List<AnnotationStatus> getStatuses() {
         return statuses;
     }

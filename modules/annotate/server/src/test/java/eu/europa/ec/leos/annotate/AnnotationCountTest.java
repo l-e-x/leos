@@ -19,10 +19,7 @@ import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserInformation;
-import eu.europa.ec.leos.annotate.model.entity.Document;
-import eu.europa.ec.leos.annotate.model.entity.Group;
-import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.model.entity.UserGroup;
+import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchCountOptions;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotationDocumentLink;
@@ -44,7 +41,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.List;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
@@ -74,6 +73,9 @@ public class AnnotationCountTest {
     @Autowired
     private UserGroupRepository userGroupRepos;
 
+    @Autowired
+    private MetadataRepository metadataRepos;
+    
     // -------------------------------------
     // Help variables
     // -------------------------------------
@@ -421,9 +423,10 @@ public class AnnotationCountTest {
     private long runCountAnnotationSeveralMatchingMetadata(final String metadataWithStatus)
             throws CannotCreateAnnotationException, MissingPermissionException, CannotDeleteAnnotationException, CannotDeleteSentAnnotationException {
 
-        final String COMMENTTAG = "comment";
         final String hypoAccount = "acct:" + theUser.getLogin() + "@" + Authorities.ISC;
         final UserInformation userInfo = new UserInformation(LOGIN, Authorities.ISC);
+        userInfo.setCurrentToken(new Token(userRepos.findByLogin(LOGIN), userInfo.getAuthority(), "a", LocalDateTime.now().plusMinutes(1),
+            "r", LocalDateTime.now().plusMinutes(1)));
 
         final Group group = new Group("thegroup", true);
         groupRepos.save(group);
@@ -433,17 +436,17 @@ public class AnnotationCountTest {
         final SimpleMetadata metaIscRef = new SimpleMetadata(ISCREF, ISCREFVAL);
 
         final SimpleMetadata metaIscRefVers1 = new SimpleMetadata(metaIscRef);
-        metaIscRefVers1.put(RESPVERS, RESPVERS1);
+        metaIscRefVers1.put(Metadata.PROP_RESPONSE_VERSION, RESPVERS1);
 
         final SimpleMetadata metaIscRefVers2 = new SimpleMetadata(metaIscRef);
-        metaIscRefVers2.put(RESPVERS, RESPVERS2);
+        metaIscRefVers2.put(Metadata.PROP_RESPONSE_VERSION, RESPVERS2);
 
         final JsonAnnotation annotRefVers1 = TestData.getTestAnnotationObject(hypoAccount);
         annotRefVers1.getDocument().setLink(Arrays.asList(new JsonAnnotationDocumentLink(dummyUri)));
         annotRefVers1.getDocument().setMetadata(metaIscRefVers1);
         annotRefVers1.setUri(dummyUri);
         annotRefVers1.setGroup(group.getName());
-        annotRefVers1.setTags(Arrays.asList(COMMENTTAG));
+        annotRefVers1.setTags(Arrays.asList(Annotation.ANNOTATION_COMMENT));
         annotService.createAnnotation(annotRefVers1, userInfo);
 
         final JsonAnnotation annotRefVers2 = TestData.getTestAnnotationObject(hypoAccount);
@@ -451,7 +454,7 @@ public class AnnotationCountTest {
         annotRefVers2.getDocument().setMetadata(metaIscRefVers2);
         annotRefVers2.setUri(dummyUri);
         annotRefVers2.setGroup(group.getName());
-        annotRefVers2.setTags(Arrays.asList(COMMENTTAG));
+        annotRefVers2.setTags(Arrays.asList(Annotation.ANNOTATION_COMMENT));
         annotService.createAnnotation(annotRefVers2, userInfo);
 
         final JsonAnnotation annotRef = TestData.getTestAnnotationObject(hypoAccount);
@@ -459,7 +462,7 @@ public class AnnotationCountTest {
         annotRef.getDocument().setMetadata(metaIscRef);
         annotRef.setUri(dummyUri);
         annotRef.setGroup(group.getName());
-        annotRef.setTags(Arrays.asList(COMMENTTAG));
+        annotRef.setTags(Arrays.asList(Annotation.ANNOTATION_COMMENT));
         annotService.createAnnotation(annotRef, userInfo);
         
         // create a page note and delete it directly
@@ -472,7 +475,14 @@ public class AnnotationCountTest {
         annotService.createAnnotation(pageNoteDelRefVers1, userInfo);
         annotService.deleteAnnotationById(pageNoteDelRefVers1.getId(), userInfo);
 
-        // first ask without any metadata - should find all three annotations as there are no restrictions
+        // set all saved metadata to have responseStatus SENT
+        final List<Metadata> metas = (List<Metadata>) metadataRepos.findAll();
+        for(final Metadata meta : metas) {
+            meta.setResponseStatus(Metadata.ResponseStatus.SENT);
+            metadataRepos.save(meta);
+        }
+        
+        // prepare options and launch the counting
         final AnnotationSearchCountOptions options = new AnnotationSearchCountOptions();
         options.setUri(dummyUri);
         options.setGroup(group.getName());

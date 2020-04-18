@@ -46,14 +46,17 @@ public class JsonFailureResponse {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public String getReason() {
         return reason;
     }
 
+    @Generated
     public void setReason(final String reason) {
         this.reason = reason;
     }
 
+    @Generated
     public String getStatus() {
         return status;
     }

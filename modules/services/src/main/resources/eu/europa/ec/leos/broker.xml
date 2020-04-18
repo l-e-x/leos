@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<configuration xmlns="urn:activemq" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xsi:schemaLocation="urn:activemq /schema/artemis-configuration.xsd">
+    <core xmlns="urn:activemq:core">
+
+        <security-enabled>false</security-enabled>
+        <persistence-enabled>true</persistence-enabled>
+        <bindings-directory>./activemq-data/bindings</bindings-directory>
+        <journal-directory>./activemq-data/journal</journal-directory>
+        <large-messages-directory>./activemq-data/largemessages</large-messages-directory>
+
+        <acceptors>
+            <acceptor name="in-vm">vm://0</acceptor>
+        </acceptors>
+
+        <address-settings>
+            <address-setting match="#">
+                <dead-letter-address>DLQ</dead-letter-address>
+                <expiry-address>queue/ExpiryQueue</expiry-address>
+
+                <max-delivery-attempts>10</max-delivery-attempts>
+                <redelivery-delay>5000</redelivery-delay>
+                <redelivery-delay-multiplier>1</redelivery-delay-multiplier>
+                <max-redelivery-delay>50000</max-redelivery-delay>
+            </address-setting>
+        </address-settings>
+
+        <addresses>
+            <address name="queue/DLQ">
+                <anycast>
+                    <queue name="DLQ"/>
+                </anycast>
+            </address>
+            <address name="queue/ExpiryQueue">
+                <anycast>
+                    <queue name="ExpiryQueue"/>
+                </anycast>
+            </address>
+            <address name="queue/updateInternalReferences">
+                <anycast>
+                    <queue name="updateInternalReferences">
+                        <durable>true</durable>
+                    </queue>
+                </anycast>
+            </address>
+        </addresses>
+    </core>
+</configuration>

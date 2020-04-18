@@ -38,6 +38,7 @@ public class ResolvedSearchOptions {
     private Document document;
     private Token executingUserToken;
     private List<SimpleMetadataWithStatuses> metadataWithStatusesList;
+    private boolean userIsMemberOfGroup;
 
     // -------------------------------------
     // Constructor
@@ -50,46 +51,58 @@ public class ResolvedSearchOptions {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+
+    @Generated
     public Group getGroup() {
         return group;
     }
 
+    @Generated
     public void setGroup(final Group group) {
         this.group = group;
     }
 
+    @Generated
     public User getExecutingUser() {
         return executingUser;
     }
 
+    @Generated
     public void setExecutingUser(final User executingUser) {
         this.executingUser = executingUser;
     }
 
+    @Generated
     public User getFilterUser() {
         return filterUser;
     }
 
+    @Generated
     public void setFilterUser(final User filterUser) {
         this.filterUser = filterUser;
     }
 
+    @Generated
     public Document getDocument() {
         return document;
     }
 
+    @Generated
     public void setDocument(final Document document) {
         this.document = document;
     }
 
+    @Generated
     public Token getExecutingUserToken() {
         return executingUserToken;
     }
 
+    @Generated
     public void setExecutingUserToken(final Token token) {
         this.executingUserToken = token;
     }
 
+    @Generated
     public List<SimpleMetadataWithStatuses> getMetadataWithStatusesList() {
         return metadataWithStatusesList;
     }
@@ -121,6 +134,16 @@ public class ResolvedSearchOptions {
         }
     }
 
+    @Generated
+    public boolean isUserIsMemberOfGroup() {
+        return userIsMemberOfGroup;
+    }
+
+    @Generated
+    public void setUserIsMemberOfGroup(final boolean isMember) {
+        this.userIsMemberOfGroup = isMember;
+    }
+
     // -------------------------------------
     // equals and hashCode
     // -------------------------------------
@@ -129,7 +152,7 @@ public class ResolvedSearchOptions {
     @Override
     public int hashCode() {
         return Objects.hash(group, executingUser, filterUser, document,
-                executingUserToken, metadataWithStatusesList);
+                executingUserToken, userIsMemberOfGroup, metadataWithStatusesList);
     }
 
     @Generated
@@ -147,6 +170,8 @@ public class ResolvedSearchOptions {
                 Objects.equals(this.filterUser, other.filterUser) &&
                 Objects.equals(this.document, other.document) &&
                 Objects.equals(this.executingUserToken, other.executingUserToken) &&
+                Objects.equals(this.userIsMemberOfGroup, other.userIsMemberOfGroup) &&
                 Objects.equals(this.metadataWithStatusesList, other.metadataWithStatusesList);
     }
+
 }

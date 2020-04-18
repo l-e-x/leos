@@ -1,0 +1,26 @@
+                           MAJOR AND MINOR VERSION
+-------------------------------------------------------------------------------
+
+1.	For each modification done by the user or by the system a minor version is
+	created.
+	
+2.	The version are automatically numbered following the  numbering convention
+	milestone.major.minor. For example the version number 1.7.50 means:
+	- milestone 1;
+	- major version 7;
+	- minor version 50.
+	
+3.	A user can decide to create a major version to reflect a particular
+    status/evolution of the document. The user can also decide to save a milestone.
+	For more information see Add milestone HOWTO.
+		
+4. 	To create a major version, from the document viewer, click on the 'Save
+    this version' button from the menu available on the top left of the document pane.
+	
+5. 	On click, a dialog titled 'Save this version' will appear with an input field 
+	for a version comment.
+	
+6. 	Clicking on 'Save' will create a new major version with the version comment
+	as meta data and close the dialog
+
+7.	Clicking on 'Close' will cancel your action and close the dialog

@@ -15,9 +15,9 @@
 
 //------------------------------- XML Styles --------------------------------//
 %xmlParagraph {
-    division {
+    level {
         & > content {
-           akpP, p  //To handle other cases like division/content/table etc.
+           akpP, p  //To handle other cases like level/content/table etc.
            {            
                 display: block;
            }
@@ -38,7 +38,7 @@
 
 //------------------------------- Showblock Styles --------------------------//
 %showblockParagraph {
-    div[data-akn-name="division"] > p[data-akn-name="aknParagraph"] { // No showblocks for tables' cells content
+    div[data-akn-name="level"] > p[data-akn-name="aknParagraph"] { // No showblocks for tables' cells content
         @include blockOutline("PARAGRAPH");
     }
 }

@@ -98,6 +98,70 @@ LegIT ISA2 Action
 
 CHANGE LOG
 ================================================================================
+
+3.0.0 (LEOS-Pilot)
+------------------
+    * Updated HOWTO documentation
+
+	* Proposal Viewer
+		- Milestone explorer:
+		    - Display all documents contained in a Milestone with version information;
+            - Show annotations up to the selected milestone version for each document;
+
+	* Legal Text Viewer
+        - New Inline Table of content edition, replacing pre-existing pop-up window.
+        - New versions management.
+        - New comparison view in split mode replacing pre-existing pop-up window.
+        - Improved Internal references:
+            - Display all referenceable documents in internal references pop-up window;
+            - New Inter-document referencing feature;
+
+    * Explanatory Memorandum Viewer
+    	- New versions management.
+        - New comparison view in split mode replacing pre-existing pop-up window.
+
+    * Annex Viewer
+        - New Inline Table of content edition, replacing pre-existing pop-up.
+        - New versions management.
+        - New comparison view in split mode replacing pre-existing pop-up window.
+        - New structured annexes:
+            - Level annexes: Annexes composed by AKN4EU Level elements;
+            - Article annexes: Annexes composed by Article elements;
+
+    * Repository Viewer
+		- New filters by template and by role in the proposal
+        - Proposal can be opened by selecting proposal card.
+
+    * Annotations
+        - Improved user interface and usability.
+        - New filters with possibility to use composed conditions.
+        - New guidelines functionality connecting document anchors (highlights) to the specific annotation it relates to.
+        - Allow multi-selection of annotations.
+        - Annotation: Overlapping document anchors with distinct layout colors.
+        - Support role now able to see all available groups for posting.
+        - Removal of the annotations from the milestones. Comments should not leave Leos
+
+ 	* LEOS configuration
+        - Templates configuration improvements. Support for your ANK format
+        - Configure autonumbering
+        - AKN elements and rules
+        - CKEditor behaviour with AKN elements
+        - Templates versioning improvements
+
+    * LEOS services
+    	- New services for the integration with other systems
+
+    * Technical improvements
+        - SAML authentication Integration.
+        - New PDF export integrated. (Spain contribution)
+
+	* Bug fixes
+
+    * Updated dependencies (frameworks and libraries)
+    	- Upgrade Vaadin to 8.8.6
+    	- Upgrade to CKEditor 4.12.1
+
+
 2.1.0 (LEOS-Pilot)
 ------------------
     * Updated HOWTO documentation

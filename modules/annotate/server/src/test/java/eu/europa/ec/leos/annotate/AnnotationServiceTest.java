@@ -20,6 +20,7 @@ import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.services.UserService;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationConversionServiceImpl;
+import eu.europa.ec.leos.annotate.services.impl.AnnotationPermissionServiceImpl;
 import eu.europa.ec.leos.annotate.services.impl.AnnotationServiceImpl;
 import org.junit.Assert;
 import org.junit.Before;
@@ -42,9 +43,14 @@ public class AnnotationServiceTest {
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
+    @SuppressWarnings({"PMD.UnusedPrivateField"})
     @InjectMocks
     private AnnotationServiceImpl annotService;
 
+    @SuppressWarnings("PMD.UnusedPrivateField")
+    @Mock
+    private AnnotationPermissionServiceImpl annotPermService;
+    
     @InjectMocks
     private AnnotationConversionServiceImpl conversionService;
     

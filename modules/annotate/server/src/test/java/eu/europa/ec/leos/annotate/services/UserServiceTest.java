@@ -18,6 +18,7 @@ import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.User;
@@ -45,11 +46,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
@@ -70,6 +73,9 @@ public class UserServiceTest {
     // -------------------------------------
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private GroupService groupService;
 
     @Autowired
     private UserRepository userRepos;
@@ -166,6 +172,9 @@ public class UserServiceTest {
             Assert.fail("Unexpected exception received during user creation: " + e);
         }
         Assert.assertNotNull(newUser);
+
+        Assert.assertNotNull(userService.getUserById(newUser.getId())); // can be found by ID
+        Assert.assertNull(userService.getUserById(newUser.getId() + 1)); // different ID is not found
 
         try {
             userService.createUser(userLogin);
@@ -289,7 +298,7 @@ public class UserServiceTest {
         final User dummyUser = new User("login2");
 
         Assert.assertFalse(userService.addUserToEntityGroup(
-                new UserInformation(dummyUser, new UserDetails("login2", Long.valueOf(1), "first", "last", "", "", null))));
+                new UserInformation(dummyUser, new UserDetails("login2", Long.valueOf(1), "first", "last", null, "", null))));
     }
 
     /**
@@ -299,10 +308,11 @@ public class UserServiceTest {
     public void testAssignUserToGroup_createNewGroupAndAssign() {
 
         final String login = "alogin";
-        final String entity = "AGRI";
+        final List<UserEntity> entities = new ArrayList<UserEntity>();
+        entities.add(new UserEntity("4", "COMM.D.1", "COMM"));
 
         // arrange
-        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@c.eu", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "Sledge", "Hammer", entities, "a@c.eu", null);
 
         final User theUser = new User(login);
         userRepos.save(theUser);
@@ -317,12 +327,126 @@ public class UserServiceTest {
         // verify
         // new group
         Assert.assertEquals(2, groupRepos.count());
-        final Group createdGroup = groupRepos.findByName(entity);
+        final Group createdGroup = groupRepos.findByName(entities.get(0).getName());
         Assert.assertNotNull(createdGroup);
 
         // user is member of group
         Assert.assertEquals(1, userGroupRepos.count());
         Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), createdGroup.getId()));
+    }
+
+    /**
+     * since ANOT-85, the UD-repo may report several entities, and the user is assigned to all those entities
+     * but: exactly to those, meaning that old group memberships are removed (ANOT-86) 
+     * @throws DefaultGroupNotFoundException 
+     * @throws UserAlreadyExistingException 
+     */
+    @Test
+    public void testAssignAndDeleteUserFromGroups() throws UserAlreadyExistingException, DefaultGroupNotFoundException {
+
+        final String login = "itsme";
+        final String entity = "AGRI";
+        final String entity2name = entity + ".2";
+        final String entity4name = entity + ".4";
+
+        final List<UserEntity> entities = new ArrayList<UserEntity>();
+        entities.add(new UserEntity("1", entity + ".1", entity));
+        entities.add(new UserEntity("2", entity2name, entity));
+
+        // arrange
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "Johnny", "Cash", entities, "a@c.eu", null);
+        final User theUser = userService.createUser(login);
+
+        // only default group defined before, user is member
+        Assert.assertEquals(1, groupRepos.count());
+        Assert.assertEquals(1, userGroupRepos.count());
+
+        // act
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
+
+        // verify
+        // two new groups
+        Assert.assertEquals(3, groupRepos.count());
+        Group createdGroup = groupRepos.findByName(entities.get(0).getName());
+        Assert.assertNotNull(createdGroup);
+        createdGroup = groupRepos.findByName(entities.get(1).getName());
+        Assert.assertNotNull(createdGroup);
+
+        // now we want to call the method a second time, this time with entities 2+3+4
+        // -> membership of entity group 1 should be removed
+        // -> group and membership in group for group 3 should be created
+        // -> membership in group 4 should be created (group exists already)
+
+        // create group for entity 4 already
+        groupRepos.save(new Group(entity4name, false));
+
+        final List<UserEntity> newEntities = new ArrayList<UserEntity>();
+        newEntities.add(new UserEntity("2", entity2name, entity));
+        newEntities.add(new UserEntity("2", entity + ".3", entity));
+        newEntities.add(new UserEntity("4", entity4name, entity));
+
+        // act
+        details.setEntities(newEntities);
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
+
+        // verify
+        // two more new groups - five in total; the two new groups are tested
+        Assert.assertEquals(5, groupRepos.count());
+        Assert.assertNotNull(groupRepos.findByName(newEntities.get(1).getName()));
+        Assert.assertNotNull(groupRepos.findByName(newEntities.get(2).getName()));
+
+        // user is member of four groups now: 2+3+4 and default group
+        Assert.assertEquals(4, userGroupRepos.count());
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(newEntities.get(0).getName()).getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(newEntities.get(1).getName()).getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(newEntities.get(2).getName()).getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), defaultGroup.getId()));
+    }
+
+    /**
+     * since ANOT-85, the UD-repo may report several entities, and the user is assigned to all those entities
+     * here we check that not only the "entities" property is considered, but also the "allEntities" property
+     */
+    @Test
+    public void testAssignAndDeleteUserFromGroups_AllEntities() throws UserAlreadyExistingException, DefaultGroupNotFoundException {
+
+        final String login = "itsme";
+        final String entity = "AGRI";
+
+        final List<UserEntity> entities = new ArrayList<UserEntity>();
+        entities.add(new UserEntity("1", "AGRI.something", entity));
+
+        final List<UserEntity> newEntities = new ArrayList<UserEntity>();
+        newEntities.add(new UserEntity("1", entity, entity));
+        newEntities.add(new UserEntity("2", entity + ".I", entity));
+        newEntities.add(new UserEntity("4", entity + ".I.1", entity));
+
+        // arrange
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entities, "a@c.eu", null);
+        details.setAllEntities(newEntities); // these are the entities that are primarily tested here
+        final User theUser = userService.createUser(login);
+
+        // only default group defined before, user is member
+        Assert.assertEquals(1, groupRepos.count());
+        Assert.assertEquals(1, userGroupRepos.count());
+
+        // act
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
+
+        // verify
+        // four new groups
+        Assert.assertEquals(5, groupRepos.count()); // default group and the four new ones
+        Assert.assertNotNull(groupRepos.findByName(entity + ".something"));
+        Assert.assertNotNull(groupRepos.findByName(entity));
+        Assert.assertNotNull(groupRepos.findByName(entity + ".I"));
+        Assert.assertNotNull(groupRepos.findByName(entity + ".I.1"));
+
+        // user is member of four groups now: four AGRI groups and default group
+        Assert.assertEquals(5, userGroupRepos.count());
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(entity + ".something").getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(entity).getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(entity + ".I").getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), groupRepos.findByName(entity + ".I.1").getId()));
     }
 
     /**
@@ -332,15 +456,17 @@ public class UserServiceTest {
     public void testAssignUserToGroup_groupExistsAlready() {
 
         final String login = "login";
-        final String entity = "AGRI";
+        final String entityName = "AGRI.D.8";
+        final List<UserEntity> entities = new ArrayList<UserEntity>();
+        entities.add(new UserEntity("4", entityName, "AGRI"));
 
         // arrange
-        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entity, "a@b.eu", null);
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", entities, "a@b.eu", null);
 
         final User theUser = new User(login);
         userRepos.save(theUser);
 
-        final Group newGroup = new Group(entity, true);
+        final Group newGroup = new Group(entityName, true);
         groupRepos.save(newGroup);
 
         // groups defined before, but no memberships
@@ -359,6 +485,52 @@ public class UserServiceTest {
     }
 
     /**
+     * test assignment of a user to a new group (user's first login), and the group contains a blank
+     */
+    @Test
+    public void testAssignUserToEntityGroup_GroupNameWithBlanks() {
+
+        final String login = "demouser";
+        final String COMP = "DG COMP";
+        final String COMP2 = "DG COMP I3";
+        final List<UserEntity> entities = new ArrayList<UserEntity>();
+        entities.add(new UserEntity("2", COMP, COMP));
+        entities.add(new UserEntity("3", COMP2, COMP));
+
+        // arrange
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "Demo", "User", entities, "demouser@LEOS", null);
+
+        final User theUser = new User(login);
+        userRepos.save(theUser);
+
+        // act
+        Assert.assertTrue(userService.addUserToEntityGroup(new UserInformation(theUser, details)));
+
+        // verify: two groups must have been created, without spaces in their names, but still with spaces in their display names
+        // third group is the default group
+        Assert.assertEquals(3, groupRepos.count());
+
+        // group is found again, although its internal name is different!
+        final Group grpComp = groupService.findGroupByName(COMP);
+        Assert.assertNotNull(grpComp);
+        Assert.assertEquals("DGCOMP", grpComp.getName());
+        Assert.assertEquals(COMP, grpComp.getDisplayName()); // display name remains original
+
+        // make sure it is also found using its internal name
+        Assert.assertEquals(grpComp, groupService.findGroupByName("DGCOMP"));
+
+        final Group grpComp2 = groupService.findGroupByName(COMP2);
+        Assert.assertNotNull(grpComp2);
+        Assert.assertEquals("DGCOMPI3", grpComp2.getName());
+        Assert.assertEquals(COMP2, grpComp2.getDisplayName());
+
+        // there must be two group memberships - this implicitly checks that groups have been identified superfluous and deleted, which was the case previously
+        Assert.assertEquals(2, userGroupRepos.count());
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), grpComp.getId()));
+        Assert.assertNotNull(userGroupRepos.findByUserIdAndGroupId(theUser.getId(), grpComp2.getId()));
+    }
+
+    /**
      * test assignment of a user to a group does not do anything as the user details don't contain an entity
      */
     @Test
@@ -367,7 +539,7 @@ public class UserServiceTest {
         final String login = "login";
 
         // arrange
-        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", "", "a@b.eu", null); // entity empty
+        final UserDetails details = new UserDetails(login, Long.valueOf(4), "John", "Doe", null, "a@b.eu", null); // entity empty
 
         final User theUser = new User(login);
         userRepos.save(theUser);
@@ -390,8 +562,8 @@ public class UserServiceTest {
      * test randomized creation of user details and thus group memberships
      */
     @Test
-    @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.CyclomaticComplexity", 
-        "PMD.ModifiedCyclomaticComplexity", "PMD.NPathComplexity"})
+    @SuppressWarnings({"PMD.AvoidLiteralsInIfCondition", "PMD.CyclomaticComplexity",
+            "PMD.ModifiedCyclomaticComplexity", "PMD.NPathComplexity"})
     public void testAssignUserToGroup_randomized() {
 
         final int numberOfUsers = 1000;
@@ -423,11 +595,12 @@ public class UserServiceTest {
         // generate user details
         for (int i = 0; i < numberOfUsers; i++) {
 
-            final UserDetails detail = new UserDetails(users.get(i).getLogin(), users.get(i).getId(), "firstname", "lastname", "", "a@b.eu", null);
+            final UserDetails detail = new UserDetails(users.get(i).getLogin(), users.get(i).getId(), "firstname", "lastname", null, "a@b.eu", null);
             final int generatedValue = rand.nextInt(100) + 1;
             if (generatedValue < 80) { // about 80% of users should have an entity assigned in our test
                 final int entityToUse = rand.nextInt(numberOfEntities);
-                detail.setEntity(entities.get(entityToUse));
+                final UserEntity newEntity = new UserEntity(String.valueOf(i), entities.get(entityToUse), "somename");
+                detail.setEntities(Arrays.asList(newEntity));
 
                 // increase statistics counter
                 entityStats.set(entityToUse, entityStats.get(entityToUse) + 1);
@@ -441,7 +614,8 @@ public class UserServiceTest {
 
             // expected result depends on whether an entity is set
             final boolean addResult = userService.addUserToEntityGroup(new UserInformation(users.get(i), details.get(i)));
-            final boolean expectedAddResult = !StringUtils.isEmpty(details.get(i).getEntity());
+            final boolean expectedAddResult = !CollectionUtils.isEmpty(details.get(i).getEntities()) &&
+                    !StringUtils.isEmpty(details.get(i).getEntities().get(0).getName());
             Assert.assertEquals(expectedAddResult, addResult);
         }
 
@@ -522,9 +696,9 @@ public class UserServiceTest {
         // test with empty input
         Assert.assertEquals("", userService.getHypothesisUserAccountFromUserName(""));
     }
-    
+
     /**
-     * test wrapping of user name to hypothesis user account by using user detail information coming from the external UD repo
+     * test wrapping of user name to hypothesis user account by using user detail information coming from the external UD-repo
      * note: user details DO contain authority information
      */
     @Test
@@ -536,7 +710,8 @@ public class UserServiceTest {
         final User user = new User(login);
         final UserServiceWithTestFunctions myUserService = new UserServiceImpl(null);
 
-        final UserDetails details = new UserDetails(login, (long) 4712, "first", "last", "COMM", login + "@domain.eu", null);
+        final UserEntity entity = new UserEntity("8", "COMM", "COMM");
+        final UserDetails details = new UserDetails(login, (long) 4712, "first", "last", Arrays.asList(entity), login + "@domain.eu", null);
         myUserService.cacheUserDetails(login, details); // test function of extended interface
 
         Assert.assertEquals("acct:" + login + "@" + MyAuthority, myUserService.getHypothesisUserAccountFromUser(user, MyAuthority));
@@ -564,30 +739,30 @@ public class UserServiceTest {
 
         Assert.assertEquals("", myUserService.getHypothesisUserAccountFromUser(user, ""));
     }
-    
+
     /**
      * test retrieval of hypothesis account name returns empty string when user cannot be found
      */
     @Test
     public void testGetHypothesisUserAccountFromUserId_UserUnknown() {
-        
+
         // provide unknown database ID
         Assert.assertEquals("", userService.getHypothesisUserAccountFromUserId(-3, ""));
     }
-    
+
     /**
      * test retrieval of hypothesis account name based on user's database ID
      */
     @Test
     public void testGetHypothesisUserAccountFromUserId() {
-        
+
         final String login = "itsme";
         final String authority = "someauthority";
         final String expectedHypoUsername = "acct:" + login + "@" + authority;
-    
+
         final User user = new User(login, true);
         userRepos.save(user);
-        
+
         Assert.assertEquals(expectedHypoUsername, userService.getHypothesisUserAccountFromUserId(user.getId(), authority));
     }
 
@@ -742,4 +917,5 @@ public class UserServiceTest {
         Assert.assertNotNull(prof);// result received, no exception
         Assert.assertNull(prof.getUser_info().getDisplay_name()); // but no display name
     }
+
 }

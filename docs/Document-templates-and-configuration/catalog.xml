@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<catalog lang="EN">
+    <item type="CATEGORY" id="c1" enabled="true" key="LAW_INITIATIVE">
+        <names>
+            <name lang="EN">Interinstitutional procedures - Law Initiative (COM/JOIN)</name>
+            <name lang="FR">Procédure interinstitutionnelles - Droit d'initiative (COM/JOIN)</name>
+        </names>
+        <descriptions>
+            <description lang="EN">Interinstitutional procedures - Law Initiative (COM/JOIN)</description>
+            <description lang="FR">Procédure interinstitutionnelles - Droit d'initiative (COM/JOIN)</description>
+        </descriptions>
+        <item type="CATEGORY" id="c1.1" enabled="true" key="LEGISLATIVE_ACTS">
+            <names>
+                <name lang="EN">Legal acts</name>
+                <name lang="FR">Actes législatifs</name>
+            </names>
+            <descriptions>
+                <description lang="EN">Legal acts</description>
+                <description lang="FR">Actes législatifs</description>
+            </descriptions>
+            <item type="CATEGORY" id="c1.1.1" enabled="true" key="ORDINARY_LEGISLATIVE_PROC">
+                <names>
+                    <name lang="EN">Ordinary legislative procedure</name>
+                    <name lang="FR">Procédure législative ordinaire</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Ordinary legislative procedure</description>
+                    <description lang="FR">Procédure législative ordinaire</description>
+                </descriptions>
+                <item type="CATEGORY" id="c1.1.1.1" enabled="true" key="REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL">
+                    <names>
+                        <name lang="EN">Proposal for a regulation</name>
+                        <name lang="FR">Proposition de règlement</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Regulation to be adopted by the European Parliament and the Council</description>
+                        <description lang="FR">Règlement à adopter conjointement par le Parlement Européen et le Conseil</description>
+                    </descriptions>
+                    <item type="TEMPLATE" id="PR-023;EM-LP01;BL-023" enabled="true" key="SJ-023">
+                        <names>
+                            <name lang="EN">SJ-023 - Proposal for a Regulation of the European Parliament and of the Council</name>
+                            <name lang="FR">SJ-023 - Proposition de règlement du Parlement européen et du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 23 of the LS: Proposal for a REGULATION OF THE EUROPEAN PARLIAMENT AND OF THE COUNCIL</description>
+                            <description lang="FR">Template 23 du SJ: Proposition de RÈGLEMENT DU PARLEMENT EUROPÉEN ET DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <!--<language lang="FR">Français</language>-->
+                        </languages>
+                        <item type="TEMPLATE" id="SG-017" enabled="true" key="SG-017">
+                            <names>
+                                <name lang="EN">SG-017 - Annex to a proposal / to another proposal</name>
+                            </names>
+                            <descriptions>
+                                <description lang="EN">Annex to a proposal / to another proposal (COM/JOIN)</description>
+                            </descriptions>
+                        </item>
+                        <item type="TEMPLATE" id="CP-036" enabled="false" key="CP-036">
+                            <names>
+                                <name lang="EN">CP-036 - Annex to a proposal / to another proposal</name>
+                            </names>
+                            <descriptions>
+                                <description lang="EN">Annex to a proposal / to another proposal (COM/JOIN)</description>
+                            </descriptions>
+                        </item>
+                    </item>
+                </item>
+            </item>
+            <item type="CATEGORY" id="c1.1.4" enabled="true" key="COUNCIL_LEGAL_ACTS">
+                <names>
+                    <name lang="EN">Council legal acts</name>
+                    <name lang="FR">Council actes législatifs</name>
+                </names>
+                <descriptions>
+                    <description lang="EN">Council legal acts</description>
+                    <description lang="FR">Council actes législatifs</description>
+                </descriptions>
+                <item type="CATEGORY" id="c1.1.4.1" enabled="true" key="COUNCIL DECISION">
+                    <names>
+                        <name lang="EN">Proposal for a Council decision</name>
+                        <name lang="FR">Proposition de décision du Conseil</name>
+                    </names>
+                    <descriptions>
+                        <description lang="EN">Decision to be adopted by the Council</description>
+                        <description lang="FR">Décision à adopter par le Conseil</description>
+                    </descriptions>
+                    <languages>
+                        <language lang="EN">English</language>
+                        <language lang="FR">Français</language>
+                    </languages>
+                    <item type="TEMPLATE" id="PR-019;EM-LP01;BL-019" enabled="true" key="SJ-019">
+                        <names>
+                            <name lang="EN">SJ-019 - Proposal for a Council Decision</name>
+                            <name lang="FR">SJ-019 - Proposition de décision du Conseil</name>
+                        </names>
+                        <descriptions>
+                            <description lang="EN">Template 19 of the LS: Proposal for a COUNCIL DECISION</description>
+                            <description lang="FR">Template 19 du SJ: Proposition de DÉCISION DU CONSEIL</description>
+                        </descriptions>
+                        <languages>
+                            <language lang="EN">English</language>
+                            <!--<language lang="FR">Français</language>-->
+                        </languages>
+                        <item type="TEMPLATE" id="SG-017" enabled="true" key="SG-017">
+                            <names>
+                                <name lang="EN">SG-017 - Annex to a proposal / to another proposal</name>
+                            </names>
+                            <descriptions>
+                                <description lang="EN">Annex to a proposal / to another proposal (COM/JOIN)</description>
+                            </descriptions>
+                        </item>
+                        <item type="TEMPLATE" id="CP-036" enabled="false" key="CP-036">
+                            <names>
+                                <name lang="EN">CP-036 - Annex to a proposal / to another proposal</name>
+                            </names>
+                            <descriptions>
+                                <description lang="EN">Annex to a proposal / to another proposal (COM/JOIN)</description>
+                            </descriptions>
+                        </item>
+                    </item>
+                </item>
+            </item>
+        </item>
+    </item>
+</catalog>

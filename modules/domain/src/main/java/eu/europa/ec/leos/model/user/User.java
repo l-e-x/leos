@@ -13,9 +13,12 @@
  */
 package eu.europa.ec.leos.model.user;
 
+import java.io.Serializable;
 import java.util.List;
 
-public class User {
+public class User implements Serializable {
+
+    private static final long serialVersionUID = 8047079864010876424L;
 
     private Long id;
 
@@ -23,17 +26,17 @@ public class User {
 
     private String name;
 
-    private String entity;
+    private List<Entity> entities;
 
     private String email;
-    
+
     private List<String> roles;
 
-	public User(Long id, String login, String name, String entity, String email,List<String> roles) {
+    public User(Long id, String login, String name, List<Entity> entities, String email, List<String> roles) {
         this.id = id;
         this.login = login;
         this.name = name;
-        this.entity = entity;
+        this.entities = entities;
         this.email = email;
         this.roles = roles;
     }
@@ -50,8 +53,12 @@ public class User {
         return name;
     }
 
-    public String getEntity() {
-        return entity;
+    public List<Entity> getEntities() {
+        return entities;
+    }
+
+    public Entity getDefaultEntity() {
+        return entities != null && !entities.isEmpty() ? entities.get(0) : null;
     }
 
     public String getEmail() {
@@ -71,16 +78,17 @@ public class User {
         this.name = name;
     }
 
-    protected void setEntity(String entity) {
-        this.entity = entity;
+    protected void setEntities(List<Entity> entities) {
+        this.entities = entities;
     }
-    public List<String> getRoles() {
-		return roles;
-	}
 
-	public void setRoles(List<String> roles) {
-		this.roles = roles;
-	}
+    public List<String> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+    }
 
     @Override
     public String toString() {
@@ -88,7 +96,6 @@ public class User {
         sb.append("id=").append(id);
         sb.append(", login='").append(login).append('\'');
         sb.append(", name='").append(name).append('\'');
-        sb.append(", entity='").append(entity).append('\'');
         sb.append('}');
         return sb.toString();
     }

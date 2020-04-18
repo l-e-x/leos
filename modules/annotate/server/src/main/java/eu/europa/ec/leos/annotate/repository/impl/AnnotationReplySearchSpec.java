@@ -63,6 +63,7 @@ public class AnnotationReplySearchSpec implements Specification<Annotation> {
     // Search predicate
     // -------------------------------------
     @Override
+    @SuppressWarnings({"PMD.OptimizableToArrayCall"})
     public Predicate toPredicate(final Root<Annotation> root, final CriteriaQuery<?> query, final CriteriaBuilder critBuilder) {
 
         final List<Predicate> predicates = new ArrayList<>();

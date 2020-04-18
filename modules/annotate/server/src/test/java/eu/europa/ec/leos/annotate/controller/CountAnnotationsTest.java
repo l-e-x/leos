@@ -64,7 +64,7 @@ public class CountAnnotationsTest {
     private static final String ACCESS_TOKEN = "demoaccesstoken";
     private static final String REFRESH_TOKEN = "helloRefresh";
     private static final String ISCREF = "ISCRef";
-    private static final String VERSION = "version";
+    private static final String RESP_VERSION = "respVersion";
     private static final String ISCREF1 = "2018/1";
     private static final String ISCREF2 = "2018/2";
     private static final String ISCREF3 = "2018/3";
@@ -141,8 +141,8 @@ public class CountAnnotationsTest {
     @Test
     public void testCountAnnotations_checkAnnotationType() throws Exception {
 
-        tokenRepos
-                .save(new Token(theUser, Authorities.ISC, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
+        tokenRepos.save(new Token(theUser, Authorities.ISC, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5),
+                REFRESH_TOKEN, LocalDateTime.now().plusMinutes(5)));
 
         final URI uri = new URI("http://leos/48");
         final Document document = new Document(uri, "");
@@ -153,10 +153,12 @@ public class CountAnnotationsTest {
         userGroupRepos.save(new UserGroup(theUser.getId(), group.getId()));
 
         final Metadata meta = new Metadata(document, group, Authorities.ISC);
+        meta.setResponseStatus(Metadata.ResponseStatus.SENT);
         metadataRepos.save(meta);
 
         // create a public comment -> found!
-        final Annotation annotPubComment = getAnnotation(meta, "theidPubComm", "public comment", true, Annotation.ANNOTATION_COMMENT, AnnotationStatus.NORMAL);
+        final Annotation annotPubComment = getAnnotation(meta, "theidPubComm", "public comment", true, Annotation.ANNOTATION_COMMENT, 
+                AnnotationStatus.NORMAL);
         annotRepos.save(annotPubComment);
 
         // create a private comment -> ignored
@@ -184,7 +186,8 @@ public class CountAnnotationsTest {
         annotRepos.save(annotPrivSugg);
 
         // create a public highlight -> ignored since highlights are ignored in general
-        final Annotation annotPubHigh = getAnnotation(meta, "theidPubHigh", "public highlight", true, Annotation.ANNOTATION_HIGHLIGHT, AnnotationStatus.NORMAL);
+        final Annotation annotPubHigh = getAnnotation(meta, "theidPubHigh", "public highlight", true, Annotation.ANNOTATION_HIGHLIGHT, 
+                AnnotationStatus.NORMAL);
         annotRepos.save(annotPubHigh);
 
         // create a private highlight -> ignored since highlights are ignored in general
@@ -192,7 +195,7 @@ public class CountAnnotationsTest {
                 AnnotationStatus.NORMAL);
         annotRepos.save(annotPrivHigh);
 
-        // create a reply to the public comment -> ignored since only top-level items are counted
+        // create a reply to the public comment -> ignored since only top-level items are counted (i.e. no replies)
         final Annotation annotReplyPubComment = getAnnotation(meta, "theidPubCommReply", "public comment reply", true, Annotation.ANNOTATION_COMMENT,
                 AnnotationStatus.NORMAL);
         annotReplyPubComment.setReferences(annotPubComment.getId());
@@ -266,12 +269,14 @@ public class CountAnnotationsTest {
         final SimpleMetadata metaFirstProps = new SimpleMetadata();
         metaFirstProps.put(ISCREF, ISCREF_IGNORED);
         metaFirst.setKeyValuePropertyFromSimpleMetadata(metaFirstProps);
+        metaFirst.setResponseStatus(Metadata.ResponseStatus.SENT);
         metadataRepos.save(metaFirst);
 
         final Metadata metaSecond = new Metadata(document, group, Authorities.ISC);
         final SimpleMetadata metaSecondProps = new SimpleMetadata();
         metaSecondProps.put(ISCREF, ISCREF_FOUND);
         metaSecond.setKeyValuePropertyFromSimpleMetadata(metaSecondProps);
+        metaSecond.setResponseStatus(Metadata.ResponseStatus.SENT);
         metadataRepos.save(metaSecond);
 
         // create three public comments with first metadata -> ignored
@@ -347,20 +352,20 @@ public class CountAnnotationsTest {
     public void queryMeta_Version1() {
 
         // query for version 1 -> receive two annotations
-        Assert.assertEquals(2, runCountAnnotations("[" + metaReq.apply(VERSION, "1") + "]"));
+        Assert.assertEquals(2, runCountAnnotations("[" + metaReq.apply(RESP_VERSION, "1") + "]"));
     }
 
     @Test
     public void queryMeta_Version2() {
 
         // query for version 2 -> receive two annotations
-        Assert.assertEquals(1, runCountAnnotations("[" + metaReq.apply(VERSION, "2") + "]"));
+        Assert.assertEquals(1, runCountAnnotations("[" + metaReq.apply(RESP_VERSION, "2") + "]"));
     }
 
     @Test
     public void queryMeta_IscRef1Vers1() {
 
-        final String metaString = metaReq.apply(ISCREF, ISCREF1) + "," + metaReq.apply(VERSION, "1");
+        final String metaString = metaReq.apply(ISCREF, ISCREF1) + "," + metaReq.apply(RESP_VERSION, "1");
 
         // query for reference 1 version 1 -> receive two annotations (two have version 1)
         Assert.assertEquals(2, runCountAnnotations("[" + metaString + "]"));
@@ -369,7 +374,7 @@ public class CountAnnotationsTest {
     @Test
     public void queryMeta_Vers1Vers2() {
 
-        final String metaString = metaReq.apply(VERSION, "1") + "," + metaReq.apply(VERSION, "2");
+        final String metaString = metaReq.apply(RESP_VERSION, "1") + "," + metaReq.apply(RESP_VERSION, "2");
 
         // query for version 1 or 2 -> receive all annotations
         Assert.assertEquals(3, runCountAnnotations("[" + metaString + "]"));
@@ -378,7 +383,7 @@ public class CountAnnotationsTest {
     @Test
     public void queryMeta_Vers3Vers5() {
 
-        final String metaString = metaReq.apply(VERSION, "3") + "," + metaReq.apply(VERSION, "5");
+        final String metaString = metaReq.apply(RESP_VERSION, "3") + "," + metaReq.apply(RESP_VERSION, "5");
 
         // query for version 3 or 5 -> receive no annotations
         Assert.assertEquals(0, runCountAnnotations("[" + metaString + "]"));
@@ -391,7 +396,7 @@ public class CountAnnotationsTest {
         final int MAX_SETS = 100;
 
         for (int i = 1; i <= MAX_SETS; i++) {
-            metaString.append(metaReq.apply(VERSION, Integer.toString(i)));
+            metaString.append(metaReq.apply(RESP_VERSION, Integer.toString(i)));
             if (i < MAX_SETS) {
                 metaString.append(',');
             }
@@ -408,7 +413,7 @@ public class CountAnnotationsTest {
         final int MAX_SETS = 10;
 
         for (int i = 1; i <= MAX_SETS; i++) {
-            metaString.append(metaReq.apply(VERSION, "1"));
+            metaString.append(metaReq.apply(RESP_VERSION, "1"));
             if (i < MAX_SETS) {
                 metaString.append(',');
             }
@@ -421,7 +426,7 @@ public class CountAnnotationsTest {
     private long runCountAnnotations(final String metadata) {
 
         try {
-            final BiConsumer<SimpleMetadata, String> putVersion = (simpleMeta, vers) -> simpleMeta.put(VERSION, vers);
+            final BiConsumer<SimpleMetadata, String> putVersion = (simpleMeta, vers) -> simpleMeta.put(RESP_VERSION, vers);
 
             tokenRepos.save(new Token(theUser, Authorities.ISC, ACCESS_TOKEN,
                     LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN,
@@ -440,18 +445,21 @@ public class CountAnnotationsTest {
             final SimpleMetadata metaFirstProps = new SimpleMetadata(ISCREF, ISCREF1);
             putVersion.accept(metaFirstProps, "1");
             metaFirst.setKeyValuePropertyFromSimpleMetadata(metaFirstProps);
+            metaFirst.setResponseStatus(Metadata.ResponseStatus.SENT);
             metadataRepos.save(metaFirst);
 
             final Metadata metaSecond = new Metadata(document, group, Authorities.ISC);
             final SimpleMetadata metaSecondProps = new SimpleMetadata(ISCREF, ISCREF2);
             putVersion.accept(metaSecondProps, "1");
             metaSecond.setKeyValuePropertyFromSimpleMetadata(metaSecondProps);
+            metaSecond.setResponseStatus(Metadata.ResponseStatus.SENT);
             metadataRepos.save(metaSecond);
 
             final Metadata metaThree = new Metadata(document, group, Authorities.ISC);
             final SimpleMetadata metaThreeProps = new SimpleMetadata(ISCREF, ISCREF3);
             putVersion.accept(metaThreeProps, "2");
             metaThree.setKeyValuePropertyFromSimpleMetadata(metaThreeProps);
+            metaThree.setResponseStatus(Metadata.ResponseStatus.SENT);
             metadataRepos.save(metaThree);
 
             // create three public comments each having one metadata assigned

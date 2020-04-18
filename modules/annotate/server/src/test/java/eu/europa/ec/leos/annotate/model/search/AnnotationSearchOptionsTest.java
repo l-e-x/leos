@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RunWith(SpringRunner.class)
+@SuppressWarnings("PMD.TooManyMethods")
 public class AnnotationSearchOptionsTest {
 
     /**
@@ -71,7 +72,7 @@ public class AnnotationSearchOptionsTest {
         Assert.assertEquals("given negative limit parameter was not increased to maximum possible value",
                 Integer.MAX_VALUE, options.getItemLimit()); // was increased to maximum value
         Assert.assertEquals("offset was not set to default (due to negative limit value)",
-                Integer.parseInt(AnnotationSearchOptions.DEFAULT_SEARCH_OFFSET), options.getItemOffset()); // was increased to maximum value
+                Consts.DEFAULT_SEARCH_OFFSET, options.getItemOffset()); // was increased to maximum value
     }
 
     // if negative limit is given, options should be prepared to be able to retrieve all items
@@ -90,7 +91,7 @@ public class AnnotationSearchOptionsTest {
         Assert.assertEquals("given negative limit parameter was not increased to maximum possible value",
                 Integer.MAX_VALUE, options.getItemLimit()); // was increased to maximum value
         Assert.assertEquals("offset was not set to default (due to negative limit value)",
-                Integer.parseInt(AnnotationSearchOptions.DEFAULT_SEARCH_OFFSET), options.getItemOffset()); // was increased to maximum value
+                Consts.DEFAULT_SEARCH_OFFSET, options.getItemOffset()); // was increased to maximum value
     }
 
     // any given positive maximum limit is kept now
@@ -138,9 +139,9 @@ public class AnnotationSearchOptionsTest {
                 ASC,         // order
                 CREATED);    // sortColumn
         Assert.assertEquals("given invalid zero limit was not set to default",
-                Integer.parseInt(AnnotationSearchOptions.DEFAULT_SEARCH_LIMIT), options.getItemLimit()); // was set to default
+                Consts.DEFAULT_SEARCH_LIMIT, options.getItemLimit()); // was set to default
         Assert.assertEquals("offset value was not set to default",
-                Integer.parseInt(AnnotationSearchOptions.DEFAULT_SEARCH_OFFSET), options.getItemOffset()); // was set to default
+                Consts.DEFAULT_SEARCH_OFFSET, options.getItemOffset()); // was set to default
     }
 
     // default values are used if given limit is 0
@@ -157,7 +158,7 @@ public class AnnotationSearchOptionsTest {
                 ASC,         // order
                 CREATED);    // sortColumn
         Assert.assertEquals("given invalid zero limit was not set to default",
-                Integer.parseInt(AnnotationSearchOptions.DEFAULT_SEARCH_LIMIT), options.getItemLimit()); // was set to default
+                Consts.DEFAULT_SEARCH_LIMIT, options.getItemLimit()); // was set to default
         Assert.assertEquals("offset value was modified, should not",
                 10, options.getItemOffset()); // was set to default
     }
@@ -336,6 +337,7 @@ public class AnnotationSearchOptionsTest {
         incOpts.setTag("tag");
         incOpts.setUri("https://leos/84");
         incOpts.setUser("user");
+        incOpts.setMode("private");
 
         final AnnotationSearchOptions opts = AnnotationSearchOptions.fromIncomingSearchOptions(incOpts, true);
         Assert.assertNotNull(opts);
@@ -367,5 +369,20 @@ public class AnnotationSearchOptionsTest {
         Assert.assertEquals(AnnotationStatus.REJECTED, status1.get(1));
 
         Assert.assertEquals(incOpts.getUri(), opts.getUri().toString());
+        
+        Assert.assertEquals(Consts.SearchUserType.Contributor, opts.getSearchUser()); // due to "private" as "mode" parameter
+    }
+    
+    // check that a standard user is set when unknown "mode" parameter is set
+    @Test
+    public void testInitFromIncomingSearchOptions2() {
+
+        final IncomingSearchOptions incOpts = new IncomingSearchOptions();
+        incOpts.setUri("https://leos/4");
+        incOpts.setMode("something");
+        
+        final AnnotationSearchOptions opts = AnnotationSearchOptions.fromIncomingSearchOptions(incOpts, true);
+        Assert.assertNotNull(opts);
+        Assert.assertEquals(Consts.SearchUserType.Unknown, opts.getSearchUser());
     }
 }

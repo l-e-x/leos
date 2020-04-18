@@ -21,6 +21,7 @@ public class DefaultGroupNotFoundException extends Exception {
 
     private static final long serialVersionUID = -5099345084713011374L;
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public DefaultGroupNotFoundException() {
         super();
     }

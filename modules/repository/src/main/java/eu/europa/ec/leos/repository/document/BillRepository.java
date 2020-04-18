@@ -13,10 +13,14 @@
  */
 package eu.europa.ec.leos.repository.document;
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
+import eu.europa.ec.leos.model.filter.QueryFilter;
+import org.springframework.security.access.prepost.PostAuthorize;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Bill Repository interface.
@@ -54,11 +58,11 @@ public interface BillRepository {
      * @param id       the ID of the bill document to update.
      * @param metadata the metadata of the bill.
      * @param content  the content of the bill.
-     * @param major    creates a *major version* of the bill, when *true*.
+     * @param versionType  the version type to be created
      * @param comment  the comment of the update, optional.
      * @return the updated bill document.
      */
-    Bill updateBill(String id, BillMetadata metadata, byte[] content, boolean major, String comment);
+    Bill updateBill(String id, BillMetadata metadata, byte[] content, VersionType versionType, String comment);
 
     /**
      * Updates a [Bill] document with the given metadata.
@@ -74,11 +78,11 @@ public interface BillRepository {
      *
      * @param id                the ID of the bill document to update.
      * @param milestoneComments the milestoneComments of the bill document to update.
-     * @param major             major version flag.
+     * @param versionType       the version type to be created
      * @param comment           checking comment.
      * @return the updated bill document.
      */
-    Bill updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment);
+    Bill updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment);
 
     /**
      * Updates a [Bill] document with the given metadata.
@@ -106,4 +110,26 @@ public interface BillRepository {
      * @return the list of found bill document versions or empty.
      */
     List<Bill> findBillVersions(String id, boolean fetchContent);
+    
+    /**
+     * Finds a [Bill] document with the specified characteristics.
+     *
+     * @param ref the reference metadata of the bill document to retrieve.
+     * @return the found bill document.
+     */
+    @PostAuthorize("hasPermission(returnObject, 'CAN_READ')")
+    Bill findBillByRef(String ref);
+    
+    List<Bill> findAllMinorsForIntermediate(String docRef, String curr, String prev, int startIndex, int maxResults);
+
+    int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion);
+
+    Integer findAllMajorsCount(String docRef);
+
+    List<Bill> findAllMajors(String docRef, int startIndex, int maxResult);
+
+    List<Bill> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults);
+
+    Integer findRecentMinorVersionsCount(String documentId, String documentRef);
+
 }

@@ -19,6 +19,9 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 
+/**
+ * simple tests on the {@link SimpleMetadataWithStatuses} object
+ */
 @RunWith(SpringRunner.class)
 public class SimpleMetadataWithStatusTest {
 
@@ -32,6 +35,7 @@ public class SimpleMetadataWithStatusTest {
         Assert.assertNotNull(smws.getStatuses());
         Assert.assertEquals(1, smws.getStatuses().size());
         Assert.assertEquals(AnnotationStatus.getDefaultStatus(), smws.getStatuses());
+        Assert.assertTrue(smws.isEmptyDefaultEntry());
     }
     
     @Test
@@ -44,6 +48,7 @@ public class SimpleMetadataWithStatusTest {
         Assert.assertNotNull(smws.getStatuses());
         Assert.assertEquals(1, smws.getStatuses().size());
         Assert.assertEquals(AnnotationStatus.getDefaultStatus(), smws.getStatuses());
+        Assert.assertTrue(smws.isEmptyDefaultEntry());
     }
     
 }

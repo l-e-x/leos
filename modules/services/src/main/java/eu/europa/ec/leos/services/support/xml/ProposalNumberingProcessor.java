@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
+import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.instance.Instance;
 import org.slf4j.Logger;
@@ -20,67 +21,70 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import eu.europa.ec.leos.domain.common.InstanceType;
-
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEVEL;
 
 @Component
 @Instance(instances = {InstanceType.COMMISSION, InstanceType.OS})
 public class ProposalNumberingProcessor implements NumberProcessor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProposalNumberingProcessor.class);
-    
-	@Autowired
- 	private MessageHelper messageHelper;
-    
-    @Autowired
-    ElementNumberingHelper elementNumberingHelper;
-    
-    @Override
-    public byte[] renumberArticles(byte[] xmlContent, String language) {
-        LOG.trace("Start renumberArticles ");
-        String elementNumber = "Article ";
-        try {
-        	byte[] updatedElements = elementNumberingHelper.renumberElements(ARTICLE,  elementNumber, xmlContent, messageHelper);
-        	return updatedElements;
+    private MessageHelper messageHelper;
+    private ElementNumberingHelper elementNumberingHelper;
 
+    @Autowired
+    public ProposalNumberingProcessor(ElementNumberingHelper elementNumberingHelper, MessageHelper messageHelper) {
+        this.elementNumberingHelper = elementNumberingHelper;
+        this.messageHelper = messageHelper;
+    }
+
+    @Override
+    public byte[] renumberArticles(byte[] xmlContent) {
+        LOG.trace("Start renumberArticles ");
+        try {
+            return elementNumberingHelper.renumberElements(ARTICLE, xmlContent, messageHelper);
         } catch (Exception e) {
             throw new RuntimeException("Unable to perform the renumberArticles operation", e);
         }
     }
 
-	@Override
-	public String renumberImportedArticle(String xmlContent, String language) {
-		String elementNumber = "Article ";
-		String updatedElements = null;
-		elementNumberingHelper.setImportAticleDefaultProperties();
-		try {
-			updatedElements = new String(elementNumberingHelper.renumberElements(ARTICLE, elementNumber, xmlContent));
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to perform the renumberArticles operation", e);
-		} finally {
-			elementNumberingHelper.resetImportAticleDefaultProperties();
-		}
-		
-		return updatedElements;
-	}
+    @Override
+    public String renumberImportedArticle(String xmlContent, String language) {
+        String updatedElements;
+        elementNumberingHelper.setImportAticleDefaultProperties();
+        try {
+            updatedElements = new String(elementNumberingHelper.renumberElements(ARTICLE, xmlContent, false));
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the renumberArticles operation", e);
+        } finally {
+            elementNumberingHelper.resetImportAticleDefaultProperties();
+        }
+        return updatedElements;
+    }
     
-	@Override
-	public byte[] renumberRecitals(byte[] xmlContent) {
-		LOG.trace("Start renumberRecitals");
-		String elementNumber = "";
-		try {
-			return elementNumberingHelper.renumberElements(RECITAL, elementNumber, xmlContent, messageHelper);
-		} catch (Exception e) {
-			throw new RuntimeException("Unable to perform the renumberRecitals operation", e);
-		}
-	}
+    @Override
+    public byte[] renumberRecitals(byte[] xmlContent) {
+        LOG.trace("Start renumberRecitals");
+        try {
+            return elementNumberingHelper.renumberElements(RECITAL, xmlContent, messageHelper);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the renumberRecitals operation", e);
+        }
+    }
 
     @Override
     public String renumberImportedRecital(String xmlContent) {
-        //No need to do pre process as this is done later stages
         return xmlContent;
     }
     
-
+    @Override
+    public byte[] renumberLevel(byte[] xmlContent) {
+        LOG.trace("Start renumberLevel... ");
+        try {
+            return elementNumberingHelper.renumberElements(LEVEL, xmlContent, messageHelper);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the renumberLevel operation", e);
+        }
+    }
 }

@@ -18,6 +18,7 @@ import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.common.ErrorCode;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.ErrorVO;
+import eu.europa.ec.leos.services.util.TestUtils;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.hamcrest.Matchers;
 import org.junit.Before;
@@ -134,9 +135,9 @@ public class AkomantosoXsdValidatorTest extends LeosTest {
     }
 
     @Test
-    public void test_validate_with_bigFile() throws Exception {
+    public void test_validate_with_bigFile() {
         // setup
-        byte[] xmlContent = getFileContent("/bill_big.xml");
+        byte[] xmlContent = TestUtils.getFileContent("/bill_big.xml");
         DocumentVO documentVO = new DocumentVO(LeosCategory.BILL);
         List<ErrorVO> result = new ArrayList<>();
         documentVO.setSource(xmlContent);
@@ -151,12 +152,5 @@ public class AkomantosoXsdValidatorTest extends LeosTest {
         result.forEach(errorVO -> LOG.trace("Error found:{}",errorVO));
         assertTrue(timeTaken < 50_000);// should not take more than 10 sec..
     }
-
-    private byte[] getFileContent(String fileName) throws IOException {
-        InputStream inputStream = this.getClass().getResource(fileName).openStream();
-        byte[] content = new byte[inputStream.available()];
-        inputStream.read(content);
-        inputStream.close();
-        return content;
-    }
+    
 }

@@ -91,17 +91,17 @@ public class StaticContentServiceImpl implements StaticContentService {
         final Resource resource = resourceLoader.getResource("classpath:" + filePath);
         final InputStream instream = resource.getInputStream();
 
-        final StringBuilder sb = new StringBuilder();
+        final StringBuilder strb = new StringBuilder();
         try(InputStreamReader isr = new InputStreamReader(instream, Charset.forName("UTF-8"))) {
             try(BufferedReader reader = new BufferedReader(isr)) {
                 while (true) {
                     final String line = reader.readLine();
                     if (line == null) break;
-                    sb.append(line);
+                    strb.append(line);
                 }
             }
         }
         
-        return sb.toString();
+        return strb.toString();
     }
 }

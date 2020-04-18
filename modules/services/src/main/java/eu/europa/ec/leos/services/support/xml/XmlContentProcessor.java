@@ -16,15 +16,17 @@ package eu.europa.ec.leos.services.support.xml;
 import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
 public interface XmlContentProcessor {
 
     String getElementValue(byte[] xmlContent, String xPath, boolean namespaceEnabled);
+
+    byte[] removeElement(byte[] xmlContent, String xPath, boolean namespaceEnabled);
+
+    byte[] replaceElement(byte[] xmlContent, String xPath, boolean namespaceEnabled, String newContent);
 
     List<String> getAncestorsIdsForElementId(byte[] xmlContent, String idAttributeValue);
 
@@ -44,18 +46,17 @@ public interface XmlContentProcessor {
 
     byte[] insertElementByTagNameAndId(byte[] xmlContent, String articleTemplate, String tagName, String idAttributeValue, boolean before);
 
-    List<TableOfContentItemVO> buildTableOfContent(String startingNode, Function<String, TocItemType> getTocItemType, byte[] xmlContent, boolean simplified);
-
-    byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content,
-            User user);
+    byte[] createDocumentContentWithNewTocList(List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content, User user);
 
     byte[] replaceElementsWithTagName(byte[] xmlContent, String tagName, String newContent);
 
-    byte[] appendElementToTag(byte[] xmlContent, String tagName, String newContent);
+    byte[] appendElementToTag(byte[] xmlContent, String tagName, String newContent, boolean asFirstChild);
 
     byte[] injectTagIdsinXML(byte[] xmlContent);
 
     byte[] doXMLPostProcessing(byte[] xmlContent);
+    
+    byte[] updateReferences(byte[] xmlContent) throws Exception;
 
     byte[] updateReferedAttributes(byte[] xmlContent, Map<String, String> referenceValueMap);
     
@@ -199,4 +200,9 @@ public interface XmlContentProcessor {
     byte[] mergeElement(byte[] xmlContent, String content, String tagName, String idAttributeValue);
 
     void specificInstanceXMLPostProcessing(XMLModifier xmlModifier) throws Exception;
+
+    String removeEmptyHeading(String newContent);
+    
+    byte[] insertDepthAttribute(byte[] xmlContent, String tagName, String elementId);
+
 }

@@ -13,7 +13,7 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
-import com.ximpleware.VTDNav;
+import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.domain.common.Result;
 import eu.europa.ec.leos.instance.Instance;
@@ -22,6 +22,8 @@ import org.jsoup.Jsoup;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.toByteArray;
 
 @Service
 @Instance(instances = {InstanceType.COUNCIL})
@@ -37,9 +39,15 @@ public class ReferenceLabelServiceImplForMandate extends ReferenceLabelServiceIm
         return "";
     }
 
+    /**
+     * Generates the soft move label. Example: MOVED from Article 1(1), point (a)
+     *
+     * @return: returns the label if ref is valid or an error code if not.
+     */
     @Override
-    public Result<String> generateSoftmoveLabel(Ref ref, String referenceLocation, VTDNav vtdNav, String attr) throws Exception {
-        Result<String> labelResult = generateLabel(Arrays.asList(ref), referenceLocation, vtdNav);
+    public Result<String> generateSoftmoveLabel(Ref ref, String sourceRefId, XMLModifier xmlModifier, String attr, String sourceDocumentRef) throws Exception {
+        Result<String> labelResult = generateLabel(Arrays.asList(ref), toByteArray(xmlModifier));
+        
         if (labelResult.isOk()) {
             String label = Jsoup.parse(labelResult.get()).text();
             labelResult = new Result<String> (messageHelper.getMessage("softmove.prefix." + getDirection(attr), new String[] {label}) ,null);

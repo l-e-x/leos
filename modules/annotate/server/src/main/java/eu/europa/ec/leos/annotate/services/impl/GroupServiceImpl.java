@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -46,9 +47,9 @@ public class GroupServiceImpl implements GroupService {
 
     private static final Logger LOG = LoggerFactory.getLogger(GroupServiceImpl.class);
 
-    // we currently only support one single group; this property is injected its default name from configuration
+    // this property is injected its default name from configuration
     @Value("${defaultgroup.name}")
-    private String DEFAULT_GROUP_NAME;
+    private String defaultGroupName;
 
     // -------------------------------------
     // Required services and repositories
@@ -67,7 +68,7 @@ public class GroupServiceImpl implements GroupService {
      * return the name of the default group - instead of hard-coding it...
      */
     public String getDefaultGroupName() {
-        return DEFAULT_GROUP_NAME;
+        return defaultGroupName;
     }
 
     /**
@@ -86,7 +87,7 @@ public class GroupServiceImpl implements GroupService {
 
         LOG.info("Save group with name '{}' in the database", name);
 
-        final Group newGroup = new Group(getInternalGroupName(name), isPublic);
+        final Group newGroup = new Group(getInternalGroupName(name), name, isPublic);
         try {
             groupRepos.save(newGroup);
             LOG.debug("Group '{}' created with id {}", name, newGroup.getId());
@@ -106,28 +107,39 @@ public class GroupServiceImpl implements GroupService {
      * @param groupDisplayName nice name of the group
      * @return URL-safe internal group name
      */
-    private String getInternalGroupName(final String groupDisplayName) {
-
-        // we want to keep it simple and allow those characters denoted "unreserved characters" in section 2.3 of RFC 3986:
-        // ALPHA / DIGIT / "-" / "." / "_" / "~"
-        // (where we dropped "~")
-        // corresponds to character ranges:
-        // ALPHA: [a-z] = 97-122, [A-Z] = 65-90
-        // DIGIT: [0-9] = 48-57
-        // "-" = 45, "." = 46, "_" = 95
+    @Override
+    public String getInternalGroupName(final String groupDisplayName) {
 
         // idea: drop all characters not contained in any of the above ranges - this implicitly also removes spaces
         final StringBuilder simpleName = new StringBuilder();
         for (int i = 0; i < groupDisplayName.length(); i++) {
 
             final int codePoint = Character.codePointAt(groupDisplayName, i);
-            if (97 <= codePoint && codePoint <= 122 || 65 <= codePoint && codePoint <= 90 || 48 <= codePoint && codePoint <= 57 || codePoint == 45 ||
-                    codePoint == 46 || codePoint == 95) {
+            if(isUnreservedCharacter(codePoint)) {
                 simpleName.append(groupDisplayName.charAt(i));
             }
         }
 
         return simpleName.toString();
+    }
+    
+    /**
+     * we want to keep it simple and allow those characters denoted "unreserved characters" in section 2.3 of RFC 3986:
+     * ALPHA / DIGIT / "-" / "." / "_" / "~"
+     * (where we dropped "~")
+     * corresponds to character ranges:
+     * ALPHA: [a-z] = 97-122, [A-Z] = 65-90
+     * DIGIT: [0-9] = 48-57
+     * "-" = 45, "." = 46, "_" = 95
+     * @param codePoint the character code to analyse
+     * @return flag indicating if it is an "allowed character"
+     */
+    private boolean isUnreservedCharacter(final int codePoint) {
+        
+        return 97 <= codePoint && codePoint <= 122 ||
+                65 <= codePoint && codePoint <= 90 || 
+                48 <= codePoint && codePoint <= 57 || 
+                codePoint == 45 || codePoint == 46 || codePoint == 95;
     }
 
     /**
@@ -140,8 +152,13 @@ public class GroupServiceImpl implements GroupService {
     @Override
     public Group findGroupByName(final String groupName) {
 
-        final Group foundGroup = groupRepos.findByName(groupName);
+        Group foundGroup = groupRepos.findByName(groupName);
         LOG.debug("Found group based on group name: {}", foundGroup != null);
+        if(foundGroup == null) {
+            // try again with URL-conform internal name
+            foundGroup = groupRepos.findByName(getInternalGroupName(groupName));
+            LOG.debug("Found group based on internal group name: {}", foundGroup != null);
+        }
         return foundGroup;
     }
 
@@ -151,7 +168,7 @@ public class GroupServiceImpl implements GroupService {
      * @return found default {@link Group}, or {@literal null}
      */
     public Group findDefaultGroup() {
-        return findGroupByName(DEFAULT_GROUP_NAME);
+        return findGroupByName(defaultGroupName);
     }
 
     /**
@@ -202,6 +219,35 @@ public class GroupServiceImpl implements GroupService {
         return true;
     }
 
+    /**
+     * remove a user as member of a given group
+     * 
+     * @param user the {@link User} to be removed from a group
+     * @param group the {@link Group} from which the user is to be removed
+     * 
+     * @return flag indicating if the user was a member of the group and removed
+     */
+    @Override
+    @Transactional
+    public boolean removeUserFromGroup(final User user, final Group group) {
+        
+        Assert.notNull(user, "User must be defined to remove user to group");
+        Assert.notNull(group, "Group must be defined to remove user to group");
+
+        // check if already assigned
+        if (!isUserMemberOfGroup(user, group)) {
+            LOG.info("User '{}' is no member of group '{}' - nothing to do", user.getLogin(), group.getName());
+            return false;
+        }
+
+        final long userId = user.getId();
+        final long groupId = group.getId();
+        userGroupRepos.deleteByUserIdAndGroupId(userId, groupId);
+        LOG.info("Removed user '{}' (id {}) as member of group '{}' (id {})", user.getLogin(), userId, group.getName(), groupId);
+
+        return true;
+    }
+    
     /**
      * check if the default group is configured; throw exception if not
      * 
@@ -353,7 +399,7 @@ public class GroupServiceImpl implements GroupService {
         }
 
         // sort the groups as desired
-        allGroups.sort(new GroupComparator(DEFAULT_GROUP_NAME));
+        allGroups.sort(new GroupComparator(defaultGroupName));
 
         final List<JsonGroupWithDetails> results = new ArrayList<JsonGroupWithDetails>();
         for (int i = 0; i < allGroups.size(); i++) {

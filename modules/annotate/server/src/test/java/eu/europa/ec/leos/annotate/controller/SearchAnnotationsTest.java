@@ -64,6 +64,8 @@ import static org.hamcrest.Matchers.*;
 @ActiveProfiles("test")
 public class SearchAnnotationsTest {
 
+    private static final String SEARCH_URL = "/api/search?_separate_replies=true&sort=created&order=asc&uri=";
+    
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -92,6 +94,7 @@ public class SearchAnnotationsTest {
     private static final String AUTHORITY = Authorities.EdiT;
     private final static String LOGIN1 = "demo", LOGIN2 = "john";
     private final static String USER1 = "acct:" + LOGIN1 + "@" + AUTHORITY, USER2 = "acct:" + LOGIN2 + "@" + AUTHORITY;
+    private final static String WORLD = "&group=__world__";
     private User user2;
     private UserInformation userInfo1;
 
@@ -155,7 +158,7 @@ public class SearchAnnotationsTest {
 
         // send search request
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/search?_separate_replies=false&sort=created&order=asc&uri=" + jsAnnotFirst.getUri().toString() + "&group=__world__")
+                .get("/api/search?_separate_replies=false&sort=created&order=asc&uri=" + jsAnnotFirst.getUri().toString() + WORLD)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
         final ResultActions result = this.mockMvc.perform(builder);
 
@@ -202,7 +205,7 @@ public class SearchAnnotationsTest {
 
         // send search request
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/search?_separate_replies=true&sort=created&order=asc&uri=" + jsAnnotFirst.getUri().toString() + "&group=__world__")
+                .get(SEARCH_URL + jsAnnotFirst.getUri().toString() + WORLD)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
         final ResultActions result = this.mockMvc.perform(builder);
 
@@ -237,6 +240,88 @@ public class SearchAnnotationsTest {
 
         final String VERSION = "version";
         final String REFERENCE = "ref";
+        final String REFERENCE_VAL = "theref";
+        final String USER_ACCOUNT = "acct:demo@" + Authorities.ISC;
+
+        // note: requesting user is an ISC user (since for EdiT users, everything is retrieved)!
+        userInfo1.setAuthority(Authorities.ISC);
+        userInfo1.getCurrentToken().setAuthority(Authorities.ISC);
+
+        // manipulate the authority also in the saved token
+        final Token savedToken = tokenRepos.findByAccessToken(ACCESS_TOKEN);
+        savedToken.setAuthority(Authorities.ISC);
+        tokenRepos.save(savedToken);
+
+        // preparation: save an annotation and a reply for it
+        JsonAnnotation jsAnnotFirst = TestData.getTestAnnotationObject(USER_ACCOUNT);
+        jsAnnotFirst.getDocument().getMetadata().put(VERSION, "4");
+        jsAnnotFirst = annotService.createAnnotation(jsAnnotFirst, userInfo1);
+        final String idFirst = jsAnnotFirst.getId();
+
+        JsonAnnotation jsAnnotReply = TestData.getTestReplyToAnnotation(USER_ACCOUNT, jsAnnotFirst.getUri(), Arrays.asList(idFirst));
+        jsAnnotReply = annotService.createAnnotation(jsAnnotReply, userInfo1);
+        final String idReply = jsAnnotReply.getId();
+
+        // save a second annotation having different metadata
+        JsonAnnotation jsAnnotSecond = TestData.getTestAnnotationObject(USER_ACCOUNT);
+        jsAnnotSecond.getDocument().getMetadata().put(VERSION, "2");
+        jsAnnotSecond.getDocument().getMetadata().put(REFERENCE, REFERENCE_VAL);
+        jsAnnotSecond = annotService.createAnnotation(jsAnnotSecond, userInfo1);
+        final String idSecond = jsAnnotSecond.getId();
+
+        // save a third annotation having again different metadata
+        final JsonAnnotation jsAnnotThird = TestData.getTestAnnotationObject(USER_ACCOUNT);
+        jsAnnotThird.getDocument().getMetadata().put(VERSION, "8");
+        jsAnnotThird.getDocument().getMetadata().put(REFERENCE, "anotherref");
+        annotService.createAnnotation(jsAnnotThird, userInfo1);
+
+        // launch four different metadata sets, only one should match
+        final List<SimpleMetadata> requestedMetadata = new ArrayList<SimpleMetadata>();
+        requestedMetadata.add(new SimpleMetadata(VERSION, "4"));
+        requestedMetadata.add(new SimpleMetadata(REFERENCE, REFERENCE_VAL));
+        requestedMetadata.add(new SimpleMetadata(VERSION, "888")); // won't match
+        requestedMetadata.add(new SimpleMetadata("unknownprop", "unknownval")); // won't match
+
+        final String serializedMetaRequest = SerialisationHelper.serialize(requestedMetadata).replace("{", "%7B").replace("}", "%7D");
+
+        // send search request
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .get(SEARCH_URL + jsAnnotFirst.getUri().toString() + WORLD +
+                        "&metadatasets=" + serializedMetaRequest)
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 200
+        result.andExpect(MockMvcResultMatchers.status().isOk());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // check that the expected annotation was returned (compare IDs)
+        final JsonSearchResultWithSeparateReplies jsResponse = SerialisationHelper.deserializeJsonSearchResultWithSeparateReplies(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertEquals(2, jsResponse.getTotal()); // only non-replies are counted
+        Assert.assertEquals(2, jsResponse.getRows().size());
+        Assert.assertEquals(1, jsResponse.getReplies().size()); // one reply
+
+        // verify that all annotation IDs are found
+        Assert.assertThat(Arrays.asList(idFirst, idSecond),
+                containsInAnyOrder(jsResponse.getRows().stream().map(JsonAnnotation::getId).toArray()));
+
+        // verify reply ID
+        Assert.assertEquals(idReply, jsResponse.getReplies().get(0).getId());
+    }
+
+    /**
+     * successfully search for annotations, expected HTTP 200 and the annotation data
+     * use several matching metadata sets, one has "version" property
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testSearchAnnotationsWithSeveralMetadataSetsWithVersion() throws Exception {
+
+        final String VERSION = "version";
+        final String REFERENCE = "ref";
         final String USER_ACCOUNT = "acct:demo@" + Authorities.ISC;
 
         // note: requesting user is an ISC user (since for EdiT users, everything is retrieved)!
@@ -265,24 +350,16 @@ public class SearchAnnotationsTest {
         jsAnnotSecond = annotService.createAnnotation(jsAnnotSecond, userInfo1);
         final String idSecond = jsAnnotSecond.getId();
 
-        // save a third annotation having again different metadata
-        final JsonAnnotation jsAnnotThird = TestData.getTestAnnotationObject(USER_ACCOUNT);
-        jsAnnotThird.getDocument().getMetadata().put(VERSION, "8");
-        jsAnnotThird.getDocument().getMetadata().put(REFERENCE, "anotherref");
-        annotService.createAnnotation(jsAnnotThird, userInfo1);
-
-        // launch four different metadata sets, only one should match
+        // launch two different metadata sets, both should match one annotation each
         final List<SimpleMetadata> requestedMetadata = new ArrayList<SimpleMetadata>();
         requestedMetadata.add(new SimpleMetadata(VERSION, "4"));
         requestedMetadata.add(new SimpleMetadata(REFERENCE, "theref"));
-        requestedMetadata.add(new SimpleMetadata(VERSION, "888")); // won't match
-        requestedMetadata.add(new SimpleMetadata("unknownprop", "unknownval")); // won't match
 
         final String serializedMetaRequest = SerialisationHelper.serialize(requestedMetadata).replace("{", "%7B").replace("}", "%7D");
 
         // send search request
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/search?_separate_replies=true&sort=created&order=asc&uri=" + jsAnnotFirst.getUri().toString() + "&group=__world__" +
+                .get(SEARCH_URL + jsAnnotFirst.getUri().toString() + WORLD +
                         "&metadatasets=" + serializedMetaRequest)
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
         final ResultActions result = this.mockMvc.perform(builder);
@@ -307,7 +384,7 @@ public class SearchAnnotationsTest {
         // verify reply ID
         Assert.assertEquals(idReply, jsResponse.getReplies().get(0).getId());
     }
-
+    
     /**
      * successfully search for annotations, expected HTTP 200 and the annotation data
      * use several different annotation statuses
@@ -341,7 +418,7 @@ public class SearchAnnotationsTest {
 
         // send search request
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
-                .get("/api/search?_separate_replies=true&sort=created&order=asc&uri=" + jsAnnotFirst.getUri().toString() + "&group=__world__" 
+                .get(SEARCH_URL + jsAnnotFirst.getUri().toString() + WORLD 
         + "&metadatasets=[%7Bstatus:[\"NORMAL\", \"DELETED\"]%7D]")
                 .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN);
         final ResultActions result = this.mockMvc.perform(builder);

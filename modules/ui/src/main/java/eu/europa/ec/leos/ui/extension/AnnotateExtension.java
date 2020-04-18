@@ -38,9 +38,15 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
 
     private static final long serialVersionUID = 1L;
 
+    public enum OperationMode {
+        READ_ONLY, // Annotations open in read only. Cannot create edit or deleted new annotations
+        PRIVATE,  // New annotations can only be private, i.e., only POST_TO_ME option is available - to be used in ISC context
+        NORMAL // Annotations open in regular mode
+    }
+
     private EventBus eventBus;
 
-    public AnnotateExtension(T target, EventBus eventBus, ConfigurationHelper cfgHelper) {
+    public AnnotateExtension(T target, EventBus eventBus, ConfigurationHelper cfgHelper, String containerId, OperationMode operationMode, boolean showStatusFilter, boolean showGuideLinesButton) {
         super();
         this.eventBus = eventBus;
         registerServerSideAPI();
@@ -48,9 +54,11 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
         getState().anotClient = cfgHelper.getProperty("annotate.client.url");
         getState().anotHost = cfgHelper.getProperty("annotate.server.url");
         getState().oauthClientId = cfgHelper.getProperty("annotate.jwt.issuer.client.id");
-
-        getState().annotationContainer = cfgHelper.getProperty("annotation.container");
-
+        getState().operationMode = operationMode.name();
+        getState().showStatusFilter = showStatusFilter;
+        getState().showGuideLinesButton = showGuideLinesButton;
+        containerId = (containerId == null) ? cfgHelper.getProperty("annotation.container") : ("#" + containerId);
+        getState().annotationContainer = containerId;
         extend(target);
     }
 
@@ -86,6 +94,10 @@ public class AnnotateExtension<T extends AbstractField<V>, V> extends LeosJavaSc
             // since we just want to trigger a state change event...
             forceDirty();
         });
+    }
+    
+    public void setoperationMode(OperationMode operationMode) {
+        getState().operationMode = operationMode.name();
     }
 
     private void registerServerSideAPI() {

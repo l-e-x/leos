@@ -15,6 +15,9 @@ package eu.europa.ec.leos.annotate.repository.impl;
 
 import eu.europa.ec.leos.annotate.model.MetadataIdsAndStatuses;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.entity.Group;
+import eu.europa.ec.leos.annotate.model.entity.Metadata;
+import eu.europa.ec.leos.annotate.model.search.Consts.SearchModelMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.jpa.domain.Specification;
@@ -33,7 +36,8 @@ import java.util.List;
 public class AnnotationSearchSpec implements Specification<Annotation> {
 
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationSearchSpec.class);
-
+    private static final String METADATA_PROP = "metadata";
+    
     // -------------------------------------
     // Private variables
     // -------------------------------------
@@ -41,7 +45,9 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
     private final long executingUserId;
     private final Long optionalUserIdToFilter;
     private final List<MetadataIdsAndStatuses> metadataIdsAndStatuses;
-
+    private final String groupName;
+    private final SearchModelMode searchMode;
+    
     // -------------------------------------
     // Constructor
     // -------------------------------------
@@ -55,13 +61,20 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
      *        optional user ID if only annotations of a specific user are wanted
      * @param metadataAndStatus
      *        list of IDs of associate metadata sets of the annotations (implicitly replaces groupId and documentId), combined with statuses wanted
+     * @param group
+     *        the group for which search is run
+     * @param searchModeToUse
+     *        the {@link SearchMode}; indicates if specific items have to be filtered out (used in ISC context)
      */
     public AnnotationSearchSpec(final long executingUserId, final Long optionalUserIdToFilter,
-            final List<MetadataIdsAndStatuses> metadataAndStatus) {
+            final List<MetadataIdsAndStatuses> metadataAndStatus,
+            final Group group, final SearchModelMode searchModeToUse) {
 
         this.executingUserId = executingUserId;
         this.optionalUserIdToFilter = optionalUserIdToFilter;
         this.metadataIdsAndStatuses = metadataAndStatus;
+        this.groupName = group.getName();
+        this.searchMode = searchModeToUse;
     }
 
     // -------------------------------------
@@ -79,7 +92,7 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
         // filter for a user ID, if requested
         if (this.optionalUserIdToFilter != null) {
             LOG.trace("filter userId={}", this.optionalUserIdToFilter);
-            predicates.add(critBuilder.equal(root.get("userId"), this.optionalUserIdToFilter));
+            predicates.add(critBuilder.equal(root.<Long>get("userId"), this.optionalUserIdToFilter));
         }
 
         // filter for metadata and status
@@ -91,19 +104,19 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
             Predicate metaPred;
             LOG.trace("filter metadataIds={}", mias.getMetadataIds().toString());
             if (mias.getMetadataIds().size() > 1) {
-                metaPred = root.get("metadataId").in(mias.getMetadataIds());
+                metaPred = root.<Long>get("metadataId").in(mias.getMetadataIds());
             } else {
                 // small fine-tuning of the internal generated query if there is only one element; becomes slightly more efficient this way
-                metaPred = critBuilder.equal(root.get("metadataId"), mias.getMetadataIds().get(0));
+                metaPred = critBuilder.equal(root.<Long>get("metadataId"), mias.getMetadataIds().get(0));
             }
 
             // the annotations must have a particular status (or one of a given list of possible statuses)
             LOG.trace("filter status={}", mias.getStatuses().toString());
             Predicate statusPred;
             if (mias.getStatuses().size() > 1) {
-                statusPred = root.get("status").in(mias.getStatuses());
+                statusPred = root.<Integer>get("status").in(mias.getStatuses());
             } else {
-                statusPred = critBuilder.equal(root.get("status"), mias.getStatuses().get(0));
+                statusPred = critBuilder.equal(root.<Integer>get("status"), mias.getStatuses().get(0));
             }
 
             metadataStatusPreds.add(critBuilder.and(metaPred, statusPred));
@@ -113,7 +126,7 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
 
         // the rootAnnotationId must be empty - this denotes that annotations are wanted only (i.e. no replies)
         LOG.trace("filter rootAnnotationId is null");
-        predicates.add(critBuilder.isNull(root.get("rootAnnotationId")));
+        predicates.add(critBuilder.isNull(root.<String>get("rootAnnotationId")));
 
         // predicate stating whether the executing user has the permission to see an annotation
         LOG.trace("filter userId={} OR shared", this.executingUserId);
@@ -121,15 +134,33 @@ public class AnnotationSearchSpec implements Specification<Annotation> {
 
                 // first possibility: if the requesting user created the annotation, then he may see it without further restrictions
                 // aka: annot.getUser().getId().equals(executingUserId)
-                critBuilder.equal(root.get("userId"), this.executingUserId),
+                critBuilder.equal(root.<Long>get("userId"), this.executingUserId),
 
                 // second possibility: annotation must be shared (aka: annot.isShared())
                 // note: previously, we also checked if the user was member of the group in which the annotation was published
                 // (aka: groupService.isUserMemberOfGroup(user, annot.getGroup()))
                 // this check has been externalised, search is skipped if user is not member
-                critBuilder.isTrue(root.get("shared")));
+                critBuilder.isTrue(root.<Boolean>get("shared")));
         predicates.add(hasPermissionToSee);
 
+        if(this.searchMode == SearchModelMode.ConsiderUserMembership) {
+            
+            // ANOT-96
+            // if the user searches for a group he belongs to, we have to filter out some items:
+            // for this group (ONLY), we have to remove SENT items being "sentDeleted" or "linked to another annotation" (orPredDontSeeOwnSentItems)
+            // -> orPredOtherGroup: allow other groups
+            // -> orPredOtherRespStatus: allow other response status
+            // note: since ANOT-101, we do not filter for "linkedAnnotationId"=null any more (edited after being SENT)
+            
+            LOG.trace("filter out sentDeleted and linked items for the user's group ({})", groupName);
+            final Predicate orPredOtherGroup = critBuilder.notEqual(root.<Metadata>get(METADATA_PROP).<Group>get("group").<String>get("name"), groupName);
+            final Predicate orPredOtherRespStatus = critBuilder.notEqual(root.<Metadata>get(METADATA_PROP).<Integer>get("responseStatus"), 2);
+            
+            final Predicate orPredDontSeeOwnSentItems = critBuilder.and(critBuilder.equal(root.get(METADATA_PROP).get("responseStatus"), 2),
+                    critBuilder.isFalse(root.<Boolean>get("sentDeleted")), // deleted after SENT
+                    critBuilder.equal(root.<Metadata>get(METADATA_PROP).<Group>get("group").<String>get("name"), groupName)); // only hide them from the user's own group
+            predicates.add(critBuilder.or(orPredOtherGroup, orPredDontSeeOwnSentItems, orPredOtherRespStatus));
+        }
         return andTogether(predicates, critBuilder);
     }
 

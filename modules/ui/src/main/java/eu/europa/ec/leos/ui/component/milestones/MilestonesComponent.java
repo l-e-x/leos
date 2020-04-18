@@ -13,15 +13,18 @@
  */
 package eu.europa.ec.leos.ui.component.milestones;
 
+import com.google.common.eventbus.EventBus;
 import com.vaadin.shared.ui.grid.HeightMode;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
+import com.vaadin.ui.Button;
 import com.vaadin.ui.CustomComponent;
 import com.vaadin.ui.Grid;
 import com.vaadin.ui.Grid.Column;
 import com.vaadin.ui.components.grid.HeaderRow;
-import eu.europa.ec.leos.ui.model.MilestonesVO;
 import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.ui.event.FetchMilestoneEvent;
+import eu.europa.ec.leos.ui.model.MilestonesVO;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Set;
@@ -34,7 +37,8 @@ public class MilestonesComponent extends CustomComponent {
 
     private Grid<MilestonesVO> milestonesGrid;
     private MessageHelper messageHelper;
-
+    private EventBus eventBus;
+    
     enum COLUMN {
         TITLE("title"),
         DATE("date"),
@@ -58,8 +62,9 @@ public class MilestonesComponent extends CustomComponent {
     }
 
     @Autowired
-    public MilestonesComponent(MessageHelper messageHelper) {
+    public MilestonesComponent(MessageHelper messageHelper, EventBus eventBus) {
         this.messageHelper = messageHelper;
+        this.eventBus = eventBus;
         initGrid();
     }
 
@@ -75,7 +80,15 @@ public class MilestonesComponent extends CustomComponent {
 
         milestonesGrid.setSelectionMode(Grid.SelectionMode.NONE);
         
-        Column<MilestonesVO, String> titleColumn = milestonesGrid.addColumn(MilestonesVO::getTitle).setDescriptionGenerator(MilestonesVO::getTitle);
+        Column<MilestonesVO, Button> titleColumn = milestonesGrid.addComponentColumn(vo -> {
+            Button milestoneLink = new Button(vo.getTitle());
+            milestoneLink.addStyleName("link");
+            milestoneLink.addStyleName("milestone-exp-btn");
+            milestoneLink.addClickListener(event -> {
+                eventBus.post(new FetchMilestoneEvent(vo.getLegDocumentName(), vo.getTitle()));
+            });
+            return milestoneLink;
+        }).setDescriptionGenerator(MilestonesVO::getTitle);
         Column<MilestonesVO, String> dateColumn = milestonesGrid.addColumn(MilestonesVO::getCreatedDate).setDescriptionGenerator(MilestonesVO::getCreatedDate);
         Column<MilestonesVO, String> statusColumn = milestonesGrid.addColumn(MilestonesVO::getStatus).setDescriptionGenerator(MilestonesVO::getStatus);
         titleColumn.setMaximumWidth(250);

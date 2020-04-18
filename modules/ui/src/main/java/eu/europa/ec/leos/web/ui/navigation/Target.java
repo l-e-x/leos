@@ -20,19 +20,19 @@ import eu.europa.ec.leos.ui.view.collection.CollectionView;
 import eu.europa.ec.leos.ui.view.document.DocumentView;
 import eu.europa.ec.leos.ui.view.logout.LogoutView;
 import eu.europa.ec.leos.ui.view.memorandum.MemorandumView;
-import eu.europa.ec.leos.ui.view.repository.RepositoryView;
+import eu.europa.ec.leos.ui.view.workspace.WorkspaceView;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public enum Target {
-    REPOSITORY(RepositoryView.VIEW_ID),
+    WORKSPACE(WorkspaceView.VIEW_ID),
     PROPOSAL(CollectionView.VIEW_ID),
     LEGALTEXT(DocumentView.VIEW_ID),
     MEMORANDUM(MemorandumView.VIEW_ID),
     ANNEX(AnnexView.VIEW_ID),
     LOGOUT(LogoutView.VIEW_ID),
-    HOME(RepositoryView.VIEW_ID),       //Default view
+    HOME(WorkspaceView.VIEW_ID),               //Default view
     PREVIOUS("PreviousView");           //Special Target to go to previous view
 
     private static final Logger LOG = LoggerFactory.getLogger(Target.class);

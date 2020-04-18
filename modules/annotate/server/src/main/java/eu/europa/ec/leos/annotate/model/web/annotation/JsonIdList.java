@@ -30,10 +30,12 @@ public class JsonIdList {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public List<String> getIds() {
         return ids;
     }
 
+    @Generated
     public void setIds(final List<String> annotationIds) {
         this.ids = annotationIds;
     }

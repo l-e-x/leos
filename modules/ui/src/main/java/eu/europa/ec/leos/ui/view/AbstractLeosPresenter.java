@@ -15,14 +15,23 @@ package eu.europa.ec.leos.ui.view;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.ui.UI;
+import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.common.TocMode;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.store.PackageService;
+import eu.europa.ec.leos.services.store.WorkspaceService;
+import eu.europa.ec.leos.services.support.xml.ref.Ref;
+import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.support.UuidHelper;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpSession;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Base class for all LEOS presenters.
@@ -38,9 +47,11 @@ public abstract class AbstractLeosPresenter implements LeosPresenter {
     protected final UI leosUI;
     protected final User user;
     protected final String id;
-
+    protected final PackageService packageService;
+    protected final WorkspaceService workspaceService;
+    
     protected AbstractLeosPresenter(SecurityContext securityContext, HttpSession httpSession, EventBus eventBus,
-            EventBus leosApplicationEventBus, UuidHelper uuidHelper) {
+            EventBus leosApplicationEventBus, UuidHelper uuidHelper, PackageService packageService, WorkspaceService workspaceService) {
         LOG.trace("Initializing presenter...");
         Validate.notNull(securityContext, "SecurityContext must not be null!");
         this.securityContext = securityContext;
@@ -56,6 +67,8 @@ public abstract class AbstractLeosPresenter implements LeosPresenter {
         this.leosUI = UI.getCurrent();
         Validate.notNull(uuidHelper, "UuidHelper must not be null!");
         this.id = uuidHelper.getRandomUUID();
+        this.packageService = packageService;
+        this.workspaceService = workspaceService;
     }
 
     @Override
@@ -81,4 +94,10 @@ public abstract class AbstractLeosPresenter implements LeosPresenter {
     public final String getId() {
         return id;
     }
+
+    protected String wrapXmlFragment(String xmlFragment) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?><aknFragment xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\">" +
+                xmlFragment + "</aknFragment>";
+    }
+
 }

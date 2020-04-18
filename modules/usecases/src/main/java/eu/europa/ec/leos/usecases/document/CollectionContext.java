@@ -13,8 +13,25 @@
  */
 package eu.europa.ec.leos.usecases.document;
 
+import static eu.europa.ec.leos.domain.cmis.LeosCategory.BILL;
+import static eu.europa.ec.leos.domain.cmis.LeosCategory.MEMORANDUM;
+import static eu.europa.ec.leos.domain.cmis.LeosCategory.PROPOSAL;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.inject.Provider;
+
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
@@ -26,18 +43,6 @@ import eu.europa.ec.leos.services.document.ProposalService;
 import eu.europa.ec.leos.services.store.PackageService;
 import eu.europa.ec.leos.services.store.TemplateService;
 import io.atlassian.fugue.Option;
-import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-
-import javax.inject.Provider;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static eu.europa.ec.leos.domain.cmis.LeosCategory.*;
 
 @Component
 @Scope("prototype")
@@ -163,7 +168,7 @@ public class CollectionContext {
                 memorandumContext.usePackage(leosPackage);
                 // use template
                 memorandumContext.useTemplate(cast(categoryTemplateMap.get(MEMORANDUM)));
-                // We want to use the same purpose that was set in the wizzard for all the documents.
+                // We want to use the same purpose that was set in the wizard for all the documents.
                 memorandumContext.usePurpose(purpose);
                 memorandumContext.useDocument(docChild);
                 memorandumContext.useActionMessageMap(actionMsgMap);
@@ -183,6 +188,7 @@ public class CollectionContext {
                 proposal = proposalService.addComponentRef(proposal, bill.getName(), LeosCategory.BILL);
             }
         }
+        proposal = proposalService.createVersion(proposal.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeCreateProposal() {
@@ -201,15 +207,18 @@ public class CollectionContext {
 
         Proposal proposal = proposalService.createProposal(proposalTemplate.getId(), leosPackage.getPath(), metadata, null);
 
-        MemorandumContext memorandumContext = memorandumContextProvider.get();
-        memorandumContext.usePackage(leosPackage);
-        memorandumContext.useTemplate(cast(categoryTemplateMap.get(MEMORANDUM)));
-        memorandumContext.usePurpose(purpose);
-        memorandumContext.useActionMessageMap(actionMsgMap);
-        memorandumContext.useType(metadata.getType());
-        memorandumContext.usePackageTemplate(metadata.getTemplate());
-        Memorandum memorandum = memorandumContext.executeCreateMemorandum();
-        proposal = proposalService.addComponentRef(proposal, memorandum.getName(), LeosCategory.MEMORANDUM);
+        // TODO: To have other structure proposal
+        if (cast(categoryTemplateMap.get(MEMORANDUM)) != null) {
+            MemorandumContext memorandumContext = memorandumContextProvider.get();
+            memorandumContext.usePackage(leosPackage);
+            memorandumContext.useTemplate(cast(categoryTemplateMap.get(MEMORANDUM)));
+            memorandumContext.usePurpose(purpose);
+            memorandumContext.useActionMessageMap(actionMsgMap);
+            memorandumContext.useType(metadata.getType());
+            memorandumContext.usePackageTemplate(metadata.getTemplate());
+            Memorandum memorandum = memorandumContext.executeCreateMemorandum();
+            proposal = proposalService.addComponentRef(proposal, memorandum.getName(), LeosCategory.MEMORANDUM);
+        }
 
         BillContext billContext = billContextProvider.get();
         billContext.usePackage(leosPackage);
@@ -218,6 +227,7 @@ public class CollectionContext {
         billContext.useActionMessageMap(actionMsgMap);
         Bill bill = billContext.executeCreateBill();
         proposalService.addComponentRef(proposal, bill.getName(), LeosCategory.BILL);
+        proposalService.createVersion(proposal.getId(), VersionType.INTERMEDIATE, actionMsgMap.get(ContextAction.DOCUMENT_CREATED));
     }
 
     public void executeUpdateProposal() {
@@ -232,17 +242,15 @@ public class CollectionContext {
         Validate.notNull(purpose, "Proposal purpose is required!");
         ProposalMetadata metadata = metadataOption.get().withPurpose(purpose);
 
-        proposal = proposalService.updateProposal(proposal, metadata, false, proposalComment);
+        proposal = proposalService.updateProposal(proposal, metadata, VersionType.MINOR, proposalComment);
 
         LeosPackage leosPackage = packageService.findPackageByDocumentId(proposal.getId());
 
-        if (cast(categoryTemplateMap.get(MEMORANDUM)) != null) {
-            MemorandumContext memorandumContext = memorandumContextProvider.get();
-            memorandumContext.usePackage(leosPackage);
-            memorandumContext.usePurpose(purpose);
-            memorandumContext.useActionMessageMap(actionMsgMap);
-            memorandumContext.executeUpdateMemorandum();
-        }
+        MemorandumContext memorandumContext = memorandumContextProvider.get();
+        memorandumContext.usePackage(leosPackage);
+        memorandumContext.usePurpose(purpose);
+        memorandumContext.useActionMessageMap(actionMsgMap);
+        memorandumContext.executeUpdateMemorandum();
 
         BillContext billContext = billContextProvider.get();
         billContext.usePackage(leosPackage);
@@ -261,7 +269,6 @@ public class CollectionContext {
 
     public void executeUpdateProposalAsync() {
         Validate.notNull(propChildDocument, "Proposal child document is required!");
-        Validate.notNull(proposalComment, "Proposal comment is required!");
         proposalService.updateProposalAsync(propChildDocument, proposalComment);
     }
 
@@ -275,11 +282,11 @@ public class CollectionContext {
         // 1. Proposal
         List<String> milestoneComments = proposal.getMilestoneComments();
         milestoneComments.add(milestoneComment);
-        if (proposal.isMajorVersion()) {
+        if (proposal.getVersionType().equals(VersionType.MAJOR)) {
             proposal = proposalService.updateProposalWithMilestoneComments(proposal.getId(), milestoneComments);
             LOG.info("Major version {} already present. Updated only milestoneComment for [proposal={}]", proposal.getVersionLabel(), proposal.getId());
         } else {
-            proposal = proposalService.updateProposalWithMilestoneComments(proposal, milestoneComments, true, versionComment);
+            proposal = proposalService.updateProposalWithMilestoneComments(proposal, milestoneComments, VersionType.MAJOR, versionComment);
             LOG.info("Created major version {} for [proposal={}]", proposal.getVersionLabel(), proposal.getId());
         }
 
@@ -287,13 +294,11 @@ public class CollectionContext {
         final LeosPackage leosPackage = packageService.findPackageByDocumentId(proposal.getId());
 
         // 2. Memorandum
-        if (cast(categoryTemplateMap.get(MEMORANDUM)) != null) {
-            final MemorandumContext memorandumContext = memorandumContextProvider.get();
-            memorandumContext.usePackage(leosPackage);
-            memorandumContext.useVersionComment(versionComment);
-            memorandumContext.useMilestoneComment(milestoneComment);
-            memorandumContext.executeCreateMilestone();
-        }
+        final MemorandumContext memorandumContext = memorandumContextProvider.get();
+        memorandumContext.usePackage(leosPackage);
+        memorandumContext.useVersionComment(versionComment);
+        memorandumContext.useMilestoneComment(milestoneComment);
+        memorandumContext.executeCreateMilestone();
 
         // 2. Bill + Annexes
         final BillContext billContext = billContextProvider.get();

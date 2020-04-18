@@ -13,8 +13,10 @@
  */
 package eu.europa.ec.leos.repository.document;
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Annex;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
+import org.springframework.security.access.prepost.PostAuthorize;
 
 import java.util.List;
 
@@ -61,11 +63,11 @@ public interface AnnexRepository {
      *
      * @param id      the ID of the annex document to update.
      * @param content the content of the annex.
-     * @param major   creates a *major version* of the annex, when *true*.
+     * @param versionType  the version type to be created
      * @param comment the comment of the update, optional.
      * @return the updated annex document.
      */
-    Annex updateAnnex(String id, byte[] content, boolean major, String comment);
+    Annex updateAnnex(String id, byte[] content, VersionType versionType, String comment);
 
     /**
      * Updates a [Annex] document with the given metadata and content.
@@ -73,13 +75,13 @@ public interface AnnexRepository {
      * @param id       the ID of the annex document to update.
      * @param metadata the metadata of the annex.
      * @param content  the content of the annex.
-     * @param major    creates a *major version* of the annex, when *true*.
+     * @param versionType  the version type to be created
      * @param comment  the comment of the update, optional.
      * @return the updated annex document.
      */
-    Annex updateAnnex(String id, AnnexMetadata metadata, byte[] content, boolean major, String comment);
+    Annex updateAnnex(String id, AnnexMetadata metadata, byte[] content, VersionType versionType, String comment);
 
-    Annex updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, boolean major, String comment);
+    Annex updateMilestoneComments(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment);
 
     Annex updateMilestoneComments(String id, List<String> milestoneComments);
 
@@ -107,4 +109,25 @@ public interface AnnexRepository {
      * @return the list of found Annex document versions or empty.
      */
     List<Annex> findAnnexVersions(String id, boolean fetchContent);
+
+    /**
+     * Finds a [Annex] document with the specified characteristics.
+     *
+     * @param ref the reference metadata of the annex document to retrieve.
+     * @return the found annex document.
+     */
+    @PostAuthorize("hasPermission(returnObject, 'CAN_READ')")
+    Annex findAnnexByRef(String ref);
+    
+    List<Annex> findAllMinorsForIntermediate(String docRef, String curr, String prev, int startIndex, int maxResults);
+    
+    int findAllMinorsCountForIntermediate(String docRef, String currIntVersion, String prevIntVersion);
+    
+    Integer findAllMajorsCount(String docRef);
+    
+    List<Annex> findAllMajors(String docRef, int startIndex, int maxResult);
+    
+    List<Annex> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults);
+    
+    Integer findRecentMinorVersionsCount(String documentId, String documentRef);
 }

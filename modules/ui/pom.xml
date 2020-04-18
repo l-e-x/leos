@@ -20,7 +20,7 @@
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>leos-modules</artifactId>
-        <version>2.1.0</version>
+        <version>3.0.0</version>
     </parent>
 
     <artifactId>leos-ui</artifactId>
@@ -165,7 +165,11 @@
         <dependency>
            <groupId>org.vaadin.teemusa</groupId>
            <artifactId>gridextensionpack</artifactId>
-        </dependency>        
+        </dependency>
+        <dependency>
+            <groupId>org.vaadin.addons</groupId>
+            <artifactId>vaadin-sliderpanel</artifactId>
+        </dependency>
         <!-- Libraries -->
         <dependency>
             <groupId>javax.servlet</groupId>

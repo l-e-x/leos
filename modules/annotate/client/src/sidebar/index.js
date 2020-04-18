@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var addAnalytics = require('./ga');
@@ -158,6 +145,9 @@ module.exports = angular.module('h', [
 
   // Local addons
   'ngRaven',
+
+  //Angular multiple select LEOS Change
+  ['multipleSelect', require('angular-multiple-select/build/multiple-select.min.js')][0]
 ])
 
   // The root component for the application
@@ -193,6 +183,8 @@ module.exports = angular.module('h', [
   .component('tagEditor', require('./components/tag-editor'))
   .component('threadList', require('./components/thread-list'))
   .component('timestamp', require('./components/timestamp'))
+  .component('leosFilterButton', require('../../leos/sidebar/components/leos-filter-button')) // LEOS Change
+  .component('leosFilterPane', require('../../leos/sidebar/components/leos-filter-pane')) // LEOS Change
   .component('topBar', require('./components/top-bar'))
   .component('leosSuggestionButtons', require('../../leos/sidebar/components/leos-suggestion-buttons')) // LEOS Change
   .component('leosAnnotationHeader', require('../../leos/sidebar/components/leos-annotation-header')) // LEOS Change

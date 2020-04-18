@@ -13,9 +13,13 @@
  */
 package eu.europa.ec.leos.ui.view.memorandum;
 
+import eu.europa.ec.leos.domain.cmis.document.Memorandum;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.model.action.VersionVO;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.security.LeosPermission;
+import eu.europa.ec.leos.ui.view.ComparisonDisplayMode;
+import eu.europa.ec.leos.ui.view.TriFunction;
 import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 import eu.europa.ec.leos.web.event.view.document.CheckElementCoEditionEvent.Action;
@@ -23,6 +27,9 @@ import eu.europa.ec.leos.web.model.VersionInfoVO;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 interface MemorandumScreen {
     void setTitle(String title);
@@ -39,15 +46,15 @@ interface MemorandumScreen {
 
     void setToc(List<TableOfContentItemVO> tableOfContentItemVoList);
 
-    void populateMarkedContent(String markedContent);
+    void populateComparisonContent(String comparedContent, String comparedInfo);
     
     void showTimeLineWindow(List documentVersions);
     
     void updateTimeLineWindow(List documentVersions);
 
-    void displayComparison(HashMap<Integer, Object> htmlCompareResult);
+    void displayComparison(HashMap<ComparisonDisplayMode, Object> htmlCompareResult);
 
-    void showMajorVersionWindow();
+    void showIntermediateVersionWindow();
     
     void setDocumentVersionInfo(VersionInfoVO versionInfoVO);
     
@@ -62,4 +69,20 @@ interface MemorandumScreen {
     void checkElementCoEdition(List<CoEditionVO> coEditionVos, User user, final String elementId, final String elementTagName, final Action action, final Object actionEvent);
 
     void showAlertDialog(String messageKey);
+
+    boolean isTocEnabled();
+    
+    void setDataFunctions(List<VersionVO> allVersions,
+                          BiFunction<Integer, Integer, List<Memorandum>> majorVersionsFn,
+                          Supplier<Integer> countMajorVersionsFn,
+                          TriFunction<String, Integer, Integer, List<Memorandum>> minorVersionsFn,
+                          Function<String, Integer> countMinorVersionsFn,
+                          BiFunction<Integer, Integer, List<Memorandum>> recentChangesFn,
+                          Supplier<Integer> countRecentChangesFn);
+    
+    void refreshVersions(List<VersionVO> allVersions, boolean isComparisonMode);
+    
+    void showVersion(String versionContent, String versionInfo);
+    
+    void cleanComparedContent();
 }

@@ -23,8 +23,6 @@ define(function aknUnorderedListPluginModule(require) {
     var pluginName = "aknUnorderedList";
 
     var DATA_AKN_NUM = "data-akn-num";
-    var LIST_ITEM = "li";
-    var BULLETED_LIST = "bulletedlist";
 
     var pluginDefinition = {
         init : function init(editor) {

@@ -13,594 +13,811 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
-import com.ximpleware.*;
+import com.ximpleware.AutoPilot;
+import com.ximpleware.ModifyException;
+import com.ximpleware.NavException;
+import com.ximpleware.TranscodeException;
+import com.ximpleware.VTDNav;
+import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.model.action.SoftActionType;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.vo.toc.NumberingConfig;
+import eu.europa.ec.leos.vo.toc.NumberingType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Provider;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.*;
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_AFFECTED_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_DEPTH_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_ORIGIN_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_SOFT_ACTION_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.TOGGLED_TO_NUM;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.XMLID;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.buildNumElement;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.removeAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupVTDNav;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.toByteArray;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.EC;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.INDENT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEVEL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LIST;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.NUM;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PARAGRAPH;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.POINT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
+import static eu.europa.ec.leos.vo.toc.TocItemUtils.getNumberingByName;
+import static eu.europa.ec.leos.vo.toc.TocItemUtils.getNumberingConfig;
+import static eu.europa.ec.leos.vo.toc.TocItemUtils.getNumberingTypeByDepth;
+import static eu.europa.ec.leos.vo.toc.TocItemUtils.getTocItemByName;
 import static java.lang.String.join;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.nCopies;
 
 @Component
 public class ElementNumberingHelper {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(ElementNumberingHelper.class);
+    private boolean isDefaultEditable = false;
+    private List<TocItem> tocItems;
+    private List<NumberingConfig> numberingConfigs;
+    private MessageHelper messageHelper;
+    private Provider<StructureContext> structureContextProvider;
+    
+    @Autowired
+    public ElementNumberingHelper(MessageHelper messageHelper, Provider<StructureContext> structureContextProvider) {
+        this.messageHelper = messageHelper;
+        this.structureContextProvider = structureContextProvider;
+    }
+    
+    public byte[] renumberElements(String element, String xmlContent, boolean namespaceEnabled) throws Exception{
+        return renumberElements(element, xmlContent.getBytes(UTF_8), namespaceEnabled);
+    }
+    
+    public byte[] renumberElements(String element, byte[] xmlContent, boolean namespaceEnabled) throws Exception {
+        VTDNav vtdNav = setupVTDNav(xmlContent, namespaceEnabled);
+        XMLModifier xmlModifier = new XMLModifier(vtdNav);
+        tocItems = structureContextProvider.get().getTocItems();
+        numberingConfigs = structureContextProvider.get().getNumberingConfigs();
+        return elementNumberProcess(element, vtdNav, xmlModifier);
+    }
+    
+    public byte[] renumberElements(String element, byte[] xmlContent, MessageHelper messageHelper) {
+        tocItems = structureContextProvider.get().getTocItems();
+        numberingConfigs = structureContextProvider.get().getNumberingConfigs();
+        
+        final TocItem tocItem = getTocItemByName(tocItems, element);
+        final NumberingConfig numberingConfig = getNumberingByName(numberingConfigs, tocItem.getNumberingType());
+        final NumberingType numberingType = numberingConfig.getType();
+        final String prefix = numberingConfig.getPrefix();
+        final String suffix = numberingConfig.getSuffix();
+        
+        final VTDNav vtdNav = setupVTDNav(xmlContent, true);
 
-     private static final String LEOS_ORIGIN_ATTR_EC = "ec";
-        private static final Logger LOG = LoggerFactory.getLogger(ElementNumberingHelper.class);
-
-        private boolean isDefaultEditable = false;
-        private boolean isNameSpaceEnabled = true;
-
-
-        byte[] renumberElements(String element, String elementNumber , Object data ) throws NavException, ModifyException, TranscodeException, IOException{
-
-            VTDNav vtdNav = createVTDNav(data, element);
-            XMLModifier xmlModifier = null;
-            try {
-                xmlModifier = new XMLModifier(vtdNav);
-            } catch (ModifyException e) {
-                throw new RuntimeException("Unable to perform the renumber "+ element +" operation", e);
-            }
-            return renumberElements(element, vtdNav, xmlModifier, elementNumber);
-
+        long number = -1L;
+        if (numberingType != null && !numberingType.value().isEmpty()) {
+            number = 1L;
         }
-        private byte[] renumberElements(String element, VTDNav vtdNav, XMLModifier xmlModifier, String elementNumber) throws NavException, ModifyException, TranscodeException, IOException {
-
+        byte[] updatedElement;
+        XMLModifier xmlModifier = null;
+        try {
+            xmlModifier = new XMLModifier(vtdNav);
             AutoPilot autoPilot = new AutoPilot(vtdNav);
+            autoPilot.declareXPathNameSpace("leos", "urn:eu:europa:ec:leos");// required
             autoPilot.selectElement(element);
-            char alphaNumber = 'a';
-            List<Integer> indexList = new ArrayList<Integer>();
-            boolean foundProposalElement = false;
-            int parentIndex = getParentIndex(vtdNav, element);
+            byte[] elementeNum = null;
+            LevelVO lastLevelVo = null;
 
-            if (!isProposalElement(vtdNav) && (element == PARAGRAPH || element == POINT)) {
-                while (autoPilot.iterate()) {
-                    switch (element) {
-                        case PARAGRAPH:
-                            updatePointNumbersDefault(vtdNav, xmlModifier);
-                            if (hasAffectedAttribute(vtdNav, xmlModifier)) {
-                                if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                    renumberElements(POINT, vtdNav, xmlModifier, "");
-                                }
-                            }
-                            break;
-                        case POINT:
-                            updatePointNumbersDefault(vtdNav, xmlModifier);
-                            if (hasAffectedAttribute(vtdNav, xmlModifier)) {
-                                if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                    renumberElements(POINT, vtdNav, xmlModifier, "");
-                                }
-                            }
-                            break;
+            while (autoPilot.iterate()) {
+                switch(element) {
+                    case ARTICLE:
+                        String articleNum = prefix + getElementNumeral(number++, numberingType) + suffix;
+                        elementeNum = messageHelper.getMessage("legaltext.article.num", articleNum).getBytes(UTF_8);
+                        break;
+                    case RECITAL:
+                        String recitalNum = prefix + getElementNumeral(number++, numberingType) + suffix;
+                        elementeNum = recitalNum.getBytes(UTF_8);
+                        break;
+                    case LEVEL:
+
+                        //1.set previous level
+                        int index = vtdNav.getCurrentIndex();
+                        LevelVO prevLevelVo = lastLevelVo;
+                        vtdNav.recoverNode(index);
+
+                        //2.set current level
+                        LevelVO currLevelVo = getLevelVo(vtdNav, xmlModifier);
+                        vtdNav.recoverNode(index);
+
+                        //3.get level num of current level
+                        String levelNum = prefix + getLevelNumeral(prevLevelVo, currLevelVo, vtdNav, xmlModifier, numberingType) + suffix;
+
+                        //4.update previous level by current level
+                        lastLevelVo = currLevelVo;
+                        lastLevelVo.setLevelNum(levelNum);
+
+                        elementeNum = levelNum.getBytes(UTF_8);
+                        break;
+                    default:
+                        break;
+                }
+                int currentIndex = vtdNav.getCurrentIndex();
+                updatedElement = buildNumElement(vtdNav, xmlModifier, elementeNum);
+                vtdNav.recoverNode(currentIndex);
+                xmlModifier.insertAfterHead(updatedElement);
+            }
+            if(element.equalsIgnoreCase(LEVEL)) {
+                removeDepthAttribute(xmlModifier); // cleanup leos depth attr
+            }
+            return toByteArray(xmlModifier);
+        } catch (Exception e) {
+            throw new RuntimeException("Unable to perform the renumberElement operation", e);
+        }
+    }
+    
+    private String getLevelNumeral(LevelVO prevLevelVo,LevelVO currLevelVo, VTDNav vtdNav, XMLModifier xmlModifier, NumberingType numberingType) throws Exception {
+        int index = vtdNav.getCurrentIndex();
+        String levelNum = "";
+        if (prevLevelVo != null) {
+            int prevLevelDepth = prevLevelVo.getLevelDepth();
+            String prevLevelNum = prevLevelVo.getLevelNum();
+            int currLevelDepth = currLevelVo.getLevelDepth();
+            if(prevLevelDepth == currLevelDepth) {
+                levelNum = getNextLevelNum(prevLevelDepth, prevLevelNum);
+            } else if(currLevelDepth > prevLevelDepth) {
+                levelNum = prevLevelNum.concat("1");
+            } else if(currLevelDepth < prevLevelDepth) {
+                levelNum = getNextNumForDepth(currLevelDepth, prevLevelNum);
+            }
+        } else { // first level element
+            levelNum = getElementNumeral(1L, numberingType);
+        }
+        vtdNav.recoverNode(index);
+        return levelNum;
+    }
+
+    private LevelVO getLevelVo(VTDNav vtdNav, XMLModifier xmlModifier) throws Exception {
+        LevelVO levelVo = new LevelVO();
+        int currentIndex = vtdNav.getCurrentIndex();
+        int idAttrIndex = vtdNav.getAttrVal(XMLID);
+        String elementId = vtdNav.toNormalizedString(idAttrIndex);
+        
+        byte[] xmlContent = toByteArray(xmlModifier);
+        VTDNav currentNavigator = setupVTDNav(xmlContent);
+        AutoPilot autoPilot = new AutoPilot(currentNavigator);
+        autoPilot.declareXPathNameSpace("xml", "http://www.w3.org/XML/1998/namespace");// required
+        autoPilot.selectXPath("//*[@xml:id = '" + elementId + "']");
+        
+        if(autoPilot.evalXPath() != -1) {
+            int attributeIndex = currentNavigator.getAttrVal(LEOS_DEPTH_ATTR);
+            if (attributeIndex != -1) {
+                String depth = currentNavigator.toNormalizedString(attributeIndex);
+                levelVo.setLevelDepth(Integer.parseInt(depth));
+                if(currentNavigator.toElement(VTDNav.FIRST_CHILD, NUM)) {
+                    long contentFragment = currentNavigator.getContentFragment();
+                    String elementNumber = new String(currentNavigator.getXML().getBytes((int) contentFragment, (int) (contentFragment >> 32)));
+                    levelVo.setLevelNum(elementNumber);
+                }
+            }
+        }
+        vtdNav.recoverNode(currentIndex);
+        return levelVo;
+    }
+    
+    private String getNextLevelNum(int levelDepth, String levelNum) {
+        String[] numArr = getNextNum(levelDepth, levelNum);
+        return String.join(".", numArr);
+    }
+
+    private String getNextNumForDepth(int levelDepth, String levelNum) {
+        String[] numArr = getNextNum(levelDepth, levelNum);
+        String[] copyArr = Arrays.copyOfRange(numArr, 0, levelDepth);
+        return String.join(".", copyArr);
+    }
+    
+    private String[] getNextNum(int levelDepth, String levelNum) {
+        String[] numArr = StringUtils.split(levelNum, ".");
+        String numStr = numArr[levelDepth - 1];
+        int currNum = Integer.parseInt(numStr) + 1;
+        numArr[levelDepth - 1] = Integer.toString(currNum);
+        return numArr;
+    }
+    
+    private byte[] elementNumberProcess(String element, VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException, TranscodeException, IOException {
+        AutoPilot autoPilot = new AutoPilot(vtdNav);
+        autoPilot.selectElement(element);
+        char alphaNumber = 'a';
+        List<Integer> indexList = new ArrayList<>();
+        boolean foundProposalElement = false;
+        int parentIndex = getParentIndex(vtdNav, element);
+        
+        if (!isProposalElement(vtdNav) && (Arrays.asList(PARAGRAPH,POINT,INDENT).contains(element))) {
+            // Default numbering applied to Mandate elements (no EC elements present)
+            while (autoPilot.iterate()) {
+                updatePointAndIndentNumbersDefault(vtdNav, xmlModifier, numberingConfigs);
+                if (hasAffectedAttribute(vtdNav, xmlModifier)) {
+                    if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
+                        if (checkFirstChildType(vtdNav, INDENT)) {
+                            elementNumberProcess(INDENT, vtdNav, xmlModifier);
+                        } else {
+                            elementNumberProcess(POINT, vtdNav, xmlModifier);
+                        }
                     }
                 }
-            } else {
-                while (autoPilot.iterate()) {
-                    int tempIndex = getParentIndex(vtdNav, element);
-                    if (tempIndex != parentIndex && (element == PARAGRAPH || element == POINT)) {
-                        continue;
-                    }
-
-                    if (foundProposalElement || isElementOriginEC(vtdNav)) {
-                        if (isElementOriginEC(vtdNav)) {
-                            foundProposalElement = true;
-                            alphaNumber = 'a';
-                            //set the series number for manual numbering of Articles
-                            int index = vtdNav.getCurrentIndex();
-                            if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
-                                long contentFragment = vtdNav.getContentFragment();
-                                elementNumber = new String(vtdNav.getXML().getBytes((int) contentFragment, (int) (contentFragment >> 32)));
-                            }
-                            vtdNav.recoverNode(index);
-                            //Check if elemetns added to proposal elements
-                            if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
-                                switch (element) {
-                                    case ARTICLE:
-                                            renumberElements(PARAGRAPH, vtdNav, xmlModifier, "");
-                                        break;
-                                    case PARAGRAPH:
-                                        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                            updateMandatePointsNumbering(vtdNav, xmlModifier);
-                                            renumberElements(POINT, vtdNav, xmlModifier, "");
-                                        }
-                                        break;
-                                    case POINT:
-                                        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                            updateMandatePointsNumbering(vtdNav, xmlModifier);
-                                            renumberElements(POINT, vtdNav, xmlModifier, "");
-                                        }
-                                        break;
-                                }
-                            }
-                        } else { //adding alpha number series to added article
+            }
+        } else {
+            // EC elements, means we have mixed elements
+            // Mandate rules applied when we have mixed elements CN and EC
+            String elementNumber = "";
+            while (autoPilot.iterate()) {
+                int tempIndex = getParentIndex(vtdNav, element);
+                if (tempIndex != parentIndex && (Arrays.asList(PARAGRAPH,POINT,INDENT).contains(element))) {
+                    continue;
+                }
+                final TocItem tocItem = getTocItemByName(tocItems, element);
+                final NumberingConfig numberingConfig = getNumberingByName(numberingConfigs, tocItem.getNumberingType());
+                if (foundProposalElement || isElementOriginEC(vtdNav)) {
+                    if (isElementOriginEC(vtdNav)) {
+                        foundProposalElement = true; // once true, we now we are in the positive side, from now on.
+                        alphaNumber = 'a';
+                        //set the series number for manual numbering of Articles
+                        int index = vtdNav.getCurrentIndex();
+                        if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
+                            long contentFragment = vtdNav.getContentFragment();
+                            elementNumber = new String(vtdNav.getXML().getBytes((int) contentFragment, (int) (contentFragment >> 32)));
+                        }
+                        vtdNav.recoverNode(index);
+                        //Check if elements added to proposal elements
+                        if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
                             switch (element) {
                                 case ARTICLE:
-                                    alphaNumber = updateArticleNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, false);
-                                    if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
-                                        updateParagraphNumbersDefault(vtdNav, xmlModifier);
-                                        renumberElements(PARAGRAPH, vtdNav, xmlModifier, "");
-                                    }
+                                    elementNumberProcess(PARAGRAPH, vtdNav, xmlModifier);
                                     break;
                                 case PARAGRAPH:
-                                    alphaNumber = updateParagraphNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, false);
-                                    if (hasAffectedAttribute(vtdNav, xmlModifier)) {
-                                        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                            updateMandatePointsNumbering(vtdNav, xmlModifier);
-                                            renumberElements(POINT, vtdNav, xmlModifier, "");
-                                        }
-                                    }
-                                    break;
                                 case POINT:
-                                    alphaNumber = updatePointNumbers("", elementNumber, vtdNav, xmlModifier, alphaNumber, false);
-                                    if (hasAffectedAttribute(vtdNav, xmlModifier)) {
-                                        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                                            updateMandatePointsNumbering(vtdNav, xmlModifier);
-                                            renumberElements(POINT, vtdNav, xmlModifier, "");
-                                        }
-                                    }
-                                    break;
-                                case RECITAL:
-                                    alphaNumber = updateRecitalNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, false);
+                                case INDENT:
+                                    goOnWithChildren(vtdNav, xmlModifier);
                                     break;
                             }
                         }
-                    } else {
-                        indexList.add(vtdNav.getCurrentIndex());
+                    } else { //adding alpha number series to added article
+                        switch (element) {
+                            case ARTICLE:
+                                alphaNumber = updateArticleNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, false);
+                                if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
+                                    if (!containsProposalElement(PARAGRAPH, vtdNav)) {
+                                        updateParagraphNumbersDefault(vtdNav, xmlModifier, tocItems);
+                                    }
+                                    elementNumberProcess(PARAGRAPH, vtdNav, xmlModifier);
+                                }
+                                break;
+                            case PARAGRAPH:
+                                alphaNumber = updateParagraphNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, numberingConfig, false);
+                                if (hasAffectedAttribute(vtdNav, xmlModifier)) {
+                                    goOnWithChildren(vtdNav, xmlModifier);
+                                }
+                                break;
+                            case POINT:
+                            case INDENT:
+                                alphaNumber = updatePointNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, false);
+                                if (hasAffectedAttribute(vtdNav, xmlModifier)) {
+                                    goOnWithChildren(vtdNav, xmlModifier);
+                                }
+                                break;
+                            case RECITAL:
+                                alphaNumber = updateRecitalNumbers(elementNumber, vtdNav, xmlModifier, alphaNumber, numberingConfig, false);
+                                break;
+                        }
                     }
+                } else {
+                    // if no EC element present until now, and the current iterated is not an EC, it means the current iterated is in the negative side, add it to the list.
+                    indexList.add(vtdNav.getCurrentIndex());
                 }
-                //-ve numbering
-                long negativeNumber = -(indexList.size());
-                //For Points -ve numbering get the type of sequence
-                String numSeq = getNegativeSidePointsNumSequence(element, vtdNav, indexList);
+            }
+            
+            // do the calculation for the the negative elements found in the previous iteration
+            calculateNegativeSideNumbers(element, vtdNav, xmlModifier, alphaNumber, indexList);
+        }
+        return toByteArray(xmlModifier);
+    }
 
-                for (int negativeNumIndex : indexList) {
-                    vtdNav.recoverNode(negativeNumIndex);
-                    switch (element) {
-                        case ARTICLE:
-                            updateArticleNumbers("Article " + negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, true);
-                            if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
-                                updateParagraphNumbersDefault(vtdNav, xmlModifier);
-                                renumberElements(PARAGRAPH, vtdNav, xmlModifier, "");
-                            }
-                            break;
-                        case PARAGRAPH:
-                            updateParagraphNumbers("" + negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, true);
-                            pointNumProcessing(vtdNav, xmlModifier);
-                            break;
-                        case POINT:
-                            updatePointNumbers(numSeq, "" + negativeNumber++, vtdNav, xmlModifier, alphaNumber, true);
-                            pointNumProcessing(vtdNav, xmlModifier);
-                            break;
-                        case RECITAL:
-                            updateRecitalNumbers("" + negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, true);
-                            break;
+    private void goOnWithChildren(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException, TranscodeException, IOException {
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
+            updateMandatePointsNumbering(vtdNav, xmlModifier, numberingConfigs);
+            if(checkFirstChildType(vtdNav, INDENT)){
+                elementNumberProcess(INDENT, vtdNav, xmlModifier);
+            }else if(checkFirstChildType(vtdNav, POINT)){
+                elementNumberProcess(POINT, vtdNav, xmlModifier);
+            }
+        }
+    }
+
+
+    private void calculateNegativeSideNumbers(String element, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, List<Integer> indexList) throws NavException, ModifyException, IOException, TranscodeException {
+        //-ve numbering
+        long negativeNumber = -(indexList.size());
+
+        for (int negativeNumIndex : indexList) {
+            vtdNav.recoverNode(negativeNumIndex);
+            final TocItem tocItem = getTocItemByName(tocItems, element);
+            final NumberingConfig numberingConfig = getNumberingByName(numberingConfigs, tocItem.getNumberingType());
+            switch (element) {
+                case ARTICLE:
+                    final String articleName = messageHelper.getMessage("toc.item.type." + tocItem.getAknTag().value().toLowerCase()) + " ";
+                    updateArticleNumbers(articleName + negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, true);
+                    if (hasAffectedAttribute(vtdNav, xmlModifier) || hasNumToggledAttribute(vtdNav, xmlModifier)) {
+                        if (!containsProposalElement(PARAGRAPH, vtdNav)) {
+                            updateParagraphNumbersDefault(vtdNav, xmlModifier, tocItems);
+                        }
+                        elementNumberProcess(PARAGRAPH, vtdNav, xmlModifier);
                     }
-                }
+                    break;
+                case PARAGRAPH:
+                    updateParagraphNumbers(""+negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, numberingConfig, true);
+                    pointNumProcessing(vtdNav, xmlModifier);
+                    break;
+                case POINT:
+                case INDENT:
+                    updatePointNumbers(""+negativeNumber++, vtdNav, xmlModifier, alphaNumber, true);
+                    pointNumProcessing(vtdNav, xmlModifier);
+                    break;
+                case RECITAL:
+                    updateRecitalNumbers(""+negativeNumber++, vtdNav, xmlModifier, Character.MIN_VALUE, numberingConfig, true);
+                    break;
             }
-            return toByteArray(xmlModifier);
         }
-
-        private void pointNumProcessing(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException, TranscodeException, IOException {
-            if (hasAffectedAttribute(vtdNav, xmlModifier)) {
-                if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                    int currentIndex = vtdNav.getCurrentIndex();
-                    renumberPoints(vtdNav, xmlModifier);
-                    vtdNav.recoverNode(currentIndex);
-                    renumberElements(POINT, vtdNav, xmlModifier, "");
-                }
-            }
-        }
-
-        private void updateMandatePointsNumbering(VTDNav vtdNav, XMLModifier xmlModifier)
-                    throws NavException, ModifyException {
-                if(!isProposalElement(vtdNav)) {
-                    int currentIndex = vtdNav.getCurrentIndex();
-                    renumberPoints(vtdNav, xmlModifier);
-                    vtdNav.recoverNode(currentIndex);
-                }
-            }
-
-        private boolean isProposalElement(VTDNav vtdNav) throws NavException {
-            boolean isProposalElement = false;
-            int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
-            if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(LEOS_ORIGIN_ATTR_EC)) {
-                isProposalElement = true;
-            }
-            return isProposalElement;
-        }
-
-        private String getNegativeSidePointsNumSequence(String element, VTDNav vtdNav, List<Integer> indexList) throws NavException {
-            String seqType = null;
-            if (element.equals(POINT) && indexList.size() > 0) {
-                vtdNav.recoverNode(indexList.get(indexList.size() - 1));
-                if (vtdNav.toElement(VTDNav.NEXT_SIBLING)) {
-                    if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
-                        seqType = vtdNav.toString((int) vtdNav.getContentFragment(), (int) (vtdNav.getContentFragment() >> 32));
-                    }
-                }
-            }
-            return seqType;
-        }
-
-        private byte[] updatePointNumbersDefault(VTDNav vtdNav, XMLModifier xmlModifier)
-                throws NavException, ModifyException, IOException, TranscodeException {
-            LOG.info("points default numbering");
-            int currentIndex = vtdNav.getCurrentIndex();
+    }
+    
+    private void pointNumProcessing(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException, TranscodeException, IOException {
+        if (hasAffectedAttribute(vtdNav, xmlModifier)) {
             if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
-                renumberPoints(vtdNav, xmlModifier);
-                vtdNav.recoverNode(currentIndex);
-            }
-            return toByteArray(xmlModifier);
-        }
-
-        private void renumberPoints(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, PilotException, ModifyException {
-            long number = 1L;
-            int parentIndex = getParentIndex(vtdNav, POINT);
-            String seqType = getPointNumSequence(vtdNav);
-            if (vtdNav.toElement(VTDNav.FIRST_CHILD, POINT)) {
-                do {
-                    int tempIndex = getParentIndex(vtdNav, POINT);
-                    if (tempIndex != parentIndex) {
-                        break;
-                    }
-
-                    // check if it has num element
-                    String num = getPointNumber((int) number++, seqType);
-                    byte[] elementeNum = seqType == "-" ? num.getBytes(UTF_8) : ("(" + num + ")").getBytes(UTF_8);
-                    int index = vtdNav.getCurrentIndex();
-                    elementeNum = buildNumElement(vtdNav, xmlModifier, elementeNum);
-                    vtdNav.recoverNode(index);
-                    xmlModifier.insertAfterHead(elementeNum);
+                int currentIndex = vtdNav.getCurrentIndex();
+                String elementType = checkFirstChildType(vtdNav, INDENT) ? INDENT : POINT;
+                if (!containsProposalElement(elementType, vtdNav)) {
+                    renumberPointsOrIndents(vtdNav, xmlModifier, numberingConfigs, elementType);
                 }
-                while (vtdNav.toElement(VTDNav.NEXT_SIBLING));
+                vtdNav.recoverNode(currentIndex);
+                elementNumberProcess(elementType, vtdNav, xmlModifier);
             }
         }
+    }
 
-        private int getParentIndex(VTDNav vtdNav, String element) throws NavException {
-            int index = vtdNav.getCurrentIndex();
-            AutoPilot ap = new AutoPilot(vtdNav);
-            ap.selectElement(element);
-            int parentIndex = 0;
-            while (ap.iterate()) {
-                if (vtdNav.toElement(VTDNav.PARENT)) {
-                    parentIndex = vtdNav.getCurrentIndex();
+    private void updateMandatePointsNumbering(VTDNav vtdNav, XMLModifier xmlModifier, List<NumberingConfig> numberingConfigs)
+            throws NavException, ModifyException {
+        if (!isProposalElement(vtdNav)) {
+            int currentIndex = vtdNav.getCurrentIndex();
+            renumberPointsOrIndents(vtdNav, xmlModifier, numberingConfigs, checkFirstChildType(vtdNav, INDENT) ? INDENT : POINT);
+            vtdNav.recoverNode(currentIndex);
+        }
+    }
+    
+    private boolean isProposalElement(VTDNav vtdNav) throws NavException {
+        boolean isProposalElement = false;
+        int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
+        if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(EC)) {
+            isProposalElement = true;
+        }
+        return isProposalElement;
+    }
+
+    private boolean containsProposalElement(String element, VTDNav vtdNav) throws NavException {
+        boolean containsProposalElement = false;
+        int currentIndex = vtdNav.getCurrentIndex();
+        AutoPilot autoPilot = new AutoPilot(vtdNav);
+        autoPilot.selectElement(element);
+        while (!containsProposalElement && autoPilot.iterate()) {
+            containsProposalElement = isProposalElement(vtdNav);
+        }
+        vtdNav.recoverNode(currentIndex);
+        return containsProposalElement;
+    }
+
+    /**
+     * Default numbering which do only the incremental. Ex: 1, 2,3 etc, or a, b, c, etc.
+     */
+    private byte[] updatePointAndIndentNumbersDefault(VTDNav vtdNav, XMLModifier xmlModifier, List<NumberingConfig> numberingConfigs)
+            throws NavException, ModifyException, IOException, TranscodeException {
+        LOG.debug("points default numbering");
+        int currentIndex = vtdNav.getCurrentIndex();
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, LIST)) {
+            String elementType = checkFirstChildType(vtdNav, INDENT) ? INDENT : POINT;
+            if (!containsProposalElement(elementType, vtdNav)) {
+                renumberPointsOrIndents(vtdNav, xmlModifier, numberingConfigs, elementType);
+            }
+        }
+        vtdNav.recoverNode(currentIndex);
+        return toByteArray(xmlModifier);
+    }
+
+    /**
+     * Based on the depth we apply the rules for numbering
+     */
+    private void renumberPointsOrIndents(VTDNav vtdNav, XMLModifier xmlModifier, List<NumberingConfig> numberingConfigs, String point) throws NavException, ModifyException {
+        long number = 1L;
+        int parentIndex = getParentIndex(vtdNav, point);
+        NumberingConfig numberingConfig = getNumberingConfigForMultilevel(vtdNav, numberingConfigs);
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, point)) {
+            do {
+                //if next sibling is not child of the same parent -> exit
+                int tempIndex = getParentIndex(vtdNav, point);
+                if (tempIndex != parentIndex) {
                     break;
                 }
-            }
-            vtdNav.recoverNode(index);
-            return parentIndex;
-        }
-
-
-        private String getPointNumSequence(VTDNav vtdNav) throws NavException {
-            int index = vtdNav.getCurrentIndex();
-            int pointDepth = 1;
-            String pointSequence = "#";
-            boolean isNumSequencePresent = false;
-            //If points are already there than need to check the num sequence of first point
-
-                if(vtdNav.toElement(VTDNav.FIRST_CHILD,POINT)){
-                    if(vtdNav.toElement(VTDNav.FIRST_CHILD,NUM)){
-                        String numSeq = vtdNav.toString((int)vtdNav.getContentFragment(),(int)(vtdNav.getContentFragment() >> 32));
-                        if(numSeq == "(a)"  || numSeq == "(i)" || numSeq == "-" || numSeq == "(1)" ){
-                            pointSequence = numSeq;
-                            isNumSequencePresent = true;
-                        }
-                    }
-
+                // check if it has num element
+                final String num;
+                switch (point){
+                    case POINT:
+                        num = getPointNumber((int) number++, numberingConfig.getType());
+                        break;
+                    case INDENT:
+                        num = numberingConfig.getSequence();
+                        break;
+                    default:
+                        num = ""; //cannot ever happen
                 }
-            vtdNav.recoverNode(index);
-            //If there are no num sequence is present then have to check for level of points
-            if(!isNumSequencePresent){
-                while (true) {
-                    if (vtdNav.toElement(VTDNav.PARENT)) {
-                        if (vtdNav.matchElement(LIST)) {
-                            pointDepth++;
-                        } else if (vtdNav.matchElement(PARAGRAPH)) {
-                            break;
-                        }
-                    }
-                }
-                if (pointDepth == 1) {
-                    pointSequence = "(a)";
-                } else if (pointDepth == 2) {
-                    pointSequence = "(1)";
-                } else if (pointDepth == 3) {
-                    pointSequence = "(i)";
-                } else {
-                    pointSequence = "-";
-                }
-            }
-            vtdNav.recoverNode(index);
-            return pointSequence;
-        }
 
-
-        private byte[] updateParagraphNumbersDefault(VTDNav vtdNav, XMLModifier xmlModifier)
-                throws NavException, ModifyException, IOException, TranscodeException {
-            int currentIndex = vtdNav.getCurrentIndex();
-            long number = 1L;
-            AutoPilot autoPilot = new AutoPilot(vtdNav);
-            autoPilot.selectElement(PARAGRAPH);
-            while (autoPilot.iterate()) {
-                if(isNumElementExists(vtdNav)){
-                byte[] elementeNum = ((number++) + ".").getBytes(UTF_8);
+                byte[] elementeNum = (numberingConfig.getPrefix() + num + numberingConfig.getSuffix()).getBytes(UTF_8);
                 int index = vtdNav.getCurrentIndex();
                 elementeNum = buildNumElement(vtdNav, xmlModifier, elementeNum);
                 vtdNav.recoverNode(index);
                 xmlModifier.insertAfterHead(elementeNum);
-                }
             }
-            vtdNav.recoverNode(currentIndex);
-            return toByteArray(xmlModifier);
+            while (vtdNav.toElement(VTDNav.NEXT_SIBLING));
         }
+    }
 
-        private char updateArticleNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide)
-                throws NavException, ModifyException {
-            byte[] articleNum;
-            if (onNegativeSide) {
-                articleNum = elementNumber.getBytes(UTF_8);
-            } else {
-                articleNum = (elementNumber + (alphaNumber <= 'z' ? alphaNumber++ : '#')).getBytes(UTF_8);
+    private int getParentIndex(VTDNav vtdNav, String element) throws NavException {
+        int index = vtdNav.getCurrentIndex();
+        AutoPilot ap = new AutoPilot(vtdNav);
+        ap.selectElement(element);
+        int parentIndex = 0;
+        while (ap.iterate()) {
+            if (vtdNav.toElement(VTDNav.PARENT)) {
+                parentIndex = vtdNav.getCurrentIndex();
+                break;
             }
-            updateNumElement(vtdNav, xmlModifier, articleNum);
-            return alphaNumber;
         }
+        vtdNav.recoverNode(index);
+        return parentIndex;
+    }
 
-        private char updateRecitalNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide)
-                throws NavException, ModifyException {
-            byte[] recitalNum;
-            if (onNegativeSide) {
-                recitalNum = ("(" + elementNumber + ")").getBytes(UTF_8);
-            } else {
-                recitalNum = (elementNumber.replace(')', (alphaNumber <= 'z' ? alphaNumber++ : '#')) + ")").getBytes(UTF_8);
+    private boolean checkFirstChildType(VTDNav vtdNav, String type) throws NavException {
+        boolean result = false;
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
+            if (vtdNav.toRawString(vtdNav.getCurrentIndex()).equalsIgnoreCase(type)) {
+                result = true;
             }
-            updateNumElement(vtdNav, xmlModifier, recitalNum);
-            return alphaNumber;
+            vtdNav.toElement(VTDNav.PARENT);
         }
+        return result;
+    }
+    
+    /**
+     * Based on the depth of the actual element we get the appropriate numberingConfig.
+     * POINT has numberingType goOnWithChildren MULTILEVEL, but the indent points have different numberingType based on the depth.
+     * Example of point structure:
+     * 1.
+     *  (a) first depth of the list
+     *      (1) second depth of the list
+     *          (i) thirst depth of the list
+     *              - fourth depth of the list
+     *
+     * <tocItem>
+     *     <aknTag>point</aknTag>
+     *     <numberingType>MULTILEVEL</numberingType>
+     * </tocItem>
+     *
+     * <numberingConfig>
+     *     <type>MULTILEVEL</type>
+     *     <levels>
+     *         <level>
+     *             <depth>1</depth>
+     *             <numberingType>ALPHA</numberingType>
+     *         </level>
+     *         <level>
+     *             <depth>2</depth>
+     *             <numberingType>ARABIC-PARENTHESIS</numberingType>
+     *         </level>
+     *         <level>
+     *             <depth>3</depth>
+     *             <numberingType>ROMAN-LOWER</numberingType>
+     *         </level>
+     *         <level>
+     *             <depth>4</depth>
+     *             <numberingType>INDENT</numberingType>
+     *         </level>
+     *     </levels>
+     * </numberingConfig>
+     *
+     * If the point is not MULTILEVEL then all the levels will have same numbering configuration
+     */
+    private NumberingConfig getNumberingConfigForMultilevel(VTDNav vtdNav, List<NumberingConfig> numberingConfigs) throws NavException {
+        int index = vtdNav.getCurrentIndex();
+        int pointDepth = VTDUtils.getPointDepth(vtdNav,1);
+        final NumberingConfig numberingConfig;
+        final int calculatedDepth = pointDepth;
+        NumberingType numberingType = getNumberingTypeByDepth(getNumberingConfig(numberingConfigs, NumberingType.MULTILEVEL), calculatedDepth);
+        numberingConfig = getNumberingConfig(numberingConfigs, numberingType);
+        vtdNav.recoverNode(index);
+        return numberingConfig;
+    }
 
-        private char updateParagraphNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide) throws NavException, ModifyException{
-            byte[] paraNum;
-            if (onNegativeSide) {
-                paraNum = (elementNumber + ".").getBytes(UTF_8);
-            } else {
-                paraNum = (elementNumber.replace('.', (alphaNumber <= 'z' ? alphaNumber++ : '#')) + ".").getBytes(UTF_8);
-            }
+    private byte[] updateParagraphNumbersDefault(VTDNav vtdNav, XMLModifier xmlModifier, List<TocItem> tocItems)
+            throws NavException, ModifyException, IOException, TranscodeException {
+        int currentIndex = vtdNav.getCurrentIndex();
+        NumberingType numberingType = getTocItemByName(tocItems, PARAGRAPH).getNumberingType();
+        NumberingConfig numberingConfig = getNumberingConfig(numberingConfigs, numberingType);
+        long number = 1L;
+        AutoPilot autoPilot = new AutoPilot(vtdNav);
+        autoPilot.selectElement(PARAGRAPH);
+        while (autoPilot.iterate()) {
             if (isNumElementExists(vtdNav)) {
-                updateNumElement(vtdNav, xmlModifier, paraNum);
+                byte[] elementeNum = (numberingConfig.getPrefix() + getElementNumeral(number++, numberingType) + numberingConfig.getSuffix()).getBytes(UTF_8);
+                int index = vtdNav.getCurrentIndex();
+                elementeNum = buildNumElement(vtdNav, xmlModifier, elementeNum);
+                vtdNav.recoverNode(index);
+                xmlModifier.insertAfterHead(elementeNum);
             }
-            return alphaNumber;
         }
-
-        private char updatePointNumbers(String seqType, String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide)
-                throws NavException, ModifyException {
-            String pointNum;
-            if (onNegativeSide && seqType != null) {
-                String num = getPointNumber(Math.abs(Integer.parseInt(elementNumber)), seqType);
-                pointNum = ("(" + (num == "-" ? num : "-" + num + ")"));
-            } else {
-                if(elementNumber != null && elementNumber != "") {
-                    pointNum = (elementNumber.replace(')', (alphaNumber <= 'z' ? alphaNumber++ : '#')) + ")");
-                    if(elementNumber.indexOf("-") != -1) {
-                        pointNum = pointNum.substring(0, pointNum.length() -1);
-                    }
-                } else {
-                    pointNum = ("(" + (alphaNumber <= 'z' ? alphaNumber++ : '#') + ")");
-                }
-            }
-            updateNumElement(vtdNav, xmlModifier, pointNum.getBytes(UTF_8));
-            return alphaNumber;
+        vtdNav.recoverNode(currentIndex);
+        return toByteArray(xmlModifier);
+    }
+    
+    private char updateArticleNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide)
+            throws NavException, ModifyException {
+        byte[] articleNum;
+        if (onNegativeSide) {
+            articleNum = elementNumber.getBytes(UTF_8);
+        } else {
+            articleNum = (elementNumber + (alphaNumber <= 'z' ? alphaNumber++ : '#')).getBytes(UTF_8);
         }
-
-        private String getPointNumber(int number, String seqType) {
-            String pointNum = "#";
-            if (seqType != null) {
-                switch (seqType) {
-                    case "(i)":
-                        pointNum = join("", nCopies(number, "i"))
-                                .replace("iiiii", "v")
-                                .replace("iiii", "iv")
-                                .replace("vv", "x")
-                                .replace("viv", "ix")
-                                .replace("xxxxx", "l")
-                                .replace("xxxx", "xl")
-                                .replace("ll", "c")
-                                .replace("lxl", "xc")
-                                .replace("ccccc", "d")
-                                .replace("cccc", "cd")
-                                .replace("dd", "m")
-                                .replace("dcd", "cm");
-                        break;
-                    case "(a)":
-                        pointNum = number > 0 && number < 27 ? String.valueOf((char) (number + 96)) : "#";
-                        break;
-                    case "-":
-                        pointNum = "-";
-                        break;
-                    case "(1)":
-                        pointNum = "" + number;
-                        break;
-                }
-            }
-            return pointNum;
+        updateNumElement(vtdNav, xmlModifier, articleNum);
+        return alphaNumber;
+    }
+    
+    private char updateRecitalNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, NumberingConfig numberingConfig, boolean onNegativeSide)
+            throws NavException, ModifyException {
+        byte[] recitalNum;
+        final String prefix = numberingConfig.getPrefix();
+        final String suffix = numberingConfig.getSuffix();
+        if (onNegativeSide) {
+            recitalNum = (prefix + elementNumber + suffix).getBytes(UTF_8);
+        } else {
+            recitalNum = (elementNumber.replace(suffix.charAt(0), (alphaNumber <= 'z' ? alphaNumber++ : '#')) + suffix).getBytes(UTF_8);
         }
-
-        private void updateNumElement(VTDNav vtdNav, XMLModifier xmlModifier, byte[] elementNum) throws NavException, ModifyException {
-            byte[] element;
-            int currentIndex = vtdNav.getCurrentIndex();
-            element = buildNumElement(vtdNav, xmlModifier, elementNum);
-            vtdNav.recoverNode(currentIndex);
-            xmlModifier.insertAfterHead(element);
+        updateNumElement(vtdNav, xmlModifier, recitalNum);
+        return alphaNumber;
+    }
+    
+    private char updateParagraphNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, NumberingConfig numberingConfig, boolean onNegativeSide) throws NavException, ModifyException {
+        byte[] paraNum;
+        final String suffix = numberingConfig.getSuffix();
+        if (onNegativeSide) {
+            paraNum = (elementNumber + suffix).getBytes(UTF_8);
+        } else {
+            paraNum = (elementNumber.replace(suffix.charAt(0), (alphaNumber <= 'z' ? alphaNumber++ : '#')) + suffix).getBytes(UTF_8);
         }
+        if (isNumElementExists(vtdNav)) {
+            updateNumElement(vtdNav, xmlModifier, paraNum);
+        }
+        return alphaNumber;
+    }
 
-        private boolean isElementOriginEC(VTDNav vtdNav) throws NavException {
-            int currentIndex = vtdNav.getCurrentIndex();
-            boolean isOriginEC = false;
-            if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
-                int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
-                if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(LEOS_ORIGIN_ATTR_EC)) {
-                    isOriginEC = true;
+    private char updatePointNumbers(String elementNumber, VTDNav vtdNav, XMLModifier xmlModifier, char alphaNumber, boolean onNegativeSide)
+            throws NavException, ModifyException {
+        String pointNum;
+        //actual point number configuration is extracted based on the point depth, using the MULTILEVEL num. type
+        NumberingType numberingType = getNumberingTypeByDepth(getNumberingConfig(numberingConfigs, NumberingType.MULTILEVEL), VTDUtils.getPointDepth(vtdNav, 0));
+        NumberingConfig pointNumConfig = getNumberingConfig(numberingConfigs, numberingType);
+
+        final String prefix = pointNumConfig.getPrefix();
+        final String suffix = pointNumConfig.getSuffix();
+        
+        if (onNegativeSide) {
+            String num = getPointNumber(Math.abs(Integer.parseInt(elementNumber)), pointNumConfig.getType());
+            pointNum = (prefix + (num == "-" ? num : "-" + num + suffix));
+        } else {
+            if (elementNumber != null && elementNumber != "") {
+                pointNum = suffix.length() != 0 ? elementNumber.replace(suffix.charAt(0), (alphaNumber <= 'z' ? alphaNumber++ : '#')) + suffix : elementNumber;
+                if (elementNumber.indexOf("-") != -1 && !pointNumConfig.getType().equals(NumberingType.INDENT)) {
+                    pointNum = pointNum.substring(0, pointNum.length() - 1);
                 }
             } else {
-                int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
-                if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(LEOS_ORIGIN_ATTR_EC)) {
-                    isOriginEC = true;
-                }
+                pointNum = (prefix + (alphaNumber <= 'z' ? alphaNumber++ : '#') + suffix);
             }
-            vtdNav.recoverNode(currentIndex);
-            return isOriginEC;
         }
-
-        private boolean hasAffectedAttribute(VTDNav vtdNav, XMLModifier xmlModifier)
-                throws NavException, ModifyException {
-            int index = vtdNav.getCurrentIndex();
-            boolean flag;
-            int attributeIndex =vtdNav.getAttrVal(LEOS_AFFECTED_ATTR);
-
-            flag = setFlagAndRemoveAttribute(vtdNav, xmlModifier, LEOS_AFFECTED_ATTR, attributeIndex);
-
-            vtdNav.recoverNode(index);
-            return flag;
-        }
-
-        private boolean hasNumToggledAttribute(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException {
-
-            int index = vtdNav.getCurrentIndex();
-            boolean flag = this.isDefaultEditable;
-            int attributeIndex;
-            if (vtdNav.toElement(VTDNav.FIRST_CHILD, PARAGRAPH)) {
-                do {
-                    int paraIndex = vtdNav.getCurrentIndex();
-                    if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
-                        attributeIndex = vtdNav.getAttrVal(TOGGLED_TO_NUM);
-                        if(!flag){
-                            flag = setFlagAndRemoveAttribute(vtdNav, xmlModifier, TOGGLED_TO_NUM, attributeIndex);
-                        }else{
-                            setFlagAndRemoveAttribute(vtdNav, xmlModifier, TOGGLED_TO_NUM, attributeIndex);
-                        }
-                    }
-                    vtdNav.recoverNode(paraIndex);
-                } while (vtdNav.toElement(VTDNav.NEXT_SIBLING, PARAGRAPH));
-            }
-
-            vtdNav.recoverNode(index);
-            return flag;
-
-        }
-
-        private boolean setFlagAndRemoveAttribute(VTDNav vtdNav, XMLModifier xmlModifier, String affectedAttribute, int attributeIndex) throws NavException, ModifyException {
-            boolean flag = false;
-            if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals("true")) {
-                flag = true;
-                AutoPilot ap = new AutoPilot(vtdNav);
-                ap.selectAttr(affectedAttribute);
-                int attrIndex = ap.iterateAttr();
-                xmlModifier.removeAttribute(attrIndex);
-            }
-            return flag;
-        }
-
-
-        private boolean isNumElementExists(VTDNav vtdNav) throws NavException {
-            int index = vtdNav.getCurrentIndex();
-            boolean exists = false;
-            if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
-                //check if Num is soft deleted
-                exists = true;
-                int attributeIndex = vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR);
-                if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(SoftActionType.DELETE.getSoftAction())) {
-                    exists = false;
-                }
-            }
-            vtdNav.recoverNode(index);
-            return exists;
-        }
-
-        private VTDNav createVTDNav(Object data, String element) {
-            switch (element) {
-            case ARTICLE :
-                try {
-                    if(data instanceof String) {
-
-                        return setupVTDNav(((String)data).getBytes(UTF_8), isNameSpaceEnabled);
-
-                    }else if(data instanceof byte[]) {
-                        return setupVTDNav((byte[])data, isNameSpaceEnabled);
-                    }
-                } catch (NavException e) {
-                    throw new RuntimeException("Unable to perform the renumberArticles operation", e);
-                }
+        updateNumElement(vtdNav, xmlModifier, pointNum.getBytes(UTF_8));
+        return alphaNumber;
+    }
+    
+    private String getPointNumber(int number, NumberingType numberingType) {
+        String pointNum = "#";
+        switch (numberingType) {
+            case ROMAN_LOWER:
+                pointNum = getRomanNumeral(number);
                 break;
-            case RECITAL:
-                try {
-                    if(data instanceof String) {
-
-                        return setupVTDNav(((String)data).getBytes(UTF_8));
-
-                    }else if(data instanceof byte[]) {
-                        return setupVTDNav((byte[])data);
-                    }
-                } catch (NavException e) {
-                    throw new RuntimeException("Unable to perform the renumberRecitals operation", e);
-                }
+            case ALPHA:
+                pointNum = number > 0 && number < 27 ? String.valueOf((char) (number + 96)) : "#";
                 break;
-            }
-            return null;
-
+            case INDENT:
+                pointNum = "-";
+                break;
+            case ARABIC:
+            case ARABIC_PARENTHESIS:
+            case ARABIC_POSTFIX:
+                pointNum = "" + number;
+                break;
+            default:
+                break;
         }
-
-        byte[] renumberElements(String element, String elementNumber , byte[] xmlContent, MessageHelper messageHelper) {
-            this.isNameSpaceEnabled = false;
-            VTDNav vtdNav = createVTDNav(xmlContent, element);
-            long number = 1L;
-            byte[] updatedElement;
-            XMLModifier xmlModifier=null;
-            try {
-                xmlModifier = new XMLModifier(vtdNav);
-                AutoPilot autoPilot = new AutoPilot(vtdNav);
-                autoPilot.selectElement(element);
-                byte[] elementeNum =  null;
-                String recitalNum = null;
-                while (autoPilot.iterate()) {
-                    if(element.equals(ARTICLE)) {
-                        elementeNum = messageHelper
-                                .getMessage("legaltext.article.num", new Object[] { (number++) })
-                                .getBytes(UTF_8);
+        return pointNum;
+    }
+    
+    private String getRomanNumeral(int number) {
+        String pointNum;
+        pointNum = join("", nCopies(number, "i"))
+                .replace("iiiii", "v")
+                .replace("iiii", "iv")
+                .replace("vv", "x")
+                .replace("viv", "ix")
+                .replace("xxxxx", "l")
+                .replace("xxxx", "xl")
+                .replace("ll", "c")
+                .replace("lxl", "xc")
+                .replace("ccccc", "d")
+                .replace("cccc", "cd")
+                .replace("dd", "m")
+                .replace("dcd", "cm");
+        return pointNum;
+    }
+    
+    private void updateNumElement(VTDNav vtdNav, XMLModifier xmlModifier, byte[] elementNum) throws NavException, ModifyException {
+        byte[] element;
+        int currentIndex = vtdNav.getCurrentIndex();
+        element = buildNumElement(vtdNav, xmlModifier, elementNum);
+        vtdNav.recoverNode(currentIndex);
+        xmlModifier.insertAfterHead(element);
+    }
+    
+    private boolean isElementOriginEC(VTDNav vtdNav) throws NavException {
+        int currentIndex = vtdNav.getCurrentIndex();
+        boolean isOriginEC = false;
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
+            int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
+            if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(EC)) {
+                isOriginEC = true;
+            }
+        } else {
+            int attributeIndex = vtdNav.getAttrVal(LEOS_ORIGIN_ATTR);
+            if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(EC)) {
+                isOriginEC = true;
+            }
+        }
+        vtdNav.recoverNode(currentIndex);
+        return isOriginEC;
+    }
+    
+    private boolean hasAffectedAttribute(VTDNav vtdNav, XMLModifier xmlModifier)
+            throws NavException, ModifyException {
+        int index = vtdNav.getCurrentIndex();
+        boolean flag;
+        int attributeIndex = vtdNav.getAttrVal(LEOS_AFFECTED_ATTR);
+        flag = setFlagAndRemoveAttribute(vtdNav, xmlModifier, LEOS_AFFECTED_ATTR, attributeIndex);
+        
+        vtdNav.recoverNode(index);
+        return flag;
+    }
+    
+    private boolean hasNumToggledAttribute(VTDNav vtdNav, XMLModifier xmlModifier) throws NavException, ModifyException {
+        int index = vtdNav.getCurrentIndex();
+        boolean flag = this.isDefaultEditable;
+        int attributeIndex;
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, PARAGRAPH)) {
+            do {
+                int paraIndex = vtdNav.getCurrentIndex();
+                if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
+                    attributeIndex = vtdNav.getAttrVal(TOGGLED_TO_NUM);
+                    if (!flag) {
+                        flag = setFlagAndRemoveAttribute(vtdNav, xmlModifier, TOGGLED_TO_NUM, attributeIndex);
                     } else {
-                        recitalNum = "(" + number++ + ")";
-                        elementeNum = recitalNum.getBytes(UTF_8);
+                        setFlagAndRemoveAttribute(vtdNav, xmlModifier, TOGGLED_TO_NUM, attributeIndex);
                     }
-                    int currentIndex = vtdNav.getCurrentIndex();
-                    updatedElement = buildNumElement(vtdNav, xmlModifier, elementeNum);
-                    vtdNav.recoverNode(currentIndex);
-                    xmlModifier.insertAfterHead(updatedElement);
-
                 }
-                this.isNameSpaceEnabled = true;
-                return toByteArray(xmlModifier);
-            } catch (Exception e) {
-                throw new RuntimeException("Unable to perform the renumberArticles operation", e);
+                vtdNav.recoverNode(paraIndex);
+            } while (vtdNav.toElement(VTDNav.NEXT_SIBLING, PARAGRAPH));
+        }
+        
+        vtdNav.recoverNode(index);
+        return flag;
+    }
+    
+    private boolean setFlagAndRemoveAttribute(VTDNav vtdNav, XMLModifier xmlModifier, String affectedAttribute, int attributeIndex) throws NavException, ModifyException {
+        boolean flag = false;
+        if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals("true")) {
+            flag = true;
+            AutoPilot ap = new AutoPilot(vtdNav);
+            ap.selectAttr(affectedAttribute);
+            int attrIndex = ap.iterateAttr();
+            xmlModifier.removeAttribute(attrIndex);
+        }
+        return flag;
+    }
+    
+    private void removeDepthAttribute(XMLModifier xmlModifier) throws Exception {
+        byte[] xmlContent = toByteArray(xmlModifier);
+        VTDNav vtdNav = setupVTDNav(xmlContent);
+        AutoPilot ap = new AutoPilot(vtdNav);
+        ap.selectElement(LEVEL);
+        while (ap.iterate()) {
+            removeAttribute(vtdNav, xmlModifier, LEOS_DEPTH_ATTR);
+        }
+    }
+    
+    private boolean isNumElementExists(VTDNav vtdNav) throws NavException {
+        int index = vtdNav.getCurrentIndex();
+        boolean exists = false;
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
+            //check if Num is soft deleted
+            exists = true;
+            int attributeIndex = vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR);
+            if (attributeIndex != -1 && vtdNav.toNormalizedString(attributeIndex).equals(SoftActionType.DELETE.getSoftAction())) {
+                exists = false;
             }
-
         }
-
-        void setImportAticleDefaultProperties() {
-            this.isDefaultEditable = true;
-            this.isNameSpaceEnabled = false;
-
-        };
-
-        void resetImportAticleDefaultProperties() {
-            this.isDefaultEditable = false;
-            this.isNameSpaceEnabled = true;
+        vtdNav.recoverNode(index);
+        return exists;
+    }
+    
+    private String getElementNumeral(long number, NumberingType numberingType) {
+        switch (numberingType) {
+            case ROMAN_LOWER:
+                return getRomanNumeral(new Long(number).intValue());
+            case ROMAN_UPPER:
+                return getRomanNumeral(new Long(number).intValue()).toUpperCase();
+            case ALPHA:
+                return  number > 0 && number < 27 ? String.valueOf((char) (number + 96)) : "#";
+            case ARABIC:
+            case ARABIC_POSTFIX:
+            case ARABIC_PARENTHESIS:
+                return new Long(number).toString();
+            default:
+                return new Long(number).toString();
         }
-
+    }
+    
+    void setImportAticleDefaultProperties() {
+        this.isDefaultEditable = true;
+    }
+    
+    void resetImportAticleDefaultProperties() {
+        this.isDefaultEditable = false;
+    }
+    
+    class LevelVO {
+        String levelNum;
+        int levelDepth;
+        
+        public String getLevelNum() {
+            return levelNum;
+        }
+        public void setLevelNum(String levelNum) {
+            this.levelNum = levelNum;
+        }
+        public int getLevelDepth() {
+            return levelDepth;
+        }
+        public void setLevelDepth(int levelDepth) {
+            this.levelDepth = levelDepth;
+        }
+    }
 }

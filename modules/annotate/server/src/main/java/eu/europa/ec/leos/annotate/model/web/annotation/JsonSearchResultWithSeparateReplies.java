@@ -44,10 +44,13 @@ public class JsonSearchResultWithSeparateReplies extends JsonSearchResult {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
     public List<JsonAnnotation> getReplies() {
         return replies;
     }
 
+    @Generated
     public void setReplies(final List<JsonAnnotation> replies) {
         this.replies = replies;
     }

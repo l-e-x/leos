@@ -15,6 +15,7 @@ package eu.europa.ec.leos.services.document;
 
 
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
 import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
 
@@ -28,13 +29,13 @@ public interface ProposalService {
 
     Proposal findProposal(String id);
 
-    Proposal updateProposal(Proposal proposal, ProposalMetadata metadata, boolean major, String comment);
+    Proposal updateProposal(Proposal proposal, ProposalMetadata metadata, VersionType versionType, String comment);
 
     Proposal updateProposal(Proposal proposal, ProposalMetadata metadata);
 
     Proposal addComponentRef(Proposal proposal, String href, LeosCategory leosCategory);
 
-    Proposal updateProposalWithMilestoneComments(Proposal proposal, List<String> milestoneComments, boolean major, String comment);
+    Proposal updateProposalWithMilestoneComments(Proposal proposal, List<String> milestoneComments, VersionType versionType, String comment);
 
     Proposal updateProposalWithMilestoneComments(String proposalId, List<String> milestoneComments);
 
@@ -43,4 +44,8 @@ public interface ProposalService {
     void updateProposalAsync(String id, String comment);
 
     Proposal findProposalByPackagePath(String path);
+
+    Proposal createVersion(String id, VersionType versionType, String comment);
+
+    Proposal findProposalByRef(String ref);
 }

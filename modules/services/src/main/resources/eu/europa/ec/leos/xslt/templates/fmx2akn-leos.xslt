@@ -27,11 +27,21 @@
 2018-04-12 : remove spaces and indentation (xml:output  indent="no" )
 2019-01-11 : correct recitalsIntro in recitals, formulas and signatory
 2019-06-07 : escape " and ' characters. Cleanup extra whitespace in texts elements.
+2019-07-02 : article/alinea - fixed LIST alone inside a PARAGRAPH. Now LIST is created inside a PARAGRAPH together with previous P
+                as SUBPARAGRAPH or an empty SUBPARAGRAPH is there's no previous P (PAR -> SUBPAR + LIST)
+2019-09-27 : escape ‘, ’, “, ”, – and — characters.
+2019-10-03 : manage the indent
 -->
     <xsl:character-map name="special-characters">
         <xsl:output-character character="&#160;" string=" "/>
         <xsl:output-character character="&#34;" string="&amp;quot;"/>
+        <xsl:output-character character="&#8220;" string="&amp;quot;"/>
+        <xsl:output-character character="&#8221;" string="&amp;quot;"/>
         <xsl:output-character character="&#39;" string="&amp;apos;"/>
+        <xsl:output-character character="&#8216;" string="&amp;apos;"/>
+        <xsl:output-character character="&#8217;" string="&amp;apos;"/>
+        <xsl:output-character character="&#8211;" string="&amp;#45;"/>
+        <xsl:output-character character="&#8212;" string="&amp;#45;"/>
     </xsl:character-map>
     <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="no" exclude-result-prefixes="fn" use-character-maps="special-characters"/>
     <xsl:template match="/">
@@ -578,8 +588,23 @@
     <xsl:template match="LIST">
         <!-- The list in an article is included in a paragraph ; the list in a paragraph or in an item is not included in another tag. in the other case, the list is included in an alinea (to validate)-->
         <xsl:choose>
+            <xsl:when test="parent::*/parent::ARTICLE and preceding-sibling::*[1][self::P]">
+                <xsl:element name="paragraph">
+                    <xsl:apply-templates select="preceding-sibling::*[1][self::P]">
+                        <xsl:with-param name="isSubparWithList" select="true()"/>
+                    </xsl:apply-templates>
+                    <xsl:element name="list">
+                        <xsl:apply-templates/>
+                    </xsl:element>
+                </xsl:element>
+            </xsl:when>
             <xsl:when test="parent::*/parent::ARTICLE">
                 <xsl:element name="paragraph">
+                    <xsl:element name="subparagraph">
+                        <xsl:element name="content">
+                            <xsl:element name="p"/>
+                        </xsl:element>
+                    </xsl:element>
                     <xsl:element name="list">
                         <xsl:apply-templates/>
                     </xsl:element>
@@ -778,7 +803,7 @@
                 </xsl:element>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:element name="point">   <!-- temporary changed, after need to be indent -->
+                <xsl:element name="indent">
                     <!-- à revoir -->
                     <xsl:element name="num">-</xsl:element>
                     <xsl:apply-templates/>
@@ -796,7 +821,7 @@
                 </xsl:element>
             </xsl:when>
             <xsl:otherwise>
-                <xsl:element name="point">		<!-- temporary changed, after need to be indent -->
+                <xsl:element name="indent">
                     <xsl:element name="num">
                         <xsl:text> </xsl:text>
                     </xsl:element>
@@ -881,8 +906,27 @@
     </xsl:template>
     <!-- -->
     <xsl:template match="P">
-        <!-- P in alinea :  in article is paragraph ;  in paragraph is subparagraph ; in the other case, is alinea  -->
+        <xsl:param name = "isSubparWithList"/>
+        <!-- P in alinea :  in article is paragraph or subparagraph;  in paragraph is subparagraph ; in the other case, is alinea  -->
         <xsl:choose>
+            <xsl:when test="parent::*/parent::ARTICLE and following-sibling::*[1][self::LIST]">
+                <xsl:if test="$isSubparWithList">
+                    <xsl:element name="subparagraph">
+                        <xsl:choose>
+                            <xsl:when test="not(descendant::LIST or descendant::FORMULA.S or descendant::TBL or descendant::DLIST or descendant::GR.TBL or descendant::GR.SEQ) or QUOT.S">
+                                <xsl:element name="content">
+                                    <xsl:element name="p">
+                                        <xsl:apply-templates/>
+                                    </xsl:element>
+                                </xsl:element>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:apply-templates/>
+                            </xsl:otherwise>
+                        </xsl:choose>
+                    </xsl:element>
+                </xsl:if>
+            </xsl:when>
             <xsl:when test="parent::*/parent::ARTICLE">
                 <!-- hypothesis: ARTICLE is always composed of ALINEA or PARAG -->
                 <xsl:element name="paragraph">

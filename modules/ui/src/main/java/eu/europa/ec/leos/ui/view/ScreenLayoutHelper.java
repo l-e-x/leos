@@ -14,12 +14,13 @@
 package eu.europa.ec.leos.ui.view;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
+import com.vaadin.server.Page;
 import com.vaadin.server.Sizeable.Unit;
 import com.vaadin.ui.AbstractSplitPanel;
 import com.vaadin.ui.HorizontalSplitPanel;
-import eu.europa.ec.leos.ui.component.toc.TableOfContentComponent;
-import eu.europa.ec.leos.web.event.component.LayoutChangeRequestEvent;
+import eu.europa.ec.leos.ui.component.AccordionPane;
+import eu.europa.ec.leos.ui.component.ComparisonComponent;
+import eu.europa.ec.leos.ui.event.toc.TocResizedEvent;
 import eu.europa.ec.leos.web.event.view.PaneAddEvent;
 import eu.europa.ec.leos.web.event.view.PaneEnableEvent;
 import eu.europa.ec.leos.web.ui.component.ContentPane;
@@ -28,69 +29,76 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListener{
+public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListener, AbstractSplitPanel.SplitPositionChangeListener, Page.BrowserWindowResizeListener {
+    private static final long serialVersionUID = -407128199469215051L;
+
     private static final Logger LOG = LoggerFactory.getLogger(ScreenLayoutHelper.class);
 
     private EventBus eventBus;
     private List<HorizontalSplitPanel> splitters;
     private List<PaneSettings> panesList;
+    private static final float UNDEFINED = -1F;
+    private static final float DEFAULT_TOC_WIDTH = 20.0f;
+    private float tocSplitterWidth = UNDEFINED;
+    private float contentSplitterWidth = UNDEFINED;
+    private float tocWidth = UNDEFINED;
+
+    private static final Class TOC = AccordionPane.class;
+    private static final Class CHANGES = ComparisonComponent.class;
+    public static final String TOC_SPLITTER = "TOC_SPLITTER";
+    public static final String CONTENT_SPLITTER = "CONTENT_SPLITTER";
 
     public ScreenLayoutHelper(EventBus eventBus, List<HorizontalSplitPanel> splitters) {
         this.eventBus = eventBus;
-        this.splitters = splitters;
+        this.splitters = splitters == null ? new ArrayList<>() : new ArrayList<>(splitters);
         this.panesList = new ArrayList<>();    // List of panes on the screen, flag enabling them or not
+        Page.getCurrent().addBrowserWindowResizeListener(this);
     }
 
     public void addPane(ContentPane pane, Integer position, Boolean isEnabled) {
-        eventBus.post(new PaneAddEvent(pane.getClass(), pane.getChildClass()));
+        eventBus.post(new PaneAddEvent(pane.getClass()));
         PaneSettings paneSettings = new PaneSettings(pane, position, isEnabled);
         panesList.add(paneSettings);
     }
 
     public boolean isPaneEnabled(Class componentClass) {
-        Optional<PaneSettings> paneSettings = panesList.stream().filter(f -> f.getPane().getClass() == componentClass).findFirst();
-        if (paneSettings.isPresent()) {
-            return paneSettings.get().isEnabled();
-        }        
-        return false;
+        return panesList
+                .stream()
+                .filter(PaneSettings::isEnabled)
+                .map(PaneSettings::getPane)
+                .anyMatch(componentClass::isInstance);
     }
 
-    @Subscribe
-    void changePosition(LayoutChangeRequestEvent event) {
-        ColumnPosition position = event.getPosition();
-        updatedComponentPosition(position, event.getOriginatingComponent());
+    public boolean isTocPaneEnabled() {
+        return isPaneEnabled(TOC);
+    }
+
+    public void changePosition(ColumnPosition position, Class componentClass) {
+        panesList
+                .stream()
+                .filter(f -> componentClass.isInstance(f.getPane()))
+                .forEach(f -> f.setEnabled(position != ColumnPosition.OFF));
         layoutComponents();
         LOG.debug("position changed to {} ...", position);
     }
 
-    private void updatedComponentPosition(ColumnPosition position, Class componentClass){
-        Optional<PaneSettings> paneSettings = panesList.stream().filter(f -> f.getPane().getClass() == componentClass).findFirst();
-        if (paneSettings.isPresent()) {
-            switch (position) {
-                case OFF:
-                    paneSettings.get().setEnabled(false);
-                    break;
-                default:
-                    paneSettings.get().setEnabled(true);
-                    break;
-            }
-        }
-}
     private List<PaneSettings> getSortedEnabledPanes() {
-        List<PaneSettings> enabledPanes = panesList.stream().filter(pane -> pane.isEnabled()).collect(Collectors.toList());
-        Collections.sort(enabledPanes, (f1, f2) -> f1.getPosition().compareTo(f2.getPosition()));
-        return enabledPanes;
+        return panesList
+                .stream()
+                .filter(PaneSettings::isEnabled)
+                .sorted(Comparator.comparing(PaneSettings::getPosition))
+                .collect(Collectors.toList());
     }
 
     public void layoutComponents(){
         for(HorizontalSplitPanel splitPanel:splitters){
             splitPanel.removeAllComponents();
             splitPanel.addSplitterClickListener(this);
+            splitPanel.addSplitPositionChangeListener(this);
         }
 
         placeComponents();
@@ -98,7 +106,6 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
 
     private void placeComponents() {
         List<PaneSettings> panes = getSortedEnabledPanes();
-
         int splitterIndex = splitters.size() - 1;
         int componentIndex =  panes.size() - 1;
 
@@ -118,7 +125,6 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
         } while(componentIndex > 0 );
     }
 
-    @Subscribe
     public void splitterClick(AbstractSplitPanel.SplitterClickEvent event) {
         if (event.isDoubleClick()) {
             //Reset layout pane components position.
@@ -131,16 +137,18 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
         final float splitterSize;
 
         List<PaneSettings> panes = getSortedEnabledPanes();
-        boolean tocPaneEnabled = isTocPaneEnabled();
+        boolean tocPaneEnabled = isPaneEnabled(TOC);
         //we give priority to the first element - left element
         switch(panes.size()){
             case 2:
                 splitterSize = panes.get(0).getPane().getDefaultPaneWidth(2, tocPaneEnabled);
                 break;
             case 3:
-                splitterSize = (indexSplitter == 0) ?
-                                panes.get(0).getPane().getDefaultPaneWidth(3, tocPaneEnabled) :
-                                100f - panes.get(2).getPane().getDefaultPaneWidth(3, tocPaneEnabled);
+                if(indexSplitter == 0) { //for AccordionPane
+                    splitterSize = panes.get(0).getPane().getDefaultPaneWidth(3, tocPaneEnabled);
+                }
+                else 
+                    splitterSize = 100f - panes.get(2).getPane().getDefaultPaneWidth(3, tocPaneEnabled);
                 break;
             default:
                 splitterSize=0f;
@@ -149,8 +157,45 @@ public class ScreenLayoutHelper implements AbstractSplitPanel.SplitterClickListe
         return splitterSize;
     }
 
-    private boolean isTocPaneEnabled() {
-        return panesList.stream().anyMatch(paneSettings -> paneSettings.getPane().getClass().equals(TableOfContentComponent.class) && paneSettings.isEnabled());
+    private float getBrowserWidth() {
+        return Page.getCurrent().getBrowserWindowWidth();
+    }
+
+    private float getSplitWidth (AbstractSplitPanel.SplitPositionChangeEvent event) {
+        if (event.getSplitPositionUnit() == Unit.PERCENTAGE) {
+            return event.getSplitPosition();
+        } else
+            return event.getSplitPosition() / getBrowserWidth() * 100F;
+    }
+
+    public void onSplitPositionChanged(AbstractSplitPanel.SplitPositionChangeEvent event) {
+        if (event.getSource() instanceof HorizontalSplitPanel) {
+            HorizontalSplitPanel panel = (HorizontalSplitPanel) event.getSource();
+            String id = panel.getId();
+            if (CONTENT_SPLITTER.equals(id)) {
+                contentSplitterWidth = getSplitWidth(event);
+            } else if (TOC_SPLITTER.equals(id)) {
+                tocSplitterWidth = getSplitWidth(event);
+            }
+        }
+        if (tocSplitterWidth != UNDEFINED) {
+            if (contentSplitterWidth != UNDEFINED && isPaneEnabled(CHANGES)) {
+                tocWidth = tocSplitterWidth * contentSplitterWidth / 100F;
+            } else {
+                tocWidth = tocSplitterWidth;
+            }
+            sendPositionChangeEvent();
+        }
+    }
+
+    public void browserWindowResized(Page.BrowserWindowResizeEvent browserWindowResizeEvent) {
+        sendPositionChangeEvent();
+    }
+
+    private void sendPositionChangeEvent() {
+        if (tocWidth != UNDEFINED && isPaneEnabled(TOC)) {
+            eventBus.post(new TocResizedEvent(getBrowserWidth() * tocWidth / 100F));
+        }
     }
 
     private class PaneSettings {

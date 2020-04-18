@@ -15,37 +15,77 @@ package eu.europa.ec.leos.services.support.xml;
 
 import com.ximpleware.NavException;
 import com.ximpleware.VTDNav;
+import eu.europa.ec.leos.domain.common.TocMode;
 import eu.europa.ec.leos.model.action.SoftActionType;
 import eu.europa.ec.leos.services.support.ByteArrayBuilder;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.vo.toc.OptionsType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Provider;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.GregorianCalendar;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
 
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.*;
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.HEADING_BYTES;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.HEADING_START_TAG;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.NUM_BYTES;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.NUM_START_TAG;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.XMLID;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.extractNumber;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getFragmentAsString;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getNumSoftActionAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getOriginAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftActionAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftActionRootAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftDateAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftMovedFromAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftMovedToAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.getSoftUserAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.navigateToElementByNameAndId;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupVTDNav;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateOriginAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateXMLIDAttributesInElementContent;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CN;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.EC;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.HEADING;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.INDENT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.INTRO;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEVEL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEVEL_NUM_SEPARATOR;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LIST;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.NUM;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PARAGRAPH;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.POINT;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class XmlTableOfContentHelper {
+@Component
+public class XmlTableOfContentHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(XmlTableOfContentHelper.class);
     
-    static List<TableOfContentItemVO> getAllChildTableOfContentItems(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, boolean simplified)
+    @Autowired
+    protected Provider<StructureContext> structureContextProvider;
+    
+    public static List<TableOfContentItemVO> getAllChildTableOfContentItems(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav contentNavigator, TocMode mode)
             throws NavException {
         int currentIndex = contentNavigator.getCurrentIndex();
         List<TableOfContentItemVO> itemVOList = new ArrayList<>();
         try {
             if (contentNavigator.toElement(VTDNav.FIRST_CHILD)) {
-                addTocItemVoToList(getTocItemType, contentNavigator, itemVOList, simplified);
+                addTocItemVoToList(tocItems, tocRules, contentNavigator, itemVOList, mode);
                 while (contentNavigator.toElement(VTDNav.NEXT_SIBLING)) {
-                    addTocItemVoToList(getTocItemType, contentNavigator, itemVOList, simplified);
+                    addTocItemVoToList(tocItems, tocRules, contentNavigator, itemVOList, mode);
                 }
             }
         } finally {
@@ -57,47 +97,50 @@ class XmlTableOfContentHelper {
 
     static boolean navigateToFirstTocElment(List<TableOfContentItemVO> tableOfContentItemVOs, VTDNav vtdNav) throws NavException {
         TableOfContentItemVO firstTocVO = tableOfContentItemVOs.listIterator().next();
-        return navigateToElementByNameAndId(firstTocVO.getType().getName(), null, vtdNav);
+        return navigateToElementByNameAndId(firstTocVO.getTocItem().getAknTag().value(), null, vtdNav);
     }
 
-    private static void addTocItemVoToList(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, List<TableOfContentItemVO> itemVOList, boolean simplified)
+    private static void addTocItemVoToList(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav contentNavigator, List<TableOfContentItemVO> itemVOList, TocMode mode)
             throws NavException {
-        TableOfContentItemVO tableOfContentItemVO = buildTableOfContentsItemVO(getTocItemType, contentNavigator);
+        TableOfContentItemVO tableOfContentItemVO = buildTableOfContentsItemVO(tocItems, contentNavigator);
         if (tableOfContentItemVO != null) {
-        	List<TableOfContentItemVO> itemVOChildrenList = getAllChildTableOfContentItems(getTocItemType, contentNavigator, simplified);
-            if (tableOfContentItemVO.getType().isToBeDisplayed()) {
-            	if (simplified && tableOfContentItemVO.getType().getName().equalsIgnoreCase(LIST) && !itemVOList.isEmpty()) {
-            		tableOfContentItemVO = itemVOList.get(itemVOList.size() - 1);
-            		tableOfContentItemVO.addAllChildItems(itemVOChildrenList);
-            		return;
-            	} else if (simplified && (tableOfContentItemVO.getType().getName().equalsIgnoreCase(PARAGRAPH) || tableOfContentItemVO.getType().getName().equalsIgnoreCase(POINT))) {
-            		if ((itemVOChildrenList.size() > 1) && (itemVOChildrenList.get(0).getChildItems().isEmpty())) {
-            		    tableOfContentItemVO.setId(itemVOChildrenList.get(0).getId());
-            			itemVOChildrenList.remove(0);
-            		} else if (itemVOChildrenList.size() == 1) {
-            		    tableOfContentItemVO.setId(itemVOChildrenList.get(0).getId());
-            			itemVOChildrenList = itemVOChildrenList.get(0).getChildItems();
-            		}
-            	}
-            	itemVOList.add(tableOfContentItemVO);
-        		tableOfContentItemVO.addAllChildItems(itemVOChildrenList);
+            List<TableOfContentItemVO> itemVOChildrenList = getAllChildTableOfContentItems(tocItems, tocRules, contentNavigator, mode);
+            if ((!TocMode.SIMPLIFIED_CLEAN.equals(mode) || (TocMode.SIMPLIFIED_CLEAN.equals(mode) && tableOfContentItemVO.getTocItem().isDisplay()))
+                    && shouldItemBeAddedToToc(tocItems, tocRules, contentNavigator, tableOfContentItemVO.getTocItem())) {
+                if (TocMode.SIMPLIFIED.equals(mode) || TocMode.SIMPLIFIED_CLEAN.equals(mode)) {
+                    if (getTagValueFromTocItemVo(tableOfContentItemVO).equals(LIST) && !itemVOList.isEmpty()) {
+                        tableOfContentItemVO = itemVOList.get(itemVOList.size() - 1);
+                        tableOfContentItemVO.addAllChildItems(itemVOChildrenList);
+                        return;
+                    } else if (Arrays.asList(PARAGRAPH, POINT, INDENT, LEVEL).contains(getTagValueFromTocItemVo(tableOfContentItemVO))) {
+                        if ((itemVOChildrenList.size() > 1) && (itemVOChildrenList.get(0).getChildItems().isEmpty())) {
+                            tableOfContentItemVO.setId(itemVOChildrenList.get(0).getId());
+                            itemVOChildrenList.remove(0);
+                        } else if (itemVOChildrenList.size() == 1) {
+                            tableOfContentItemVO.setId(itemVOChildrenList.get(0).getId());
+                            itemVOChildrenList = itemVOChildrenList.get(0).getChildItems();
+                        }
+                    }
+                }
+                itemVOList.add(tableOfContentItemVO);
+                tableOfContentItemVO.addAllChildItems(itemVOChildrenList);
             } else if (tableOfContentItemVO.getParentItem() != null) {
-            	tableOfContentItemVO.getParentItem().addAllChildItems(itemVOChildrenList);
+                tableOfContentItemVO.getParentItem().addAllChildItems(itemVOChildrenList);
             } else {
-            	itemVOChildrenList.forEach(childItem -> itemVOList.add(childItem));
+                itemVOChildrenList.forEach(childItem -> itemVOList.add(childItem));
             }
         }
     }
 
-    private static TableOfContentItemVO buildTableOfContentsItemVO(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator) throws NavException {
+    private static TableOfContentItemVO buildTableOfContentsItemVO(List<TocItem> tocItems, VTDNav contentNavigator) throws NavException {
 
         int originalNavigationIndex = contentNavigator.getCurrentIndex();
 
-        // get the type
+        // get the tocItem
         String tagName = contentNavigator.toString(contentNavigator.getCurrentIndex());
-        TocItemType type = getTocItemType.apply(tagName);
+        TocItem tocItem = TocItemUtils.getTocItemByName(tocItems, tagName);
 
-        if (type == null) {
+        if (tocItem == null) {
             // unsupported tag name
             return null;
         }
@@ -117,19 +160,14 @@ class XmlTableOfContentHelper {
         GregorianCalendar softDateAttr = getSoftDateAttribute(contentNavigator);
         String softMovedFrom = getSoftMovedFromAttribute(contentNavigator);
         String softMovedTo = getSoftMovedToAttribute(contentNavigator);
-        
-        //get the preamble formula1
-        Integer formula1TagIndex = getPreambleNonTocElements(VTDNav.FIRST_CHILD, FORMULA, contentNavigator);
-        contentNavigator.recoverNode(originalNavigationIndex);
-        
-        //get the preamble formula2
-        Integer formula2TagIndex = getPreambleNonTocElements(VTDNav.LAST_CHILD, FORMULA, contentNavigator);
-        contentNavigator.recoverNode(originalNavigationIndex);
-        
-        //get the recitals intro
-        Integer introTagIndex = getPreambleNonTocElements(VTDNav.FIRST_CHILD, INTRO, contentNavigator);
-        contentNavigator.recoverNode(originalNavigationIndex);
-        
+
+        // get the intro
+        Integer introTagIndex = null;
+        if (contentNavigator.toElement(VTDNav.FIRST_CHILD, INTRO)) {
+            introTagIndex = contentNavigator.getCurrentIndex();
+            contentNavigator.recoverNode(originalNavigationIndex);
+        }
+
         // get the num
         String number = null;
         Integer numberTagIndex = null;
@@ -164,38 +202,72 @@ class XmlTableOfContentHelper {
             contentNavigator.recoverNode(originalNavigationIndex);
         }
         
+        int elementDepth = getElementDepth(contentNavigator);
+        contentNavigator.recoverNode(originalNavigationIndex);
+        
         //get the content
-        String content = extractContentForTocItemsExceptNumAndHeading(getTocItemType, contentNavigator);
+        String content = extractContentForTocItemsExceptNumAndHeadingAndIntro(tocItems, contentNavigator);
         contentNavigator.recoverNode(originalNavigationIndex);
 
         // build the table of content item and return it
-        return new TableOfContentItemVO(type, elementId, originAttr, number, originNumAttr, heading, numberTagIndex, headingTagIndex,
-                contentNavigator.getCurrentIndex(), formula1TagIndex, formula2TagIndex, introTagIndex, list, listTagIndex, content, softActionAttr,
-                isSoftActionRoot, softUserAttr, softDateAttr, softMovedFrom, softMovedTo, false, numSoftActionAttribute);
+        return new TableOfContentItemVO(tocItem, elementId, originAttr, number, originNumAttr, heading, numberTagIndex, headingTagIndex,
+                introTagIndex, contentNavigator.getCurrentIndex(), list, listTagIndex, content, softActionAttr,
+                isSoftActionRoot, softUserAttr, softDateAttr, softMovedFrom, softMovedTo, false, numSoftActionAttribute, elementDepth);
     }
     
-    private static Integer getPreambleNonTocElements(int direction, String element, VTDNav contentNavigator) throws NavException {
-        Integer elementIndex = null;
-        if (contentNavigator.toElement(direction, element)) {
-            elementIndex = contentNavigator.getCurrentIndex();
+    private static int getElementDepth(VTDNav vtdNav) throws NavException {
+        int depth = 0;
+        if (vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)) {
+            long contentFragment = vtdNav.getContentFragment();
+            String elementNumber = new String(vtdNav.getXML().getBytes((int) contentFragment, (int) (contentFragment >> 32)));
+            if(elementNumber.contains(".")) {
+                String[] levelArr = StringUtils.split(elementNumber, LEVEL_NUM_SEPARATOR);
+                depth = levelArr.length;
+            }
         }
-        return elementIndex;
+        return depth;
     }
-    
-    static byte[] extractLevelNonTocItems(Function<String, TocItemType> getTocItemType, VTDNav vtdNav, TableOfContentItemVO tableOfContentItemVO) throws NavException {
-        byte[] contentTag = extractLevelNonTocItems(getTocItemType, vtdNav);
+
+    private static boolean shouldItemBeAddedToToc(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav vtdNav, TocItem tocItem) throws NavException {
+        boolean addItemToToc = false;
+        if (tocItem.isRoot()) {
+            addItemToToc = tocItem.isDisplay();
+        } else {        
+            TocItem parentTocItem = TocItemUtils.getTocItemByName(tocItems, getParentTagName(vtdNav));
+            if ((parentTocItem != null) && (tocRules.get(parentTocItem) != null)) {
+                addItemToToc = tocRules.get(parentTocItem).contains(tocItem);
+            }
+        }
+        return addItemToToc;
+    }
+
+    private static String getParentTagName(VTDNav vtdNav) throws NavException {
+        String elementTagName = null;
+        int currentIndex = vtdNav.getCurrentIndex();
+        try {
+            if (vtdNav.toElement(VTDNav.PARENT)) {
+                elementTagName = vtdNav.toString(vtdNav.getCurrentIndex());
+            }
+        } finally {
+            vtdNav.recoverNode(currentIndex);
+        }
+        return elementTagName;
+    }
+
+    static byte[] extractLevelNonTocItems(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav vtdNav, TableOfContentItemVO tableOfContentItemVO) throws NavException {
+        byte[] contentTag = extractLevelNonTocItems(tocItems, tocRules, vtdNav);
         if (tableOfContentItemVO.isUndeleted()) {
             contentTag = updateXMLIDAttributesInElementContent(contentTag, "", true);
         }
         return contentTag;
     }
     
-    static byte[] extractLevelNonTocItems(Function<String, TocItemType> getTocItemType, VTDNav vtdNav) throws NavException {
+    static byte[] extractLevelNonTocItems(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav vtdNav) throws NavException {
         ByteArrayBuilder nonTocItems = new ByteArrayBuilder();
         if (vtdNav.toElement(VTDNav.FIRST_CHILD)) {
-            nonTocItems.append(extractNonTocItemExceptNumAndHeading(getTocItemType, vtdNav));
+            nonTocItems.append(extractNonTocItemExceptNumAndHeadingAndIntro(tocItems, tocRules, vtdNav));
             while (vtdNav.toElement(VTDNav.NEXT_SIBLING)) {
-                nonTocItems.append(extractNonTocItemExceptNumAndHeading(getTocItemType, vtdNav));
+                nonTocItems.append(extractNonTocItemExceptNumAndHeadingAndIntro(tocItems, tocRules, vtdNav));
             }
         }
 
@@ -208,13 +280,12 @@ class XmlTableOfContentHelper {
     }
 
     static Boolean checkIfNumberingIsToggled(TableOfContentItemVO tableOfContentItemVO) {
-        if (PARAGRAPH.equals(tableOfContentItemVO.getType().getName()) && tableOfContentItemVO.getParentItem() != null
+        if (PARAGRAPH.equals(tableOfContentItemVO.getTocItem().getAknTag().value()) && tableOfContentItemVO.getParentItem() != null
                 && tableOfContentItemVO.getParentItem().isNumberingToggled() != null) {
             return tableOfContentItemVO.getParentItem().isNumberingToggled();
         }
         return null;
     }
-
 
     static byte[] extractOrBuildNumElement(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO) throws NavException {
         byte[] element = new byte[0];
@@ -222,25 +293,25 @@ class XmlTableOfContentHelper {
 
         if (toggleFlag != null && toggleFlag
                 && (tableOfContentItemVO.getNumber() == null || tableOfContentItemVO.getNumber() == "")) {
-
-            if (LEOS_ORIGIN_ATTR_CN.equals(tableOfContentItemVO.getOriginAttr())) {
-                tableOfContentItemVO.setNumber("#");
-                tableOfContentItemVO.setOriginNumAttr(LEOS_ORIGIN_ATTR_CN);
-
-            } else {
-                List<TableOfContentItemVO> proposalParaVO = new ArrayList();
-                for (TableOfContentItemVO itemVO : tableOfContentItemVO.getParentItem().getChildItems()) {
-                    if (LEOS_ORIGIN_ATTR_EC.equals(itemVO.getOriginAttr())) {
-                        proposalParaVO.add(itemVO);
-                    }
+            List<TableOfContentItemVO> proposalParaVO = new ArrayList<TableOfContentItemVO>();
+            for (TableOfContentItemVO itemVO : tableOfContentItemVO.getParentItem().getChildItems()) {
+                if (EC.equals(itemVO.getOriginAttr())) {
+                    proposalParaVO.add(itemVO);
                 }
-                tableOfContentItemVO.setNumber((proposalParaVO.indexOf(tableOfContentItemVO) + 1) + ".");
-                tableOfContentItemVO.setOriginNumAttr(LEOS_ORIGIN_ATTR_EC);
             }
-
+            if (CN.equals(tableOfContentItemVO.getOriginAttr())
+                    || (EC.equals(tableOfContentItemVO.getOriginAttr())
+                    && SoftActionType.MOVE_FROM.equals(tableOfContentItemVO.getSoftActionAttr()))) {
+                tableOfContentItemVO.setNumber("#");
+                tableOfContentItemVO.setOriginNumAttr(CN);
+            } else {
+                tableOfContentItemVO.setNumber((proposalParaVO.indexOf(tableOfContentItemVO) + 1) + ".");
+                tableOfContentItemVO.setOriginNumAttr(EC);
+                tableOfContentItemVO.setNumSoftActionAttr(SoftActionType.ADD);
+            }
         } else if ((toggleFlag != null && !toggleFlag)
                 && (tableOfContentItemVO.getNumSoftActionAttr() != null && SoftActionType.ADD.equals(tableOfContentItemVO.getNumSoftActionAttr())
-                || LEOS_ORIGIN_ATTR_CN.equals(tableOfContentItemVO.getOriginNumAttr() != null ? tableOfContentItemVO.getOriginNumAttr() : tableOfContentItemVO.getOriginAttr()))) {
+                || CN.equals(tableOfContentItemVO.getOriginNumAttr() != null ? tableOfContentItemVO.getOriginNumAttr() : tableOfContentItemVO.getOriginAttr()))) {
             tableOfContentItemVO.setNumber(null);
             return element;
         }
@@ -250,11 +321,15 @@ class XmlTableOfContentHelper {
         return element;
     }
 
+    public static String getTagValueFromTocItemVo(TableOfContentItemVO tableOfContentItemVO) {
+        return tableOfContentItemVO.getTocItem().getAknTag().value();
+    }
+
     private static byte[] createNumBytes(VTDNav contentNavigator, TableOfContentItemVO parentTOC) throws NavException {
         byte[] element;
-        StringBuilder item = new StringBuilder(StringUtils.capitalize(parentTOC.getType().getName()));
+        StringBuilder item = new StringBuilder(StringUtils.capitalize(parentTOC.getTocItem().getAknTag().value()));
         byte[] numBytes;
-        if (parentTOC.getType().hasNumWithType()) {
+        if (parentTOC.getTocItem().isNumWithType()) {
             numBytes = item.append(" ").append(extractNumber(parentTOC.getNumber())).toString().getBytes(UTF_8);
         } else {
             numBytes = (extractNumber(parentTOC.getNumber())).getBytes(UTF_8);
@@ -273,7 +348,7 @@ class XmlTableOfContentHelper {
 
     static byte[] extractOrBuildHeaderElement(VTDNav contentNavigator, TableOfContentItemVO parentTOC) throws NavException, UnsupportedEncodingException {
         byte[] element = new byte[0];
-        if (parentTOC.getHeading() != null) {
+        if (parentTOC.getHeading() != null && (parentTOC.getTocItem().getItemHeading() != OptionsType.OPTIONAL || (parentTOC.getTocItem().getItemHeading() == OptionsType.OPTIONAL && !parentTOC.getHeading().trim().isEmpty()))) {
             if (parentTOC.getHeadingTagIndex() != null) {
                 contentNavigator.recoverNode(parentTOC.getHeadingTagIndex());
                 byte[] headingTag = getStartTagAndRemovePrefix(contentNavigator, parentTOC);
@@ -293,14 +368,13 @@ class XmlTableOfContentHelper {
         return xmlTag;
     }
     
-    private static byte[] extractNonTocItemExceptNumAndHeading(Function<String, TocItemType> getTocItemType, VTDNav vtdNav) throws NavException {
-
+    private static byte[] extractNonTocItemExceptNumAndHeadingAndIntro(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav vtdNav) throws NavException {
         String tagName = vtdNav.toString(vtdNav.getCurrentIndex());
-        TocItemType type = getTocItemType.apply(tagName);
-        if (type == null && (!tagName.equals(NUM) && (!tagName.equals(HEADING)))) {
+        TocItem tocItem = TocItemUtils.getTocItemByName(tocItems, tagName);
+        if ((tocItem == null || !shouldItemBeAddedToToc(tocItems, tocRules, vtdNav, tocItem)) &&
+                (!tagName.equals(NUM) && !tagName.equals(HEADING) && !tagName.equals(INTRO))) {
             return getTagWithContent(vtdNav);
         }
-
         return new byte[0];
     }
 
@@ -309,17 +383,40 @@ class XmlTableOfContentHelper {
         return vtdNav.getXML().getBytes((int) fragment, (int) (fragment >> 32));
     }
     
-    private static String extractContentForTocItemsExceptNumAndHeading(Function<String, TocItemType> getTocItemType, VTDNav vtdNav) throws NavException {
+    private static String extractContentForTocItemsExceptNumAndHeadingAndIntro(List<TocItem> tocItems, VTDNav vtdNav) throws NavException {
         String tagName = vtdNav.toString(vtdNav.getCurrentIndex());
-        TocItemType type = getTocItemType.apply(tagName);
+        TocItem tocItem = TocItemUtils.getTocItemByName(tocItems, tagName);
         String elementName = vtdNav.toString(vtdNav.getCurrentIndex());
         
-        if (elementName.equalsIgnoreCase(type.getName()) &&
-                (vtdNav.toElement(VTDNav.FIRST_CHILD, HEADING) || vtdNav.toElement(VTDNav.FIRST_CHILD, NUM))) {
-            vtdNav.toElement(VTDNav.NEXT_SIBLING);
-            LOG.trace("extractContentForTocItemsExceptNumAndHeading - Skipping {} tag for {}", vtdNav.toString(vtdNav.getCurrentIndex()), type.getName());
+        if (elementName.equalsIgnoreCase(tocItem.getAknTag().value()) &&
+                (vtdNav.toElement(VTDNav.FIRST_CHILD, HEADING) || vtdNav.toElement(VTDNav.FIRST_CHILD, NUM)
+                        || vtdNav.toElement(VTDNav.FIRST_CHILD, INTRO))) {
+            if(!vtdNav.toElement(VTDNav.NEXT_SIBLING))
+                return StringUtils.EMPTY;
+            LOG.trace("extractContentForTocItemsExceptNumAndHeading - Skipping {} tag for {}", vtdNav.toString(vtdNav.getCurrentIndex()), tocItem.getAknTag().value());
         } 
-        
         return new String(getTagWithContent(vtdNav), UTF_8);
+    }
+    
+    public List<TableOfContentItemVO> buildTableOfContent(String startingNode, byte[] xmlContent, TocMode mode) {
+        LOG.trace("Start building the table of content");
+        long startTime = System.currentTimeMillis();
+        List<TableOfContentItemVO> itemVOList = new ArrayList<>();
+        try {
+            VTDNav contentNavigator = setupVTDNav(xmlContent);
+            
+            if (contentNavigator.toElement(VTDNav.FIRST_CHILD, startingNode)) {
+                List<TocItem> tocItems = structureContextProvider.get().getTocItems();
+                Map<TocItem, List<TocItem>> tocRules = structureContextProvider.get().getTocRules();
+                itemVOList = getAllChildTableOfContentItems(tocItems, tocRules, contentNavigator, mode);
+            }
+            
+        } catch (Exception e) {
+            LOG.error("Unable to build the Table of content item list", e);
+            throw new RuntimeException("Unable to build the Table of content item list", e);
+        }
+        
+        LOG.trace("Build table of content completed in {} ms", (System.currentTimeMillis() - startTime));
+        return itemVOList;
     }
 }

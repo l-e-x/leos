@@ -13,38 +13,44 @@
  */
 package eu.europa.ec.leos.ui.wizard.document;
 
-import com.vaadin.server.AbstractErrorMessage;
-import com.vaadin.shared.ui.ErrorLevel;
-import com.vaadin.server.UserError;
-import com.vaadin.shared.ui.MarginInfo;
-import com.vaadin.ui.*;
-import com.vaadin.v7.data.Item;
-import com.vaadin.v7.data.Property;
-import com.vaadin.v7.data.util.HierarchicalContainer;
-import com.vaadin.v7.event.FieldEvents;
-import com.vaadin.v7.shared.ui.label.ContentMode;
-import com.vaadin.v7.ui.*;
-import com.vaadin.v7.ui.Tree;
-import com.vaadin.v7.ui.AbstractTextField;
-import com.vaadin.v7.ui.HorizontalLayout;
-import com.vaadin.v7.ui.Label;
-import com.vaadin.v7.ui.ListSelect;
-import com.vaadin.v7.ui.TextField;
-import com.vaadin.v7.ui.VerticalLayout;
-import eu.europa.ec.leos.domain.vo.DocumentVO;
-import eu.europa.ec.leos.ui.wizard.WizardStep;
-import eu.europa.ec.leos.vo.catalog.CatalogItem;
-import eu.europa.ec.leos.i18n.MessageHelper;
-import eu.europa.ec.leos.web.ui.converter.CatalogUtil;
-import eu.europa.ec.leos.web.ui.themes.LeosTheme;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import com.vaadin.icons.VaadinIcons;
+import com.vaadin.server.AbstractErrorMessage;
+import com.vaadin.server.UserError;
+import com.vaadin.shared.ui.ErrorLevel;
+import com.vaadin.shared.ui.MarginInfo;
+import com.vaadin.shared.ui.ValueChangeMode;
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomComponent;
+import com.vaadin.ui.Panel;
+import com.vaadin.ui.TextField;
+import com.vaadin.v7.data.Item;
+import com.vaadin.v7.data.Property;
+import com.vaadin.v7.data.util.HierarchicalContainer;
+import com.vaadin.v7.shared.ui.label.ContentMode;
+import com.vaadin.v7.ui.AbstractSelect;
+import com.vaadin.v7.ui.HorizontalLayout;
+import com.vaadin.v7.ui.Label;
+import com.vaadin.v7.ui.ListSelect;
+import com.vaadin.v7.ui.Tree;
+import com.vaadin.v7.ui.VerticalLayout;
+
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+import eu.europa.ec.leos.i18n.MessageHelper;
+import eu.europa.ec.leos.ui.wizard.WizardStep;
+import eu.europa.ec.leos.vo.catalog.CatalogItem;
+import eu.europa.ec.leos.web.ui.converter.CatalogUtil;
+import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 
 class TemplateSelectionStep extends CustomComponent implements WizardStep {
 
@@ -149,7 +155,7 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
     private Button buildExpandButton() {
         // expand tree button
         final Button expandButton = new Button();
-        expandButton.setData(Boolean.TRUE);
+        expandButton.setData(Boolean.FALSE);
         expandButton.setDescription(messageHelper.getMessage("wizard.document.create.template.expand"));
         expandButton.setIcon(LeosTheme.TREE_EXPAND_ICON_16);
         expandButton.addClickListener(new Button.ClickListener() {
@@ -172,47 +178,45 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
                     expandButton.setDescription(messageHelper.getMessage("wizard.document.create.template.expand"));
                 }
             }
-
-            private void expandEnabledItems(Collection<?> itemIds) {
-                for (Object itemId : itemIds) {
-                    if (itemId != null) {
-                        Item item = catalogContainer.getItem(itemId);
-                        if (item != null) {
-                            Boolean enabled = (Boolean) item.getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue();
-                            if (Boolean.TRUE.equals(enabled)) {
-                                // expand only enabled items
-                                boolean expanded = tree.expandItem(itemId);
-                                if (expanded) {
-                                    // recursively expand item children
-                                    expandEnabledItems(tree.getChildren(itemId));
-                                }
-                            } else {
-                                // collapse disabled items
-                                tree.collapseItemsRecursively(itemId);
-                            }
-                        }
-                    }
-                }
-            }
         });
 
         return expandButton;
     }
-
+    
+    private void expandEnabledItems(Collection<?> itemIds) {
+        for (Object itemId : itemIds) {
+            if (itemId != null) {
+                Item item = catalogContainer.getItem(itemId);
+                if (item != null) {
+                    Boolean enabled = (Boolean) item.getItemProperty(CatalogUtil.ENABLED_PROPERTY).getValue();
+                    if (Boolean.TRUE.equals(enabled)) {
+                        // expand only enabled items
+                        boolean expanded = tree.expandItem(itemId);
+                        if (expanded) {
+                            // recursively expand item children
+                            expandEnabledItems(tree.getChildren(itemId));
+                        }
+                    } else {
+                        // collapse disabled items
+                        tree.collapseItemsRecursively(itemId);
+                    }
+                }
+            }
+        }
+    }
+    
     private TextField buildFilterField() {
         // filter input field
-        TextField filterField = new TextField(messageHelper.getMessage("wizard.document.create.template.type"));
+        TextField filterField = new TextField();
         filterField.setWidth("100%");
-
+        filterField.setIcon(VaadinIcons.SEARCH);
+        filterField.addStyleName("inline-icon");
+        filterField.setPlaceholder(messageHelper.getMessage("wizard.document.create.template.type.prompt"));
         // instant filtering on text input
-        filterField.setTextChangeEventMode(AbstractTextField.TextChangeEventMode.LAZY);
-        filterField.setTextChangeTimeout(200);
-        filterField.addTextChangeListener(new FieldEvents.TextChangeListener() {
-            private static final long serialVersionUID = -1463898400639639733L;
-
-            @Override
-            public void textChange(FieldEvents.TextChangeEvent event) {
-                String filter = event.getText();
+        filterField.setValueChangeMode(ValueChangeMode.LAZY);
+        filterField.setValueChangeTimeout(200);
+        filterField.addValueChangeListener(event -> {
+                String filter = event.getValue();
                 LOG.trace("Filter text changed: text='{}'", filter);
                 // filter catalog container
                 catalogContainer.removeAllContainerFilters();
@@ -222,13 +226,13 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
                     // if adding additional filters, only items accepted by all filters are visible.
                 }
             }
-        });
+        );
         return filterField;
     }
 
     private void buildLanguageSelector() {
         // language selection
-        langSelector = new ListSelect(messageHelper.getMessage("wizard.document.create.template.language"));
+        langSelector = new ListSelect();
         langSelector.addContainerProperty(CatalogUtil.LANG_PROPERTY, String.class, null);
         langSelector.addContainerProperty(CatalogUtil.NAME_PROPERTY, String.class, null);
         langSelector.setItemCaptionPropertyId(CatalogUtil.NAME_PROPERTY);
@@ -338,6 +342,9 @@ class TemplateSelectionStep extends CustomComponent implements WizardStep {
             }
         });
 
+        // expand it by default
+        expandEnabledItems(tree.rootItemIds());
+       
         // make tree scrollable by wrapping it in a panel
         Panel container = new Panel();
         container.setContent(tree);

@@ -43,6 +43,9 @@ public class JsonSuggestionRejectSuccessResponse extends JsonSuccessResponseBase
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getRejected() {
         return rejected;
     }

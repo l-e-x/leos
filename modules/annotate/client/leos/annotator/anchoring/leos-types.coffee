@@ -40,9 +40,14 @@ class LeosAnchor
 
   toRange: (options = {}) ->
     try
-      range = domAnchorTextQuote.toRange(_getRootElement(@root, @id), this.toSelector(), options)
+      #workaround for dom-anchor-text-position framework bug : https://github.com/tilgovi/dom-anchor-text-position/issues/2
+      rootNode = _getRootElement(@root, @id);
+      dummyTextNode = document.createTextNode("");
+      rootNode.appendChild(dummyTextNode);
+
+      range = domAnchorTextQuote.toRange(rootNode, this.toSelector(), options)
       if range == null
-        range = domAnchorTextPosition.toRange(_getRootElement(@root, @id), this.toSelector(), options)
+        range = domAnchorTextPosition.toRange(rootNode, this.toSelector(), options)
     catch error
       if (error.message.indexOf("Failed to execute 'setEnd' on 'Range'") != -1)
         if !@start? or !@end? or @start == @end == 0

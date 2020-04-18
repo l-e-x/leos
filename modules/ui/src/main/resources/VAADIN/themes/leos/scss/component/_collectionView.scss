@@ -145,11 +145,16 @@ $HEADING_BLUE: #2a78e4;
     
         .milestone-block {
             @extend %add-button;
+            @extend %grid-view;
+            
             .view-milestone-button {
                 font-size: 10px;
                 color: $GREY_COLOUR;
             }    
-            @extend %grid-view;
+            
+            .milestone-exp-btn {
+                padding: 0;
+            }
         }    
 
         .v-caption-leos-caption-on-left + .leos-caption-on-left {

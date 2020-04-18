@@ -32,6 +32,11 @@
         <listener-class>org.apache.chemistry.opencmis.server.impl.CmisRepositoryContextListener</listener-class>
     </listener>
 
+    <context-param>
+        <param-name>org.apache.chemistry.opencmis.REPOSITORY_CONFIG_FILE</param-name>
+        <param-value>/repository_${repo.build.instance}.properties</param-value>
+    </context-param>
+
     <!-- 
         Consider adding an authentication filter that checks the user credentials before
         the request is forwarded to OpenCMIS.

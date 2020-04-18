@@ -23,14 +23,15 @@ import java.util.Map;
 public class ExportResource {
     private final LeosCategory leosCategory;
     private String resourceId;
+    private String href;
     private int docNumber = 0;
     private Map<String, String> componentsIdsMap;
     private List<ExportResource> childResources;
     private ExportOptions exportOptions;
 
     public ExportResource(LeosCategory leosCategory) {
-        setChildResources(new ArrayList());
-        this.componentsIdsMap = new HashMap();
+        setChildResources(new ArrayList<>());
+        this.componentsIdsMap = new HashMap<>();
         this.leosCategory = leosCategory;
     }
 
@@ -84,6 +85,14 @@ public class ExportResource {
         this.resourceId = resourceId;
     }
 
+    public String getHref() {
+        return href;
+    }
+
+    public void setHref(String href) {
+        this.href = href;
+    }
+
     /**
      * @return the leosCategory
      */
@@ -92,7 +101,7 @@ public class ExportResource {
     }
 
     public List<ExportResource> getChildResources(String categoryName) {
-        List<ExportResource> exportResources = new ArrayList();
+        List<ExportResource> exportResources = new ArrayList<>();
         childResources.forEach(childResource -> {
             if (childResource.leosCategory.name().equalsIgnoreCase(categoryName)) {
                 exportResources.add(childResource);

@@ -14,10 +14,13 @@
 package eu.europa.ec.leos.repository.document;
 
 
+import java.util.List;
+
+import org.springframework.security.access.prepost.PostAuthorize;
+
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Proposal;
 import eu.europa.ec.leos.domain.cmis.metadata.ProposalMetadata;
-
-import java.util.List;
 
 /**
  * Proposal Repository interface.
@@ -57,7 +60,7 @@ public interface ProposalRepository {
      */
     Proposal updateProposal(String id, ProposalMetadata metadata);
 
-    Proposal updateProposal(String id, List<String> milestoneComments, byte[] content, boolean major, String comment);
+    Proposal updateProposal(String id, List<String> milestoneComments, byte[] content, VersionType versionType, String comment);
 
     Proposal updateMilestoneComments(String id, List<String> milestoneComments);
 
@@ -76,11 +79,11 @@ public interface ProposalRepository {
      * @param id       the ID of the proposal document to update.
      * @param metadata the metadata of the proposal.
      * @param content  the content of the proposal.
-     * @param major    creates a *major version* of the Proposal, when *true*.
+     * @param versionType  the version type to be created
      * @param comment  the comment of the update, optional.
      * @return the updated proposal document.
      */
-    Proposal updateProposal(String id, ProposalMetadata metadata, byte[] content, boolean major, String comment);
+    Proposal updateProposal(String id, ProposalMetadata metadata, byte[] content, VersionType versionType, String comment);
 
     /**
      * Finds a [Proposal] document with the specified characteristics.
@@ -90,4 +93,13 @@ public interface ProposalRepository {
      * @return the found proposal document.
      */
     Proposal findProposalById(String id, boolean latest);
+
+    /**
+     * Finds a [Proposal] document with the specified characteristics.
+     *
+     * @param ref the reference metadata of the proposal document to retrieve.
+     * @return the found proposal document.
+     */
+    @PostAuthorize("hasPermission(returnObject, 'CAN_READ')")
+    Proposal findProposalByRef(String ref);
 }

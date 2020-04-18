@@ -31,7 +31,7 @@ public class AuthenticatedUser extends User implements UserDetails {
     private Set<GrantedAuthority> authorities;
 
     public AuthenticatedUser(User user) {
-        super(user.getId(), user.getLogin(), user.getName(), user.getEntity(), user.getEmail(),user.getRoles());
+        super(user.getId(), user.getLogin(), user.getName(), user.getEntities(), user.getEmail(), user.getRoles());
     }
 
     @Override

@@ -74,26 +74,32 @@ public class User {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public String getLogin() {
         return login;
     }
 
+    @Generated
     public void setLogin(final String login) {
         this.login = login;
     }
 
+    @Generated
     public Long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final Long newId) {
         this.id = newId;
     }
 
+    @Generated
     public boolean isSidebarTutorialDismissed() {
         return sidebarTutorialDismissed;
     }
 
+    @Generated
     public void setSidebarTutorialDismissed(final boolean sidebarTutorialDismissed) {
         this.sidebarTutorialDismissed = sidebarTutorialDismissed;
     }

@@ -17,6 +17,7 @@ import eu.europa.ec.leos.annotate.model.entity.Document;
 import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Metadata;
 import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.CrudRepository;
 
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.List;
 /**
  * the repository for all {@link Metadata} objects related to documents and groups
  */
-public interface MetadataRepository extends CrudRepository<Metadata, Long> {
+public interface MetadataRepository extends CrudRepository<Metadata, Long>, JpaSpecificationExecutor<Metadata> {
 
     // finding metadata sets assigned to a document, a group and having a given system id
     List<Metadata> findByDocumentAndGroupAndSystemId(Document document, Group group, String systemId);
@@ -37,4 +38,7 @@ public interface MetadataRepository extends CrudRepository<Metadata, Long> {
 
     // finding metadata sets assigned to a document and system, having a certain response status
     List<Metadata> findByDocumentAndSystemIdAndResponseStatus(Document document, String systemId, ResponseStatus responseStatus);
+    
+    // finding all metadata sets having an exact version and one of given metadata IDs
+    List<Metadata> findByVersionAndIdIsIn(String version, List<Long> metadataIds);
 }

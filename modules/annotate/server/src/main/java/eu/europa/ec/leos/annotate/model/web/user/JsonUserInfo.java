@@ -29,25 +29,38 @@ public class JsonUserInfo {
     // -----------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------
+    
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public JsonUserInfo() {
         // default constructor required by JSON deserialisation
+    }
+    
+    public JsonUserInfo(final JsonUserInfo orig) {
+        // copy constructor
+        this.display_name = orig.display_name;
+        this.entity_name = orig.entity_name;
     }
 
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public String getDisplay_name() {
         return display_name;
     }
 
+    @Generated
     public void setDisplay_name(final String display_name) {
         this.display_name = display_name;
     }
 
+    @Generated
     public String getEntity_name() {
         return entity_name;
     }
 
+    @Generated
     public void setEntity_name(final String entity_name) {
         this.entity_name = entity_name;
     }

@@ -60,6 +60,7 @@ public class AnnotationSaveWithDocumentMockTest {
     @InjectMocks
     private AnnotationServiceImpl annotService; // mocked MetadataService is injected
 
+    @SuppressWarnings({"PMD.UnusedPrivateField"})
     @Mock
     private DocumentRepository documentRepos;
 
@@ -72,6 +73,7 @@ public class AnnotationSaveWithDocumentMockTest {
     @Autowired
     private UserGroupRepository userGroupRepos;
 
+    @SuppressWarnings({"PMD.UnusedPrivateField"})
     @Mock
     private MetadataService metadataService;
 

@@ -69,26 +69,32 @@ public class Document {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public Long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final Long newId) {
         this.id = newId;
     }
 
+    @Generated
     public String getTitle() {
         return title;
     }
 
+    @Generated
     public void setTitle(final String title) {
         this.title = title;
     }
 
+    @Generated
     public String getUri() {
         return uri;
     }
 
+    @Generated
     public void setUri(final String uri) {
         this.uri = uri;
     }

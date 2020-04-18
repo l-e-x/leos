@@ -25,12 +25,18 @@ function LeosFrameSync($injector, $rootScope, $window, Discovery, store, bridge)
     bridge.on('stateChangeHandler', function (state) {
       store.hostState = state;
     });
-    bridge.on('reloadAnnotations', function (state) {
+    bridge.on('reloadAnnotations', function () {
       $rootScope.$broadcast('reloadAnnotations');
+    });
+    bridge.on('LEOS_clearSelectedAnnotations', function () {
+      $rootScope.$broadcast('LEOS_clearSelectedAnnotations');
+    });
+    bridge.on('LEOS_changeOperationMode', function (operationMode) {
+      store.operationMode = operationMode;
     });
     // ----------
   }
-};
+}
 
 module.exports = {
   default: LeosFrameSync,

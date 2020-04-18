@@ -18,6 +18,8 @@ import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.helper.TestHelper;
+import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
@@ -29,6 +31,7 @@ import eu.europa.ec.leos.annotate.services.exceptions.CannotAcceptSentSuggestion
 import eu.europa.ec.leos.annotate.services.exceptions.CannotAcceptSuggestionException;
 import eu.europa.ec.leos.annotate.services.exceptions.MissingPermissionException;
 import eu.europa.ec.leos.annotate.services.exceptions.NoSuggestionException;
+import eu.europa.ec.leos.annotate.services.impl.UserDetailsCache;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -65,7 +68,7 @@ public class SuggestionAcceptTest {
 
     @Autowired
     private AnnotationConversionService conversionService;
-    
+
     @Autowired
     @Qualifier("annotationTestRepos")
     private AnnotationTestRepository annotRepos;
@@ -88,6 +91,9 @@ public class SuggestionAcceptTest {
     @Autowired
     private UserGroupRepository userGroupRepos;
 
+    @Autowired
+    private UserDetailsCache userDetailsCache;
+
     // -------------------------------------
     // Cleanup of database content before running new test
     // -------------------------------------
@@ -99,6 +105,8 @@ public class SuggestionAcceptTest {
 
         theUser = userRepos.save(new User(LOGIN));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+
+        userDetailsCache.clear();
     }
 
     @After
@@ -124,6 +132,10 @@ public class SuggestionAcceptTest {
         // retrieve our test annotation and make it become a suggestion
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
         final UserInformation userInfo = new UserInformation(theUser, authority);
+        final UserDetails userDetails = new UserDetails(theUser.getLogin(), theUser.getId(), "a", "b",
+                Arrays.asList(new UserEntity("4", "COMP", "COMP")), "", null);
+        userDetailsCache.cache(theUser.getLogin(), userDetails);
+
         annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
@@ -146,8 +158,10 @@ public class SuggestionAcceptTest {
         Assert.assertNotNull(jsConverted);
         Assert.assertEquals(AnnotationStatus.ACCEPTED, jsConverted.getStatus().getStatus());
         Assert.assertNotNull(jsConverted.getStatus().getUpdated());
-        // corresponds to user of UserInformation instance
-        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUpdated_by());
+
+        // corresponds to user of cached UserDetails instance
+        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUser_info());
+        Assert.assertEquals(userDetails.getEntities().get(0).getName(), jsConverted.getStatus().getUpdated_by());
     }
 
     /**
@@ -155,11 +169,12 @@ public class SuggestionAcceptTest {
      * -> should be prohibited
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testCannotAcceptSentSuggestionInIsc() throws Exception {
 
         final String authority = Authorities.ISC;
         final UserInformation userInfo = new UserInformation(theUser, authority);
-        
+
         // retrieve our test annotation and make it become a suggestion
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
         annotService.createAnnotation(jsAnnot, userInfo);
@@ -198,7 +213,7 @@ public class SuggestionAcceptTest {
 
         final String authority = Authorities.ISC;
         final UserInformation userInfo = new UserInformation(theUser, authority);
-        
+
         // retrieve our test annotation and make it become a suggestion
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
         annotService.createAnnotation(jsAnnot, userInfo);
@@ -214,7 +229,7 @@ public class SuggestionAcceptTest {
 
         // change the user's authority such that he is a LEOS user now
         userInfo.setAuthority(Authorities.EdiT);
-        
+
         // accept it - should be ok
         annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
 
@@ -225,7 +240,7 @@ public class SuggestionAcceptTest {
         Assert.assertEquals(1, tagRepos.count());
         TestHelper.assertHasStatus(annotRepos, jsAnnot.getId(), AnnotationStatus.ACCEPTED, theUser.getId());
     }
-    
+
     /**
      * a suggestion with a reply is accepted
      */
@@ -322,7 +337,7 @@ public class SuggestionAcceptTest {
     public void testAcceptNonSuggestion() throws Exception {
 
         final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
-        
+
         // retrieve our test annotation
         final JsonAnnotation jsAnnot = TestData.getTestAnnotationObject(HYPO_USER_ACCOUNT);
         jsAnnot.setTags(Arrays.asList(Annotation.ANNOTATION_COMMENT)); // -> no suggestion
@@ -355,13 +370,13 @@ public class SuggestionAcceptTest {
     public void testAcceptSuggestionWithUnknownUser() throws Exception {
 
         final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
-        
+
         // retrieve our test annotation
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
         annotService.createAnnotation(jsAnnot, userInfo);
 
         userInfo.setUser(null);
-        
+
         annotService.acceptSuggestionById(jsAnnot.getId(), userInfo);
         Assert.fail("Expected exception for invalid user not received");
     }
@@ -374,7 +389,7 @@ public class SuggestionAcceptTest {
     public void testAcceptSuggestionWithUserNotBeingGroupMember() throws Exception {
 
         final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
-        
+
         // retrieve our test annotation
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(HYPO_USER_ACCOUNT);
         annotService.createAnnotation(jsAnnot, userInfo);

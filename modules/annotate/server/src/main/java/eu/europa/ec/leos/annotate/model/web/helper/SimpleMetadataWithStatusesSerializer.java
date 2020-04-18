@@ -39,8 +39,8 @@ public class SimpleMetadataWithStatusesSerializer extends StdSerializer<SimpleMe
         this(null);
     }
 
-    public SimpleMetadataWithStatusesSerializer(final Class<SimpleMetadataWithStatuses> t) {
-        super(t);
+    public SimpleMetadataWithStatusesSerializer(final Class<SimpleMetadataWithStatuses> smwt) {
+        super(smwt);
     }
 
     // -----------------------------------------------------------

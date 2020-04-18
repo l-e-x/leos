@@ -14,10 +14,11 @@
 'use strict';
 
 let events = require('../../../src/sidebar/events');
+let OPERATION_MODES = require('../../../leos/shared/operationMode');
 
 //@ngInject
 function LeosSuggestionController(
-          $rootScope, $scope, $timeout, $window, analytics, bridge, flash, permissions, api) {
+          $rootScope, $scope, $timeout, $window, analytics, bridge, flash, permissions, api, store) {
   let self = this;
   self.isAccepting = false;
 
@@ -69,24 +70,32 @@ function LeosSuggestionController(
    */
   function init() {
     self.authorize = function(action) {
-      if (action == 'merge_suggestion') {
-        return permissions.getUserPermissions().indexOf('CAN_MERGE_SUGGESTION') !== -1;
-      }
-      return false;
-    }
+      return action === 'merge_suggestion'
+          && permissions.getUserPermissions().indexOf('CAN_MERGE_SUGGESTION') !== -1;
+    };
 
-    self.disabled = function() {
-      return permissions.getHostState();
-    }
+    self.isAcceptDisabled = function() {
+      return store.hostState === 'OPEN'
+          || store.operationMode === OPERATION_MODES.READ_ONLY
+          || self.isAccepting
+    };
 
-    self.getTitle = function() {
-      if (permissions.getHostState()) {
-        return 'Not possible to accept suggestion while editing';
-      }
-      else {
-        return 'Accept suggestion';
-      }
-    }
+    self.isRejectDisabled = function() {
+      return store.operationMode === OPERATION_MODES.READ_ONLY
+          || self.isAccepting
+    };
+
+    self.getAcceptTitle = function() {
+      return self.isAcceptDisabled()
+          ? 'Not possible to accept suggestion while editing'
+          : 'Accept suggestion';
+    };
+
+    self.getRejectTitle = function() {
+      return self.isRejectDisabled()
+          ? 'Not possible to reject suggestion while editing'
+          : 'Reject suggestion';
+    };
 
     self.accept = function($event) {
       $event.stopPropagation(); // To avoid focus on non existing annotation after deletion and scrolling to the top
@@ -151,7 +160,7 @@ function LeosSuggestionController(
 }
 
 module.exports = {
-  controller: LeosSuggestionController,	
+  controller: LeosSuggestionController, 
   controllerAs: 'vm',
   bindings: {
     annotation: '<',

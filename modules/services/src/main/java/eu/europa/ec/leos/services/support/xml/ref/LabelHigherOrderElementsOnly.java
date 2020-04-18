@@ -13,27 +13,46 @@
  */
 package eu.europa.ec.leos.services.support.xml.ref;
 
-import eu.europa.ec.leos.i18n.LanguageHelper;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CHAPTER;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PART;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.SECTION;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.TITLE;
 
 @Component
 public class LabelHigherOrderElementsOnly extends LabelHandler {
 
-    private List<String> higherOrderElements = Arrays.asList("part", "section", "title", "chapter");
-    
-    @Override
-    public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale) {
-        //if all refs are higher than article generate and leave
-        for (TreeNode ref : refs) {
-            if (!higherOrderElements.contains(ref.getType())) {
-                return false;//break and let other rules handle 
-            }
-        }
+    private List<String> NODES_TO_CONSIDER = Arrays.asList(PART, SECTION, TITLE, CHAPTER);
 
+    @Override
+    public boolean canProcess(List<TreeNode> refs) {
+        boolean canProcess = refs.stream()
+                        .allMatch(ref -> NODES_TO_CONSIDER.contains(ref.getType()));
+        return canProcess;
+    }
+
+    public void addPreffix(StringBuffer label, String docType) {
+        if (!StringUtils.isEmpty(docType)) {
+            label.append(docType);
+            label.append(", ");
+        }
+    }
+
+    @Override
+    public void process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale, boolean withAnchor) {
         Map<TreeNode, Deque<String>> buffers = new HashMap<>();
         refs.forEach(ref -> buffers.put(ref, new ArrayDeque<String>()));
 
@@ -49,7 +68,7 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
                 TreeNode node = toBeTreatedNodes.get(i);
                 if (!mrefCommonNodes.contains(node) || toBeTreatedNodes.size() > 1) {
                     if (node.getChildren().isEmpty()) {
-                        buffers.get(node).push(createAnchor(node, locale));
+                        buffers.get(node).push(createAnchor(node, locale, withAnchor));
                     } else if (node.getNum() != null) {
                         buffers.get(node).push(String.format("%s, ", NumFormatter.formattedNum(node, locale)));
                     }
@@ -64,7 +83,7 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
                         TreeNode jNode = toBeTreatedNodes.get(j);
 
                         if (iNode.getParent().equals(jNode.getParent())
-                                || (iNode.getType().equals("article") && jNode.getType().equals("article"))) {
+                                || (iNode.getType().equals(ARTICLE) && jNode.getType().equals(ARTICLE))) {
                             buffers.get(iNode).push(AND ? " and " : ", ");
                             buffers.get(jNode).forEach(item -> buffers.get(iNode).push(item));
 
@@ -81,7 +100,7 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
             }
 
             for (TreeNode node : toBeTreatedNodes) {
-                if (higherOrderElements.contains(node.getType())) {
+                if (NODES_TO_CONSIDER.contains(node.getType())) {
                     if (!mrefCommonNodes.contains(node)) {
                         buffers.get(node).push(String.format("%s ", StringUtils.capitalize(node.getType())));
                     }
@@ -106,16 +125,15 @@ public class LabelHigherOrderElementsOnly extends LabelHandler {
 
                     buffers.put(node.getParent(), buffer);
                     pendingNodes.add(index, node.getParent());
-                } 
+                }
             }
         }
         while ((pendingNodes.size() > 0) && (toBeTreatedNodes.size() > 1 || !mrefCommonNodes.contains(toBeTreatedNodes.get(0))));
-
-        return true;
     }
 
     @Override
     public int getOrder() {
         return 2;
     }
+
 }

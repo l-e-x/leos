@@ -17,8 +17,8 @@ import com.vaadin.data.Binder;
 import com.vaadin.ui.Component;
 import com.vaadin.ui.FormLayout;
 import com.vaadin.ui.Label;
-import com.vaadin.v7.ui.CheckBox;
-import com.vaadin.v7.ui.HorizontalLayout;
+import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.HorizontalLayout;
 import com.vaadin.ui.TextField;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.MetadataVO;
@@ -113,6 +113,7 @@ class MetadataMandateForm extends FormLayout {
         layout.setCaption(messageHelper.getMessage("wizard.document.create.metadata.packageTitle.caption"));
         layout.setWidth(100, Unit.PERCENTAGE);
         layout.setSpacing(true);
+        layout.setMargin(false);
 
         CheckBox checkBox = new CheckBox();
         checkBox.setReadOnly(true);
@@ -131,6 +132,7 @@ class MetadataMandateForm extends FormLayout {
         layout.setCaption(messageHelper.getMessage("wizard.document.create.metadata.eeaRelevance.caption"));
         layout.setWidth(100, Unit.PERCENTAGE);
         layout.setSpacing(true);
+        layout.setMargin(false);
 
         CheckBox checkBox = new CheckBox();
         checkBox.setReadOnly(true);

@@ -15,19 +15,19 @@ package eu.europa.ec.leos.vo.toc;
 
 import eu.europa.ec.leos.model.action.SoftActionType;
 import eu.europa.ec.leos.vo.coedition.CoEditionVO;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class TableOfContentItemVO implements Serializable {
     
     public static final long serialVersionUID = -1;
 
-    private TocItemType type;
+    private TocItem tocItem;
     private String id;
     private String originAttr;
     private String number;
@@ -36,10 +36,8 @@ public class TableOfContentItemVO implements Serializable {
     private String content;
     private Integer numTagIndex;
     private Integer headingTagIndex;
+    private Integer introTagIndex;
     private Integer vtdIndex;
-    private Integer preambleFormula1TagIndex;
-    private Integer preambleFormula2TagIndex;
-    private Integer recitalsIntroIndex;
     private Integer listTagIndex;
     private String list;
     private boolean movedOnEmptyParent;
@@ -58,10 +56,11 @@ public class TableOfContentItemVO implements Serializable {
     private Boolean isNumberingToggled;
     private SoftActionType numSoftActionAttr;
     private Boolean restored;
+    private int itemDepth;
 
-    public TableOfContentItemVO(TocItemType type, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
-            Integer headingTagIndex, Integer vtdIndex, String content) {
-        this.type = type;
+    public TableOfContentItemVO(TocItem tocItem, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
+            Integer headingTagIndex, Integer introTagIndex, Integer vtdIndex, String content) {
+        this.tocItem = tocItem;
         this.id = id;
         this.originAttr = originAttr;
         this.number = number;
@@ -69,18 +68,16 @@ public class TableOfContentItemVO implements Serializable {
         this.heading = heading;
         this.numTagIndex = numTagIndex;
         this.headingTagIndex = headingTagIndex;
+        this.introTagIndex = introTagIndex;
         this.vtdIndex = vtdIndex;
         this.content = content;
         this.isAffected = false;
+        this.itemDepth = 0;
     }
 
-    public TableOfContentItemVO(TocItemType type, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
-            Integer headingTagIndex, Integer vtdIndex, Integer preambleFormula1TagIndex, Integer preambleFormula2TagIndex, Integer recitalsIntroIndex,
-            String list, Integer listTagIndex, String content, SoftActionType softActionAttr, Boolean isSoftActionRoot, String softUserAttr, GregorianCalendar softDateAttr) {
-        this(type, id, originAttr, number, originNumAttr, heading, numTagIndex, headingTagIndex, vtdIndex, content);
-        this.preambleFormula1TagIndex = preambleFormula1TagIndex;
-        this.preambleFormula2TagIndex = preambleFormula2TagIndex;
-        this.recitalsIntroIndex = recitalsIntroIndex;
+    public TableOfContentItemVO(TocItem tocItem, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
+            Integer headingTagIndex, Integer introTagIndex, Integer vtdIndex, String list, Integer listTagIndex, String content, SoftActionType softActionAttr, Boolean isSoftActionRoot, String softUserAttr, GregorianCalendar softDateAttr) {
+        this(tocItem, id, originAttr, number, originNumAttr, heading, numTagIndex, headingTagIndex, introTagIndex, vtdIndex, content);
         this.list = list;
         this.listTagIndex = listTagIndex;
         this.softActionAttr = softActionAttr;
@@ -89,16 +86,27 @@ public class TableOfContentItemVO implements Serializable {
         this.softDateAttr = softDateAttr;
     }
 
-    public TableOfContentItemVO(TocItemType type, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
-            Integer headingTagIndex, Integer vtdIndex, Integer preambleFormula1TagIndex, Integer preambleFormula2TagIndex, Integer recitalsIntroIndex,
-            String list, Integer listTagIndex, String content, SoftActionType softActionAttr, Boolean isSoftActionRoot, String softUserAttr, GregorianCalendar softDateAttr,
+    public TableOfContentItemVO(TocItem tocItem, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
+            Integer headingTagIndex, Integer introTagIndex, Integer vtdIndex, String list, Integer listTagIndex, String content, SoftActionType softActionAttr, Boolean isSoftActionRoot, String softUserAttr, GregorianCalendar softDateAttr,
             String softMoveFrom, String softMoveTo, boolean undeleted,SoftActionType numSoftActionAttr) {
-        this(type, id, originAttr, number, originNumAttr, heading, numTagIndex, headingTagIndex, vtdIndex, preambleFormula1TagIndex,
-                preambleFormula2TagIndex, recitalsIntroIndex, list, listTagIndex, content, softActionAttr, isSoftActionRoot, softUserAttr, softDateAttr);
+        this(tocItem, id, originAttr, number, originNumAttr, heading, numTagIndex, headingTagIndex, introTagIndex, vtdIndex,
+                list, listTagIndex, content, softActionAttr, isSoftActionRoot, softUserAttr, softDateAttr);
         this.softMoveFrom = softMoveFrom;
         this.softMoveTo = softMoveTo;
         this.undeleted = undeleted;
         this.numSoftActionAttr = numSoftActionAttr;
+    }
+    
+    public TableOfContentItemVO(TocItem tocItem, String id, String originAttr, String number, String originNumAttr, String heading, Integer numTagIndex,
+            Integer headingTagIndex, Integer introTagIndex, Integer vtdIndex, String list, Integer listTagIndex, String content, SoftActionType softActionAttr, Boolean isSoftActionRoot, String softUserAttr, GregorianCalendar softDateAttr,
+            String softMoveFrom, String softMoveTo, boolean undeleted,SoftActionType numSoftActionAttr, int itemDepth) {
+        this(tocItem, id, originAttr, number, originNumAttr, heading, numTagIndex, headingTagIndex, introTagIndex, vtdIndex,
+                list, listTagIndex, content, softActionAttr, isSoftActionRoot, softUserAttr, softDateAttr);
+        this.softMoveFrom = softMoveFrom;
+        this.softMoveTo = softMoveTo;
+        this.undeleted = undeleted;
+        this.numSoftActionAttr = numSoftActionAttr;
+        this.itemDepth = itemDepth;
     }
 
     public void setId(String id) {
@@ -157,28 +165,20 @@ public class TableOfContentItemVO implements Serializable {
         this.originNumAttr = originNumAttr;
     }
 
-    public TocItemType getType() {
-        return type;
+    public TocItem getTocItem() {
+        return tocItem;
     }
 
-    public void setType(TocItemType type) {
-        this.type = type;
+    public void setTocItem(TocItem tocItem) {
+        this.tocItem = tocItem;
     }
 
     public Integer getVtdIndex() {
         return vtdIndex;
     }
 
-    public Integer getPreambleFormula1TagIndex() {
-        return preambleFormula1TagIndex;
-    }
-
-    public Integer getPreambleFormula2TagIndex() {
-        return preambleFormula2TagIndex;
-    }
-
-    public Integer getRecitalsIntroIndex() {
-        return recitalsIntroIndex;
+    public Integer getIntroTagIndex() {
+        return introTagIndex;
     }
 
     public String getList() {
@@ -320,7 +320,7 @@ public class TableOfContentItemVO implements Serializable {
     }
 
     public void addChildItem(TableOfContentItemVO tableOfContentItemVO) {
-        if (tableOfContentItemVO.getType().isRoot()) {
+        if (tableOfContentItemVO.getTocItem().isRoot()) {
             throw new IllegalArgumentException("Cannot add a root item as a child!");
         }
         childItems.add(tableOfContentItemVO);
@@ -345,18 +345,14 @@ public class TableOfContentItemVO implements Serializable {
         return Collections.unmodifiableList(new ArrayList<>(childItems));
     }
     
-    public boolean containsType(String type) {
+    public boolean containsItem(String aknTag) {
         List<TableOfContentItemVO> childItems = this.childItems;
         for(TableOfContentItemVO child : childItems) {
-            if(child.getType().getName().equals(type)) {
+            if(child.getTocItem().getAknTag().value().equals(aknTag)) {
                 return true;
             }
         }
         return false;
-    }
-
-    public boolean areChildrenAllowed() {
-        return type.areChildrenAllowed();
     }
     
     public List<CoEditionVO> getCoEditionVos() {
@@ -379,18 +375,12 @@ public class TableOfContentItemVO implements Serializable {
         this.undeleted = undeleted;
     }
     
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+    public int getItemDepth() {
+        return itemDepth;
+    }
 
-        TableOfContentItemVO that = (TableOfContentItemVO) o;
-
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (type != that.type) return false;
-        if (vtdIndex != null ? !vtdIndex.equals(that.vtdIndex) : that.vtdIndex != null) return false;
-
-        return true;
+    public void setItemDepth(int depth) {
+        this.itemDepth = depth;
     }
 
     public SoftActionType  getNumSoftActionAttr() {
@@ -402,8 +392,22 @@ public class TableOfContentItemVO implements Serializable {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TableOfContentItemVO that = (TableOfContentItemVO) o;
+
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (tocItem != that.tocItem) return false;
+        if (vtdIndex != null ? !vtdIndex.equals(that.vtdIndex) : that.vtdIndex != null) return false;
+
+        return true;
+    }
+    
+    @Override
     public int hashCode() {
-        int result = type != null ? type.hashCode() : 0;
+        int result = tocItem != null ? tocItem.hashCode() : 0;
         result = 31 * result + (id != null ? id.hashCode() : 0);
         result = 31 * result + (vtdIndex != null ? vtdIndex.hashCode() : 0);
         return result;
@@ -412,7 +416,7 @@ public class TableOfContentItemVO implements Serializable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("TableOfContentItemVO{");
-        sb.append("type=").append(type);
+        sb.append("tocItem=").append(tocItem);
         sb.append(", xml:id='").append(id).append('\'');
         sb.append(", number='").append(number).append('\'');
         sb.append(", heading='").append(heading).append('\'');
@@ -422,6 +426,13 @@ public class TableOfContentItemVO implements Serializable {
         sb.append(", childItems=").append(childItems);
         sb.append('}');
         return sb.toString();
+    }
+
+    public Stream<TableOfContentItemVO> flattened() {
+        return Stream.concat(
+                Stream.of(this),
+                childItems.stream().flatMap(TableOfContentItemVO::flattened)
+        );
     }
 
 }

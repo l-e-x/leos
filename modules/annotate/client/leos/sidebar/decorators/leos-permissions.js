@@ -16,7 +16,6 @@
 function leosPermissionsDecorator($provide) {
   $provide.decorator('permissions', ['$delegate', '$injector', '$rootScope', '$http', function permissionsDecorator($delegate, $injector, $rootScope, $http) {
     var bridge = $injector.get('bridge');
-    var store = $injector.get('store');
     var hostUserPermissions;
 
     function requestUserPermissions() {
@@ -42,16 +41,7 @@ function leosPermissionsDecorator($provide) {
       else {
         return hostUserPermissions;
       }
-    }
-
-    $delegate.getHostState =  function() {
-      if (store.hostState) {
-        return (store.hostState === 'OPEN');
-      }
-      else {
-        return false;
-      }
-    }
+    };
 
     return $delegate;
   }]);

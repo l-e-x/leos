@@ -14,8 +14,12 @@
 package eu.europa.ec.leos.services.document;
 
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Annex;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
+import eu.europa.ec.leos.domain.common.TocMode;
+import eu.europa.ec.leos.model.action.VersionVO;
+import eu.europa.ec.leos.model.annex.AnnexStructureType;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
@@ -29,15 +33,17 @@ public interface AnnexService {
 
     void deleteAnnex(Annex annex);
 
-    Annex updateAnnex(Annex annex, AnnexMetadata metadata, boolean major, String comment);
-
-    Annex updateAnnex(Annex annex, byte[] updatedAnnexContent, boolean major, String comment);
+    Annex updateAnnex(Annex annex, AnnexMetadata metadata, VersionType versionType, String comment);
+    
+    Annex updateAnnex(Annex annex, byte[] updatedAnnexContent, VersionType versionType, String comment);
 
     Annex updateAnnex(String annexId, AnnexMetadata metadata);
 
-    Annex updateAnnexWithMilestoneComments(Annex annex, List<String> milestoneComments, boolean major, String comment);
+    Annex updateAnnexWithMilestoneComments(Annex annex, List<String> milestoneComments, VersionType versionType, String comment);
 
     Annex updateAnnexWithMilestoneComments(String annexId, List<String> milestoneComments);
+    
+    Annex updateAnnexWithMetadata(Annex annex, byte[] updatedAnnexContent, AnnexMetadata metadata, VersionType versionType, String comment);
 
     Annex findAnnex(String id);
 
@@ -45,9 +51,27 @@ public interface AnnexService {
 
     List<Annex> findVersions(String id);
 
-    Annex createVersion(String id, boolean major, String comment);
+    Annex createVersion(String id, VersionType versionType, String comment);
     
-    List<TableOfContentItemVO> getTableOfContent(Annex document);
+    List<TableOfContentItemVO> getTableOfContent(Annex document, TocMode mode);
     
-    Annex saveTableOfContent(Annex annex, List<TableOfContentItemVO> tocList, String actionMsg, User user);
+    Annex saveTableOfContent(Annex annex, List<TableOfContentItemVO> tocList, AnnexStructureType structureType, String actionMsg, User user);
+
+    Annex findAnnexByRef(String ref);
+    
+    List<VersionVO> getAllVersions(String id, String documentId);
+    
+    List<Annex> findAllMinorsForIntermediate(String docRef, String currIntVersion, int startIndex, int maxResults);
+    
+    int findAllMinorsCountForIntermediate(String docRef, String currIntVersion);
+    
+    Integer findAllMajorsCount(String docRef);
+    
+    List<Annex> findAllMajors(String docRef, int startIndex, int maxResults);
+    
+    List<Annex> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults);
+    
+    Integer findRecentMinorVersionsCount(String documentId, String documentRef);
+
+    List<String> getAncestorsIdsForElementId(Annex annex, List<String> elementIds);
 }

@@ -16,11 +16,13 @@ package eu.europa.ec.leos.domain.cmis.common;
 public interface Versionable {
     String getVersionSeriesId();
 
+    String getCmisVersionLabel();
+
     String getVersionLabel();
 
     String getVersionComment();
 
-    boolean isMajorVersion();
+    VersionType getVersionType();
 
     boolean isLatestVersion();
 }

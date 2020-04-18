@@ -13,8 +13,11 @@
  */
 package eu.europa.ec.leos.services.document;
 
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
+import eu.europa.ec.leos.domain.common.TocMode;
+import eu.europa.ec.leos.model.action.VersionVO;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
 
@@ -34,13 +37,13 @@ public interface BillService {
     // FIXME temporary workaround
     Bill findBillByPackagePath(String path);
 
-    Bill updateBill(Bill bill, BillMetadata metadata, boolean isMajor, String actionMsg);
+    Bill updateBill(Bill bill, BillMetadata metadata, VersionType versionType, String actionMsg);
 
     Bill updateBill(Bill bill, byte[] updatedBillContent, String comments);
 
     Bill updateBill(String billId, BillMetadata metadata);
 
-    Bill updateBillWithMilestoneComments(Bill bill, List<String> milestoneComments, boolean major, String comment);
+    Bill updateBillWithMilestoneComments(Bill bill, List<String> milestoneComments, VersionType versionType, String comment);
 
     Bill updateBillWithMilestoneComments(String billId, List<String> milestoneComments);
 
@@ -50,15 +53,31 @@ public interface BillService {
 
     Bill updateAttachments(Bill bill, HashMap<String, String> attachmentsElements, String actionMsg);
 
-    Bill createVersion(String id, boolean major, String comment);
+    Bill createVersion(String id, VersionType versionType, String comment);
 
     List<Bill> findVersions(String id);
+    
+    List<VersionVO> getAllVersions(String id, String documentId);
 
-    List<TableOfContentItemVO> getTableOfContent(Bill bill, boolean simplified);
+    List<TableOfContentItemVO> getTableOfContent(Bill bill, TocMode mode);
 
     Bill saveTableOfContent(Bill bill, List<TableOfContentItemVO> tocList, String actionMsg, User user);
 
     byte[] searchAndReplaceText(byte[] xmlContent, String searchText, String replaceText);
 
     List<String> getAncestorsIdsForElementId(Bill bill, List<String> elementIds);
+
+    Bill findBillByRef(String ref);
+    
+    List<Bill> findAllMinorsForIntermediate(String docRef, String currIntVersion, int startIndex, int maxResults);
+    
+    int findAllMinorsCountForIntermediate(String docRef, String currIntVersion);
+
+    Integer findAllMajorsCount(String docRef);
+
+    List<Bill> findAllMajors(String docRef, int startIndex, int maxResults);
+
+    Integer findRecentMinorVersionsCount(String documentId, String documentRef);
+
+    List<Bill> findRecentMinorVersions(String documentId, String documentRef, int startIndex, int maxResults);
 }

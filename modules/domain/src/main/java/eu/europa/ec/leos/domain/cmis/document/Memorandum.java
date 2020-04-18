@@ -15,6 +15,7 @@ package eu.europa.ec.leos.domain.cmis.document;
 
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
 import io.atlassian.fugue.Option;
 
@@ -26,13 +27,13 @@ public final class Memorandum extends XmlDocument {
     private final Option<MemorandumMetadata> metadata;
 
     public Memorandum(String id, String name, String createdBy, Instant creationInstant, String lastModifiedBy,
-                      Instant lastModificationInstant, String versionSeriesId, String versionLabel,
-                      String versionComment, boolean isMajorVersion, boolean isLatestVersion, String title,
+                      Instant lastModificationInstant, String versionSeriesId, String cmisVersionLabel, String versionLabel,
+                      String versionComment, VersionType versionType, boolean isLatestVersion, String title,
                       Map<String, String> collaborators, List<String> milestoneComments, Option<Content> content,
                       Option<MemorandumMetadata> metadata) {
 
         super(LeosCategory.MEMORANDUM, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant,
-                versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion, title, collaborators, milestoneComments, content);
+                versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, title, collaborators, milestoneComments, content);
         this.metadata = metadata;
     }
 

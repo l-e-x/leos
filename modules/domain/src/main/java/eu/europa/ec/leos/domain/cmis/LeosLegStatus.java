@@ -18,5 +18,6 @@ public enum LeosLegStatus {
     FILE_READY,
     FILE_ERROR,
     SENT_TO_CONSULTATION,
+    EXPORTED,
     IN_CONSULTATION
 }

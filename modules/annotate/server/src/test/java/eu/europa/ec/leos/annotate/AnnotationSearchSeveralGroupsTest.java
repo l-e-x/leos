@@ -233,9 +233,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupA.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;
@@ -260,9 +260,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupB.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;
@@ -285,9 +285,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupA.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;
@@ -311,9 +311,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupB.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;
@@ -338,9 +338,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupA.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;
@@ -365,9 +365,9 @@ public class AnnotationSearchSeveralGroupsTest {
 
         final AnnotationSearchOptions options = new AnnotationSearchOptions(
                 THE_URI, groupB.getName(), // URI, group
-                true,                   // provide separate replies
-                200, 0,                 // limit, offset
-                SORT, SORTCOL_UPDATED);     // order, sort column
+                true,                      // provide separate replies
+                200, 0,                    // limit, offset
+                SORT, SORTCOL_UPDATED);    // order, sort column
 
         AnnotationSearchResult annots = null;
         List<Annotation> replies = null;

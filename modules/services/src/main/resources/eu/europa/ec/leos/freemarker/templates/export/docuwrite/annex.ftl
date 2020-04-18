@@ -7,7 +7,7 @@
       ns_prefixes={}>
 
 <#--
-    Copyright 2019 European Commission
+    Copyright 2017 European Commission
 
     Licensed under the EUPL, Version 1.2 or - as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
@@ -29,12 +29,16 @@
     <#local billRef = bill.getResourceId()>
     <#local annexes = bill.getChildResources('annex')>
     <#local annexRef = annex.getResourceId()>
+    <#local annexHref = annex.getHref()>
     <importJob filename="${annex.getLeosCategory().name()?capitalize}_${annex.getDocNumber()}"
-               convertAnnotations="${proposal.getExportOptions().isConvertAnnotations()?c}">
+               convertAnnotations="${proposal.getExportOptions().isConvertAnnotations()?c}"
+               comparisonType="${proposal.getExportOptions().getComparisonType().getType()!}">
         <leos>
             <resource ref="${proposalRef}">
                 <resource ref="${billRef}">
                     <resource ref="${annexRef}">
+                    </resource>
+                    <resource ref="${annexHref}">
                     </resource>
                 </resource>
             </resource>

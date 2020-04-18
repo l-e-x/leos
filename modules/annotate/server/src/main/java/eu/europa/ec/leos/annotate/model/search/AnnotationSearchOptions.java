@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 
+@SuppressWarnings("PMD.GodClass")
 public class AnnotationSearchOptions {
 
     /**
@@ -43,16 +44,6 @@ public class AnnotationSearchOptions {
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationSearchOptions.class);
 
     // -------------------------------------
-    // Default values for parameters, (also) used by controller
-    // -------------------------------------
-    @SuppressWarnings("PMD.LongVariable")
-    public static final String DEFAULT_SEARCH_SEPARATE_REPLIES = "false";
-    public static final String DEFAULT_SEARCH_LIMIT = "20";
-    public static final String DEFAULT_SEARCH_OFFSET = "0";
-    public static final String DEFAULT_SEARCH_SORT = "updated";
-    public static final String DEFAULT_SEARCH_ORDER = "desc";
-
-    // -------------------------------------
     // Available properties
     // -------------------------------------
 
@@ -60,7 +51,7 @@ public class AnnotationSearchOptions {
     private boolean separateReplies;
 
     // number of items and start index to be returned
-    private int itemLimit = Integer.parseInt(DEFAULT_SEARCH_LIMIT), itemOffset = Integer.parseInt(DEFAULT_SEARCH_OFFSET);
+    private int itemLimit = Consts.DEFAULT_SEARCH_LIMIT, itemOffset = Consts.DEFAULT_SEARCH_OFFSET;
 
     // sorting: column to be sorted, sorting order
     private Direction order = Direction.DESC;
@@ -76,6 +67,9 @@ public class AnnotationSearchOptions {
     // list of sets of metadata with statuses requested
     @SuppressWarnings("PMD.LongVariable")
     private List<SimpleMetadataWithStatuses> metadataMapsWithStatusesList;
+
+    // information which type of user executes the search
+    private Consts.SearchUserType searchUser;
 
     // -------------------------------------
     // Constructors
@@ -101,6 +95,7 @@ public class AnnotationSearchOptions {
 
         setSortColumnIntern(sort);
         this.order = Direction.valueOf(order.toUpperCase(Locale.ENGLISH));
+        this.searchUser = Consts.SearchUserType.Unknown;
     }
 
     /**
@@ -112,14 +107,14 @@ public class AnnotationSearchOptions {
      * @throws IllegalArgumentException if input search options are {@literal null} 
      */
     public static AnnotationSearchOptions fromIncomingSearchOptions(final IncomingSearchOptions incOpts, final boolean separate_replies) {
-        
+
         Assert.notNull(incOpts, "Valid IncomingSearchOptions required");
-        
+
         final AnnotationSearchOptions options = new AnnotationSearchOptions(incOpts.getUri(),
                 incOpts.getGroup(), separate_replies,
                 incOpts.getLimit(), incOpts.getOffset(),
                 incOpts.getOrder(), incOpts.getSort());
-        
+
         if (incOpts.getUrl() != null && !incOpts.getUrl().isEmpty()) {
             options.setUri(incOpts.getUrl());
         }
@@ -133,29 +128,37 @@ public class AnnotationSearchOptions {
             // and have to decode this again here
             metadataProcessed = metadataProcessed.replace("%7B", "{").replace("%7D", "}").replace("\\", "");
         }
-        
+
         final List<SimpleMetadataWithStatuses> converted = JsonConverter.convertJsonToSimpleMetadataWithStatusesList(metadataProcessed);
         options.setMetadataMapsWithStatusesList(converted);
-        
+
+        if (!StringUtils.isEmpty(incOpts.getMode()) && incOpts.getMode().toLowerCase(Locale.ENGLISH).equals("private")) {
+            options.setSearchUser(Consts.SearchUserType.Contributor);
+        }
+
         return options;
     }
-    
+
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public boolean isSeparateReplies() {
         return separateReplies;
     }
 
+    @Generated
     public void setSeparateReplies(final boolean separateReplies) {
         this.separateReplies = separateReplies;
     }
 
+    @Generated
     public int getItemLimit() {
         return itemLimit;
     }
 
+    @Generated
     public void setItemLimit(final int itemLimit) {
         this.itemLimit = itemLimit;
     }
@@ -173,34 +176,39 @@ public class AnnotationSearchOptions {
         } else if (limit == 0) {
 
             // zero: use default values
-            this.itemLimit = Integer.parseInt(DEFAULT_SEARCH_LIMIT);
-            this.itemOffset = (offset < 0 ? Integer.parseInt(DEFAULT_SEARCH_OFFSET) : offset);
+            this.itemLimit = Consts.DEFAULT_SEARCH_LIMIT;
+            this.itemOffset = (offset < 0 ? Consts.DEFAULT_SEARCH_OFFSET : offset);
 
         } else {
             // any other positive value is accepted - no upper limit!
             this.itemLimit = limit;
 
             // take over the given offset; set it positive, if need be
-            this.itemOffset = (offset < 0 ? Integer.parseInt(DEFAULT_SEARCH_OFFSET) : offset);
+            this.itemOffset = (offset < 0 ? Consts.DEFAULT_SEARCH_OFFSET : offset);
         }
     }
 
+    @Generated
     public int getItemOffset() {
         return itemOffset;
     }
 
+    @Generated
     public void setItemOffset(final int itemOffset) {
         this.itemOffset = itemOffset;
     }
 
+    @Generated
     public Direction getOrder() {
         return order;
     }
 
+    @Generated
     public void setOrder(final Direction order) {
         this.order = order;
     }
 
+    @Generated
     public String getSortColumn() {
         return sortColumn;
     }
@@ -209,7 +217,7 @@ public class AnnotationSearchOptions {
 
         setSortColumnIntern(sortColumn);
     }
-    
+
     // moved to separate function to avoid being overridden (PMD notification)
     private void setSortColumnIntern(final String sortColumn) {
 
@@ -222,10 +230,12 @@ public class AnnotationSearchOptions {
         this.sortColumn = sortColumn;
     }
 
+    @Generated
     public URI getUri() {
         return uri;
     }
 
+    @Generated
     public void setUri(final URI uri) {
         this.uri = uri;
     }
@@ -238,41 +248,57 @@ public class AnnotationSearchOptions {
         }
     }
 
+    @Generated
     public String getUser() {
         return user;
     }
 
+    @Generated
     public void setUser(final String user) {
         this.user = user;
     }
 
+    @Generated
     public String getGroup() {
         return group;
     }
 
+    @Generated
     public void setGroup(final String group) {
         this.group = group;
     }
 
+    @Generated
     public List<SimpleMetadataWithStatuses> getMetadataMapsWithStatusesList() {
         return metadataMapsWithStatusesList;
     }
 
+    @Generated
     public void setMetadataMapsWithStatusesList(final List<SimpleMetadataWithStatuses> metaList) {
         this.metadataMapsWithStatusesList = metaList;
     }
-    
+
+    @Generated
+    public Consts.SearchUserType getSearchUser() {
+        return searchUser;
+    }
+
+    @Generated
+    public void setSearchUser(final Consts.SearchUserType sUser) {
+        this.searchUser = sUser;
+    }
+
     // sets the statuses of all metadata sets defined
     public void setStatuses(final List<AnnotationStatus> statuses) {
-        if(this.metadataMapsWithStatusesList == null) {
+        if (this.metadataMapsWithStatusesList == null) {
             this.metadataMapsWithStatusesList = new ArrayList<SimpleMetadataWithStatuses>();
         }
-        if(CollectionUtils.isEmpty(this.metadataMapsWithStatusesList)) {
+        if (CollectionUtils.isEmpty(this.metadataMapsWithStatusesList)) {
             this.metadataMapsWithStatusesList.add(new SimpleMetadataWithStatuses(null, null));
         }
         this.metadataMapsWithStatusesList.forEach(mmwsl -> mmwsl.setStatuses(statuses));
     }
-    
+
     /**
      * @return the {@link Sort} object to be used for sorting database content
      * note: {@literal null} is returned when specified sorting criterion was invalid
@@ -292,8 +318,8 @@ public class AnnotationSearchOptions {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(separateReplies, itemLimit, itemOffset, order, sortColumn, uri, user, 
-                group, metadataMapsWithStatusesList);
+        return Objects.hash(separateReplies, itemLimit, itemOffset, order, sortColumn, uri, user,
+                group, searchUser, metadataMapsWithStatusesList);
     }
 
     @Generated
@@ -315,6 +341,7 @@ public class AnnotationSearchOptions {
                 Objects.equals(this.uri, other.uri) &&
                 Objects.equals(this.user, other.user) &&
                 Objects.equals(this.group, other.group) &&
+                Objects.equals(this.searchUser, other.searchUser) &&
                 Objects.equals(this.metadataMapsWithStatusesList, other.metadataMapsWithStatusesList);
     }
 }

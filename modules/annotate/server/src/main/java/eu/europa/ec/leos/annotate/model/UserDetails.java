@@ -27,8 +27,9 @@ public class UserDetails {
 
     private String login; // user login name
     private String email; // email address
-    private String entity; // associated entity, e.g. "DIGIT"
+    private List<UserEntity> entities; // associated "main entities" to the user
     private String displayName; // nice name to be used
+    private List<UserEntity> allEntities; // total list of associated entities (including hierarchy paths)
 
     // -----------------------------------------------------------
     // Constructors
@@ -38,47 +39,69 @@ public class UserDetails {
     @JsonCreator
     public UserDetails(@JsonProperty("login") final String login, @JsonProperty("perId") final Long perId,
             @JsonProperty("firstName") final String firstName, @JsonProperty("lastName") final String lastName,
-            @JsonProperty("entity") final String entity, @JsonProperty("email") final String email, @JsonProperty("roles") final List<String> roles) {
+            @JsonProperty("entities") final List<UserEntity> entities, @JsonProperty("email") final String email,
+            @JsonProperty("roles") final List<String> roles) {
 
         this.login = login;
         this.displayName = String.format("%s %s", lastName, firstName);
         this.email = email;
-        this.entity = entity;
+        this.entities = entities;
+
+        // note: the total entity list is only set afterwards, since it is retrieved using
+        // a different UD-repo request
     }
 
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    @Generated
     public String getLogin() {
         return login;
     }
 
+    @Generated
     public void setLogin(final String login) {
         this.login = login;
     }
 
+    @Generated
     public String getEmail() {
         return email;
     }
 
+    @Generated
     public void setEmail(final String email) {
         this.email = email;
     }
-    
-    public String getEntity() {
-        return entity;
+
+    @Generated
+    public List<UserEntity> getEntities() {
+        return entities;
     }
 
-    public void setEntity(final String entity) {
-        this.entity = entity;
+    @Generated
+    public void setEntities(final List<UserEntity> entities) {
+        this.entities = entities;
     }
 
+    @Generated
     public String getDisplayName() {
         return displayName;
     }
 
+    @Generated
     public void setDisplayName(final String displayName) {
         this.displayName = displayName;
+    }
+
+    @Generated
+    public List<UserEntity> getAllEntities() {
+        return allEntities;
+    }
+
+    @Generated
+    public void setAllEntities(final List<UserEntity> entities) {
+        this.allEntities = entities;
     }
 
     // -------------------------------------
@@ -88,7 +111,7 @@ public class UserDetails {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(login, email, entity, displayName);
+        return Objects.hash(login, email, entities, displayName, allEntities);
     }
 
     @Generated
@@ -101,9 +124,10 @@ public class UserDetails {
             return false;
         }
         final UserDetails other = (UserDetails) obj;
-        return Objects.equals(this.entity, other.entity) &&
+        return Objects.equals(this.entities, other.entities) &&
                 Objects.equals(this.login, other.login) &&
                 Objects.equals(this.email, other.email) &&
-                Objects.equals(this.displayName, other.displayName);
+                Objects.equals(this.displayName, other.displayName) &&
+                Objects.equals(this.allEntities, other.allEntities);
     }
 }

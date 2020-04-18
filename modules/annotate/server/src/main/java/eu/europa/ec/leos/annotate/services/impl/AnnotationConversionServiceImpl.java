@@ -13,20 +13,27 @@
  */
 package eu.europa.ec.leos.annotate.services.impl;
 
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.model.AnnotationComparator;
 import eu.europa.ec.leos.annotate.model.UserDetails;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
 import eu.europa.ec.leos.annotate.model.entity.Tag;
-import eu.europa.ec.leos.annotate.model.search.*;
+import eu.europa.ec.leos.annotate.model.entity.User;
+import eu.europa.ec.leos.annotate.model.search.AnnotationSearchOptions;
+import eu.europa.ec.leos.annotate.model.search.AnnotationSearchResult;
+import eu.europa.ec.leos.annotate.model.search.Consts;
 import eu.europa.ec.leos.annotate.model.web.annotation.*;
 import eu.europa.ec.leos.annotate.model.web.user.JsonUserInfo;
 import eu.europa.ec.leos.annotate.services.AnnotationConversionService;
+import eu.europa.ec.leos.annotate.services.AnnotationPermissionService;
 import eu.europa.ec.leos.annotate.services.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
@@ -35,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * class containing functionality for converting annotations into their JSON representation  
@@ -48,7 +56,11 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
     // Required services and repositories
     // -------------------------------------
 
+    @Autowired
+    private AnnotationPermissionService annotPermService;
+
     // note: should not be declared final, as otherwise mocking it will give problems
+    @SuppressWarnings("PMD.ImmutableField")
     @Autowired
     private UserService userService;
 
@@ -56,8 +68,22 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
     // Constructors
     // -------------------------------------
 
+    public AnnotationConversionServiceImpl() {
+        // required default constructor for autowired instantiation
+    }
+    
     public AnnotationConversionServiceImpl(final UserService userServ) {
         this.userService = userServ;
+    }
+
+    public AnnotationConversionServiceImpl(final UserService userServ, final AnnotationPermissionService permServ) {
+        this.userService = userServ;
+        this.annotPermService = permServ;
+    }
+    
+    // required for mocking
+    public void setPermissionService(final AnnotationPermissionService permServ) {
+        this.annotPermService = permServ;
     }
 
     // -------------------------------------
@@ -65,33 +91,10 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
     // -------------------------------------
 
     /**
-    * convert a given {@link Annotation} object into {@link JsonAnnotation} format
-    * 
-    * @param annot
-    *        the Annotation object to be converted
-    * @param userInfo
-    *        user information about the user requesting the action
-    * @return the wrapped JsonAnnotation object
-    */
-    @Override
-    public JsonAnnotation convertToJsonAnnotation(final Annotation annot, final UserInformation userInfo) {
-
-        return convertToJsonAnnotation(annot, null, userInfo);
-    }
-
-    /**
-     * convert a given Annotation object into JsonAnnotation format, taking rules specific to some search model into account
-     * 
-     * @param annot
-     *        the Annotation object to be converted
-     * @param searchModel
-     *        the search model used - might e.g. influence anonymisation of user-related data (creator, etc.)
-     * @param userInfo
-     *        user information about the user requesting the action
-     * @return the wrapped JsonAnnotation object
+     * {@inheritDoc}
      */
     @Override
-    public JsonAnnotation convertToJsonAnnotation(final Annotation annot, final SearchModel searchModel, final UserInformation userInfo) {
+    public JsonAnnotation convertToJsonAnnotation(final Annotation annot, final UserInformation userInfo) {
 
         if (annot == null) {
             LOG.error("Received null for annotation to be converted to JsonAnnotation");
@@ -107,6 +110,7 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
 
         final JsonAnnotation result = new JsonAnnotation();
         result.setId(annot.getId());
+        result.setLinkedAnnotationId(annot.getLinkedAnnotationId());
         result.setText(annot.getText());
         result.setUpdated(annot.getUpdated());
         result.setUri(docUri);
@@ -125,8 +129,7 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
         result.setDocument(doc);
 
         // check if we are to anonymise the creator of the annotation - this is when the annotation is SENT
-        final boolean isResponseStatusSent = annot.isResponseStatusSent();
-        final boolean anonymizeUser = isResponseStatusSent;
+        final boolean anonymizeUser = annot.isResponseStatusSent();
 
         // targets
         final JsonAnnotationTargets targets = new JsonAnnotationTargets(null);
@@ -138,15 +141,48 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
         final String groupName = annot.getGroup().getName(); // group is mandatory property of annotation (thus not null) - accessed via metadata
         result.setGroup(groupName);
 
-        // user info
         final String userAccountForHypo = userService.getHypothesisUserAccountFromUser(annot.getUser(), annotAuthority);
+        setUserInfo(result, annot, anonymizeUser, userAccountForHypo);
+
+        result.setPermissions(annotPermService.getJsonAnnotationPermissions(annot, groupName, userAccountForHypo, userInfo));
+
+        // tags
+        if (!CollectionUtils.isEmpty(annot.getTags())) {
+            // convert from List<Tag> to List<String>
+            result.setTags(annot.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
+        }
+
+        // references
+        result.setReferences(annot.getReferencesList());
+
+        // annotation status
+        result.setStatus(getJsonAnnotationStatus(annot, annotAuthority));
+
+        return result;
+    }
+
+    /**
+     * setting the user information for the converted {@link JsonAnnotation}
+     * 
+     * @param result
+     *        the converted {@link JsonAnnotation}
+     * @param annot
+     *        the {@link Annotation} to be converted
+     * @param anonymizeUser
+     *        flag indicating whether user name etc. should be anonymised
+     * @param userAccountForHypo
+     *        the user account (used when user is not to be anonymised)
+     */
+    private void setUserInfo(final JsonAnnotation result, final Annotation annot, final boolean anonymizeUser, final String userAccountForHypo) {
+
+        // user info
         if (anonymizeUser) {
             String entityName = "";
             final UserDetails userDetails = userService.getUserDetailsFromUserRepo(annot.getUser().getLogin());
             if (userDetails == null) {
                 entityName = "unknown";
             } else {
-                entityName = userDetails.getEntity();
+                entityName = userDetails.getEntities().get(0).getName();
             }
 
             String iscReference = annot.getMetadata().getIscReference(); // metadata is mandatory property of annotation (thus not null)
@@ -163,7 +199,7 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
             jsUserInfo.setDisplay_name(iscReference);
             jsUserInfo.setEntity_name(entityName);
             result.setUser_info(jsUserInfo);
-            
+
             // finally, we overwrite the "created date" with the date at which the response status was updated
             result.setCreated(annot.getMetadata().getResponseStatusUpdated());
         } else {
@@ -185,7 +221,7 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
 
             } else {
                 displayName = userDetails.getDisplayName();
-                entityName = userDetails.getEntity();
+                entityName = userDetails.getEntities().get(0).getName();
             }
             final JsonUserInfo jsUserInfo = new JsonUserInfo();
             jsUserInfo.setDisplay_name(displayName);
@@ -195,33 +231,10 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
             // show real date of creating the annotation
             result.setCreated(annot.getCreated());
         }
-
-        result.setPermissions(setJsonAnnotationPermissions(annot, groupName, isResponseStatusSent, userAccountForHypo));
-
-        // tags
-        if (annot.getTags() != null && !annot.getTags().isEmpty()) {
-            // convert from List<Tag> to List<String>
-            result.setTags(annot.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
-        }
-
-        // references
-        result.setReferences(annot.getReferencesList());
-
-        // annotation status
-        result.setStatus(getJsonAnnotationStatus(annot, annotAuthority));
-
-        return result;
     }
 
     /**
-     * convert a given list of Annotation objects into JsonSearchResult format, taking search options into account
-     * (e.g. whether replies should be listed separately)
-     * 
-     * @param annotationResult
-     *        the wrapper object containing the list of Annotations objects to be converted
-     * @param replies the replies belonging to the found annotations
-     * @param options search options that might influence the result, e.g. whether replies should be listed separately
-     * @return the wrapped JsonSearchResult object
+     * {@inheritDoc}
      */
     @Override
     public JsonSearchResult convertToJsonSearchResult(final AnnotationSearchResult annotationResult, final List<Annotation> replies,
@@ -237,65 +250,44 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
             return null;
         }
 
-        final SearchModel searchModel = annotationResult.getSearchModelUsed();
+        // hand over the information which type of user is requesting the search
+        Assert.notNull(userInfo, "Required user information missing");
+        if (options.getSearchUser() == Consts.SearchUserType.Contributor) {
+            userInfo.setSearchUser(Consts.SearchUserType.Contributor);
+        } else if (Authorities.isLeos(userInfo.getAuthority())) {
+            userInfo.setSearchUser(Consts.SearchUserType.EdiT);
+        } else if (Authorities.isIsc(userInfo.getAuthority())) {
+            userInfo.setSearchUser(Consts.SearchUserType.ISC);
+        } else {
+            LOG.error("Unknown user type found; cannot assign permissions!");
+            return null;
+        }
+
         // depending on how the results were requested, we create one result type or another
         if (options.isSeparateReplies()) {
 
             final List<JsonAnnotation> annotationsAsJson = annotationResult.getItems().stream()
-                    .map(ann -> convertToJsonAnnotation(ann, searchModel, userInfo))
+                    .map(ann -> convertToJsonAnnotation(ann, userInfo))
                     .collect(Collectors.toList());
             final List<JsonAnnotation> repliesAsJson = (replies == null ? new ArrayList<JsonAnnotation>()
-                    : replies.stream().map(ann -> convertToJsonAnnotation(ann, searchModel, userInfo)).collect(Collectors.toList()));
+                    : replies.stream().map(ann -> convertToJsonAnnotation(ann, userInfo)).collect(Collectors.toList()));
             return new JsonSearchResultWithSeparateReplies(annotationsAsJson, repliesAsJson, annotationResult.getTotalItems());
 
         } else {
             // merge replies into annotations, re-sort according to options
             // note: the annotations list might be implemented by an unmodifiable collection; therefore, we have to copy the items...
-            final List<Annotation> mergedList = new ArrayList<Annotation>();
-            mergedList.addAll(annotationResult.getItems());
-            if (replies != null) {
-                mergedList.addAll(replies);
-            }
+            final List<Annotation> mergedList = Stream.of(annotationResult.getItems(), replies).flatMap(item -> item == null ? null : item.stream())
+                    .collect(Collectors.toList());
             mergedList.sort(new AnnotationComparator(options.getSort()));
 
-            final List<JsonAnnotation> annotationsAsJson = mergedList.stream().map(ann -> convertToJsonAnnotation(ann, searchModel, userInfo))
+            final List<JsonAnnotation> annotationsAsJson = mergedList.stream().map(ann -> convertToJsonAnnotation(ann, userInfo))
                     .collect(Collectors.toList());
             return new JsonSearchResult(annotationsAsJson, annotationResult.getTotalItems());
         }
     }
 
     /**
-     * set the permissions
-     * currently kept simple:
-     * - private annotation -> read permission for user only
-     * - public annotation -> read permission for group
-     * admin, delete and update always for user only - unless the annotation has responseStatus=SENT
-     * -> in that case, we don't provide any permissions there, i.e. the annotation cannot be modified
-     * 
-     * @param annot annotation for which permissions are to be computed
-     * @param groupName associate group
-     * @param isResponseStatusSent flag indicating whether the annotation's response status is set to "SENT"
-     * @param userAccountForHypo hypothes.is account name of the annotation's author
-     * @return assembled {@link JsonAnnotationPermissions}
-     */
-    private JsonAnnotationPermissions setJsonAnnotationPermissions(final Annotation annot, final String groupName, final boolean isResponseStatusSent,
-            final String userAccountForHypo) {
-
-        final JsonAnnotationPermissions permissions = new JsonAnnotationPermissions();
-        final String permisAdmDelUpd = isResponseStatusSent ? "" : userAccountForHypo;
-        permissions.setAdmin(Arrays.asList(permisAdmDelUpd));
-        permissions.setDelete(Arrays.asList(permisAdmDelUpd));
-        permissions.setUpdate(Arrays.asList(permisAdmDelUpd));
-        permissions.setRead(Arrays.asList(annot.isShared() ? "group:" + groupName : userAccountForHypo));
-
-        return permissions;
-    }
-
-    /**
-     * assemble the status information of an annotation in JSON format
-     * 
-     * @param annot Annotation for which to assemble the information
-     * @return filled-in {@link JsonAnnotationStatus} object
+     * {@inheritDoc}
      */
     public JsonAnnotationStatus getJsonAnnotationStatus(final Annotation annot) {
         return getJsonAnnotationStatus(annot, "");
@@ -304,8 +296,10 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
     /**
      * assemble the status information of an annotation in JSON format
      * 
-     * @param annot Annotation for which to assemble the information
-     * @param authority the user's authority; if empty, the authority will be read from metadata
+     * @param annot 
+     *        {@link Annotation} for which to assemble the information
+     * @param authority 
+     *        the user's authority; if empty, the authority will be read from metadata
      * @return filled-in {@link JsonAnnotationStatus} object
      */
     private JsonAnnotationStatus getJsonAnnotationStatus(final Annotation annot, final String authority) {
@@ -318,8 +312,31 @@ public class AnnotationConversionServiceImpl implements AnnotationConversionServ
         if (StringUtils.isEmpty(annotAuthority)) {
             annotAuthority = annot.getMetadata().getSystemId();
         }
-        status.setUpdated_by(
-                annot.getStatusUpdatedBy() == null ? null : userService.getHypothesisUserAccountFromUserId(annot.getStatusUpdatedBy(), annotAuthority));
+
+        if (annot.getStatusUpdatedBy() == null) {
+            status.setUser_info(null);
+            status.setUpdated_by(null);
+        } else {
+            final User modifyingUser = userService.getUserById(annot.getStatusUpdatedBy());
+            if (modifyingUser == null) {
+                LOG.warn("Could not resolved user by his ID ({})", annot.getStatusUpdatedBy());
+            } else {
+                status.setUser_info(userService.getHypothesisUserAccountFromUser(modifyingUser, annotAuthority));
+
+                try {
+                    final UserDetails userDetails = userService.getUserDetailsFromUserRepo(modifyingUser.getLogin());
+                    if (userDetails != null) {
+                        // use main entity of user
+                        status.setUpdated_by(userDetails.getEntities().get(0).getName());
+                    }
+                } catch (Exception ex) {
+                    LOG.error("Error getting user Details from UD repo (for retrieving user's main entity)", ex);
+                }
+            }
+        }
+
+        status.setSentDeleted(annot.isSentDeleted());
+
         return status;
     }
 

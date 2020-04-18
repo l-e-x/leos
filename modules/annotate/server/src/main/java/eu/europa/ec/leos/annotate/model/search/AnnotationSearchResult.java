@@ -51,26 +51,33 @@ public class AnnotationSearchResult {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
     public List<Annotation> getItems() {
         return items;
     }
 
+    @Generated
     public void setItems(final List<Annotation> items) {
         this.items = items;
     }
 
+    @Generated
     public SearchModel getSearchModelUsed() {
         return searchModelUsed;
     }
 
+    @Generated
     public void setSearchModelUsed(final SearchModel searchModelUsed) {
         this.searchModelUsed = searchModelUsed;
     }
 
+    @Generated
     public long getTotalItems() {
         return totalItems;
     }
 
+    @Generated
     public void setTotalItems(final long totalItems) {
         this.totalItems = totalItems;
     }

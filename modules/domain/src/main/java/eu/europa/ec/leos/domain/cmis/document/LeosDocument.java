@@ -18,6 +18,7 @@ import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.common.AuditData;
 import eu.europa.ec.leos.domain.cmis.common.Auditable;
 import eu.europa.ec.leos.domain.cmis.common.VersionData;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.common.Versionable;
 import io.atlassian.fugue.Option;
 
@@ -33,10 +34,11 @@ public abstract class LeosDocument implements Auditable, Versionable {
     private final VersionData versionData;
 
     protected LeosDocument(LeosCategory category, String id, String name, String createdBy, Instant creationInstant,
-                           String lastModifiedBy, Instant lastModificationInstant, String versionSeriesId, String versionLabel,
-                           String versionComment, boolean isMajorVersion, boolean isLatestVersion, Option<Content> content) {
+                           String lastModifiedBy, Instant lastModificationInstant, String versionSeriesId,
+                           String cmisVersionLabel, String versionLabel, String versionComment, VersionType versionType,
+                           boolean isLatestVersion, Option<Content> content) {
         this.auditData = new AuditData(createdBy, creationInstant, lastModifiedBy, lastModificationInstant);
-        this.versionData = new VersionData(versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion);
+        this.versionData = new VersionData(versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion);
         this.category = category;
         this.id = id;
         this.name = name;
@@ -79,6 +81,10 @@ public abstract class LeosDocument implements Auditable, Versionable {
         return versionData.getVersionComment();
     }
 
+    public String getCmisVersionLabel() {
+            return versionData.getCmisVersionLabel();
+        }
+        
     public String getVersionLabel() {
         return versionData.getVersionLabel();
     }
@@ -91,8 +97,8 @@ public abstract class LeosDocument implements Auditable, Versionable {
         return versionData.isLatestVersion();
     }
 
-    public boolean isMajorVersion() {
-        return versionData.isMajorVersion();
+    public VersionType getVersionType() {
+        return versionData.getVersionType();
     }
 
 }

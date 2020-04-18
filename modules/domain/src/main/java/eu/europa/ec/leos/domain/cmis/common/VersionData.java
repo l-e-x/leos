@@ -20,14 +20,16 @@ public class VersionData implements Versionable {
     private final String versionSeriesId;
     private final String versionLabel;
     private final String versionComment;
-    private final boolean isMajorVersion;
+    private final VersionType versionType;
     private final boolean isLatestVersion;
+    private final String cmisVersionLabel;
 
-    public VersionData(String versionSeriesId, String versionLabel, String versionComment, boolean isMajorVersion, boolean isLatestVersion) {
+    public VersionData(String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment, VersionType versionType, boolean isLatestVersion) {
         this.versionSeriesId = versionSeriesId;
+        this.cmisVersionLabel = cmisVersionLabel;
         this.versionLabel = versionLabel;
         this.versionComment = versionComment;
-        this.isMajorVersion = isMajorVersion;
+        this.versionType = versionType;
         this.isLatestVersion = isLatestVersion;
     }
 
@@ -35,7 +37,12 @@ public class VersionData implements Versionable {
     public String getVersionSeriesId() {
         return versionSeriesId;
     }
-
+    
+    @Override
+    public String getCmisVersionLabel() {
+        return cmisVersionLabel;
+    }
+    
     @Override
     public String getVersionLabel() {
         return versionLabel;
@@ -47,8 +54,8 @@ public class VersionData implements Versionable {
     }
 
     @Override
-    public boolean isMajorVersion() {
-        return isMajorVersion;
+    public VersionType getVersionType() {
+        return versionType;
     }
 
     @Override
@@ -60,9 +67,10 @@ public class VersionData implements Versionable {
     public String toString() {
         return "VersionData{" +
                 "versionSeriesId='" + versionSeriesId + '\'' +
+                ", cmisVersionLabel='" + cmisVersionLabel + '\'' +
                 ", versionLabel='" + versionLabel + '\'' +
                 ", versionComment='" + versionComment + '\'' +
-                ", isMajorVersion=" + isMajorVersion +
+                ", versionType=" + versionType +
                 ", isLatestVersion=" + isLatestVersion +
                 '}';
     }
@@ -72,15 +80,16 @@ public class VersionData implements Versionable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         VersionData that = (VersionData) o;
-        return isMajorVersion == that.isMajorVersion &&
+        return Objects.equals(versionType, that.versionType) &&
                 isLatestVersion == that.isLatestVersion &&
                 Objects.equals(versionSeriesId, that.versionSeriesId) &&
+                Objects.equals(cmisVersionLabel, that.cmisVersionLabel) &&
                 Objects.equals(versionLabel, that.versionLabel) &&
                 Objects.equals(versionComment, that.versionComment);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion);
+        return Objects.hash(versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion);
     }
 }

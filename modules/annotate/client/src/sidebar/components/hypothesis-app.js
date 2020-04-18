@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var scrollIntoView = require('scroll-into-view');
@@ -47,11 +34,35 @@ function authStateFromProfile(profile) {
 
 // @ngInject
 function HypothesisAppController(
-  $document, $location, $rootScope, $route, $scope,
+  $document, $location, $rootScope, $route, $scope, $timeout,
   $window, analytics, store, auth, bridge, drafts, features,
   flash, frameSync, groups, serviceUrl, session, settings, streamer
 ) {
   var self = this;
+
+  //LEOS Change : set global annotation group tokenizer token
+  if(!$rootScope.ANNOTATION_GROUP_SPACE_REPLACE_TOKEN) {
+    $rootScope.ANNOTATION_GROUP_SPACE_REPLACE_TOKEN = "#";
+  }
+
+  //LEOS Change : sync canvas
+  $scope.$on('LEOS_syncCanvas', function (event ,iFrameOffsetLeft, delayResp) {
+    $timeout(function () {
+      var coordinates = [];
+
+      var annotationElems = Array.prototype.slice.call(document.querySelectorAll('.is-suggestion'));
+      annotationElems = annotationElems.concat(Array.prototype.slice.call(document.querySelectorAll('.is-comment')));
+      annotationElems = annotationElems.concat(Array.prototype.slice.call(document.querySelectorAll('.is-highlight')));
+      annotationElems.forEach(function (annotationElem) {
+        var left = iFrameOffsetLeft + 20;
+        var top = annotationElem.getBoundingClientRect().top + 50;
+
+        coordinates.push({id:annotationElem.id,x:left,y:top});
+      });
+
+      bridge.call('LEOS_syncCanvasResp', coordinates);
+    }, delayResp || 0);
+  });
 
   // This stores information about the current user's authentication status.
   // When the controller instantiates we do not yet know if the user is
@@ -83,6 +94,10 @@ function HypothesisAppController(
   // Reload the view when the user switches accounts
   $scope.$on(events.USER_CHANGED, function (event, data) {
     self.auth = authStateFromProfile(data.profile);
+  });
+
+  angular.element(document.querySelector('.app-content-wrapper')).bind('scroll', function() {
+    bridge.call('LEOS_refreshAnnotationLinkLines');
   });
 
   session.load().then(profile => {

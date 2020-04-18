@@ -32,40 +32,52 @@ public class JsonFlash {
     // -----------------------------------------------------------
     // Constructor
     // -----------------------------------------------------------
+    
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public JsonFlash() {
+        // empty
     }
 
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public List<String> getInfo() {
         return info;
     }
 
+    @Generated
     public void setInfo(final List<String> info) {
         this.info = info;
     }
 
+    @Generated
     public List<String> getWarning() {
         return warning;
     }
 
+    @Generated
     public void setWarning(final List<String> warning) {
         this.warning = warning;
     }
 
+    @Generated
     public List<String> getSuccess() {
         return success;
     }
 
+    @Generated
     public void setSuccess(final List<String> success) {
         this.success = success;
     }
 
+    @Generated
     public List<String> getError() {
         return error;
     }
 
+    @Generated
     public void setError(final List<String> error) {
         this.error = error;
     }

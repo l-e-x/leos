@@ -87,7 +87,7 @@ define(function importElementExtensionModule(require) {
         });
         var data = {
             elementIds: selectedElements
-        }
+        };
         connector.receiveSelectedElements(data);
     }
     

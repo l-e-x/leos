@@ -25,6 +25,15 @@ import org.slf4j.LoggerFactory;
 
 import com.ximpleware.*;
 
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.AKNBODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.AKOMANTOSO;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BILL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CITATIONS;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CONCLUSIONS;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PREAMBLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PREFACE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITALS;
+
 public class VTDHelper {
     
     private static final Logger LOG = LoggerFactory.getLogger(VTDHelper.class);
@@ -49,6 +58,9 @@ public class VTDHelper {
     private static byte[] getFragment(VTDNav contentNavigator, Element element, FragmentType fragmentType) throws NavException {
         int currentIndex = contentNavigator.getCurrentIndex();
         try {
+            if (element == null) {
+                return new byte[0];
+            }
             contentNavigator.recoverNode(element.getNavigationIndex());
             long fragmentElementContent;
             if (fragmentType.equals(FragmentType.ELEMENT) || TEXT_NODE_NAME.equals(element.getTagName())) {
@@ -202,7 +214,7 @@ public class VTDHelper {
     
     //tags which occur only one time in xml and contains lot of text.We avoid these tags for text similarity search by not setting the full text
     private static final ArrayList<String>  excludedTags=
-            new ArrayList<>(Arrays.asList("bill","preface","akomantoso","preamble","aknbody","conclusions","recitals","citations"));
+            new ArrayList<>(Arrays.asList(BILL, PREFACE, AKOMANTOSO, PREAMBLE, AKNBODY, CONCLUSIONS, RECITALS, CITATIONS));
     
     private static String getTextForSimilarityMatch(String tagId, String tagName, VTDNav contentNavigator,int offsetContent, int lengthContent){
         String innerText ="";

@@ -15,8 +15,7 @@ package eu.europa.ec.leos.services.compare;
 
 public interface TextComparator {
 
-    String compareTextNodeContents(String firstContent, String secondContent, String intermediateContent, String attrName, String removedValue,
-            String addedValue, Boolean threeWayDiffEnabled);
+    String compareTextNodeContents(String firstContent, String secondContent, String intermediateContent, ContentComparatorContext context);
     
     String[] twoColumnsCompareTextNodeContents(String firstContent, String secondContent);
 }

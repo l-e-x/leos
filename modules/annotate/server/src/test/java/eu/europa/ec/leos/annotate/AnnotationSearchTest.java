@@ -138,6 +138,7 @@ public class AnnotationSearchTest {
         createTestData(firstDoc, secondDoc, firstMeta, secondMeta, firstUser, secondUser);
     }
 
+    @SuppressWarnings("PMD.ExcessiveMethodLength")
     private void createTestData(final Document firstDoc, final Document secondDoc, 
             final Metadata firstMeta, final Metadata secondMeta,
             final User firstUser, final User secondUser) {
@@ -201,6 +202,7 @@ public class AnnotationSearchTest {
 
         // private reply of second user to first users' public annotation in first document
         // visible for second user
+        @SuppressWarnings("PMD.LongVariable")
         final Annotation replySecondUserToFirstUserAnnotToFirstDoc = new Annotation();
         replySecondUserToFirstUserAnnotToFirstDoc.setId(ID_PRIVREPLY_USER2_DOC1);
         replySecondUserToFirstUserAnnotToFirstDoc.setCreated(LocalDateTime.of(2012, 12, 23, 12, 0));
@@ -215,6 +217,7 @@ public class AnnotationSearchTest {
 
         // insert a private annotation of second user to first document
         // visible for second user
+        @SuppressWarnings("PMD.LongVariable")
         final Annotation firstAnnotSecondUserToFirstDoc = new Annotation();
         firstAnnotSecondUserToFirstDoc.setId(ID_PRIVANNOT_USER2_DOC1);
         firstAnnotSecondUserToFirstDoc.setCreated(LocalDateTime.of(2012, 12, 22, 12, 0));
@@ -229,6 +232,7 @@ public class AnnotationSearchTest {
 
         // insert a public annotation of second user to second document
         // visible for first user, second user
+        @SuppressWarnings("PMD.LongVariable")
         final Annotation firstAnnotSecondUserToSecondDoc = new Annotation();
         firstAnnotSecondUserToSecondDoc.setId(ID_PUBANNOT_USER2_DOC2);
         firstAnnotSecondUserToSecondDoc.setCreated(LocalDateTime.of(2012, 12, 22, 12, 0));
@@ -293,7 +297,7 @@ public class AnnotationSearchTest {
 
         Assert.assertNotNull(annots);
 
-        // three annotation in total on first document (his two own public annotation and his own public reply to it)
+        // three annotations in total on first document (his two own public annotation and his own public reply to it)
         Assert.assertEquals(2, annots.size());
         assertAnnotationContained(annots.getItems(), ID_PUBANNOT_USER1_DOC1);
 

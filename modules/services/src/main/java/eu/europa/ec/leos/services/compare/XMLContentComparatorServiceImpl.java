@@ -24,12 +24,12 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_DELETABLE_ATTR;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_EDITABLE_ATTR;
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateAttributeValue;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.EMPTY_STRING;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.insertOrUpdateAttributeValue;
 import static eu.europa.ec.leos.services.support.xml.vtd.VTDHelper.buildElement;
 import static eu.europa.ec.leos.services.support.xml.vtd.VTDHelper.buildXMLNavigator;
 import static eu.europa.ec.leos.services.support.xml.vtd.VTDHelper.getContentFragmentAsString;
@@ -108,7 +108,7 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
         int oldContentChildIndex = 0; // current index in oldContentRoot children list
         int newContentChildIndex = 0; // current index in newContentRoot children list
 
-        while (oldContentChildIndex < context.getOldContentRoot().getChildren().size()
+        while (context.getOldContentRoot() != null && oldContentChildIndex < context.getOldContentRoot().getChildren().size()
                 && newContentChildIndex < context.getNewContentRoot().getChildren().size()) {
 
             context.setOldElement(context.getOldContentRoot().getChildren().get(oldContentChildIndex))
@@ -175,7 +175,7 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
             }
         }
 
-        if (oldContentChildIndex < context.getOldContentRoot().getChildren().size()) {
+        if (context.getOldContentRoot() != null && oldContentChildIndex < context.getOldContentRoot().getChildren().size()) {
             // there are still children in the old root that have not been processed
             // it means they were all moved backward or under a different parent or deleted
             // so display the removed children
@@ -206,20 +206,27 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
         if(context.getThreeWayDiff()) {
             context.setIntermediateElement(context.getIntermediateContentElements().get(context.getNewElement().getTagId()));
         }
-
-        if ((isElementContentEqual(context) && !containsIgnoredElements(content)) || (context.getIgnoreRenumbering() && shouldIgnoreRenumbering(context.getNewElement()))) {
-            if(context.getThreeWayDiff() && context.getIntermediateElement() != null) {
-                context.getResultBuilder().append(updateElementAttribute(content, context.getStartTagAttrName(), context.getStartTagAttrValue()));
+        if ( !isActionRoot(context.getNewElement()) && !containsAddedNonIgnoredElements(content)
+                && ((isElementContentEqual(context) && !containsIgnoredElements(content)) || (context.getIgnoreRenumbering() && shouldIgnoreRenumbering(context.getNewElement())))) {
+            if(context.getThreeWayDiff()) {
+                String startTagValue = getStartTagValueForAddedElement(context.getNewElement(), context.getIntermediateElement(), context);
+                if (EMPTY_STRING.equalsIgnoreCase(startTagValue)) {
+                    context.getResultBuilder().append(updateElementAttribute(content, context.getStartTagAttrName(), context.getStartTagAttrValue()));
+                } else {
+                    context.getResultBuilder().append(updateElementAttribute(content, context.getAttrName(), startTagValue));
+                }
             } else {
-                context.getResultBuilder().append(content);
+                context.getResultBuilder().append(updateElementAttribute(content, context.getStartTagAttrName(), context.getStartTagAttrValue()));
             }
         } else if (!shouldIgnoreElement(context.getOldElement()) && (!context.getIgnoreElements() || !shouldIgnoreElement(context.getNewElement()))) {
             //add the start tag
             if(context.getThreeWayDiff()) {
               if(context.getIntermediateElement() != null && !shouldIgnoreElement(context.getIntermediateElement())) { // build start tag for moved/added element with added styles
-                  context.getResultBuilder().append(buildStartTagForAddedElement(context.getNewElement(), context.getIntermediateElement(), context.getAttrName(), context.getAddedValue()));
+                  context.getResultBuilder().append(buildStartTagForAddedElement(context.getNewElement(), context.getIntermediateElement(), context));
               } else if(shouldIgnoreElement(context.getNewElement())) { //build start tag with removed styles for removed elements
-                  context.getResultBuilder().append(buildStartTagForRemovedElement(context.getNewElement(), context.getIntermediateContentElements(), context.getAttrName(), context.getRemovedValue()));
+                  context.getResultBuilder().append(buildStartTagForRemovedElement(context.getNewElement(), context));
+              } else if(isActionRoot(context.getNewElement())) {
+                  context.getResultBuilder().append(buildStartTagForAddedElement(context.getNewElement(), context.getIntermediateElement(), context));
               } else {
                   context.getResultBuilder().append(buildStartTag(context.getNewElement())); //build tag for children without styles
               }
@@ -229,15 +236,14 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
 
             context.resetStartTagAttribute();
 
-            if (context.getNewElement().hasTextChild() || context.getOldElement().hasTextChild()) {
+            if (context.getNewElement().hasTextChild() || context.getOldElement() != null && context.getOldElement().hasTextChild()) {
                 String oldContent = getContentFragmentAsString(context.getOldContentNavigator(), context.getOldElement());
                 String newContent = getContentFragmentAsString(context.getNewContentNavigator(), context.getNewElement());
                 String intermediateContent = null;
                 if(context.getThreeWayDiff() && context.getIntermediateElement() != null) {
                     intermediateContent = getContentFragmentAsString(context.getIntermediateContentNavigator(), context.getIntermediateElement());
                 }
-                String result = getTextComparator().compareTextNodeContents(oldContent, newContent, intermediateContent,
-                        context.getAttrName(), context.getRemovedValue(), context.getAddedValue(), context.getThreeWayDiff());
+                String result = getTextComparator().compareTextNodeContents(oldContent, newContent, intermediateContent, context);
                 context.getResultBuilder().append(result);
             } else {
                 computeDifferencesAtNodeLevel(new ContentComparatorContext.Builder(context)
@@ -253,15 +259,19 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
         }
     }
 
+    protected abstract Boolean isActionRoot(Element element);
+
     protected abstract Boolean shouldIgnoreRenumbering(Element element);
 
-    protected abstract StringBuilder buildStartTagForAddedElement(Element newElement, Element oldElement, String attrName, String attrValue);
+    protected abstract String getStartTagValueForAddedElement(Element newElement, Element oldElement, ContentComparatorContext context);
 
-    protected abstract StringBuilder buildStartTagForRemovedElement(Element newElement, Map<String, Element> intermediateContentElements, String attrName, String attrValue);
+    protected abstract StringBuilder buildStartTagForAddedElement(Element newElement, Element oldElement, ContentComparatorContext context);
+
+    protected abstract StringBuilder buildStartTagForRemovedElement(Element newElement, ContentComparatorContext context);
 
     protected final StringBuilder buildStartTag(Element newElement, String attrName, String attrValue){
         StringBuilder tagContent = buildStartTag(newElement);
-        updateAttributeValue(tagContent, attrName, attrValue);
+        insertOrUpdateAttributeValue(tagContent, attrName, attrValue);
         return tagContent;
     }
 
@@ -269,8 +279,8 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
         StringBuilder tagContent = new StringBuilder(newElement.getTagContent());
         if(shouldIgnoreElement(newElement)) {
             // add read-only attributes
-            updateAttributeValue(tagContent, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
-            updateAttributeValue(tagContent, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
+            insertOrUpdateAttributeValue(tagContent, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
+            insertOrUpdateAttributeValue(tagContent, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
         }
         return tagContent;
     }
@@ -482,9 +492,9 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
     protected final void appendChangedElementsStartTag(Boolean isAdded, StringBuilder leftSideBuilder, StringBuilder rightSideBuilder, Element element){
         if (isAdded != null) {
             //on the right side, if isAdded, add the new element start tag otherwise put it as transparent
-            rightSideBuilder.append(updateAttributeValue(new StringBuilder(element.getTagContent()), ATTR_NAME, isAdded ? CONTENT_ADDED_CLASS : CONTENT_BLOCK_REMOVED_CLASS).toString());
+            rightSideBuilder.append(insertOrUpdateAttributeValue(new StringBuilder(element.getTagContent()), ATTR_NAME, isAdded ? CONTENT_ADDED_CLASS : CONTENT_BLOCK_REMOVED_CLASS).toString());
             //on the left side, if isAdded, add this element start tag for keeping the same occupied space, but make it transparent, otherwise put it as removed
-            leftSideBuilder.append(updateAttributeValue(new StringBuilder(element.getTagContent()), ATTR_NAME, isAdded ? CONTENT_BLOCK_ADDED_CLASS : CONTENT_REMOVED_CLASS).toString());
+            leftSideBuilder.append(insertOrUpdateAttributeValue(new StringBuilder(element.getTagContent()), ATTR_NAME, isAdded ? CONTENT_BLOCK_ADDED_CLASS : CONTENT_REMOVED_CLASS).toString());
         } else {
             //element was not changed
             leftSideBuilder.append(element.getTagContent());
@@ -533,6 +543,8 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
 
     protected abstract Boolean containsIgnoredElements(String content);
 
+    protected abstract Boolean containsAddedNonIgnoredElements(String content);
+
     protected abstract Boolean shouldIgnoreElement(Element element);
 
     protected abstract Boolean isElementInItsOriginalPosition(Element element);
@@ -550,6 +562,8 @@ public abstract class XMLContentComparatorServiceImpl implements ContentComparat
     protected final int getBestMatchInList(List<Element> childElements, Element element){
         if (shouldIgnoreElement(element)) {
             return -2;
+        } else if (element == null) {
+            return -1;
         }
         int foundPosition = -1;
         int rank[] = new int[childElements.size()];

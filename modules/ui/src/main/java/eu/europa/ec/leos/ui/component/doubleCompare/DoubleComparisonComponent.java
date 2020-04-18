@@ -14,35 +14,44 @@
 package eu.europa.ec.leos.ui.component.doubleCompare;
 
 import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import com.vaadin.icons.VaadinIcons;
-import com.vaadin.server.*;
+import com.vaadin.server.FileDownloader;
+import com.vaadin.server.FileResource;
+import com.vaadin.server.Resource;
+import com.vaadin.server.VaadinRequest;
+import com.vaadin.server.VaadinResponse;
 import com.vaadin.shared.ui.ContentMode;
-import com.vaadin.ui.*;
+import com.vaadin.spring.annotation.SpringComponent;
+import com.vaadin.spring.annotation.ViewScope;
+import com.vaadin.ui.Alignment;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.CustomComponent;
+import com.vaadin.ui.HorizontalLayout;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.VerticalLayout;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
-import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.i18n.MessageHelper;
-import eu.europa.ec.leos.services.export.ExportOptions;
 import eu.europa.ec.leos.ui.component.LeosDisplayField;
+import eu.europa.ec.leos.ui.component.markedText.MarkedTextNavigationHelper;
 import eu.europa.ec.leos.ui.event.EnableSyncScrollRequestEvent;
-import eu.europa.ec.leos.ui.event.doubleCompare.DocuWriteExportRequestEvent;
-import eu.europa.ec.leos.ui.event.doubleCompare.VersionSelectorUpdateEvent;
 import eu.europa.ec.leos.ui.extension.MathJaxExtension;
 import eu.europa.ec.leos.ui.extension.ScrollPaneExtension;
 import eu.europa.ec.leos.ui.extension.SliderPinsExtension;
 import eu.europa.ec.leos.ui.extension.SoftActionsExtension;
-import eu.europa.ec.leos.web.event.component.VersionListRequestEvent;
-import eu.europa.ec.leos.web.support.user.UserHelper;
+import eu.europa.ec.leos.web.event.component.MarkedTextNavigationRequestEvent;
+import eu.europa.ec.leos.web.event.view.document.ComparisonEvent;
 import eu.europa.ec.leos.web.ui.component.ContentPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComponent implements ContentPane {
+@ViewScope
+@SpringComponent
+public class DoubleComparisonComponent extends CustomComponent implements ContentPane {
     
     private static final long serialVersionUID = -826802129383432798L;
     private static final Logger LOG = LoggerFactory.getLogger(DoubleComparisonComponent.class);
@@ -50,19 +59,18 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
 
     private EventBus eventBus;
     private MessageHelper messageHelper;
-    private UserHelper userHelper;
     private LeosDisplayField doubleComparisonContent;
     private Button exportToDocuwriteButton;
-    private DoubleCompareVersionSelector<T> sliderPopup;
     private Button syncScrollSwitch;
-    private ScrollPaneExtension scrollPaneExtension;
-    
-    private FileDownloader fileDownloader;
+    private Button markedTextNextButton;
+    private Button markedTextPrevButton;
 
-    public DoubleComparisonComponent(final EventBus eventBus, final MessageHelper messageHelper, final UserHelper userHelper) {
+    private FileDownloader fileDownloader;
+    private Label versionLabel;
+
+    public DoubleComparisonComponent(final EventBus eventBus, final MessageHelper messageHelper) {
         this.eventBus = eventBus;
         this.messageHelper = messageHelper;
-        this.userHelper = userHelper;
 
         setSizeFull();
         VerticalLayout doubleComparisonLayout = new VerticalLayout();
@@ -80,6 +88,8 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         setCompositionRoot(doubleComparisonLayout);
         
         initDownloader();
+        hideCompareButtons();
+        hideExportToDocuwriteButton();
     }
 
     @Override
@@ -109,19 +119,44 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         syncScrollSwitch();
         toolsLayout.addComponent(syncScrollSwitch);
         toolsLayout.setComponentAlignment(syncScrollSwitch, Alignment.MIDDLE_LEFT);
+        
+        markedTextNextButton = markedTextNextNavigationButton();
+        markedTextNextButton.setDescription(messageHelper.getMessage("version.changes.navigation.next"));
+        toolsLayout.addComponent(markedTextNextButton);
+        toolsLayout.setComponentAlignment(markedTextNextButton, Alignment.MIDDLE_LEFT);
+        
+        markedTextPrevButton = markedTextPrevNavigationButton();
+        markedTextPrevButton.setDescription(messageHelper.getMessage("version.changes.navigation.prev"));
+        toolsLayout.addComponent(markedTextPrevButton);
+        toolsLayout.setComponentAlignment(markedTextPrevButton, Alignment.MIDDLE_LEFT);
 
         //create version selector
-        versionSelector();
-        toolsLayout.addComponent(sliderPopup);
-        toolsLayout.setComponentAlignment(sliderPopup, Alignment.MIDDLE_CENTER);
-        toolsLayout.setExpandRatio(sliderPopup,1.0f);
+        versionLabel = new Label();
+        versionLabel.setSizeUndefined();
+        versionLabel.setContentMode(ContentMode.HTML);
+        toolsLayout.addComponent(versionLabel);
+        toolsLayout.setComponentAlignment(versionLabel, Alignment.MIDDLE_CENTER);
+        toolsLayout.setExpandRatio(versionLabel,1.0f);
 
         // create print button
         exportToDocuwriteButton();
         toolsLayout.addComponent(exportToDocuwriteButton);
         toolsLayout.setComponentAlignment(exportToDocuwriteButton, Alignment.MIDDLE_RIGHT);
 
+        Button closeButton = closeMarkedTextComponent();
+        toolsLayout.addComponent(closeButton);
+        toolsLayout.setComponentAlignment(closeButton, Alignment.MIDDLE_RIGHT);
+        
         return toolsLayout;
+    }
+    
+    private Button closeMarkedTextComponent() {
+        Button closeButton = new Button();
+        closeButton.setDescription(messageHelper.getMessage("version.compare.close.button.description"));
+        closeButton.addStyleName("link leos-toolbar-button");
+        closeButton.setIcon(VaadinIcons.CLOSE_CIRCLE);
+        closeButton.addClickListener(event -> eventBus.post(new ComparisonEvent(false)));
+        return closeButton;
     }
 
     private void syncScrollSwitch() {
@@ -136,7 +171,7 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         syncScrollSwitch.addClickListener(event -> {
             Button button = event.getButton();
             boolean syncState = !(boolean) button.getData();
-            button = updateStyle(button, syncState);
+            updateStyle(button, syncState);
             eventBus.post(new EnableSyncScrollRequestEvent(syncState));
             button.setDescription(syncState
                     ? messageHelper.getMessage("leos.button.tooltip.disable.sync")
@@ -146,7 +181,25 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         });
     }
 
-    private Button updateStyle(Button button, boolean syncState) {
+    private Button markedTextPrevNavigationButton() {
+        VaadinIcons markedTextPrevIcon = VaadinIcons.CARET_UP;
+        final Button markedTextPrevButton = new Button();
+        markedTextPrevButton.setIcon(markedTextPrevIcon);
+        markedTextPrevButton.addStyleName("link leos-toolbar-button navigation-btn");
+        markedTextPrevButton.addClickListener(event -> eventBus.post(new MarkedTextNavigationRequestEvent(MarkedTextNavigationRequestEvent.NAV_DIRECTION.PREV)));
+        return markedTextPrevButton;
+    }
+    
+    private Button markedTextNextNavigationButton() {
+        VaadinIcons markedTextNextIcon = VaadinIcons.CARET_DOWN;
+        final Button markedTextNextButton = new Button();
+        markedTextNextButton.setIcon(markedTextNextIcon);
+        markedTextNextButton.addStyleName("link leos-toolbar-button navigation-btn");
+        markedTextNextButton.addClickListener(event -> eventBus.post(new MarkedTextNavigationRequestEvent(MarkedTextNavigationRequestEvent.NAV_DIRECTION.NEXT)));
+        return markedTextNextButton;
+    }
+    
+    private void updateStyle(Button button, boolean syncState) {
         if(syncState) {
             button.removeStyleName("disable-sync");
             button.addStyleName("enable-sync");
@@ -154,20 +207,8 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
             button.removeStyleName("enable-sync");
             button.addStyleName("disable-sync");
         }
-        return button;
     }
 
-    private DoubleCompareVersionSelector<T> versionSelector() {
-        sliderPopup = new DoubleCompareVersionSelector<>(messageHelper, eventBus, userHelper);
-        sliderPopup.addPopupVisibilityListener(event -> {
-            if(event.isPopupVisible()) {
-                eventBus.post(new VersionListRequestEvent<T>()); // get latest version information
-            }
-        });
-        
-        return sliderPopup;
-    }
-    
     private Component buildDoubleComparisonContent() {
         doubleComparisonContent = new LeosDisplayField();
         doubleComparisonContent.setSizeFull();
@@ -175,22 +216,24 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         doubleComparisonContent.setStyleName("leos-double-comparison-content");
         
         new MathJaxExtension<>(doubleComparisonContent);
-        new SliderPinsExtension<>(doubleComparisonContent, getSelectorStyleMap());
         new SoftActionsExtension<>(doubleComparisonContent);
-        scrollPaneExtension = new ScrollPaneExtension(doubleComparisonContent, eventBus);
+        ScrollPaneExtension scrollPaneExtension = new ScrollPaneExtension(doubleComparisonContent, eventBus);
         scrollPaneExtension.getState().idPrefix = "doubleCompare-";
         scrollPaneExtension.getState().containerSelector = ".leos-double-comparison-content";
+
+        SliderPinsExtension<LeosDisplayField> sliderPins = new SliderPinsExtension<>(doubleComparisonContent, getSelectorStyleMap());
+        MarkedTextNavigationHelper navHelper = new MarkedTextNavigationHelper(sliderPins);
+        this.eventBus.register(navHelper);
 
         return doubleComparisonContent;
     }
     
     // create export button
-    private Button exportToDocuwriteButton() {
+    private void exportToDocuwriteButton() {
         exportToDocuwriteButton = new Button();
         exportToDocuwriteButton.setDescription(messageHelper.getMessage("leos.button.tooltip.export.docuwrite"));
         exportToDocuwriteButton.addStyleName("link leos-toolbar-button");
-        exportToDocuwriteButton.setIcon(VaadinIcons.SHARE_SQUARE);
-        return exportToDocuwriteButton;
+        exportToDocuwriteButton.setIcon(VaadinIcons.DOWNLOAD);
     }
     
     private void initDownloader() {
@@ -199,13 +242,14 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
         fileDownloader = new FileDownloader(downloadStreamResource) {
             private static final long serialVersionUID = -4584979099145066535L;
             @Override
-            public boolean handleConnectorRequest(VaadinRequest request, VaadinResponse response, String path) throws IOException {
+            public boolean handleConnectorRequest(VaadinRequest request, VaadinResponse response, String path) {
                 boolean result = false;
                 try {
-                    eventBus.post(new DocuWriteExportRequestEvent<T>(ExportOptions.TO_WORD_DW_LT, sliderPopup.getSelectedVersions().get(0)));
+//                    final String downloadVersion = ""; //TODO understand what version will be able for download. populateDoubleComparisonContent() accepts already compared result
+//                    eventBus.post(new DocuWriteExportRequestEvent(ExportOptions.TO_WORD_DW_LT, T);
                     result = super.handleConnectorRequest(request, response, path);
                 } catch (Exception exception) {
-                    LOG.error("Error occured in download", exception.getMessage());
+                    LOG.error("Error occurred in download: " + exception.getMessage(), exception);
                 }
 
                 return result;
@@ -220,26 +264,39 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
 
     private Map<String, String> getSelectorStyleMap(){
         Map<String, String> selectorStyleMap = new HashMap<>();
-        selectorStyleMap.put(".leos-double-compare-removed-intermediate","pin-leos-double-compare-removed-intermediate");
-        selectorStyleMap.put(".leos-double-compare-added-intermediate","pin-leos-double-compare-added-intermediate");
-        selectorStyleMap.put(".leos-double-compare-removed-original","pin-leos-double-compare-removed-original");
-        selectorStyleMap.put(".leos-double-compare-added-original", "pin-leos-double-compare-added-original");
-        selectorStyleMap.put(".leos-double-compare-removed","pin-leos-double-compare-removed");
-        selectorStyleMap.put(".leos-double-compare-added", "pin-leos-double-compare-added");
+        selectorStyleMap.put(".leos-double-compare-removed-intermediate","pin-leos-double-compare-removed-intermediate-hidden");
+        selectorStyleMap.put(".leos-double-compare-added-intermediate","pin-leos-double-compare-added-intermediate-hidden");
+        selectorStyleMap.put(".leos-double-compare-removed-original","pin-leos-double-compare-removed-original-hidden");
+        selectorStyleMap.put(".leos-double-compare-added-original", "pin-leos-double-compare-added-original-hidden");
+        selectorStyleMap.put(".leos-double-compare-removed","pin-leos-double-compare-removed-hidden");
+        selectorStyleMap.put(".leos-double-compare-added", "pin-leos-double-compare-added-hidden");
+        selectorStyleMap.put(".leos-content-removed", "pin-leos-content-removed-hidden");
+        selectorStyleMap.put(".leos-content-new", "pin-leos-content-new-hidden");
         return selectorStyleMap;
     }
-    
-    @Subscribe
-    public void refreshPane(VersionSelectorUpdateEvent event) {
-        exportToDocuwriteButton.setEnabled(event.isVersionSelectorState());
-        syncScrollSwitch.setEnabled(event.isVersionSelectorState());
-        scrollPaneExtension.getState().enableSync = event.isVersionSelectorState();
-        setEnabled(event.isVersionSelectorState());
-    }
-    
-    public void populateDoubleComparisonContent(String comparisonContent, LeosCategory leosCategory) {
+
+    public void populateDoubleComparisonContent(String comparisonContent, LeosCategory leosCategory, String comparedInfo) {
         doubleComparisonContent.addStyleName(leosCategory.name().toLowerCase());
         doubleComparisonContent.setValue(comparisonContent);
+        versionLabel.setValue(comparedInfo);
+    }
+
+    public void hideCompareButtons() {
+        markedTextNextButton.setVisible(false);
+        markedTextPrevButton.setVisible(false);
+    }
+
+    public void showCompareButtons() {
+        markedTextNextButton.setVisible(true);
+        markedTextPrevButton.setVisible(true);
+    }
+    
+    public void hideExportToDocuwriteButton() {
+        exportToDocuwriteButton.setVisible(false);
+    }
+    
+    public void showExportToDocuwriteButton() {
+        exportToDocuwriteButton.setVisible(true);
     }
     
     @Override
@@ -258,10 +315,5 @@ public class DoubleComparisonComponent<T extends XmlDocument> extends CustomComp
                 break;
         }//end switch
         return featureWidth;
-    }
-
-    @Override
-    public Class getChildClass() {
-        return null;
     }
 }

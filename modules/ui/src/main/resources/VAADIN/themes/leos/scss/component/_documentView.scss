@@ -35,6 +35,17 @@
         border-bottom: 1px solid lighten($MENU_BORDER_COLOR, 45%);
     }
 
+    .leos-viewdoc-docbar,
+    .leos-markedtext-bar {
+        color: $MAIN_BLUE;
+    }
+
+    .leos-accordion-tab-header {
+        background: $GREY;
+        border-bottom: 1px solid lighten($MENU_BORDER_COLOR, 45%);
+        padding-left: 5px;
+    }
+
     .leos-markedtext-bar {
         padding-left: 10px;
     }
@@ -57,6 +68,10 @@
 
     .leos-toolbar-button.v-disabled {
         color: $DARK_GREY;
+    }
+
+    .leos-toolbar-button.navigation-btn {
+        padding: 0;  
     }
 
     .text-refresh-note {
@@ -95,6 +110,10 @@
         color: black;
         background: $GREY;
         position: relative;
+    }
+
+    .leos-main-layout {
+        background: $GREY;
     }
 
     @include changePane("bill");

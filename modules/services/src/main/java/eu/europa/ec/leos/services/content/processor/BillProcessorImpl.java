@@ -17,52 +17,67 @@ package eu.europa.ec.leos.services.content.processor;
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.document.Bill;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
+import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.model.xml.Element;
 import eu.europa.ec.leos.services.support.xml.NumberProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlContentProcessor;
 import eu.europa.ec.leos.services.support.xml.XmlHelper;
+import eu.europa.ec.leos.services.toc.StructureContext;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
 import org.apache.commons.lang3.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.*;
+import javax.inject.Provider;
+
+import java.util.List;
+
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CITATION;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CLAUSE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
 
 @Service
 public class BillProcessorImpl implements BillProcessor {
 
     protected XmlContentProcessor xmlContentProcessor;
     protected NumberProcessor numberProcessor;
+    protected MessageHelper messageHelper;
+    protected Provider<StructureContext> structureContextProvider;
 
     @Autowired
     BillProcessorImpl(XmlContentProcessor xmlContentProcessor,
-            NumberProcessor numberProcessor) {
+            NumberProcessor numberProcessor, MessageHelper messageHelper, Provider<StructureContext> structureContextProvider) {
         this.xmlContentProcessor = xmlContentProcessor;
         this.numberProcessor = numberProcessor;
+        this.messageHelper = messageHelper;
+        this.structureContextProvider = structureContextProvider;
     }
 
     public byte[] insertNewElement(Bill document, String elementId, boolean before, String tagName) {
         Validate.notNull(document, "Document is required.");
         Validate.notNull(elementId, "Element id is required.");
-
+        
         final String template;
         byte[] updatedContent;
+        List<TocItem> items = structureContextProvider.get().getTocItems();
 
         switch (tagName) {
             case CITATION:
-                template = XmlHelper.getCitationTemplate();
+                template = XmlHelper.getTemplate(TocItemUtils.getTocItemByNameOrThrow(items, CITATION), messageHelper);
                 updatedContent = insertNewElement(document, elementId, before, tagName, template);
                 break;
             case RECITAL:
-                template = XmlHelper.getRecitalTemplate("#");
+                template = XmlHelper.getTemplate(TocItemUtils.getTocItemByNameOrThrow(items, RECITAL), "#", messageHelper);
                 updatedContent = insertNewElement(document, elementId, before, tagName, template);
                 updatedContent = numberProcessor.renumberRecitals(updatedContent);
                 break;
             case ARTICLE:
-                template = XmlHelper.getArticleTemplate("#", "Article heading...");
+                template = XmlHelper.getTemplate(TocItemUtils.getTocItemByNameOrThrow(items, ARTICLE), "#", "Article heading...", messageHelper);
                 updatedContent = insertNewElement(document, elementId, before, tagName, template);
-                final BillMetadata metadata = document.getMetadata().getOrError(() -> "Document metadata is required!");
-                updatedContent = numberProcessor.renumberArticles(updatedContent, metadata.getLanguage());
+                updatedContent = numberProcessor.renumberArticles(updatedContent);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported operation for tag: " + tagName);
@@ -88,7 +103,7 @@ public class BillProcessorImpl implements BillProcessor {
             case ARTICLE:
                 updatedContent = deleteElement(document, elementId, tagName);
                 final BillMetadata metadata = document.getMetadata().getOrError(() -> "Document metadata is required!");
-                updatedContent = numberProcessor.renumberArticles(updatedContent, metadata.getLanguage());
+                updatedContent = numberProcessor.renumberArticles(updatedContent);
                 break;
             default:
                 throw new UnsupportedOperationException("Unsupported operation for tag: " + tagName);
@@ -124,7 +139,7 @@ public class BillProcessorImpl implements BillProcessor {
         byte[] updatedContent = xmlContentProcessor.mergeElement(contentBytes, elementContent, elementName, elementId);
         if (updatedContent != null) {
             final BillMetadata metadata = document.getMetadata().getOrError(() -> "Document metadata is required!");
-            updatedContent = numberProcessor.renumberArticles(updatedContent, metadata.getLanguage());
+         //   updatedContent = numberProcessor.renumberArticles(updatedContent, metadata.getLanguage());
             updatedContent = xmlContentProcessor.doXMLPostProcessing(updatedContent);
         }
         return updatedContent;

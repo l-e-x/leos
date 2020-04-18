@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:sec="http://www.springframework.org/schema/security"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+                           http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security.xsd">
+
+    <!-- Security Context common -->
+    <import resource="classpath:eu/europa/ec/leos/securityContext-common.xml"/>
+
+    <!-- Routing all requests to spring -->
+    <sec:http use-expressions="true" entry-point-ref="http403EntryPoint">
+        <sec:custom-filter after="PRE_AUTH_FILTER" ref="jeePreAuthenticatedFilter"/>
+        <sec:session-management session-fixation-protection="none"/>
+        <sec:csrf disabled="true"/> <!--Already handled by vaadin -->
+        <!-- Done to allow download (FileDownloader Vaadin Component is using iframes -->
+        <sec:headers>
+            <sec:frame-options policy="SAMEORIGIN"/>
+        </sec:headers>
+    </sec:http>
+
+    <bean id="http403EntryPoint" class="org.springframework.security.web.authentication.Http403ForbiddenEntryPoint"/>
+
+    <!-- J2EE pre-authentication filter is applied on any request coming via DelegatingFilterProxy -->
+    <bean id="jeePreAuthenticatedFilter" class="org.springframework.security.web.authentication.preauth.j2ee.J2eePreAuthenticatedProcessingFilter">
+        <property name="authenticationManager" ref="authenticationManager"/>
+        <property name="continueFilterChainOnUnsuccessfulAuthentication" value="true"/>
+        <property name="authenticationDetailsSource" ref="authenticationDetailsSource"/>
+        <property name="authenticationFailureHandler" ref="jeePreAuthFailureHandler"/>
+    </bean>
+
+    <!-- Get the web.xml roles and populate the matching roles in Authentication object-->
+    <bean id="authenticationDetailsSource" class="org.springframework.security.web.authentication.preauth.j2ee.J2eeBasedPreAuthenticatedWebAuthenticationDetailsSource">
+        <property name="mappableRolesRetriever" ref="j2eeMappableRolesRetriever"/>
+    </bean>
+
+    <bean id="j2eeMappableRolesRetriever"
+          class="org.springframework.security.web.authentication.preauth.j2ee.WebXmlMappableAttributesRetriever">
+    </bean>
+
+    <!-- preauthAuthProvider pulls authorities from the Authentication object and populate then in user details object-->
+    <sec:authentication-manager id="authenticationManager" alias="authenticationManager">
+        <sec:authentication-provider ref="preauthAuthProvider"/>
+    </sec:authentication-manager>
+
+    <bean id="preauthAuthProvider"
+          class="org.springframework.security.web.authentication.preauth.PreAuthenticatedAuthenticationProvider">
+        <property name="preAuthenticatedUserDetailsService" ref="leosSecurityUserService"/>
+    </bean>
+
+     <!-- Service to allow custom loading of user details and authorities -->
+    <bean id="leosSecurityUserService" class="eu.europa.ec.leos.security.LeosSecurityUserService">
+        <constructor-arg>
+            <bean class="eu.europa.ec.leos.integration.rest.UsersClientImpl"/>
+        </constructor-arg>
+    </bean>
+
+    <bean id="jeePreAuthFailureHandler" class="org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler">
+        <property name="useForward" value="true"/>
+    </bean>
+
+</beans>

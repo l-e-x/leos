@@ -16,13 +16,13 @@ package eu.europa.ec.leos.annotate.controllers;
 import com.fasterxml.jackson.core.JsonParser.Feature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.europa.ec.leos.annotate.aspects.NoAuthAnnotation;
-import eu.europa.ec.leos.annotate.model.SimpleMetadata;
+import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
-import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchCountOptions;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchOptions;
 import eu.europa.ec.leos.annotate.model.search.AnnotationSearchResult;
+import eu.europa.ec.leos.annotate.model.search.Consts;
 import eu.europa.ec.leos.annotate.model.web.IncomingSearchOptions;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.*;
@@ -53,6 +53,7 @@ import java.util.List;
 public class AnnotationApiController {
 
     private static final Logger LOG = LoggerFactory.getLogger(AnnotationApiController.class);
+    private static final String CLIENT_HEADER = "x-client-id";
 
     // -------------------------------------
     // Required services and repositories
@@ -100,7 +101,7 @@ public class AnnotationApiController {
         try {
             final UserInformation userInfo = authUser.getUserInfo();
             final JsonAnnotation myResponseJson = annotService.createAnnotation(jsonAnnotation, userInfo);
-            messageBroker.publish(myResponseJson.getId(), MessageBroker.ACTION.CREATE, request.getHeader("x-client-id"));
+            messageBroker.publish(myResponseJson.getId(), MessageBroker.ACTION.CREATE, request.getHeader(CLIENT_HEADER));
 
             LOG.debug("Annotation was saved, return Http status 200 and annotation metadata; annotation id: '{}'", myResponseJson.getId());
             return new ResponseEntity<Object>(myResponseJson, HttpStatus.OK);
@@ -192,7 +193,17 @@ public class AnnotationApiController {
 
         try {
             final JsonAnnotation myResponseJson = annotService.updateAnnotation(annotationId, jsonAnnotation, authUser.getUserInfo());
-            messageBroker.publish(myResponseJson.getId(), MessageBroker.ACTION.UPDATE, request.getHeader("x-client-id"));
+
+            // standard update or was a new annotation created (special handling for SENT ISC annotations)?
+            final String reqHeader = request.getHeader(CLIENT_HEADER);
+            if (annotationId.equals(myResponseJson.getId())) {
+                // standard update - publish the update only
+                messageBroker.publish(myResponseJson.getId(), MessageBroker.ACTION.UPDATE, reqHeader);
+            } else {
+                // new annotation created - publish the update of the original and a creation of a new annotation
+                messageBroker.publish(annotationId, MessageBroker.ACTION.UPDATE, reqHeader);
+                messageBroker.publish(myResponseJson.getId(), MessageBroker.ACTION.CREATE, reqHeader);
+            }
 
             LOG.debug("Annotation updated, return Http status 200 and annotation metadata; annotation id: '{}'", annotationId);
             return new ResponseEntity<Object>(myResponseJson, HttpStatus.OK);
@@ -251,7 +262,7 @@ public class AnnotationApiController {
 
         try {
             annotService.deleteAnnotationById(annotationId, authUser.getUserInfo());
-            messageBroker.publish(annotationId, MessageBroker.ACTION.DELETE, request.getHeader("x-client-id"));
+            messageBroker.publish(annotationId, MessageBroker.ACTION.DELETE, request.getHeader(CLIENT_HEADER));
 
             LOG.info("Annotation deleted, return Http status 200 and annotation id: '{}'", annotationId);
             return new ResponseEntity<Object>(new JsonDeleteSuccessResponse(annotationId), HttpStatus.OK);
@@ -308,7 +319,7 @@ public class AnnotationApiController {
         try {
             final List<String> deleted = annotService.deleteAnnotationsById(annotationList.getIds(), authUser.getUserInfo());
             for (final String annotationId : deleted) {
-                messageBroker.publish(annotationId, MessageBroker.ACTION.DELETE, request.getHeader("x-client-id"));
+                messageBroker.publish(annotationId, MessageBroker.ACTION.DELETE, request.getHeader(CLIENT_HEADER));
             }
 
             LOG.info("Annotations deleted, return Http status 200 and success");
@@ -348,14 +359,14 @@ public class AnnotationApiController {
      *        limit the results to annotations made by the specified user (login)
      * @param group (request parameter, wrapped in {@link IncomingSearchOptions} object)
      *        limit the results to annotations made in the specified group
+     * @param mode (request parameter, wrapped in {@link IncomingSearchOptions} object)
+     *        indicates when search is executed by a 'contributor'
      * @param tag (request parameter, wrapped in {@link IncomingSearchOptions} object)
      *        limit the results to annotations tagged with the specified value - currently ignored
      * @param any (request parameter, wrapped in {@link IncomingSearchOptions} object)
      *        limit the results to annotations in which one of a number of common fields contain the passed value - currently ignored
      * @param metadatasets (request parameter, wrapped in {@link IncomingSearchOptions} object) 
-     *        array of {@link SimpleMetadata} maps of metadata to be matched; logical OR matching applied
-     * @param status (request parameter, wrapped in {@link IncomingSearchOptions} object)
-     *        list of {@link AnnotationStatus} items to be matched, wrapped as a {@link JsonAnnotationStatuses}) 
+     *        array of {@link SimpleMetadataWithStatuses} maps of metadata and statuses to be matched; logical OR matching applied
      *
      * @return
      * in case of success: HTTP status 200, JSON based response containing search results
@@ -367,7 +378,7 @@ public class AnnotationApiController {
     @RequestMapping(value = "/search", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Object> searchAnnotations(final HttpServletRequest request, final HttpServletResponse response,
-            @RequestParam(value = "_separate_replies", defaultValue = AnnotationSearchOptions.DEFAULT_SEARCH_SEPARATE_REPLIES) final boolean separate_replies,
+            @RequestParam(value = "_separate_replies", defaultValue = Consts.DEFAULT_SEARCH_SEPARATE_REPLIES) final boolean separate_replies,
             final IncomingSearchOptions incomingOptions)
             throws IOException, ServletException {
 
@@ -384,6 +395,8 @@ public class AnnotationApiController {
             // e.g. validity checks
             final AnnotationSearchOptions options = AnnotationSearchOptions.fromIncomingSearchOptions(incomingOptions, separate_replies);
             final UserInformation userInfo = authUser.getUserInfo();
+            userInfo.setConnectedEntity(incomingOptions.getConnectedEntity()); // store the user's entity from which he is connected (not persisted)
+            
             final AnnotationSearchResult searchResult = annotService.searchAnnotations(options, userInfo);
             List<Annotation> replies = null;
             if (searchResult != null && !searchResult.isEmpty()) {

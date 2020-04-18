@@ -27,8 +27,8 @@ public class JsonTokenResponse {
 
     private String token_type = "bearer";
 
-    private String scope = null;
-    private String state = null;
+    private String scope;
+    private String state;
 
     private int expires_in;
 
@@ -51,50 +51,62 @@ public class JsonTokenResponse {
     // Getters & setters
     // -----------------------------------------------------------
 
+    @Generated
     public String getAccess_token() {
         return access_token;
     }
 
+    @Generated
     public void setAccess_token(final String access_token) {
         this.access_token = access_token;
     }
 
+    @Generated
     public String getRefresh_token() {
         return refresh_token;
     }
 
+    @Generated
     public void setRefresh_token(final String refresh_token) {
         this.refresh_token = refresh_token;
     }
 
+    @Generated
     public String getToken_type() {
         return token_type;
     }
 
+    @Generated
     public void setToken_type(final String token_type) {
         this.token_type = token_type;
     }
 
+    @Generated
     public String getScope() {
         return scope;
     }
 
+    @Generated
     public void setScope(final String scope) {
         this.scope = scope;
     }
 
+    @Generated
     public String getState() {
         return state;
     }
 
+    @Generated
     public void setState(final String state) {
         this.state = state;
     }
 
+    @Generated
     public int getExpires_in() {
         return expires_in;
     }
 
+    @Generated
     public void setExpires_in(final int expires_in) {
         this.expires_in = expires_in;
     }

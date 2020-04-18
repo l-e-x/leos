@@ -81,6 +81,7 @@ class TemplateServiceImpl implements TemplateService {
         xstream.useAttributeFor(CatalogItem.class, "type");
         xstream.useAttributeFor(CatalogItem.class, "id");
         xstream.useAttributeFor(CatalogItem.class, "enabled");
+        xstream.useAttributeFor(CatalogItem.class, "key");
         xstream.aliasField("names", CatalogItem.class, "nameMap");
         xstream.registerLocalConverter(CatalogItem.class, "nameMap", new NameMapConverter());
         xstream.aliasField("descriptions", CatalogItem.class, "descMap");

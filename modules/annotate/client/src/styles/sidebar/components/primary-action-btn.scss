@@ -1,22 +1,6 @@
-//
-// Copyright 2019 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-
 @mixin primary-action-btn {
   // note that there is currently some duplication here between
   // the styling for this element and <dropdown-menu-btn>
-  color: $color-seashell;
-  background-color: $color-dove-gray;
   height: 35px;
   border: none;
   border-radius: 2px;
@@ -27,12 +11,20 @@
   padding-left: 12px;
   padding-right: 12px;
 
+  //LEOS change 3632 - not overridden in leos since its imported on other classes
+  background: $MAIN_BLUE;
+  color: $white;
+  box-shadow: none;
+
   &:disabled {
-    color: $gray-light;
+    //LEOS change 3632 - not overridden in leos since its imported on other classes
+    background: $LIGHT_BLUE;
+    border: 1px solid $LIGHT_BLUE;
   }
 
   &:hover:enabled {
-    background-color: $color-mine-shaft;
+    //LEOS change 3632 - not overridden in leos since its imported on other classes
+    background-color: $BLUE_CLEAR;
   }
 }
 

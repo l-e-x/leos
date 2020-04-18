@@ -14,9 +14,10 @@
 var hypothesis_adder = require('../../src/annotator/adder');
 var template = require('./leos-adder.html');
 
-var SUGGESTION_BTN_SELECTOR = '.js-suggestion-btn'
-var COMMENT_BTN_SELECTOR = '.js-annotate-btn'
+var SUGGESTION_BTN_SELECTOR = '.js-suggestion-btn';
+var COMMENT_BTN_SELECTOR = '.js-annotate-btn';
 var HIGHLIGHT_BTN_SELECTOR = '.js-highlight-btn';
+var REMOVED_HIGHLIGHT_BTN = null;
 
 hypothesis_adder.Adder.prototype.handleSuggestCommand = function(event) {
   event.preventDefault();
@@ -25,12 +26,21 @@ hypothesis_adder.Adder.prototype.handleSuggestCommand = function(event) {
   this.options.onSuggest();
 
   this.hide();
-}
+};
+
+hypothesis_adder.Adder.prototype.handleHighlightCommand = function(event) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  this.options.onHighlight();
+
+  this.hide();
+};
 
 hypothesis_adder.Adder.prototype.extend = function(container, hostBridge, options) {
   this.hostBridge = hostBridge;
   this.options = options;
-  self = this;
+  var self = this;
 
   if (container.shadowRoot != null) {
     container.shadowRoot.querySelector("hypothesis-adder-actions").innerHTML = template;
@@ -45,14 +55,7 @@ hypothesis_adder.Adder.prototype.extend = function(container, hostBridge, option
   var commentBtn = this.element.querySelector(COMMENT_BTN_SELECTOR);
   var highlightBtn = this.element.querySelector(HIGHLIGHT_BTN_SELECTOR);
   if (highlightBtn) {
-    highlightBtn.onclick = function(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      options.onHighlight();
-    
-      self.hide();
-    };
+    highlightBtn.onclick = this.handleHighlightCommand.bind(this);
   }
 
   if (commentBtn) {
@@ -81,20 +84,41 @@ hypothesis_adder.Adder.prototype.extend = function(container, hostBridge, option
     suggestBtn.style.display = "none";
     suggestBtn.onclick = this.handleSuggestCommand.bind(this);
   }
-}
+};
 
 hypothesis_adder.Adder.prototype.disableSuggestionButton = function() {
-  var suggestBtn = this.element.querySelector(SUGGESTION_BTN_SELECTOR);
-  if (suggestBtn) {
-    suggestBtn.onclick = null;
-    suggestBtn.classList.add("annotator-disabled");
+  var button = this.element.querySelector(SUGGESTION_BTN_SELECTOR);
+  if (button) {
+    button.onclick = null;
+    button.classList.add("annotator-disabled");
+    button.setAttribute('data-title','Selection contains elements for which suggestions are not allowed.');
   }
-}
+};
 
 hypothesis_adder.Adder.prototype.enableSuggestionButton = function() {
-  var suggestBtn = this.element.querySelector(SUGGESTION_BTN_SELECTOR);
-  if (suggestBtn) {
-    suggestBtn.onclick = this.handleSuggestCommand.bind(this);
-    suggestBtn.classList.remove("annotator-disabled");
+  var button = this.element.querySelector(SUGGESTION_BTN_SELECTOR);
+  if (button) {
+    button.onclick = this.handleSuggestCommand.bind(this);
+    button.classList.remove("annotator-disabled");
+    button.removeAttribute('data-title');
   }
-}
+};
+
+hypothesis_adder.Adder.prototype.removeHighlightButton = function() {
+  var button = this.element.querySelector(HIGHLIGHT_BTN_SELECTOR);
+  if (button) {
+    REMOVED_HIGHLIGHT_BTN = button;
+    button.parentNode.removeChild(button);
+  }
+};
+
+hypothesis_adder.Adder.prototype.addHighlightButton = function() {
+  // All buttons share the same parent
+  var highlightButton = this.element.querySelector(HIGHLIGHT_BTN_SELECTOR);
+  if(!highlightButton && REMOVED_HIGHLIGHT_BTN) {
+    var parent = this.element.querySelector(SUGGESTION_BTN_SELECTOR).parentNode;
+    if(parent) {
+      parent.appendChild(REMOVED_HIGHLIGHT_BTN);
+    }
+  }
+};

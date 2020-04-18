@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.EMPTY_STRING;
 import static eu.europa.ec.leos.services.support.xml.vtd.VTDHelper.getElementFragmentAsString;
 import static eu.europa.ec.leos.services.support.xml.vtd.VTDHelper.updateElementAttribute;
 
@@ -50,8 +51,13 @@ public class ProposalXMLContentComparatorServiceImpl extends XMLContentComparato
     }
 
     @Override
-    protected Boolean shouldIgnoreElement(Element element){
+    protected Boolean containsAddedNonIgnoredElements(String content){
         return Boolean.FALSE;
+    }
+
+    @Override
+    protected Boolean shouldIgnoreElement(Element element){
+        return element == null;
     }
 
     @Override
@@ -70,12 +76,22 @@ public class ProposalXMLContentComparatorServiceImpl extends XMLContentComparato
     }
 
     @Override
-    protected final StringBuilder buildStartTagForAddedElement(Element newElement, Element oldElement, String attrName, String attrValue) {
+    protected Boolean isActionRoot(Element element) {
+        return Boolean.FALSE;
+    }
+
+    @Override
+    protected final StringBuilder buildStartTagForAddedElement(Element newElement, Element oldElement, ContentComparatorContext context) {
         return buildStartTag(newElement);
     }
 
     @Override
-    protected final StringBuilder buildStartTagForRemovedElement(Element newElement, Map<String, Element> intermediateContentElements, String attrName, String attrValue) {
+    protected final String getStartTagValueForAddedElement(Element newElement, Element oldElement, ContentComparatorContext context){
+        return EMPTY_STRING;
+    }
+
+    @Override
+    protected final StringBuilder buildStartTagForRemovedElement(Element newElement, ContentComparatorContext context) {
         return buildStartTag(newElement);
     }
 

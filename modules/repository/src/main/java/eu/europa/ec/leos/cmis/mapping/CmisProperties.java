@@ -33,7 +33,10 @@ public enum CmisProperties {
     ANNEX_INDEX("annex:docIndex"),
     ANNEX_NUMBER("annex:docNumber"),
     ANNEX_TITLE("annex:docTitle"),
-    COLLABORATORS("leos:collaborators");
+    COLLABORATORS("leos:collaborators"),
+    VERSION_LABEL("leos:versionLabel"),
+    VERSION_TYPE("leos:versionType"),
+    CONTAINED_DOCUMENTS("leos:containedDocuments");
 
     private String id;
 

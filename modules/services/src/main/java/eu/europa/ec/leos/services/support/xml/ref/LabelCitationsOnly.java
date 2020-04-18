@@ -14,25 +14,30 @@
 
 package eu.europa.ec.leos.services.support.xml.ref;
 
-import eu.europa.ec.leos.i18n.LanguageHelper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
+import java.util.Locale;
+
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CITATION;
 
 @Component
 public class LabelCitationsOnly extends LabelHandler {
 
-    private static final List<String> CITATION_NODES = Arrays.asList("citation");
+    private static final List<String> NODES_TO_CONSIDER = Arrays.asList(CITATION);
     
     @Override
-    public boolean process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale) {
-        for (TreeNode ref : refs) {
-            if (!CITATION_NODES.contains(ref.getType())) {
-                return false;//break and let other rules handle 
-            }
-        }
-
+    public boolean canProcess(List<TreeNode> refs) {
+        boolean canProcess = refs.stream()
+                .allMatch(ref -> NODES_TO_CONSIDER.contains(ref.getType()));
+        return canProcess;
+    }
+    
+    @Override
+    public void process(List<TreeNode> refs, List<TreeNode> mrefCommonNodes, TreeNode sourceNode, StringBuffer label, Locale locale, boolean withAnchor) {
         Deque<String> sb = new ArrayDeque<>();
         //collect all the ref anchors
         for (int i = 0; i < refs.size(); i++) {
@@ -41,7 +46,7 @@ public class LabelCitationsOnly extends LabelHandler {
             } else if (i > 0) {
                 sb.push(", ");
             }
-            sb.push(createAnchor(refs.get(i), locale));
+            sb.push(createAnchor(refs.get(i), locale, withAnchor));
 
             if (i == refs.size() - 1) {
                 //consolidate here
@@ -65,8 +70,6 @@ public class LabelCitationsOnly extends LabelHandler {
         while (sb.size() > 0) {
             label.append(sb.removeLast());
         }
-
-        return true;
     }
 
     @Override

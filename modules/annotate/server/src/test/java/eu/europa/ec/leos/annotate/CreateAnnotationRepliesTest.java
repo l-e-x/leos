@@ -44,6 +44,7 @@ import java.util.Arrays;
 @ActiveProfiles("test")
 public class CreateAnnotationRepliesTest {
 
+    private static final String UNEXPECTED_EXCEPTION = "Unexpected exception received: ";
     private User user;
 
     // -------------------------------------
@@ -110,7 +111,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertNotNull(jsAnnot);
         Assert.assertTrue(!jsAnnot.getId().isEmpty());
@@ -120,7 +121,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnotReply = annotService.createAnnotation(jsAnnotReply, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotReply.getId().isEmpty());
 
@@ -143,6 +144,7 @@ public class CreateAnnotationRepliesTest {
      * -> verifies that the reply was created and is associated to the parent annotation
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testCannotReplyToSentAnnotation() {
 
         final String annotUsername = "acct:myusername@" + Authorities.ISC;
@@ -163,7 +165,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnot = annotService.createAnnotation(jsAnnot, userInfoAnnot);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         
         // modify the metadata: set its response status to "SENT"
@@ -187,7 +189,7 @@ public class CreateAnnotationRepliesTest {
         /* try {
             jsAnnotReply = annotService.createAnnotation(jsAnnotReply, userInfoReply);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotReply.getId().isEmpty());
 
@@ -247,7 +249,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertNotNull(jsAnnot);
         Assert.assertTrue(!jsAnnot.getId().isEmpty());
@@ -257,7 +259,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnotFirstReply = annotService.createAnnotation(jsAnnotFirstReply, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotFirstReply.getId().isEmpty());
 
@@ -266,7 +268,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnotSecondReply = annotService.createAnnotation(jsAnnotSecondReply, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotSecondReply.getId().isEmpty());
 
@@ -302,7 +304,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnot = annotService.createAnnotation(jsAnnot, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertNotNull(jsAnnot);
         Assert.assertTrue(!jsAnnot.getId().isEmpty());
@@ -312,7 +314,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnotReply = annotService.createAnnotation(jsAnnotReply, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotReply.getId().isEmpty());
 
@@ -322,7 +324,7 @@ public class CreateAnnotationRepliesTest {
         try {
             jsAnnotReplyReply = annotService.createAnnotation(jsAnnotReplyReply, userInfo);
         } catch (CannotCreateAnnotationException e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
         Assert.assertTrue(!jsAnnotReplyReply.getId().isEmpty());
 
@@ -348,6 +350,7 @@ public class CreateAnnotationRepliesTest {
      * -> verifies that the reply was not created
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testInsertReplyWithoutExistingParent() throws Exception {
 
         final String username = "acct:myusername@europa.eu";
@@ -364,7 +367,7 @@ public class CreateAnnotationRepliesTest {
         } catch (CannotCreateAnnotationException e) {
             // OK
         } catch (Exception e) {
-            Assert.fail("Unexpected exception received: " + e);
+            Assert.fail(UNEXPECTED_EXCEPTION + e);
         }
 
         // ...and there must not be any annotation nor tag

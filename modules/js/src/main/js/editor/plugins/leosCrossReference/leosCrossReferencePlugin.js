@@ -85,6 +85,9 @@ define(function leosCrossReferencePluginModule(require) {
            }, {
                akn : "href",
                html : "href"
+           }, {
+               akn : "documentref",
+               html : "documentref"
            }],
            sub : {
                akn : "text",

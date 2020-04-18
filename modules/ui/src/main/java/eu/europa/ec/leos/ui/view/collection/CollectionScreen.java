@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.ui.view.collection;
 
 import com.vaadin.server.Resource;
+import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.ui.model.MilestonesVO;
@@ -28,6 +29,8 @@ interface CollectionScreen {
     void populateData(DocumentVO proposal);
 
     void populateMilestones(Set<MilestonesVO> milestonesVO);
+    
+    void showMilestoneExplorer(LegDocument legDocument, String milestoneTitle);
 
     void proposeUsers(List<UserVO> users);
 
@@ -36,6 +39,8 @@ interface CollectionScreen {
     void confirmAnnexDeletion(DocumentVO annex);
 
     void setDownloadStreamResource(Resource downloadStreamResource);
+
+    void setExportPdfStreamResource(Resource exportPdfStreamResource);
 
     void openCreateMilestoneWindow();
 

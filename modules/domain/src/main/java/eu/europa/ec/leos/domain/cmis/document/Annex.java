@@ -15,6 +15,7 @@ package eu.europa.ec.leos.domain.cmis.document;
 
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import io.atlassian.fugue.Option;
 
@@ -26,12 +27,12 @@ public final class Annex extends XmlDocument {
     private final Option<AnnexMetadata> metadata;
 
     public Annex(String id, String name, String createdBy, Instant creationInstant, String lastModifiedBy,
-                 Instant lastModificationInstant, String versionSeriesId, String versionLabel, String versionComment,
-                 boolean isMajorVersion, boolean isLatestVersion, String title, Map<String, String> collaborators,
+                 Instant lastModificationInstant, String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment,
+                 VersionType versionType, boolean isLatestVersion, String title, Map<String, String> collaborators,
                  List<String> milestoneComments, Option<Content> content, Option<AnnexMetadata> metadata) {
 
         super(LeosCategory.ANNEX, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant,
-                versionSeriesId, versionLabel, versionComment, isMajorVersion, isLatestVersion, title, collaborators,
+                versionSeriesId, cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, title, collaborators,
                 milestoneComments, content);
         this.metadata = metadata;
     }

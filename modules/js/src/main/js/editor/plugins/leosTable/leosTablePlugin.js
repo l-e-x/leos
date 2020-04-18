@@ -11,6 +11,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the Licence for the specific language governing permissions and limitations under the Licence.
  */
+/**
+ * @fileOverview Handles the tables. It uses the transformer 'leosTableTransformer' more information could be found here 
+ * https://webgate.ec.europa.eu/CITnet/confluence/display/LEOS/Annex+Mappings  
+ */
 ; // jshint ignore:line
 define(function leosTablePluginModule(require) {
     'use strict';

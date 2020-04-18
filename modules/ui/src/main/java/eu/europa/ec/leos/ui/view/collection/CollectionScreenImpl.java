@@ -27,9 +27,19 @@ import com.vaadin.shared.ui.ContentMode;
 import com.vaadin.shared.ui.MarginInfo;
 import com.vaadin.spring.annotation.SpringComponent;
 import com.vaadin.spring.annotation.ViewScope;
-import com.vaadin.ui.*;
+import com.vaadin.ui.Button;
+import com.vaadin.ui.CheckBox;
+import com.vaadin.ui.Component;
+import com.vaadin.ui.ItemCaptionGenerator;
+import com.vaadin.ui.Label;
+import com.vaadin.ui.Link;
+import com.vaadin.ui.MenuBar;
+import com.vaadin.ui.NativeSelect;
+import com.vaadin.ui.UI;
+import com.vaadin.ui.VerticalLayout;
 import com.vaadin.ui.declarative.Design;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
+import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.vo.DocumentVO;
 import eu.europa.ec.leos.domain.vo.MetadataVO;
 import eu.europa.ec.leos.i18n.LanguageHelper;
@@ -46,7 +56,8 @@ import eu.europa.ec.leos.ui.event.view.collection.DeleteAnnexEvent;
 import eu.europa.ec.leos.ui.event.view.collection.DeleteCollectionRequest;
 import eu.europa.ec.leos.ui.event.view.collection.SearchUserResponse;
 import eu.europa.ec.leos.ui.model.MilestonesVO;
-import eu.europa.ec.leos.ui.window.MilestoneWindow;
+import eu.europa.ec.leos.ui.window.milestone.MilestoneExplorer;
+import eu.europa.ec.leos.ui.window.milestone.MilestoneWindow;
 import eu.europa.ec.leos.vo.coedition.CoEditionVO;
 import eu.europa.ec.leos.vo.coedition.InfoType;
 import eu.europa.ec.leos.web.event.NotificationEvent;
@@ -56,13 +67,13 @@ import eu.europa.ec.leos.web.event.window.SaveMetaDataRequestEvent;
 import eu.europa.ec.leos.web.model.CollaboratorVO;
 import eu.europa.ec.leos.web.model.UserVO;
 import eu.europa.ec.leos.web.support.UrlBuilder;
+import eu.europa.ec.leos.web.support.cfg.ConfigurationHelper;
 import eu.europa.ec.leos.web.support.user.UserHelper;
 import eu.europa.ec.leos.web.ui.component.AnnexBlockComponent;
 import eu.europa.ec.leos.web.ui.component.EditBoxComponent;
 import eu.europa.ec.leos.web.ui.component.HeadingComponent;
 import eu.europa.ec.leos.web.ui.component.collaborators.CollaboratorsComponent;
 import eu.europa.ec.leos.web.ui.converter.LangCodeToDescriptionV8Converter;
-import eu.europa.ec.leos.web.ui.converter.UserLoginDisplayConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +83,15 @@ import org.springframework.web.context.WebApplicationContext;
 import org.vaadin.dialogs.ConfirmDialog;
 
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -161,13 +180,16 @@ abstract class CollectionScreenImpl extends VerticalLayout implements Collection
 
     @Autowired
     LeosPermissionAuthorityMapHelper authorityMapHelper;
+    
+    private final ConfigurationHelper cfgHelper;
 
     @Autowired CollectionScreenImpl(UserHelper userHelper, MessageHelper messageHelper, EventBus eventBus, LanguageHelper langHelper,
-                      WebApplicationContext webApplicationContext, SecurityContext securityContext, UrlBuilder urlBuilder) {
+                      ConfigurationHelper cfgHelper, WebApplicationContext webApplicationContext, SecurityContext securityContext, UrlBuilder urlBuilder) {
         Design.read(this);
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
         this.langConverter = new LangCodeToDescriptionV8Converter(langHelper);
+        this.cfgHelper = cfgHelper;
         this.webApplicationContext = webApplicationContext;
         this.securityContext = securityContext;
         this.userHelper = userHelper;
@@ -458,7 +480,7 @@ abstract class CollectionScreenImpl extends VerticalLayout implements Collection
     }
 
     private void openLegalText() {
-        eventBus.post(new OpenLegalTextEvent(((DocumentVO) legalTextBlock.getData()).getId()));
+        eventBus.post(new OpenLegalTextEvent(((DocumentVO) legalTextBlock.getData())));
     }
 
     private void createAnnex() {
@@ -468,7 +490,7 @@ abstract class CollectionScreenImpl extends VerticalLayout implements Collection
     private String setLastUpdated(DocumentVO vo) {
         return messageHelper.getMessage("collection.caption.document.lastupdated",
                 dataFormat.format(vo.getUpdatedOn()),
-                new UserLoginDisplayConverter(userHelper).convertToPresentation(vo.getUpdatedBy(), null, null));
+                userHelper.convertToPresentation(vo.getUpdatedBy()));
     }
 
     public void setDownloadStreamResource(Resource downloadResource) {
@@ -525,5 +547,13 @@ abstract class CollectionScreenImpl extends VerticalLayout implements Collection
                 }
             }
         });
+    }
+    
+    @Override
+    public void showMilestoneExplorer(LegDocument legDocument, String milestoneTitle){
+        MilestoneExplorer milestoneExplorer = new MilestoneExplorer(legDocument, milestoneTitle, messageHelper, eventBus, cfgHelper, securityContext, userHelper);
+        UI.getCurrent().addWindow(milestoneExplorer);
+        milestoneExplorer.center();
+        milestoneExplorer.focus();
     }
 }

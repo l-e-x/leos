@@ -15,6 +15,7 @@ package eu.europa.ec.leos.annotate.model.web.annotation;
 
 import eu.europa.ec.leos.annotate.Generated;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,41 +24,75 @@ public class JsonAnnotationPermissions {
     /**
      * Class representing the structure received by the hypothesis client for permissions on an annotation 
      */
-    
+
     private List<String> read, admin, update, delete;
+
+    // -------------------------------------
+    // Constructors
+    // -------------------------------------
+    public JsonAnnotationPermissions() {
+        // default constructor
+    }
+    
+    public JsonAnnotationPermissions(final JsonAnnotationPermissions orig) {
+        if(orig.read != null) {
+            this.read = new ArrayList<String>();
+            orig.read.forEach(entry -> this.read.add(entry));
+        }
+        if(orig.admin != null) {
+            this.admin = new ArrayList<String>();
+            orig.admin.forEach(entry -> this.admin.add(entry));
+        }
+        if(orig.update != null) {
+            this.update = new ArrayList<String>();
+            orig.update.forEach(entry -> this.update.add(entry));
+        }
+        if(orig.delete != null) {
+            this.delete = new ArrayList<String>();
+            orig.delete.forEach(entry -> this.delete.add(entry));
+        }
+    }
 
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
-    
+
+    @Generated
     public List<String> getAdmin() {
         return admin;
     }
 
+    @Generated
     public void setAdmin(final List<String> admin) {
         this.admin = admin;
     }
 
+    @Generated
     public List<String> getRead() {
         return read;
     }
 
+    @Generated
     public void setRead(final List<String> read) {
         this.read = read;
     }
 
+    @Generated
     public List<String> getDelete() {
         return delete;
     }
 
+    @Generated
     public void setDelete(final List<String> delete) {
         this.delete = delete;
     }
 
+    @Generated
     public List<String> getUpdate() {
         return update;
     }
 
+    @Generated
     public void setUpdate(final List<String> update) {
         this.update = update;
     }

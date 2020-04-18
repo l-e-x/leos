@@ -71,7 +71,7 @@ public class UserDetailsCacheTest {
         Assert.assertEquals(0, userCache.size());
         Assert.assertNull(userCache.getCachedUserDetails(LOGIN));
 
-        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", null, "santa@clause.europa.eu", null);
         userCache.cache(LOGIN, details);
         Assert.assertEquals(1, userCache.size());
 
@@ -104,7 +104,7 @@ public class UserDetailsCacheTest {
 
         final String LOGIN = "someuser";
 
-        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", "DIGIT", "santa@clause.europa.eu", null);
+        final UserDetails details = new UserDetails(LOGIN, (long) 47, "Santa", "Clause", null, "santa@clause.europa.eu", null);
         userCache.cache(LOGIN, details);
         Assert.assertNotNull(userCache.getCachedUserDetails(LOGIN));
 

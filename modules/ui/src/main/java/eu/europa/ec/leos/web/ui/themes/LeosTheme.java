@@ -14,9 +14,9 @@
 package eu.europa.ec.leos.web.ui.themes;
 
 import com.vaadin.server.ThemeResource;
-import com.vaadin.v7.ui.themes.BaseTheme;
+import com.vaadin.ui.themes.ValoTheme;
 
-public class LeosTheme extends BaseTheme {
+public class LeosTheme extends ValoTheme {
 
     public static final String NAME="leos";
 
@@ -46,5 +46,9 @@ public class LeosTheme extends BaseTheme {
     public static final ThemeResource LEOS_INFO_YELLOW_16 = new ThemeResource("icons/16/info-yellow.png");
     public static final ThemeResource LEOS_HAMBURGUER_16 = new ThemeResource("icons/16/hamburguer.png");
     public static final ThemeResource LEOS_CHECKBOX_16 = new ThemeResource("icons/16/checkbox.png");
-    
+    public static final ThemeResource LEOS_TOC_CANCEL_ICON_16 = new ThemeResource("icons/16/toc-cancel.png");
+    public static final ThemeResource LEOS_TOC_SAVE_ICON_16 = new ThemeResource("icons/16/toc-save.png");
+    public static final ThemeResource LEOS_TOC_SAVE_CLOSE_ICON_16 = new ThemeResource("icons/16/toc-save-close.png");
+    public static final ThemeResource LEOS_HAMBURGUER_VERSIONS_16 = new ThemeResource("icons/16/version_actions.png");
+
 }

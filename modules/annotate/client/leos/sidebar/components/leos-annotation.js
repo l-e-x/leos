@@ -17,6 +17,9 @@ var diff_match_patch = require('diff-match-patch');
 import 'diff-match-patch-line-and-word';
 
 var annotation = require('../../../src/sidebar/components/annotation');
+var serviceConfig = require('../../../src/sidebar/service-config');
+var SYSTEMIDS = require('../../../leos/shared/systemId');
+var OPERATION_MODES = require('../../../leos/shared/operationMode');
 
 // @ngInject
 function LeosAnnotationController(
@@ -29,6 +32,7 @@ function LeosAnnotationController(
       , groups: groups, permissions: permissions, serviceUrl: serviceUrl, session: session, settings: settings, api: api, streamer: streamer});
 
   var parentAuthorize = this.authorize;
+  //var parentSave = this.save;
 
   const docMetadata = (this.annotation.document != undefined) ? Object.keys(this.annotation.document.metadata)
     .filter(key => Object.keys(settings.displayMetadataCondition).indexOf(key) != -1)
@@ -38,31 +42,52 @@ function LeosAnnotationController(
     }, {}) : {};
 
   this.authorize = function (action) {
-    if (action == "delete" || action == "update") {
-      if (settings.readOnly == "true") {
+    var responseStatus = this.annotation.document.metadata.responseStatus || null;
+    var annotationGroup = this.annotation.document.metadata.responseId || null;
+    var annotationStatus = this.annotation.status.status || null;
+
+    if (action === "delete" || action === "update") {
+      if (settings.operationMode === OPERATION_MODES.READ_ONLY) {
         return false;
       }
+      var svc = serviceConfig(settings);
+      if (responseStatus === 'SENT' && svc && svc.authority && svc.authority === SYSTEMIDS.ISC) {
+        if(annotationGroup !== settings.connectedEntity || (annotationStatus && annotationStatus !== 'NORMAL')) {
+          //Annotation not from same group as connected unit, so no edit nor delete are allowed
+          return false;
+        } else if(action === 'update' || action === 'delete') {
+          return true;
+        }
+      }
     }
-    if (action == 'merge_suggestion') {
+    if (action === 'merge_suggestion') {
       return permissions.getUserPermissions().indexOf('CAN_MERGE_SUGGESTION') !== -1;
     }
     if (action === 'delete') {
       if (permissions.getUserPermissions().indexOf('CAN_DELETE') !== -1) {
         return true;
-      }
-      else {
+      } else {
         return parentAuthorize(action);
       }
     } else {
       return parentAuthorize(action);
     }
-    return false;
   };
 
   this.annotation.selected = false;
 
   this.isSelected = function() {
     return this.annotation.selected;
+  };
+
+  this.canReply = function() {
+    //LEOS 3839 : disabling reply on ISC context
+    var svc = serviceConfig(settings);
+    if (svc && svc.authority && svc.authority === SYSTEMIDS.ISC || settings.operationMode === OPERATION_MODES.READ_ONLY) {
+      return false;
+    } else {
+      return true;
+    }
   };
 
   this.showButtons = function($event) {
@@ -83,16 +108,16 @@ function LeosAnnotationController(
 
   this.getMetadata = function() {
     return docMetadata;
-  }
+  };
 
   this.shouldDisplayMetadata = function() {
     return (Object.keys(docMetadata).length >= 0);
-  }
+  };
 
   this.getMetadataInfoStyle = function(keytoFind) {
     var index = Object.keys(docMetadata).indexOf(keytoFind);
     return `leos-metadata-info-${index}`
-  } 
+  };
 
   this.diffText = function() {
       var htmlDiff = this.state().text;
@@ -128,5 +153,5 @@ module.exports = {
   template: require('../templates/leos-annotation.html'),
 
   // Private helper exposed for use in unit tests.
-  updateModel: annotation.updateModel,
+  updateModel: annotation.updateModel
 };

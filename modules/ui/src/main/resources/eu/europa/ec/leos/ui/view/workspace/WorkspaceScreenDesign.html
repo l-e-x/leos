@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<meta charset="UTF-8" name="package-mapping" content="w:eu.europa.ec.leos.ui.view.workspace">
+<head/>
+<body>
+<v-horizonal-layout primary-style-name="repository-view" style-name="leos-repository" margin spacing size-full>
+    <w-workspace-options primary-style-name="first-column" style-name="leos-card-filters" _id="workspaceOptions" size-full :expand=".2" margin="false" spacing="false">
+        <v-horizontal-layout style-name="leos-filter-header" :top="" width-full spacing="false" margin="false">
+            <v-label _id="filterCaption" :expand="0.75"></v-label>
+            <v-button primary-style-name="icon-only"  style-name="link reset-button" _id="resetButton" :top="" :right="" :expand="0.25"></v-button>
+        </v-horizontal-layout>
+    </w-workspace-options>
+    <v-vertical-layout primary-style-name="second-column" size-full :expand=".8" margin="false" spacing>
+        <v-horizontal-layout spacing width-full>
+            <v-button style-name="icon-only leos-refresh-button"  icon="fonticon://FontAwesome/f021" _id="refreshButton" :top="" :left=""></v-button>
+            <v-horizontal-layout style-name="v-component-group" :expand="1.0" :top="" :left="" size-full spacing="false">
+                <v-text-field _id="searchBox" style-name="inline-icon" icon="fonticon://Vaadin-Icons/e805" immediate width-full :expand="1.0"></v-text-field>
+                <v-button style-name="group-button" _id="sortAscButton" id="ASC" icon="fonticon://Vaadin-Icons/e7ce"></v-button>
+                <v-button style-name="group-button" _id="sortDescButton" id="DESC" icon="fonticon://Vaadin-Icons/e7d1"></v-button>
+            </v-horizontal-layout>
+            <v-button style-name="friendly" _id="uploadDocumentButton" visible="false" :top="" :right=""></v-button>
+            <v-button style-name="primary" _id="createDocumentButton" :top="" :right=""></v-button>
+        </v-horizontal-layout>
+        <v-vertical-layout  _id="documentHolder" style-name="leos-card-holder" size-full :expand="1.0" spacing="false" margin="false">
+    </v-vertical-layout>
+</v-horizonal-layout>
+</body>
+</html>

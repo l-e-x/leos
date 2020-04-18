@@ -13,15 +13,17 @@
  */
 package eu.europa.ec.leos.services.export;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import javax.xml.ws.WebServiceException;
-
+import com.google.common.base.Stopwatch;
+import eu.europa.ec.leos.domain.common.InstanceType;
+import eu.europa.ec.leos.instance.Instance;
+import eu.europa.ec.leos.integration.ToolBoxService;
+import eu.europa.ec.leos.security.SecurityContext;
+import eu.europa.ec.leos.services.content.processor.TransformationService;
+import eu.europa.ec.leos.services.document.AnnexService;
+import eu.europa.ec.leos.services.document.BillService;
+import eu.europa.ec.leos.services.store.LegService;
+import eu.europa.ec.leos.services.store.PackageService;
+import io.atlassian.fugue.Pair;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,14 +31,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Stopwatch;
+import javax.xml.ws.WebServiceException;
 
-import eu.europa.ec.leos.domain.common.InstanceType;
-import eu.europa.ec.leos.integration.ToolBoxService;
-import eu.europa.ec.leos.security.SecurityContext;
-import eu.europa.ec.leos.services.store.PackageService;
-import eu.europa.ec.leos.instance.Instance;
-import io.atlassian.fugue.Pair;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Instance(instances = {InstanceType.COMMISSION, InstanceType.OS})
@@ -49,14 +51,14 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
     protected int jobResultMaxTries;
 
     protected final static String ZIP_PACKAGE_NAME = "AkomaNtoso2LegisWrite";
-    
+
     @Autowired
-    ProposalExportServiceImpl(PackageService packageService, Optional<ToolBoxService> toolBoxServiceO, SecurityContext securityContext,
-            ExportHelper exportHelper) {
-        super(packageService, securityContext, exportHelper);
-        toolBoxServiceO.ifPresent(service -> this.toolBoxService = service );
+    ProposalExportServiceImpl(LegService legService, PackageService packageService, Optional<ToolBoxService> toolBoxServiceO, SecurityContext securityContext,
+            ExportHelper exportHelper, BillService billService, AnnexService annexService, TransformationService transformationService) {
+        super(legService, packageService, securityContext, exportHelper, billService, annexService, transformationService);
+        toolBoxServiceO.ifPresent(service -> this.toolBoxService = service);
     }
-    
+
     /**
      * Asks to Toolbox the generation of PDF/LegisWrite for the given proposalId and return the jobId.
      * The result will be sent to the email of the logged user.
@@ -77,14 +79,13 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
             packages.put(exportOptions.getFilePrefix() + ZIP_PACKAGE_NAME, legisWritePackage);
 
             jobId = toolBoxService.createJobWithEmail(proposalId, packages, destinationEmail);
-        } catch(WebServiceException wse) {
+        } catch (WebServiceException wse) {
             LOG.error("Webservice error occurred in method exportToToolboxCoDe(): {}", wse.getMessage());
             throw wse;
         } catch (Exception ex) {
             LOG.error("Unexpected error occurred in method exportToToolboxCoDe(): {}", ex.getMessage());
             throw ex;
-        }
-        finally {
+        } finally {
             if (legisWritePackage != null && legisWritePackage.exists()) {
                 legisWritePackage.delete();
             }
@@ -113,17 +114,17 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
             Map<String, File> packages = new HashMap<>();
             packages.put(exportOptions.getFilePrefix() + ZIP_PACKAGE_NAME, legisWritePackage);
             jobId = toolBoxService.createJob(packages);
-            LOG.debug("Rendition request with jobId '{}' correctly sent to Toolbox for legFile '{}'. JobFile sent to Toolbox '{}'. Waiting the reply...", jobId, legFile.getName(), legisWritePackage.getName());
+            LOG.debug("Rendition request with jobId '{}' correctly sent to Toolbox for legFile '{}'. JobFile sent to Toolbox '{}'. Waiting the reply...", jobId,
+                    legFile.getName(), legisWritePackage.getName());
 
             return checkForReply(jobId, exportOptions);
-        } catch(WebServiceException wse) {
+        } catch (WebServiceException wse) {
             LOG.error("Webservice error occurred in method exportToToolboxCoDe(): {}", wse.getMessage());
             throw wse;
         } catch (Exception ex) {
             LOG.error("Unexpected error occurred in method exportToToolboxCoDe(): {}", ex.getMessage());
             throw ex;
-        }
-        finally {
+        } finally {
             if (legisWritePackage != null && legisWritePackage.exists()) {
                 legisWritePackage.delete();
             }
@@ -135,11 +136,11 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
      * The reply from Toolbox will be received in the callback.
      *
      * @param proposalId Proposal for which we need to generate the PDF/LegisWrite
-     * @param legPackage Leg file structure in Pair<File, ExportResource> format for which we need to generate the PDF/LegisWrite.
+     * @param legPackage Leg file structure in LegPackage format for which we need to generate the PDF/LegisWrite.
      * @return jobId assigned from Toolbox for this generation.
      */
     @Override
-    public String exportLegPackage(String proposalId, Pair<File, ExportResource> legPackage) throws Exception{
+    public String exportLegPackage(String proposalId, LegPackage legPackage) throws Exception {
         Validate.notNull(toolBoxService, "Export Service is not available!!");
         String jobId;
         File pdfPackage = null;
@@ -152,14 +153,13 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
             packages.put(ExportOptions.TO_WORD_LW.getFilePrefix() + ZIP_PACKAGE_NAME, legisWritePackage);
 
             jobId = toolBoxService.createJobWithCallback(proposalId, packages);
-        } catch(WebServiceException wse) {
+        } catch (WebServiceException wse) {
             LOG.error("Webservice error occurred in method exportLegPackage(): {}", wse.getMessage());
             throw wse;
         } catch (Exception ex) {
             LOG.error("Unexpected error occurred in method exportLegPackage(): {}", ex.getMessage());
             throw ex;
-        }
-        finally {
+        } finally {
             if (legisWritePackage != null && legisWritePackage.exists()) {
                 legisWritePackage.delete();
             }
@@ -179,7 +179,8 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
         while (count < jobResultMaxTries) {
             try {
                 Pair<byte[], byte[]> zipFiles = toolBoxService.getZipFilesFromLegDocumentJobResult(jobId);
-                LOG.debug("Rendition response from Toolbox in {} sec. Nr. tries made {} with a frequency of {} seconds", stopwatch.elapsed(TimeUnit.SECONDS), count, jobResultPullingThresholdInSeconds);
+                LOG.debug("Rendition response from Toolbox in {} sec. Nr. tries made {} with a frequency of {} seconds", stopwatch.elapsed(TimeUnit.SECONDS),
+                        count, jobResultPullingThresholdInSeconds);
                 if (exportOptions.equals(ExportOptions.TO_PDF_LW)) {
                     return zipFiles.left();
                 } else if (exportOptions.equals(ExportOptions.TO_WORD_LW)) {
@@ -191,7 +192,8 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
             count++;
             Thread.sleep(jobResultPullingThresholdInSeconds * 1000);
         }
-        LOG.warn("Couldn't generate Rendition for legFile with jobId '{}'. jobResultMaxTries: {}, jobResultPullingThresholdInSeconds: {} . Total time {} secs", jobId, jobResultMaxTries, jobResultPullingThresholdInSeconds,  stopwatch.elapsed(TimeUnit.SECONDS));
+        LOG.warn("Couldn't generate Rendition for legFile with jobId '{}'. jobResultMaxTries: {}, jobResultPullingThresholdInSeconds: {} . Total time {} secs",
+                jobId, jobResultMaxTries, jobResultPullingThresholdInSeconds, stopwatch.elapsed(TimeUnit.SECONDS));
         throw new RuntimeException("Toolbox didn't replied in the established number of tentatives");
     }
 
@@ -200,8 +202,8 @@ public class ProposalExportServiceImpl extends ExportServiceImpl {
         Validate.notNull(exportOptions);
         Validate.notNull(legFile);
         try {
-            Pair<File, ExportResource> legPackage = packageService.createLegPackage(legFile, exportOptions);
-            legFile = legPackage.left();
+            LegPackage legPackage = legService.createLegPackage(legFile, exportOptions);
+            legFile = legPackage.getFile();
             return createZipFile(legPackage, jobFileName, exportOptions);
         } finally {
             if (legFile != null && legFile.exists()) {

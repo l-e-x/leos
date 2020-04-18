@@ -13,14 +13,16 @@
  */
 package eu.europa.ec.leos.web.event.view.document;
 
+import eu.europa.ec.leos.domain.vo.DocumentVO;
+
 public class OpenLegalTextEvent {
-    private String documentId;
-    
-    public OpenLegalTextEvent(String documentId) {
-        this.documentId = documentId;
+    private DocumentVO legalText;
+
+    public OpenLegalTextEvent(DocumentVO legalText) {
+        this.legalText = legalText;
     }
-    
-    public String getDocumentId() {
-        return documentId;
+
+    public DocumentVO getLegalText() {
+        return legalText;
     }
 }

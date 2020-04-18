@@ -22,6 +22,7 @@ define(function leosPluginUtilsModule(require) {
     var ORDER_LIST_ELEMENT = "ol";
     var HTML_POINT = "li";
     var MAX_LIST_LEVEL = 5;
+    var MAX_LEVEL_LIST_DEPTH = 4;
 
     function _hasTextOrBogusAsNextSibling(element){
         return (element instanceof CKEDITOR.dom.element) && element.hasNext()
@@ -32,7 +33,8 @@ define(function leosPluginUtilsModule(require) {
         var elementName = UNKNOWN;
         if (element instanceof CKEDITOR.dom.element) {
             elementName = element.getName();
-        } else if (element instanceof CKEDITOR.dom.text) {
+        } else if (element instanceof CKEDITOR.dom.text
+                || (element && element.nodeName && element.nodeName === "#text")) {
             elementName = TEXT;
         } else if(element && element.localName){
             elementName = element.localName;
@@ -74,12 +76,33 @@ define(function leosPluginUtilsModule(require) {
             return false;
         }
     }
+    
+    function _isLevelList(element) {
+        return element && 'aknLevel' === element.getAttribute('data-akn-name');
+    }
+    
+    function _isSelectionInFirstLevelList(element) {
+        var listDepth = 0;
+        var olElement = element.getAscendant('ol');
+        while (!_isLevelList(olElement)) {
+            if (olElement) {
+                listDepth = listDepth + 1;
+                olElement = olElement.getAscendant('ol');
+            } else {
+                break;
+            }
+        }
+        return listDepth === 1;
+    }
 
     return {
         hasTextOrBogusAsNextSibling: _hasTextOrBogusAsNextSibling,
         getElementName: _getElementName,
         setFocus: _setFocus,
         calculateListLevel: _calculateListLevel,
-        MAX_LIST_LEVEL: MAX_LIST_LEVEL
+        isSelectionInFirstLevelList: _isSelectionInFirstLevelList,
+        isLevelList: _isLevelList,
+        MAX_LIST_LEVEL: MAX_LIST_LEVEL,
+        MAX_LEVEL_LIST_DEPTH: MAX_LEVEL_LIST_DEPTH
     };
 });

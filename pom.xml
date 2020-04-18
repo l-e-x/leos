@@ -19,7 +19,7 @@
 
     <groupId>eu.europa.ec.digit.leos.pilot</groupId>
     <artifactId>leos</artifactId>
-    <version>2.1.0</version>
+    <version>3.0.0</version>
     <packaging>pom</packaging>
 
     <name>LEOS Pilot</name>
@@ -42,15 +42,12 @@
 
     <repositories>
         <repository>
-            <id>joinup-repo</id>
-            <url>https://joinup.ec.europa.eu/nexus/content/groups/public</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <id>vaadin-addons</id>
             <url>https://maven.vaadin.com/vaadin-addons</url>
+        </repository>
+        <repository>
+            <id>shibboleth</id>
+            <url>https://build.shibboleth.net/nexus/content/repositories/releases</url>
         </repository>
     </repositories>
 
@@ -79,8 +76,8 @@
         <leos.build.date>${git.build.time}</leos.build.date>
         <leos.build.timestamp>${buildnumber.timestamp}</leos.build.timestamp>
         <leos.source.status>${git.commit.id.describe-short}</leos.source.status>
-        <!--leos.source.revision>${git.commit.id.describe}</leos.source.revision-->
-		<leos.source.revision>${project.version}</leos.source.revision>
+        <!-- leos.source.revision>${git.commit.id.describe}</leos.source.revision-->
+        <leos.source.revision>${project.version}</leos.source.revision>
         <leos.source.committedRevision>${git.commit.id}</leos.source.committedRevision>
         <leos.source.committedDate>${git.commit.time}</leos.source.committedDate>
         <!-- Plugins -->
@@ -134,9 +131,11 @@
         <chemistry-opencmis.version>1.1.0</chemistry-opencmis.version>
         <servlet.version>3.0.1</servlet.version>
         <javax-inject.version>1</javax-inject.version>
+        <commons-collections.version>3.2.2</commons-collections.version>
+        <commons-lang.version>2.6</commons-lang.version>
         <commons-lang3.version>3.5</commons-lang3.version>
         <commons-fileupload.version>1.3.3</commons-fileupload.version>
-        <commons-io.version>2.5</commons-io.version>
+        <commons-io.version>2.6</commons-io.version>
         <guava.version>20.0</guava.version>
         <jsr305.version>3.0.1</jsr305.version>
         <google-diffutils.version>1.3.0</google-diffutils.version>
@@ -150,21 +149,24 @@
         <jackson-databind.version>2.8.5</jackson-databind.version>
         <cxf-maven-plugin.version>3.1.10</cxf-maven-plugin.version>
         <jaxb2-maven-plugin.version>2.3.1</jaxb2-maven-plugin.version>
+        <jaxb2-basics.version>0.11.1</jaxb2-basics.version>
+        <jvnet-jaxb2-plugin.version>0.14.0</jvnet-jaxb2-plugin.version>
         <fugue.version>4.4.0</fugue.version>
         <okhttp.version>3.7.0</okhttp.version>
         <saxon.version>9.8.0-3</saxon.version>
         <jena.version>3.3.0</jena.version>
         <icu4j.version>60.2</icu4j.version>
         <!-- Vaadin -->
-        <vaadin.version>8.5.2</vaadin.version>
+        <vaadin.version>8.8.6</vaadin.version>
         <vaadin-sass-compiler.version>0.9.13</vaadin-sass-compiler.version>
         <vaadin-plugin.version>${vaadin.version}</vaadin-plugin.version>
-        <vaadin-spring.version>3.1.1</vaadin-spring.version>
+        <vaadin-spring.version>3.2.1</vaadin-spring.version>
         <vaadin-confirmdialog.version>3.2.0</vaadin-confirmdialog.version>
         <vaadin-commponent-renderer.version>2.0.0</vaadin-commponent-renderer.version>
         <vaadin-onoffswitch.version>1.1.0</vaadin-onoffswitch.version>
         <vaadin-dndscroll.version>2.0.2</vaadin-dndscroll.version>
         <vaadin-gridextensionpack.version>2.0.0</vaadin-gridextensionpack.version>
+        <vaadin-sliderpanel.version>2.2.1</vaadin-sliderpanel.version>
         <!-- JUnit 5 -->
         <junit-jupiter.version>5.0.2</junit-jupiter.version>
         <junit-platform.version>1.0.2</junit-platform.version>
@@ -174,6 +176,10 @@
         <!-- Sonar -->
         <sonar-maven-plugin.version>3.2</sonar-maven-plugin.version>
         <commons-text.version>1.4</commons-text.version>
+        <artemis.version>2.11.0</artemis.version>
+        <!-- iText -->
+        <itext-itext7-core.version>7.1.6</itext-itext7-core.version>
+        <itext-html2pdf.version>2.1.3</itext-html2pdf.version>
     </properties>
 
     <prerequisites>
@@ -318,6 +324,16 @@
                 <groupId>javax.inject</groupId>
                 <artifactId>javax.inject</artifactId>
                 <version>${javax-inject.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-collections</groupId>
+                <artifactId>commons-collections</artifactId>
+                <version>${commons-collections.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>commons-lang</groupId>
+                <artifactId>commons-lang</artifactId>
+                <version>${commons-lang.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -500,6 +516,11 @@
                 <artifactId>gridextensionpack</artifactId>
                 <version>${vaadin-gridextensionpack.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.vaadin.addons</groupId>
+                <artifactId>vaadin-sliderpanel</artifactId>
+                <version>${vaadin-sliderpanel.version}</version>
+            </dependency>
             <!-- Testing frameworks -->
             <dependency>
                 <groupId>junit</groupId>
@@ -538,10 +559,26 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
-			    <groupId>org.apache.commons</groupId>
-			    <artifactId>commons-text</artifactId>
-			    <version>${commons-text.version}</version>
-			</dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-text</artifactId>
+                <version>${commons-text.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jvnet.jaxb2_commons</groupId>
+                <artifactId>jaxb2-basics</artifactId>
+                <version>${jaxb2-basics.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.itextpdf</groupId>
+                <artifactId>itext7-core</artifactId>
+                <version>${itext-itext7-core.version}</version>
+                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>com.itextpdf</groupId>
+                <artifactId>html2pdf</artifactId>
+                <version>${itext-html2pdf.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -897,7 +934,12 @@
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
                     <version>${sonar-maven-plugin.version}</version>
-                </plugin>                
+                </plugin>
+                <plugin>
+                    <groupId>org.jvnet.jaxb2.maven2</groupId>
+                    <artifactId>maven-jaxb2-plugin</artifactId>
+                    <version>${jvnet-jaxb2-plugin.version}</version>
+                </plugin>
             </plugins>
         </pluginManagement>
         <plugins>

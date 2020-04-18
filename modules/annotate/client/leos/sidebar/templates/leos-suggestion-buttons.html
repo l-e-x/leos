@@ -2,7 +2,7 @@
 
     Copyright 2019 European Commission
 
-    Licensed under the EUPL, Version 1.2 or â€“ as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+    Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
     You may not use this work except in compliance with the Licence.
     You may obtain a copy of the Licence at:
 
@@ -14,15 +14,15 @@
 
 -->
 <div class="annotation-leos-actions">
-  <button class="suggestion-merge-action" title="{{vm.getTitle()}}"
-       ng-show="vm.authorize('merge_suggestion')"
-       ng-disabled="vm.disabled() || vm.isAccepting"
-       ng-click="vm.accept($event)"
-       h-branding="ctaTextColor, ctaBackgroundColor">Accept
-  </button>
-  <button class="publish-annotation-cancel-btn btn-clean"
-       ng-show="vm.authorize('merge_suggestion')"
-       ng-disabled="vm.isAccepting"
-       ng-click="vm.reject()"
-       title="Reject suggestion">Reject</button>
+    <button class="suggestion-merge-action"
+            title="{{vm.getAcceptTitle()}}"
+            ng-show="vm.authorize('merge_suggestion')"
+            ng-disabled="vm.isAcceptDisabled()"
+            ng-click="vm.accept($event)"
+            h-branding="ctaTextColor, ctaBackgroundColor">Accept</button>
+    <button class="publish-annotation-cancel-btn btn-clean"
+            title="{{vm.getRejectTitle()}}"
+            ng-show="vm.authorize('merge_suggestion')"
+            ng-disabled="vm.isRejectDisabled()"
+            ng-click="vm.reject()">Reject</button>
 </div>

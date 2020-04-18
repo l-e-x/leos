@@ -40,7 +40,10 @@ define(function annotateExtensionModule(require) {
                                 connector.getState().authority,
                                 connector.getState().anotHost,
                                 connector.getState().anotClient,
-                                connector.getState().oauthClientId);
+                                connector.getState().oauthClientId,
+                                connector.getState().operationMode,
+                                connector.getState().showStatusFilter,
+                                connector.getState().showGuideLinesButton);
         _addScript(document, `${connector.getState().anotClient}/boot.js`);
 
         var annotationContainerElt = document.querySelector(connector.getState().annotationContainer);
@@ -118,7 +121,7 @@ define(function annotateExtensionModule(require) {
         var connector = this;
         log.debug("Side Bar extension state changed...");
         // KLUGE delay execution due to sync issues with target update
-        setTimeout(_refresh(document, connector.getState().annotationContainer), 500, connector);
+        setTimeout(_refresh(document, connector.getState().annotationContainer, connector.getState().readOnly), 500, connector);
     }
 
     function _receiveUserPermissions(...userPermissions) {
@@ -169,8 +172,9 @@ define(function annotateExtensionModule(require) {
         }
     }
 
-    function _refresh(doc, annotationContainer) {
+    function _refresh(doc, annotationContainer, readOnly) {
         var event = new Event("annotationRefresh");
+        event.readOnly = readOnly;
         var annotationContainerElt = doc.querySelector(annotationContainer);
         if (annotationContainerElt) {
             annotationContainerElt.dispatchEvent(event);
@@ -192,14 +196,18 @@ define(function annotateExtensionModule(require) {
 
     /* this method creates the config which would be used by annotate client when it instantiate
      * below config will significantly modify the way client will behave*/
-    function _addHostConfig(doc, annotationContainer, authority, anotHost, anotClient, oauthClientId) {
+    function _addHostConfig(doc, annotationContainer, authority, anotHost, anotClient, oauthClientId, operationMode, showStatusFilter, showGuideLinesButton) {
         var script = doc.createElement('script');
         script.type = 'application/json';
         script.className = 'js-hypothesis-config';
         var webSocketUrl = anotHost.replace('https','wss').replace('http','ws')+"/ws";
         script.innerHTML = `{
                                 "leosDocumentRootNode": "akomantoso",
+                                "operationMode" : "${operationMode}",
+                                "showStatusFilter" : ${showStatusFilter},
+                                "showGuideLinesButton" : ${showGuideLinesButton},
                                 "annotationContainer": "${annotationContainer}",
+                                "connectedEntity": "",
                                 "ignoredTags": ["div"],
                                 "allowedSelectorTags": "a.ref2link-generated, span.leos-content-soft-new",
                                 "editableSelector": "[leos\\\\:editable=true],article,heading,recitals,citations",
@@ -254,7 +262,7 @@ define(function annotateExtensionModule(require) {
     var suggestionsRules = {
         text: {
             $: function (selector, context) {
-            	context.startOffset += escapeXml(this.textContent).length;
+             context.startOffset += escapeXml(this.textContent).length;
             }
         },
         element: {
@@ -263,7 +271,7 @@ define(function annotateExtensionModule(require) {
                 context.startOffset -= escapeXml(this.textContent).length;
             },
             '.leos-content-soft-removed': function (selector, context) {
-            	context.startOffset -= escapeXml(this.textContent).length;
+             context.startOffset -= escapeXml(this.textContent).length;
             }
         }
     };

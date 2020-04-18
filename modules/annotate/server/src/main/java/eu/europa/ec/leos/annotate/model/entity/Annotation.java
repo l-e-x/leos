@@ -54,6 +54,10 @@ public class Annotation {
     @SuppressWarnings("PMD.ShortVariable")
     private String id;
 
+    // ID of a linked annotation
+    @Column(name = "LINKED_ANNOT_ID", nullable = true)
+    private String linkedAnnotationId;
+    
     // the text of the annotation
     @Column(name = "TEXT")
     private String text;
@@ -123,7 +127,15 @@ public class Annotation {
     // track who modified the status (user id, but we don't create a foreign key as it might slow down things unintentionally)
     @Column(name = "STATUS_UPDATED_BY", nullable = true)
     private Long statusUpdatedBy;
+    
+    // flag indicating whether the annotation was prepared for deletion - maybe define a "flags" field in future if there are more?
+    @Column(name = "SENT_DELETED", nullable = false)
+    private boolean sentDeleted;
 
+    // the response version with which the annotation was sentDeleted
+    @Column(name = "RESP_VERSION_SENT_DELETED", nullable = true)
+    private long respVersionSentDeleted;
+    
     // -------------------------------------
     // constructor
     // -------------------------------------
@@ -174,6 +186,14 @@ public class Annotation {
             allStatuses.add(NORMAL);
             return allStatuses;
         }
+
+        public static List<AnnotationStatus> getNonDeleted() {
+            final List<AnnotationStatus> allNonDeleted = new ArrayList<AnnotationStatus>();
+            allNonDeleted.add(NORMAL);
+            allNonDeleted.add(ACCEPTED);
+            allNonDeleted.add(REJECTED);
+            return allNonDeleted;
+        }
     }
 
     // -------------------------------------
@@ -219,58 +239,82 @@ public class Annotation {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public String getId() {
         return id;
     }
 
+    @Generated
     public void setId(final String newId) {
         this.id = newId;
     }
 
+    @Generated
+    public String getLinkedAnnotationId() {
+        return linkedAnnotationId;
+    }
+    
+    @Generated
+    public void setLinkedAnnotationId(final String newId) {
+        this.linkedAnnotationId = newId;
+    }
+    
+    @Generated
     public String getText() {
         return text;
     }
 
+    @Generated
     public void setText(final String text) {
         this.text = text;
     }
 
+    @Generated
     public LocalDateTime getCreated() {
         return created;
     }
 
+    @Generated
     public void setCreated(final LocalDateTime created) {
         this.created = created;
     }
 
+    @Generated
     public LocalDateTime getUpdated() {
         return updated;
     }
 
+    @Generated
     public void setUpdated(final LocalDateTime updated) {
         this.updated = updated;
     }
 
+    @Generated
     public boolean isShared() {
         return shared;
     }
 
+    @Generated
     public void setShared(final boolean shared) {
         this.shared = shared;
     }
 
+    @Generated
     public String getTargetSelectors() {
         return targetSelectors;
     }
 
+    @Generated
     public void setTargetSelectors(final String targetSelectors) {
         this.targetSelectors = targetSelectors;
     }
 
+    @Generated
     public long getUserId() {
         return userId;
     }
 
+    @Generated
     public void setUserId(final long userId) {
         this.userId = userId;
     }
@@ -284,10 +328,12 @@ public class Annotation {
         return this.metadata.getDocument();
     }
 
+    @Generated
     public User getUser() {
         return user;
     }
 
+    @Generated
     public void setUser(final User user) {
         this.user = user;
     }
@@ -301,70 +347,106 @@ public class Annotation {
         return this.metadata.getGroup();
     }
 
+    @Generated
     public List<Tag> getTags() {
         return tags;
     }
 
+    @Generated
     public void setTags(final List<Tag> tags) {
         this.tags = tags;
     }
 
+    @Generated
     public void setMetadataId(final long metadataId) {
         this.metadataId = metadataId;
     }
 
+    @Generated
     public long getMetadataId() {
         return metadataId;
     }
 
+    @Generated
     public void setMetadata(final Metadata meta) {
         this.metadata = meta;
     }
 
+    @Generated
     public Metadata getMetadata() {
         return this.metadata;
     }
 
+    @Generated
     public String getRootAnnotationId() {
         return rootAnnotationId;
     }
 
+    @Generated
     public void setRootAnnotationId(final String rootAnnotationId) {
         this.rootAnnotationId = rootAnnotationId;
     }
 
+    @Generated
     public String getReferences() {
         return references;
     }
 
+    @Generated
     public void setReferences(final String references) {
         this.references = references;
     }
 
+    @Generated
     public AnnotationStatus getStatus() {
         return status;
     }
 
+    @Generated
     public void setStatus(final AnnotationStatus status) {
         this.status = status;
     }
 
+    @Generated
     public LocalDateTime getStatusUpdated() {
         return statusUpdated;
     }
 
+    @Generated
     public void setStatusUpdated(final LocalDateTime upd) {
         this.statusUpdated = upd;
     }
 
+    @Generated
     public Long getStatusUpdatedBy() {
         return statusUpdatedBy;
     }
 
+    @Generated
     public void setStatusUpdatedBy(final Long upd) {
         this.statusUpdatedBy = upd;
     }
+    
+    @Generated
+    public boolean isSentDeleted() {
+        return sentDeleted;
+    }
+    
+    @Generated
+    public void setSentDeleted(final boolean sentDeletedNow) {
+        this.sentDeleted = sentDeletedNow;
+    }
 
+    @Generated
+    public long getRespVersionSentDeleted() {
+        return respVersionSentDeleted;
+    }
+    
+    @Generated
+    public void setRespVersionSentDeleted(final long rvsd) {
+        this.respVersionSentDeleted = rvsd;
+    }
+    
     // -------------------------------------
     // equals and hashCode
     // -------------------------------------
@@ -372,8 +454,9 @@ public class Annotation {
     @Generated
     @Override
     public int hashCode() {
-        return Objects.hash(created, updated, id, userId, rootAnnotationId, shared, text, targetSelectors, references,
-                metadataId, metadata, tags, user, status, statusUpdated, statusUpdatedBy);
+        return Objects.hash(created, updated, id, linkedAnnotationId, userId, rootAnnotationId, 
+                shared, text, targetSelectors, references, metadataId, metadata, tags, 
+                user, status, statusUpdated, statusUpdatedBy, sentDeleted, respVersionSentDeleted);
     }
 
     @Generated
@@ -397,6 +480,9 @@ public class Annotation {
                 Objects.equals(this.status, other.status) &&
                 Objects.equals(this.statusUpdated, other.statusUpdated) &&
                 Objects.equals(this.statusUpdatedBy, other.statusUpdatedBy) &&
+                Objects.equals(this.sentDeleted, other.sentDeleted) &&                
+                Objects.equals(this.respVersionSentDeleted, other.respVersionSentDeleted) &&
+                Objects.equals(this.linkedAnnotationId, other.linkedAnnotationId) &&
                 Objects.equals(this.targetSelectors, other.targetSelectors) &&
                 Objects.equals(this.metadataId, other.metadataId) &&
                 Objects.equals(this.metadata, other.metadata) &&

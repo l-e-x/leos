@@ -39,20 +39,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @ActiveProfiles("test")
 public class GroupServiceWithMockedUserGroupReposTest {
 
-    @Before
-    public void setupTests() throws Exception {
-
-        MockitoAnnotations.initMocks(this);
-
-        TestDbHelper.cleanupRepositories(this);
-    }
-
-    @After
-    public void cleanDatabaseAfterTests() throws Exception {
-
-        TestDbHelper.cleanupRepositories(this);
-    }
-
     // -------------------------------------
     // Required services and repositories
     // -------------------------------------
@@ -63,6 +49,20 @@ public class GroupServiceWithMockedUserGroupReposTest {
 
     @InjectMocks
     private GroupServiceImpl groupService;
+
+    @Before
+    public void setupTests() {
+
+        MockitoAnnotations.initMocks(this);
+
+        TestDbHelper.cleanupRepositories(this);
+    }
+
+    @After
+    public void cleanDatabaseAfterTests() {
+
+        TestDbHelper.cleanupRepositories(this);
+    }
 
     // -------------------------------------
     // Tests
@@ -96,7 +96,7 @@ public class GroupServiceWithMockedUserGroupReposTest {
 
         final long groupId = 1;
 
-        Group unknownGroup = new Group();
+        final Group unknownGroup = new Group();
         unknownGroup.setId(groupId);
 
         Mockito.when(userGroupRepos.findByGroupId(groupId)).thenReturn(null);
@@ -104,7 +104,7 @@ public class GroupServiceWithMockedUserGroupReposTest {
         // null should be returned for an unknown group (unknown in DB)
         Assert.assertNull(groupService.getUserIdsOfGroup(unknownGroup));
     }
-    
+
     /**
      * test return value is null when no users/groups are found for a given user
      */
@@ -113,7 +113,7 @@ public class GroupServiceWithMockedUserGroupReposTest {
 
         final long userId = 1;
 
-        User unknownUser = new User();
+        final User unknownUser = new User();
         unknownUser.setId(userId);
 
         Mockito.when(userGroupRepos.findByUserId(userId)).thenReturn(null);

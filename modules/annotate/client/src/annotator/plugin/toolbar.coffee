@@ -1,6 +1,8 @@
 Plugin = require('../plugin')
 $ = require('jquery')
 
+LEOS_config = require('../../../leos/shared/config');
+
 makeButton = (item) ->
   anchor = $('<button></button>')
   .attr('href', '')
@@ -17,10 +19,13 @@ module.exports = class Toolbar extends Plugin
 
   events:
     'setVisibleHighlights': 'onSetVisibleHighlights'
+    'LEOS_setVisibleGuideLines': 'onSetVisibleGuideLines'
 
   html: '<div class="annotator-toolbar"></div>'
 
   pluginInit: ->
+    localStorage.setItem('shouldAnnotationTabOpen', true)
+
     @annotator.toolbar = @toolbar = $(@html)
     if @options.container?
       $(@options.container).append @toolbar
@@ -47,9 +52,15 @@ module.exports = class Toolbar extends Plugin
           event.stopPropagation()
           collapsed = @annotator.frame.hasClass('annotator-collapsed')
           if collapsed
+            state = @annotator.visibleGuideLines = @annotator.visibleHighlights
+            @annotator.setAllVisibleGuideLines state
             @annotator.show()
+            localStorage.setItem('shouldAnnotationTabOpen', true)
           else
             @annotator.hide()
+            localStorage.setItem('shouldAnnotationTabOpen', false)
+            state = @annotator.visibleGuideLines = false
+            @annotator.setAllVisibleGuideLines state
     ,
       "title": "Hide Highlights"
       "class": "h-icon-visibility"
@@ -60,8 +71,25 @@ module.exports = class Toolbar extends Plugin
           event.stopPropagation()
           state = not @annotator.visibleHighlights
           @annotator.setAllVisibleHighlights state
+          if !state || _this.annotator.frame.width() >= LEOS_config.FRAME_DEFAULT_MIN_WIDTH
+            @annotator.setAllVisibleGuideLines state
     ,
-      "title": "New Page Note"
+#      LEOS change 3630
+      "title": "Hide Line Guides"
+      "class": "hide-guidelines-icon"
+      "name": "lineguide-visibility"
+      "on":
+        "click": (event) =>
+          if _this.annotator.frame.width() < LEOS_config.FRAME_DEFAULT_MIN_WIDTH
+            state = @annotator.visibleGuideLines = false
+          else
+            state = not @annotator.visibleGuideLines
+          event.preventDefault()
+          event.stopPropagation()
+          @annotator.setAllVisibleGuideLines state
+    ,
+#     LEOS change 3632
+      "title": "New Document Note"
       "class": "h-icon-note"
       "name": "insert-comment"
       "on":
@@ -71,6 +99,11 @@ module.exports = class Toolbar extends Plugin
           @annotator.createAnnotation()
           @annotator.show()
     ]
+
+    @annotator.visibleHighlights = true
+    state = @annotator.visibleGuideLines = false
+    @annotator.setAllVisibleGuideLines state
+
     @buttons = $(makeButton(item) for item in items)
 
     list = $('<ul></ul>')
@@ -94,6 +127,18 @@ module.exports = class Toolbar extends Plugin
       .addClass('h-icon-visibility-off')
       .prop('title', 'Show Highlights');
 
+  onSetVisibleGuideLines: (state) ->
+    if state
+      $('[name=lineguide-visibility]')
+      .removeClass('hide-guidelines-icon')
+      .addClass('show-guidelines-icon')
+      .prop('title', 'Hide Guide Lines');
+    else
+      $('[name=lineguide-visibility]')
+      .removeClass('show-guidelines-icon')
+      .addClass('hide-guidelines-icon')
+      .prop('title', 'Show Guide Lines');
+
   disableMinimizeBtn: () ->
     $('[name=sidebar-toggle]').remove();
 
@@ -105,6 +150,9 @@ module.exports = class Toolbar extends Plugin
 
   disableCloseBtn: () ->
     $('[name=sidebar-close]').remove();
+
+  disableGuideLinesBtn: () ->
+    $('[name=lineguide-visibility]').remove();
 
   getWidth: () ->
     return parseInt(window.getComputedStyle(this.toolbar[0]).width)

@@ -21,6 +21,7 @@ import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.helper.TestHelper;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonSearchResult;
 import eu.europa.ec.leos.annotate.repository.*;
@@ -71,6 +72,8 @@ public class SearchModelTest {
     private static final String ANNOT_13 = "id13", ANNOT_14 = "id14", ANNOT_15 = "id15", ANNOT_16 = "id16";
     private static final String ANNOT_17 = "id17", ANNOT_18 = "id18", ANNOT_19 = "id19", ANNOT_20 = "id20";
 
+    private static final List<String> AUTHOR_ROLE = Collections.unmodifiableList(Arrays.asList("AUTHOR"));
+    
     private final static String DIGIT = "DIGIT";
     private final static String AGRI = "AGRI";
     private final static String ENV = "ENV";
@@ -81,8 +84,8 @@ public class SearchModelTest {
     private final static String MetaIscIdVersStatprep = "metadatasets=[{ISCReference: \"ISC/2018/00918\",responseId: \"id-123\",responseVersion: \"1\", responseStatus: \"IN_PREPARATION\"}]";
     private final static String MetaIscIdVersStatsent = "metadatasets=[{ISCReference: \"ISC/2018/00918\",responseId: \"id-123\",responseVersion: \"1\", responseStatus: \"SENT\"}]";
 
-    private final Consumer<SimpleMetadata> setResponseSent = hashMap -> hashMap.put("responseStatus", "SENT");
-    private final Consumer<SimpleMetadata> setResponseInPreparation = hashMap -> hashMap.put("responseStatus", "IN_PREPARATION");
+    private final Consumer<SimpleMetadata> setResponseSent = hashMap -> hashMap.put(Metadata.PROP_RESPONSE_STATUS, Metadata.ResponseStatus.SENT.toString());
+    private final Consumer<SimpleMetadata> setResponseInPreparation = hashMap -> hashMap.put(Metadata.PROP_RESPONSE_STATUS, Metadata.ResponseStatus.IN_PREPARATION.toString());
 
     private final Consumer<SimpleMetadata> setIscData = hashMap -> {
         hashMap.put("responseId", "id-123");
@@ -177,13 +180,19 @@ public class SearchModelTest {
         envWorldSgUser = new User(envWorldUserLogin);
         userRepos.save(Arrays.asList(worldUser, digitWorldUser, agriWorldUser, agriDigitUser, sgWorldUser, envWorldSgUser));
 
+        final List<UserEntity> entitiesWorld = Arrays.asList(new UserEntity("1", "world", "world"));
+        final List<UserEntity> entitiesDigit = Arrays.asList(new UserEntity("2", DIGIT, DIGIT));
+        final List<UserEntity> entitiesAgri = Arrays.asList(new UserEntity("3", AGRI, AGRI));
+        final List<UserEntity> entitiesSg = Arrays.asList(new UserEntity("4", "SG", "SG"));
+        final List<UserEntity> entitiesEnv = Arrays.asList(new UserEntity("5", ENV, ENV));
+        
         // cache info for users in order to speed up test execution
-        userDetailsCache.cache(worldUser.getLogin(), new UserDetails(worldUser.getLogin(), Long.valueOf(1), "world", "user1", "world", "", null));
-        userDetailsCache.cache(digitWorldUser.getLogin(), new UserDetails(digitWorldUser.getLogin(), Long.valueOf(2), DIGIT, "user2", DIGIT, "", null));
-        userDetailsCache.cache(agriWorldUser.getLogin(), new UserDetails(agriWorldUser.getLogin(), Long.valueOf(3), AGRI, "user3", AGRI, "", null));
-        userDetailsCache.cache(sgWorldUser.getLogin(), new UserDetails(sgWorldUser.getLogin(), Long.valueOf(4), "sg", "user4", "SG", "", null));
-        userDetailsCache.cache(envWorldSgUser.getLogin(), new UserDetails(envWorldSgUser.getLogin(), Long.valueOf(5), ENV, "user5", ENV, "", null));
-        userDetailsCache.cache(agriDigitUser.getLogin(), new UserDetails(agriDigitUser.getLogin(), Long.valueOf(6), AGRI, "user6", AGRI, "", null));
+        userDetailsCache.cache(worldUser.getLogin(), new UserDetails(worldUser.getLogin(), Long.valueOf(1), "world", "user1", entitiesWorld, "", AUTHOR_ROLE));
+        userDetailsCache.cache(digitWorldUser.getLogin(), new UserDetails(digitWorldUser.getLogin(), Long.valueOf(2), DIGIT, "user2", entitiesDigit, "", AUTHOR_ROLE));
+        userDetailsCache.cache(agriWorldUser.getLogin(), new UserDetails(agriWorldUser.getLogin(), Long.valueOf(3), AGRI, "user3", entitiesAgri, "", AUTHOR_ROLE));
+        userDetailsCache.cache(sgWorldUser.getLogin(), new UserDetails(sgWorldUser.getLogin(), Long.valueOf(4), "sg", "user4", entitiesSg, "", AUTHOR_ROLE));
+        userDetailsCache.cache(envWorldSgUser.getLogin(), new UserDetails(envWorldSgUser.getLogin(), Long.valueOf(5), ENV, "user5", entitiesEnv, "", AUTHOR_ROLE));
+        userDetailsCache.cache(agriDigitUser.getLogin(), new UserDetails(agriDigitUser.getLogin(), Long.valueOf(6), AGRI, "user6", entitiesAgri, "", AUTHOR_ROLE));
 
         userGroupRepos.save(new UserGroup(worldUser.getId(), groupWorld.getId()));
         userGroupRepos.save(new UserGroup(digitWorldUser.getId(), groupWorld.getId()));
@@ -311,6 +320,17 @@ public class SearchModelTest {
                         ANNOT_20)); // ISC/SG group (SENT)
     }
 
+    // search for DIGIT user in world group, using metadata for request
+    @Test
+    public void searchModelLeos1Metadata_Digit() {
+
+        executeRequest(digitWorldUser, Authorities.EdiT, groupWorld,
+                MetaIscRespVers1,
+                Arrays.asList(ANNOT_2, // LEOS/DIGIT group (user is member)
+                        ANNOT_12, // ISC/DIGIT group (SENT, has matching metadata)
+                        ANNOT_18)); // ISC/ENV group (SENT, has matching metadata)
+    }
+    
     // search for AGRI user in world group
     @Test
     public void searchModelLeos1_Agri() {
@@ -323,6 +343,18 @@ public class SearchModelTest {
                         ANNOT_16, // ISC/SG group (SENT)
                         ANNOT_18, // ISC/ENV group (SENT)
                         ANNOT_20)); // ISC/SG group (SENT)
+    }
+    
+    // search for AGRI user in world group, using metadata for request
+    @Test
+    public void searchModelLeos1Metadata_Agri() {
+
+        executeRequest(agriWorldUser, Authorities.EdiT, groupWorld,
+                MetaIscRespVers2,
+                Arrays.asList(
+                        ANNOT_4, // LEOS/AGRI group (user is member)
+                        ANNOT_16, // ISC/SG group (SENT, has matching metadata)
+                        ANNOT_20)); // ISC/SG group (SENT, has matching metadata)
     }
 
     // search for SG/ENV user in world group
@@ -521,7 +553,8 @@ public class SearchModelTest {
 
         executeRequest(digitWorldUser, Authorities.ISC, groupDigit,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_12)); // ISC/DIGIT group (user is member)
+                Arrays.asList(ANNOT_12, // ISC/DIGIT group (user is member), SENT
+                        ANNOT_18)); // ENV group, SENT
     }
 
     // search for DIGIT user in AGRI group
@@ -557,7 +590,10 @@ public class SearchModelTest {
 
         executeRequest(agriWorldUser, Authorities.ISC, groupAgri,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_14)); // ISC/AGRI group (user is member)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_14, // ISC/AGRI group (user is member), IN_PREP 
+                        ANNOT_18) // ENV, SENT
+                ); 
     }
 
     // search for AGRI user in DIGIT group
@@ -593,7 +629,10 @@ public class SearchModelTest {
 
         executeRequest(agriDigitUser, Authorities.ISC, groupAgri,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_14)); // ISC/AGRI group (user is member)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_14, // ISC/AGRI group (user is member), IN_PREP 
+                        ANNOT_18) // ENV, SENT
+                ); 
     }
 
     // search for AGRI-DIGIT user in DIGIT group
@@ -602,7 +641,8 @@ public class SearchModelTest {
 
         executeRequest(agriDigitUser, Authorities.ISC, groupDigit,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_12)); // ISC/DIGIT group (user is member)
+                Arrays.asList(ANNOT_12, // ISC/DIGIT group (user is member), SENT
+                        ANNOT_18)); // ENV, SENT
     }
 
     // search for AGRI-DIGIT user in ENV group
@@ -629,7 +669,8 @@ public class SearchModelTest {
 
         executeRequest(sgWorldUser, Authorities.ISC, groupSg,
                 MetaIscIdVers,
-                new ArrayList<String>()); // "responseId" and "ISCReference" not set
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_18)); // ENV, SENT
     }
 
     // search for SG user in SG group - but for response version only
@@ -674,7 +715,9 @@ public class SearchModelTest {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupSg,
                 MetaIscIdVers,
-                new ArrayList<String>()); // "responseId" and "ISCReference" not set for ISC/SG group annotations
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                ANNOT_18)); // ENV, SENT
+                // note: "responseId" and "ISCReference" not set for ISC/SG group annotations
     }
 
     // search for ENV-SG user in ENV group
@@ -683,7 +726,8 @@ public class SearchModelTest {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupEnv,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_18)); // ISC/ENV group (user is member)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_18)); // ENV group, SENT (user is member)
     }
 
     // search for ENV-SG user in ENV group - for response version only
@@ -692,7 +736,8 @@ public class SearchModelTest {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupEnv,
                 MetaIscRespVers1,
-                Arrays.asList(ANNOT_18)); // ISC/ENV group (user is member)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_18)); // ISC/ENV group, SENT (user is member)
     }
 
     // search for ENV-SG user in AGRI group
@@ -765,13 +810,15 @@ public class SearchModelTest {
         // search again with matching metadata (responseStatus)
         executeRequest(digitWorldUser, Authorities.ISC, groupDigit,
                 MetaIscIdVersStatsent,
-                Arrays.asList(ANNOT_12)); // ISC/DIGIT group (user is member)
+                Arrays.asList(ANNOT_12, // ISC/DIGIT group (user is member), SENT
+                        ANNOT_18)); 
         tokenRepos.deleteAll();
 
-        // search again without response status
+        // search again without response status: delivers same results as we always receive all SENT items
         executeRequest(digitWorldUser, Authorities.ISC, groupDigit,
                 MetaIscIdVers,
-                Arrays.asList(ANNOT_12)); // ISC/DIGIT group (user is member)
+                Arrays.asList(ANNOT_12, // ISC/DIGIT group (user is member)
+                        ANNOT_18)); // ENV group, SENT
     }
 
     // search for DIGIT user in AGRI group
@@ -813,7 +860,8 @@ public class SearchModelTest {
         // search again with matching metadate "responseStatus", but others still missing
         executeRequest(sgWorldUser, Authorities.ISC, groupSg,
                 MetaIscIdVersStatsent,
-                new ArrayList<String>()); // no fully matching metadata
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_18)); // ENV, SENT
     }
 
     // search for SG user in AGRI group
@@ -854,25 +902,28 @@ public class SearchModelTest {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupEnv,
                 MetaIscIdVersStatsent,
-                Arrays.asList(ANNOT_18)); // ISC/ENV group (user is member)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT
+                        ANNOT_18)); // ISC/ENV group, SENT (user is member)
     }
 
-    // search for ENV user in ENV group - for response version 1 (ok)
+    // search for ENV user in ENV group - for response version 1
     @Test
     public void searchModelIsc2_Env_GroupEnv_RespVers1() {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupEnv,
                 MetaIscRespVers1,
-                Arrays.asList(ANNOT_18)); // ISC/ENV group (user is member, response version matches)
+                Arrays.asList(ANNOT_12, // DIGIT, SENT, response version matches
+                        ANNOT_18)); // ISC/ENV group, SENT (user is member, response version matches)
     }
 
-    // search for ENV user in ENV group - for response version 2 (not ok)
+    // search for ENV user in ENV group - for response version 2 -> sees SG's SENT annotations
     @Test
-    public void searchModelIsc3_Env_GroupEnv_RespVers2() {
+    public void searchModelIsc2_Env_GroupEnv_RespVers2() {
 
         executeRequest(envWorldSgUser, Authorities.ISC, groupEnv,
                 MetaIscRespVers2,
-                new ArrayList<String>()); // ISC/ENV group (user is member, but response version doesn't match)
+                Arrays.asList(ANNOT_16, // SG, SENT
+                        ANNOT_20)); // SG, SENT
     }
 
     // search for ENV user in SG group

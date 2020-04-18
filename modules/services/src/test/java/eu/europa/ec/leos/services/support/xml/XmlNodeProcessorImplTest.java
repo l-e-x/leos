@@ -16,6 +16,7 @@ package eu.europa.ec.leos.services.support.xml;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
+import eu.europa.ec.leos.services.util.TestUtils;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -33,9 +34,9 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     private XmlNodeProcessorImpl metaDataProcessor = new XmlNodeProcessorImpl();
 
     @Test
-    public void getValues_values_present_test() throws Exception {
+    public void getValues_values_present_test() {
         // setup
-        byte[] xmlContent = getFileContent("/bill-test.xml");
+        byte[] xmlContent = TestUtils.getFileContent("/bill-test.xml");
         String[] keys = {"docStage", "template", "language"};
 
         // actual call
@@ -48,9 +49,9 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     }
 
     @Test
-    public void getValues_values_not_present_test() throws Exception {
+    public void getValues_values_not_present_test() {
         // setup
-        byte[] xmlContent = getFileContent("/memorandum-test.xml");
+        byte[] xmlContent = TestUtils.getFileContent("/memorandum-test.xml");
         String[] keys = {"docStage", "template"};
 
         // actual call
@@ -59,15 +60,7 @@ public class XmlNodeProcessorImplTest extends LeosTest {
         // verify
         assertThat(result.size(), is(0));
     }
-
-    private byte[] getFileContent(String fileName) throws IOException {
-        InputStream inputStream = this.getClass().getResource(fileName).openStream();
-        byte[] content = new byte[inputStream.available()];
-        inputStream.read(content);
-        inputStream.close();
-        return content;
-    }
-
+    
     @Test
     public void setValues_tags_present_test() throws Exception {// meta/identification/FRBRExpression/FRBRlanguage/@language
         // setup
@@ -143,7 +136,7 @@ public class XmlNodeProcessorImplTest extends LeosTest {
     @Test
     public void setValues_tags_not_present_in_big_xml_test() throws Exception {// meta/identification/FRBRExpression/FRBRlanguage/@language
         // setup
-        byte[] xmlContent = getFileContent("/memorandum-test.xml");
+        byte[] xmlContent = TestUtils.getFileContent("/memorandum-test.xml");
 
         Map<String, String> keyValue = new HashMap<>();
         keyValue.put("language", "EN");

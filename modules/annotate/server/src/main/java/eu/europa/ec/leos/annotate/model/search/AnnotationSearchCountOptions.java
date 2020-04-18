@@ -79,10 +79,13 @@ public class AnnotationSearchCountOptions {
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
+    
+    @Generated
     public URI getUri() {
         return uri;
     }
 
+    @Generated
     public void setUri(final URI uri) {
         this.uri = uri;
     }
@@ -95,18 +98,22 @@ public class AnnotationSearchCountOptions {
         }
     }
 
+    @Generated
     public String getGroup() {
         return group;
     }
 
+    @Generated
     public void setGroup(final String group) {
         this.group = group;
     }
 
+    @Generated
     public String getMetadatasets() {
         return metadatasets;
     }
 
+    @Generated
     public void setMetadatasets(final String metadataMap) {
         this.metadatasets = metadataMap;
     }

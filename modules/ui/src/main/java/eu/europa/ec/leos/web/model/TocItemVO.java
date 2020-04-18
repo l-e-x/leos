@@ -36,7 +36,7 @@ public class TocItemVO extends TableOfContentItemVO implements Serializable {
     private List <TocItemVO> children;
 
     public TocItemVO(TableOfContentItemVO tableOfContentItemVO, MessageHelper messageHelper) {
-        super(tableOfContentItemVO.getType(),
+        super(tableOfContentItemVO.getTocItem(),
                 tableOfContentItemVO.getId(),
                 tableOfContentItemVO.getOriginAttr(),
                 tableOfContentItemVO.getNumber(),
@@ -44,6 +44,7 @@ public class TocItemVO extends TableOfContentItemVO implements Serializable {
                 tableOfContentItemVO.getHeading(),
                 tableOfContentItemVO.getNumTagIndex(),
                 tableOfContentItemVO.getHeadingTagIndex(),
+                tableOfContentItemVO.getIntroTagIndex(),
                 tableOfContentItemVO.getVtdIndex(),
                 tableOfContentItemVO.getContent());
 

@@ -1,16 +1,3 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var debounce = require('lodash.debounce');
@@ -44,6 +31,8 @@ function formatAnnot(ann) {
       document: ann.document,
       target: ann.target,
       uri: ann.uri,
+      tags: ann.tags,  //LEOS change - be able to assign different class for highlight and comments/suggestions
+      id: ann.id //LEOS change - associate highlight with annotation for canvas line draw
     },
   };
 }
@@ -165,6 +154,7 @@ function FrameSync($rootScope, $window, Discovery, store, bridge) {
     bridge.on('showAnnotations', function (tags) {
       store.selectAnnotations(store.findIDsForTags(tags));
       store.selectTab(uiConstants.TAB_ANNOTATIONS);
+      bridge.call('LEOS_refreshAnnotationLinkLines'); //#LEOS Change
     });
 
     bridge.on('focusAnnotations', function (tags) {
@@ -173,6 +163,14 @@ function FrameSync($rootScope, $window, Discovery, store, bridge) {
 
     bridge.on('toggleAnnotationSelection', function (tags) {
       store.toggleSelectedAnnotations(store.findIDsForTags(tags));
+    });
+
+    bridge.on('LEOS_syncCanvas', function (iFrameOffsetLeft, delayResp) {
+      $rootScope.$broadcast('LEOS_syncCanvas', iFrameOffsetLeft, delayResp)
+    });
+
+    bridge.on('LEOS_syncCanvasResp', function () {
+      bridge.call('LEOS_syncCanvasResp');
     });
 
     bridge.on('sidebarOpened', function () {
@@ -188,6 +186,15 @@ function FrameSync($rootScope, $window, Discovery, store, bridge) {
     });
     bridge.on('setVisibleHighlights', function (state) {
       bridge.call('setVisibleHighlights', state);
+    });
+    bridge.on('LEOS_setVisibleGuideLines', function (state) {
+      bridge.call('LEOS_setVisibleGuideLines', state);
+    });
+    bridge.on('LEOS_updateIdForCreatedAnnotation', function (annotationTag, createdAnnotationId) {
+      bridge.call('LEOS_updateIdForCreatedAnnotation', annotationTag, createdAnnotationId);
+    });
+    bridge.on('LEOS_refreshAnnotationLinkLines', function () {
+      bridge.call('LEOS_refreshAnnotationLinkLines');
     });
 
   }
@@ -254,6 +261,15 @@ function FrameSync($rootScope, $window, Discovery, store, bridge) {
    */
   this.scrollToAnnotation = function (tag) {
     bridge.call('scrollToAnnotation', tag);
+  };
+
+  /**
+   * LEOS
+   *
+   * Selects the clicked annotation
+   */
+  this.LEOS_selectAnnotation = function (annotation) {
+    bridge.call('LEOS_selectAnnotation', annotation);
   };
 }
 

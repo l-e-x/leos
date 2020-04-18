@@ -43,6 +43,7 @@ public interface UserService {
 
     // searching for user profile based on login
     User findByLogin(String login);
+    User getUserById(Long userId);
 
     // retrieval of user profile and update of user preferences
     JsonUserProfile getUserProfile(UserInformation userInfo) throws UserNotFoundException;

@@ -68,6 +68,12 @@ define(function leosElementSplitHandlerPluginModule(require) {
             var rootElementText = rootElement.clone().children().remove().end().text();
             if (rootTableElements.length > 1 || rootParElements.length > 1 || (rootElementText !== '' && rootTableElements.length)
                     || (rootNoTableParElements.length && rootTableElements.length)) {
+                var emptyParElements = rootElement.find("> p:emptyTrim");
+                if (emptyParElements) {
+                    emptyParElements.each(function() {
+                        this.innerText = "Text...";
+                    });
+                }
                 var editor = CKEDITOR.currentInstance;
                 editor.fire("save", {
                     data: editor.getData()

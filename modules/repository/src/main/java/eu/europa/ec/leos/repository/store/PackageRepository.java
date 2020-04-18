@@ -15,6 +15,7 @@ package eu.europa.ec.leos.repository.store;
 
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
 
@@ -56,7 +57,8 @@ public interface PackageRepository {
      * @param status            the leg document status
      * @return the created leg document.
      */
-    LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status);
+    LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status,
+                                             List<String> containedDocuments);
 
     /**
      * Finds Leg document with specified id.
@@ -80,10 +82,10 @@ public interface PackageRepository {
      * @param id      the leg document id.
      * @param status  the updated status.
      * @param content the leg document content
-     * @param major   true if the updated version must be major
+     * @param versionType the version type to be created
      * @param comment the updated version comment
      */
-    LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] content, boolean major, String comment);
+    LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] content, VersionType versionType, String comment);
 
     /**
      * Finds a [LeosPackage] with the specified characteristics.
@@ -111,6 +113,16 @@ public interface PackageRepository {
      * @return the list of found documents or empty.
      */
     <D extends LeosDocument> D findDocumentByPackagePathAndName(String path, String name, Class<? extends D> type);
+
+
+    /**
+     * Finds leg most recent leg document that contains a specific version of a document.
+     *
+     * @param path the path of the package where to find the documents
+     * @param versionedReference the document reference with the version.
+     * @return A leg document that contains the reference
+     */
+    LegDocument findLastLegByVersionedReference(String path, String versionedReference);
 
     /**
      * Finds documents with the specified characteristics.

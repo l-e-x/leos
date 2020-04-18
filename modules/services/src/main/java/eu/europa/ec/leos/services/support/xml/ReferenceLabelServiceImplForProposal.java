@@ -13,7 +13,7 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
-import com.ximpleware.VTDNav;
+import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.domain.common.Result;
 import eu.europa.ec.leos.instance.Instance;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 public class ReferenceLabelServiceImplForProposal extends ReferenceLabelServiceImpl {
 
     @Override
-    public Result<String> generateSoftmoveLabel(Ref ref, String referenceLocation, VTDNav vtdNav, String direction) throws Exception {
+    public Result<String> generateSoftmoveLabel(Ref ref, String referenceLocation, XMLModifier xmlModifier, String direction, String documentRefSource) {
         return new Result<String>("", null);
     }
 }

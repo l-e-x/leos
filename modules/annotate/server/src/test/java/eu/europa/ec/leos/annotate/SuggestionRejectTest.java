@@ -18,6 +18,8 @@ import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
 import eu.europa.ec.leos.annotate.helper.TestData;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
 import eu.europa.ec.leos.annotate.helper.TestHelper;
+import eu.europa.ec.leos.annotate.model.UserDetails;
+import eu.europa.ec.leos.annotate.model.UserEntity;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
@@ -29,6 +31,7 @@ import eu.europa.ec.leos.annotate.services.exceptions.CannotRejectSentSuggestion
 import eu.europa.ec.leos.annotate.services.exceptions.CannotRejectSuggestionException;
 import eu.europa.ec.leos.annotate.services.exceptions.MissingPermissionException;
 import eu.europa.ec.leos.annotate.services.exceptions.NoSuggestionException;
+import eu.europa.ec.leos.annotate.services.impl.UserDetailsCache;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -88,6 +91,9 @@ public class SuggestionRejectTest {
     @Autowired
     private TagRepository tagRepos;
 
+    @Autowired
+    private UserDetailsCache userDetailsCache;
+    
     // -------------------------------------
     // Cleanup of database content before running new test
     // -------------------------------------
@@ -99,6 +105,8 @@ public class SuggestionRejectTest {
 
         theUser = userRepos.save(new User(DEMO_LOGIN));
         userGroupRepos.save(new UserGroup(theUser.getId(), defaultGroup.getId()));
+        
+        userDetailsCache.clear();
     }
 
     @After
@@ -122,6 +130,10 @@ public class SuggestionRejectTest {
         // retrieve our test annotation and make it become a suggestion
         final JsonAnnotation jsAnnot = TestData.getTestSuggestionObject(hypothesisUserAccount);
         final UserInformation userInfo = new UserInformation(theUser, Authorities.ISC);
+        final UserDetails userDetails = new UserDetails(theUser.getLogin(), theUser.getId(), "a", "b", 
+                Arrays.asList(new UserEntity("4", "COMP", "COMP")), "", null);
+        userDetailsCache.cache(theUser.getLogin(), userDetails);
+        
         annotService.createAnnotation(jsAnnot, userInfo);
 
         Assert.assertEquals(1, annotRepos.count());
@@ -144,8 +156,10 @@ public class SuggestionRejectTest {
         Assert.assertNotNull(jsConverted);
         Assert.assertEquals(AnnotationStatus.REJECTED, jsConverted.getStatus().getStatus());
         Assert.assertNotNull(jsConverted.getStatus().getUpdated());
-        // corresponds to user of UserInformation instance
-        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUpdated_by());
+
+        // corresponds to user of cached UserDetails instance
+        Assert.assertEquals(userInfo.getAsHypothesisAccount(), jsConverted.getStatus().getUser_info());
+        Assert.assertEquals(userDetails.getEntities().get(0).getName(), jsConverted.getStatus().getUpdated_by());
     }
 
     /**
@@ -153,6 +167,7 @@ public class SuggestionRejectTest {
      * -> refused since SENT items may not be changed
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testCannotRejectSuggestionInIsc() throws Exception {
 
         final String hypothesisUserAccount = USER_ACCOUNT;

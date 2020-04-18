@@ -1,21 +1,9 @@
-//
-// Copyright 2019 European Commission
-//
-// Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
-// You may not use this work except in compliance with the Licence.
-// You may obtain a copy of the Licence at:
-//
-//     https://joinup.ec.europa.eu/software/page/eupl
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the Licence for the specific language governing permissions and limitations under the Licence.
-//
-
 @import '../leos-variables';
 @import './leos-compare';
 @import './leos-suggestion';
 @import './leos-annotation';
+@import './leos-filter-pane';
+@import './leos-dropdown-menu-btn';
 
 .thread-list__card {
   padding: $layout-h-margin 10px;
@@ -52,7 +40,20 @@
 
 //LEOS change 2826
 .is-suggestion {
-  background-color: lightgoldenrodyellow;
+  background-color: white;
+  border-color: $leos-suggestion-border-color;
+  border-style: solid;
+  border-width: 2px;
+}
+
+//LEOS change 3632
+.is-comment {
+  background-color: $leos-annotation-background-color;
+  border-radius: 8px;
+}
+
+.is-annotations-processed {
+  background-color: $leos-processed-annotation-background-color;
 }
 
 .annotation-header__entity{

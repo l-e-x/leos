@@ -14,4 +14,19 @@
 package eu.europa.ec.leos.web.event.view.document;
 
 public class DocumentUpdatedEvent {
+
+    private boolean isModified;
+
+    public DocumentUpdatedEvent() {
+        this.isModified = true;
+    }
+
+    public DocumentUpdatedEvent(boolean isModified) {
+        this.isModified = isModified;
+    }
+
+    public boolean isModified() {
+        return isModified;
+    }
+
 }

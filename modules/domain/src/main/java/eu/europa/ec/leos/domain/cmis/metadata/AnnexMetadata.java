@@ -23,8 +23,8 @@ public final class AnnexMetadata extends LeosMetadata {
     private final String title;
 
     public AnnexMetadata(String stage, String type, String purpose, String template, String language, String docTemplate,
-                         String ref, int index, String number, String title, String objectId) {
-        super(LeosCategory.ANNEX, stage, type, purpose, template, language, docTemplate, ref, objectId);
+                         String ref, int index, String number, String title, String objectId, String docVersion) {
+        super(LeosCategory.ANNEX, stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
         this.index = index;
         this.number = number;
         this.title = title;
@@ -43,35 +43,43 @@ public final class AnnexMetadata extends LeosMetadata {
     }
 
     public final AnnexMetadata withPurpose(String purpose) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withIndex(int index) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withNumber(String number) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withTitle(String title) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withRef(String ref) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withObjectId(String objectId) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withType(String type) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     public final AnnexMetadata withTemplate(String template) {
-        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
+    }
+    
+    public final AnnexMetadata withDocVersion(String docVersion) {
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
+    }
+    
+    public final AnnexMetadata withDocTemplate(String docTemplate) {
+        return new AnnexMetadata(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 
     @Override
@@ -98,11 +106,12 @@ public final class AnnexMetadata extends LeosMetadata {
                 Objects.equals(ref, that.ref) &&
                 Objects.equals(number, that.number) &&
                 Objects.equals(title, that.title) &&
-                Objects.equals(objectId, that.objectId);
+                Objects.equals(objectId, that.objectId) &&
+                Objects.equals(docVersion, that.docVersion);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId);
+        return Objects.hash(stage, type, purpose, template, language, docTemplate, ref, index, number, title, objectId, docVersion);
     }
 }

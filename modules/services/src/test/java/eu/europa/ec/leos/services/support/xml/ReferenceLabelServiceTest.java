@@ -13,32 +13,47 @@
  */
 package eu.europa.ec.leos.services.support.xml;
 
+import eu.europa.ec.leos.domain.cmis.Content;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.i18n.LanguageHelper;
+import eu.europa.ec.leos.services.store.WorkspaceService;
 import eu.europa.ec.leos.services.support.xml.ref.LabelArticleElementsOnly;
 import eu.europa.ec.leos.services.support.xml.ref.LabelArticlesOrRecitalsOnly;
 import eu.europa.ec.leos.services.support.xml.ref.LabelCitationsOnly;
 import eu.europa.ec.leos.services.support.xml.ref.LabelHigherOrderElementsOnly;
+import eu.europa.ec.leos.services.support.xml.ref.Ref;
 import eu.europa.ec.leos.test.support.LeosTest;
+import io.atlassian.fugue.Option;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Locale;
 
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class ReferenceLabelServiceTest extends LeosTest {
 
     protected byte[] docContent;
-    
+
+    protected XmlDocument document;
+
     @InjectMocks
     protected ReferenceLabelServiceImplForProposal referenceLabelGenerator = new ReferenceLabelServiceImplForProposal();
-    
+
     @Mock
     protected LanguageHelper languageHelper;
+
+    @Mock
+    private WorkspaceService workspaceService;
 
     @Before
     public void setup() {
@@ -50,21 +65,28 @@ public class ReferenceLabelServiceTest extends LeosTest {
                         new LabelArticlesOrRecitalsOnly(),
                         new LabelCitationsOnly(),
                         new LabelArticleElementsOnly()));
-        
+
         when(languageHelper.getCurrentLocale()).thenReturn(new Locale("en"));
+
+        Content content = mock(Content.class);
+        Content.Source source = mock(Content.Source.class);
+        when(source.getBytes()).thenReturn(docContent);
+        when(content.getSource()).thenReturn(source);
+        document = getMockedBill(content);
+        when(workspaceService.findDocumentByRef("bill", XmlDocument.class)).thenReturn(document);
     }
-    
+
     /**
      * The aim of the test is not to compare the result rather than to check if NullPointerException occurs.
      */
     @Test
     public void generateLabel_notSupportedElement_shouldNotThrowNPE() throws Exception {
-        referenceLabelGenerator.generateLabel(Arrays.asList(",preface"), "a5_FeJW6z", docContent);
-        referenceLabelGenerator.generateLabel(Arrays.asList(",preamble"), "a5_FeJW6z", docContent);
-        referenceLabelGenerator.generateLabel(Arrays.asList(",cits"), "a5_FeJW6z", docContent);
-        referenceLabelGenerator.generateLabel(Arrays.asList(",recs"), "a5_FeJW6z", docContent);
+        referenceLabelGenerator.generateLabel(Arrays.asList(new Ref("","preface", "")), "", "a5_FeJW6z", document.getContent().get().getSource().getBytes());
+        referenceLabelGenerator.generateLabel(Arrays.asList(new Ref("","preamble", "")), "", "a5_FeJW6z",  document.getContent().get().getSource().getBytes());
+        referenceLabelGenerator.generateLabel(Arrays.asList(new Ref("","cits", "")), "", "a5_FeJW6z", document.getContent().get().getSource().getBytes());
+        referenceLabelGenerator.generateLabel(Arrays.asList(new Ref("","recs", "")), "", "a5_FeJW6z", document.getContent().get().getSource().getBytes());
     }
-    
+
     protected static final String doc = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                     + "<akomaNtoso xmlns=\"http://docs.oasis-open.org/legaldocml/ns/akn/3.0\" xmlns:leos=\"urn:eu:europa:ec:leos\" xmlns:xml=\"http://www.w3.org/XML/1998/namespace\">"
                     + "    <bill name=\"regulation\">"
@@ -548,8 +570,8 @@ public class ReferenceLabelServiceTest extends LeosTest {
                     + "        </content>"
                     + "    </paragraph>"
                     + "</article>"
-    
-    
+
+
                     + "<article xml:id=\"a6\" leos:editable=\"true\" leos:deletable=\"true\">"
                     + "    <num leos:editable=\"false\" xml:id=\"a6_XMrJki\">Article 47</num>"
                     + "    <heading xml:id=\"a6_jiDgk5\">Article heading...</heading>"
@@ -728,8 +750,6 @@ public class ReferenceLabelServiceTest extends LeosTest {
                     + "        </content>"
                     + "    </paragraph>"
                     + "</article>"
-    
-    
                     + "                 </section>"
                     + "                  <section xml:id=\"p3s2\">"
                     + "                    <num xml:id=\"part3ns2\" class=\"PartNumber\">Section XI</num>"
@@ -739,5 +759,10 @@ public class ReferenceLabelServiceTest extends LeosTest {
                     + "          </body>"
                     + "        </bill>"
                     + "</akomaNtoso> ";
-   
+
+    private Bill getMockedBill(Content content) {
+        BillMetadata billMetadata = new BillMetadata("", "REGULATION", "", "SJ-023", "EN","", "bill", "", "0.1.0");
+        return new Bill("1", "Legaltext", "login", Instant.now(), "login", Instant.now(),
+                "", "", "Version 1.0.0", "", VersionType.MAJOR, true, "title", null, Arrays.asList(""), Option.some(content), Option.some(billMetadata));
+    }
 }

@@ -230,7 +230,7 @@ define(function hierarchicalElementTransformer(require) {
             }
         }
         return false;
-    };
+    }
     
     var getElementName = function getElementName(element) {
         var elementName = null;
@@ -263,7 +263,7 @@ define(function hierarchicalElementTransformer(require) {
         } while (currentElement !== fragment);
         element.hierarchicalPartsOfPath = hierarchicalPartsOfPath;
         return hierarchicalPartsOfPath.join("/");
-    }
+    };
 
     function createContentChildren(element, rootPath, children) {
         var that = this;
@@ -312,6 +312,26 @@ define(function hierarchicalElementTransformer(require) {
         return "^" + content + "$";
     };
 
+    function getRootElementsForFromRegExpString(rootElementsForFrom) {
+        var result = "";
+        rootElementsForFrom.forEach(function(item) {
+            result = result
+                + (result === "" ? "" : "\/")
+                + (Array.isArray(item.elementTags) ? ("(" + item.elementTags.join("|") + ")") : item);
+        });
+        return result;
+    }
+
+    function getRootsElementsPathForFrom(element, rootElementsForFrom){
+        var result = "";
+        rootElementsForFrom.forEach(function(item){
+            result = result
+                + (result === "" ? "" : "/")
+                + (Array.isArray(item.elementTags) ? (item.elementTags[item.elementTagIndexProvider ? item.elementTagIndexProvider(element) : 0]) : item);
+        });
+        return result;
+    }
+
     var hierarchicalElementTransformerStamp = STAMPIT().enclose(
             //executed on the instance creation
             function init() {
@@ -320,14 +340,14 @@ define(function hierarchicalElementTransformer(require) {
                 var rootElementsForTo = this.rootElementsForTo;
               //Regular expressions from AKN to HTML side
                 var PSR = "\/";
-                var rootElementsForFromRegExpString = rootElementsForFrom.join(PSR);
+                var rootElementsForFromRegExpString = getRootElementsForFromRegExpString(rootElementsForFrom);
                 var rootElementsForFromRegExp = new RegExp(anchor(rootElementsForFromRegExpString));
-                var rootElementsWithNumForFromRegExp = new RegExp(anchor(rootElementsForFrom.concat(["num"]).join(PSR)));
-                var rootElementsWithNumAndTextForFromRegExp = new RegExp(anchor(rootElementsForFrom.concat(["num", "text"]).join(PSR)));
-                var rootElementsWithContentForFromRegExp = new RegExp(anchor(rootElementsForFrom.concat(["content"]).join(PSR)));
-                var rootElementsWithContentAndMpForFromRegExp = new RegExp(anchor(rootElementsForFrom.concat(["content", "mp"]).join(PSR)));
+                var rootElementsWithNumForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/num"].join("")));
+                var rootElementsWithNumAndTextForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/num\/text"].join("")));
+                var rootElementsWithContentForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/content"].join("")));
+                var rootElementsWithContentAndMpForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/content\/mp"].join("")));
                 // path = paragraph/subparagraph
-                var rootElementsWithContentWrapperForFromRegExp = new RegExp(anchor(rootElementsForFrom.concat([contentWrapperForFrom]).join(PSR)));
+                var rootElementsWithContentWrapperForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, PSR, contentWrapperForFrom].join("")));
                 //path = paragraph/subparagraph/content
                 var rootElementsWithContentWrapperAndContentForFromRegExp = new RegExp(anchor([rootElementsForFromRegExpString, "\/(", contentWrapperForFrom,
                         "\/)?content"].join("")));
@@ -356,12 +376,7 @@ define(function hierarchicalElementTransformer(require) {
                 //path section
                 var rootsElementsPathForTo = rootElementsForTo.join("/");
                 var rootsElementsWithPPathForTo = [rootsElementsPathForTo, "p"].join("/");
-                var rootsElementsPathForFrom = rootElementsForFrom.join("/");
-                var rootsElementsWithNumPathForFrom = [rootsElementsPathForFrom, "num"].join("/");
-                var rootsElementsWithContentPathForFrom = [rootsElementsPathForFrom, "content"].join("/");
-                var rootsElementsWithContentAndMpPathForFrom = [rootsElementsWithContentPathForFrom, "mp"].join("/");
-                var rootsElementsWithNumAndTextPathForFrom = [rootsElementsWithNumPathForFrom, "text"].join("/");
-                // <=end of path section 
+                // <=end of path section
 
                 //content wrapper id (for e.g. data-akn-subparagraph-id)
                 var contentWrapperId = "data-akn-" + contentWrapperForFrom + "-id";
@@ -493,12 +508,12 @@ define(function hierarchicalElementTransformer(require) {
                                 }
                                 else if (rootElementsWithContentWrapperForFromRegExp.test(path)) {
                                     this.mapToProducts(element, {
-                                        toPath: rootsElementsPathForTo,
+                                        toPath: rootsElementsPathForTo
                                     });
                                     this._.isContentWrapperPresent = true;
                                 } else if(rootElementsWithContentWrapperAndContentForFromRegExp.test(path)) {
                                     this.mapToProducts(element, {
-                                        toPath: rootsElementsPathForTo,
+                                        toPath: rootsElementsPathForTo
                                     });
                                 } else if(rootElementsWithContentWrapperAndContentAndMpForFromRegExp.test(path)) {
                                     var that = this;
@@ -572,7 +587,7 @@ define(function hierarchicalElementTransformer(require) {
                                 }
                             },
                             supports: function supports(element) {
-                                return containsPath(element, rootsElementsPathForFrom);
+                                return containsPath(element, getRootsElementsPathForFrom(element, rootElementsForFrom));
                             }
                         },
 
@@ -580,6 +595,7 @@ define(function hierarchicalElementTransformer(require) {
                             action: function action(element) {
                                 var path = element.transformationContext.elementPath;
                                 if (rootElementForToRegExp.test(path)) {
+                                    var rootsElementsPathForFrom = getRootsElementsPathForFrom(element, rootElementsForFrom);
                                     if(element.attributes[DATA_AKN_NUM]) {
                                        this.mapToProducts(element, [{
                                            toPath: rootsElementsPathForFrom,
@@ -629,7 +645,7 @@ define(function hierarchicalElementTransformer(require) {
                                                action: "passAttributeTransformer"
                                            }]
                                        }, {
-                                           toPath: rootsElementsWithNumPathForFrom,
+                                           toPath: [rootsElementsPathForFrom, "num"].join("/"),
                                            attrs: [{
                                                from: DATA_AKN_NUM_ID,
                                                to: "xml:id",
@@ -640,7 +656,7 @@ define(function hierarchicalElementTransformer(require) {
                                                action: "passAttributeTransformer"
                                            }]
                                        }, {
-                                           toPath: rootsElementsWithNumAndTextPathForFrom,
+                                           toPath: [rootsElementsPathForFrom, "num", "text"].join("/"),
                                            fromAttribute: DATA_AKN_NUM
                                        }]);
                                     } else {

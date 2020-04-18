@@ -31,6 +31,9 @@ define(function aknOrderedListPluginModule(require) {
     var HTML_POINT = "li";
     var BOGUS = "br";
     var TEXT = "text";
+    var SPAN = "span";
+    var SCAYT_MISSPELL_WORD_CLASS = "scayt-misspell-word";
+    var SCAYT_GRAMM_PROBLEM_CLASS = "gramm-problem";
     var ORDERED_LIST_SELECTOR = "ol[data-akn-name='aknOrderedList']";
     var ENTER_KEY = 13;
     var TAB_KEY = 9;
@@ -39,7 +42,7 @@ define(function aknOrderedListPluginModule(require) {
     var pluginDefinition = {
         lang: 'en',
         init: function init(editor) {
-            numberModule.init();
+            numberModule.init(editor);
             editor.on("beforeAknIndentList", _resetDataNumOnIndent);
             editor.on("change", resetDataAknNameForOrderedList, null, null, 0);
             editor.on("change", resetNumbering, null, null, 1);
@@ -92,6 +95,10 @@ define(function aknOrderedListPluginModule(require) {
             var isOnlyChild = !selectedElement.hasNext() && !selectedElement.hasPrevious();
             var hasTextNext = leosPluginUtils.hasTextOrBogusAsNextSibling(selectedElement);
             var parent = selectedElement.getParent();
+            if (leosPluginUtils.getElementName(parent) === SPAN &&
+                    (parent.hasClass(SCAYT_MISSPELL_WORD_CLASS) || parent.hasClass(SCAYT_GRAMM_PROBLEM_CLASS))) {
+                parent = parent.getParent();
+            }
             var isParentSubPoint = leosPluginUtils.getElementName(parent) === HTML_SUB_POINT;
             var point = isParentSubPoint ? parent.getParent() : parent;
             var isSelectedElementInsidePoint = (leosPluginUtils.getElementName(point) === HTML_POINT) && _getAscendantPoint(point);
@@ -108,7 +115,10 @@ define(function aknOrderedListPluginModule(require) {
             }
         }
     }
-
+    
+    /**
+     * Add an Observer to all ordered lists (OL) present in the editor, considering as a separate list even the nested ones.
+     */
     function _startObservingAllLists(event){
         var editor = event.editor;
         if(editor.editable && editor.editable().getChildren && editor.editable().getChildren().count() > 0){
@@ -125,13 +135,36 @@ define(function aknOrderedListPluginModule(require) {
             }
         }
     }
-
+    
+    /**
+     * MutationObserver callback, called after a change has been done inside an OL element.
+     * @param mutationsList, array with all nodes affected by the change.
+     *
+     * Overall logic:
+     * 1. Get actual mutations from the OL list.
+     * 2. Add intro (HTML_SUB_POINT) to the OLs which to not contains an intro
+     * 3. Transform singe sub-points into single points
+     */
     function _processMutations(mutationsList) {
         var mutations = _getMutations(mutationsList);
        _addIntroBeforeEachList(mutations.listsWithoutIntro);
        _popSingleSubPoints(mutations.singleSubPoints);
     }
-
+    
+    /**
+     * Pop out children of <p> node.
+     * Before calling:
+     * <p>
+     *      Text node
+     *      <br/>
+     * </p>
+     *
+     * After calling with "singleSubPoints" <p>]:
+     *      Text node
+     *      <br/>
+     *
+     * @param singleSubPoints, list of <p> to be changed
+     */
     function _popSingleSubPoints(singleSubPoints){
         singleSubPoints.forEach(function(subPoint){
             if(subPoint.getParent()){
@@ -142,7 +175,30 @@ define(function aknOrderedListPluginModule(require) {
             }
         });
     }
-
+    
+    /**
+     * Create a new <p> in the editor and add it before the <ol> for each element of "listsWithoutIntro"
+     *
+     * Before calling:
+     * <li>
+     *      Text node
+     *      <ol>
+     *          <li>
+     *          <li>
+     *      </ol>
+     * </li>
+     *
+     * After calling with "listsWithoutIntro" <ol>:
+     * <li>
+     *      <p>Text node<p>
+     *      <ol>
+     *          <li>
+     *          <li>
+     *      </ol>
+     * </li>
+     *
+     * @param listsWithoutIntro, list of OLs to be changed
+     */
     function _addIntroBeforeEachList(listsWithoutIntro){
         listsWithoutIntro.forEach(function(list){
             if(list.parentNode){
@@ -155,31 +211,78 @@ define(function aknOrderedListPluginModule(require) {
             }
         });
     }
-
-    function _appendAllPreviousTextNodes(element){
-        while(element.hasPrevious()){
-            var previousElement = element.getPrevious();
+    
+    /**
+     * Dom structure before calling:
+     * <li>
+     *  text node
+     *  <br>
+     *  another text node
+     *  <p> </p>
+     * <li>
+     *
+     * Dom structure after calling with "element" <p>:
+     * <li>
+     *  <p>
+     *      text node
+     *      <br>
+     *      another text node
+     *  </p>
+     * <li>
+     * @param element in the dom to be changed, <p>
+     */
+    function _appendAllPreviousTextNodes(element) {
+        var reference = element;
+        var spansToRemove = [];
+        while (reference.hasPrevious()) {
+            var previousElement = reference.getPrevious();
             var previousElementName = leosPluginUtils.getElementName(previousElement);
-            if(previousElementName === TEXT || previousElementName === BOGUS){
+            if (previousElementName === SPAN && (previousElement.hasClass(SCAYT_MISSPELL_WORD_CLASS) || previousElement.hasClass(SCAYT_GRAMM_PROBLEM_CLASS))) {
+                previousElement.getChildren().toArray().forEach(function (child) {
+                    element.append(child, true);
+                });
+                reference = reference.getPrevious();
+                spansToRemove.push(previousElement);
+            } else if (previousElementName === TEXT || previousElementName === BOGUS || previousElementName === SPAN) {
                 element.append(previousElement, true);
             } else {
                 break;
             }
         }
+        spansToRemove.forEach(function (child) {
+            child.remove()
+        });
     }
-
+    
+    /**
+     * Get all mutations to be applied.
+     * Mutations are returned as a structure {listsWithoutIntro: array, singleSubPoints: array}
+     *
+     * @param mutationsList, array with all nodes affected by the change.
+     * @returns listsWithoutIntro: OLs without an intro (not a <p> as previous sibling),
+     *          singleSubPoints: single SubPoints which will be converted later into Points
+     */
     function _getMutations(mutationsList){
-        var listsWithoutIntro = [];
-        var isListPushed = {};
-        var singleSubPoints = [];
-        var isSubPointPushed = {};
+        var listsWithoutIntro = []; // OLs without an intro
+        var isListPushed = {};      // already processed OLs
+        var singleSubPoints = [];   // single SubPoints
+        var isSubPointPushed = {};  // already processed SubPoints
         for(var i = 0; i < mutationsList.length; i++){
             _pushMutations(mutationsList[i].target, listsWithoutIntro, isListPushed, singleSubPoints, isSubPointPushed);
         }
         return {listsWithoutIntro: listsWithoutIntro,
                 singleSubPoints: singleSubPoints};
     }
-
+    
+    /**
+     * Build mutations for the actual "node" and all his children.
+     *
+     * @param node, element inside the OL impacted by the change
+     * @param listsWithoutIntro, OLs without an intro (not a <p> as previous sibling),
+     * @param isListPushed, OLs already processed
+     * @param singleSubPoints, single SubPoints which will be converted later into Points
+     * @param isSubPointPushed, SubPoints already processed
+     */
     function _pushMutations(node, listsWithoutIntro, isListPushed, singleSubPoints, isSubPointPushed){
         for (var i = 0; i < node.childNodes.length; i++){
             var child = node.childNodes[i];
@@ -191,7 +294,22 @@ define(function aknOrderedListPluginModule(require) {
         }
         _pushListsWithoutIntro(node, listsWithoutIntro, isListPushed);
     }
-
+    
+    /**
+     * Add "child" element into "listsWithoutIntro" if is not a correct OL structure.
+     * Correct structure:
+     * <li>
+     *  <p> </p> (or Text node, or span tag)  //TODO consider avoiding anything rather than p, and normalize in a second moment with _appendAllPreviousTextNodes()
+     *  <ol>
+     *      <li></li>
+     *      <li></li>
+     *  </ol>
+     * </li>
+     *
+     * @param child, OL to be processed
+     * @param listsWithoutIntro, array where to add the OL in case is not a correct structure
+     * @param isListPushed, array with already processed OLs
+     */
     function _pushListsWithoutIntro(child, listsWithoutIntro, isListPushed){
         var hasNoIntro = leosPluginUtils.getElementName(child) === ORDER_LIST_ELEMENT
             && (!child.previousSibling || leosPluginUtils.getElementName(child.previousSibling) !== HTML_SUB_POINT);
@@ -200,7 +318,19 @@ define(function aknOrderedListPluginModule(require) {
             listsWithoutIntro.push(child);
         }
     }
-
+    
+    /**
+     * Add "child" element into "singleSubPoints" if is the only element inside a <li> node.
+     * Example: Add <p> to "singleSubPoints" if the structure is as below:
+     * <li>
+     *     <p> </p>
+     * </li>
+     *
+     * @param node, parent <li>
+     * @param child, element <p>
+     * @param singleSubPoints, single SubPoints which will be converted later into Points
+     * @param isSubPointPushed, SubPoints already processed
+     */
     function _pushSingleSubPoints(node, child, singleSubPoints, isSubPointPushed){
         var isSingleSubPoint = leosPluginUtils.getElementName(node) === HTML_POINT && leosPluginUtils.getElementName(child) === HTML_SUB_POINT
             && !child.previousSibling && !child.nextSibling;
@@ -335,6 +465,10 @@ define(function aknOrderedListPluginModule(require) {
         event.editor.fire('unlockSnapshot');
     }
 
+    function elementTagIndexProvider(element) {
+        return leosPluginUtils.calculateListLevel(element) >= leosPluginUtils.MAX_LIST_LEVEL ? 1 : 0;
+    }
+
     pluginTools.addPlugin(pluginName, pluginDefinition);
 
     var leosHierarchicalElementTransformer = leosHierarchicalElementTransformerStamp({
@@ -354,7 +488,7 @@ define(function aknOrderedListPluginModule(require) {
                 html : "data-akn-name=aknOrderedList"
             } ]
         },
-        rootElementsForFrom : [ "list", "point" ],
+        rootElementsForFrom : [ "list", { elementTags : ["point", "indent"], elementTagIndexProvider : elementTagIndexProvider }],
         contentWrapperForFrom : "alinea",
         rootElementsForTo : [ "ol", "li" ]
     });

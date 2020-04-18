@@ -15,8 +15,10 @@ package eu.europa.ec.leos.repository.store;
 
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 import eu.europa.ec.leos.repository.LeosRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Package Repository implementation.
@@ -55,9 +59,10 @@ public class PackageRepositoryImpl implements PackageRepository {
     }
 
     @Override
-    public LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status) {
+    public LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status,
+                                                    List<String> containedDocuments) {
         logger.debug("Creating Leg document from content... [path=" + path + ", name=" + name + "]");
-        return leosRepository.createLegDocumentFromContent(path, name, jobId, milestoneComments, contentBytes, status);
+        return leosRepository.createLegDocumentFromContent(path, name, jobId, milestoneComments, contentBytes, status, containedDocuments);
     }
 
     @Override
@@ -73,9 +78,9 @@ public class PackageRepositoryImpl implements PackageRepository {
     }
 
     @Override
-    public LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] content, boolean major, String comment) {
-        logger.debug("Updating Leg document status and content... [id=" + id + ", status=" + status.name() + ", content size=" + content.length + ", major=" + major + ", comment=" + comment + "]");
-        return leosRepository.updateLegDocument(id, status, content, major, comment);
+    public LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] content, VersionType versionType, String comment) {
+        logger.debug("Updating Leg document status and content... [id=" + id + ", status=" + status.name() + ", content size=" + content.length + ", versionType=" + versionType + ", comment=" + comment + "]");
+        return leosRepository.updateLegDocument(id, status, content, versionType, comment);
     }
 
     @Override
@@ -94,6 +99,24 @@ public class PackageRepositoryImpl implements PackageRepository {
     public <D extends LeosDocument> D findDocumentByPackagePathAndName(String path, String name, Class<? extends D> type) {
         logger.debug("Finding document by package path... [path=" + path + ", name=" + name + ", type=" + type.getSimpleName() + "]");
         return leosRepository.findDocumentByParentPath(path, name, type);
+    }
+
+    @Override
+    public LegDocument findLastLegByVersionedReference(String path, String versionedReference) {
+        logger.debug("Finding document by document reference... [path=$path, versionedReference=$versionedReference]");
+        QueryFilter queryFilter = new QueryFilter();
+        QueryFilter.Filter filter = new QueryFilter.Filter(QueryFilter.FilterType.containedDocuments.name(), "=", false, versionedReference);
+        queryFilter.addFilter(filter);
+        QueryFilter.SortOrder sortOrder = new QueryFilter.SortOrder(QueryFilter.FilterType.creationDate.name(), QueryFilter.SORT_DESCENDING);
+        queryFilter.addSortOrder(sortOrder);
+        // TODO set maximum value using a global constant
+        Stream<LegDocument> legDocuments = leosRepository.findPagedDocumentsByParentPath(path, LegDocument.class, true, true, 0, 100, queryFilter);
+        Optional<LegDocument> optionalLegDocument = legDocuments.findFirst();
+        if (optionalLegDocument.isPresent()) {
+            return optionalLegDocument.get();
+        } else {
+            throw new RuntimeException("Unable to retrieve the Milestone");
+        }
     }
 
     @Override

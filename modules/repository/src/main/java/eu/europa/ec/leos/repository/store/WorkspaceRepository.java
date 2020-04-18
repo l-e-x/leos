@@ -15,10 +15,12 @@ package eu.europa.ec.leos.repository.store;
 
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 import org.springframework.security.access.prepost.PostAuthorize;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Workspace Repository interface.
@@ -36,17 +38,39 @@ public interface WorkspaceRepository {
      */
     <T extends LeosDocument> List<T> findDocumentsByParentPath(String path, Class<? extends T> type, boolean fetchContent);
 
-    // SMELL security should probably be enforced at service level...
-    @PostAuthorize("hasPermission(returnObject , 'CAN_READ')")
     <T extends LeosDocument> T findDocumentById(String id, Class<? extends T> type, boolean latest);
+
+    <T extends LeosDocument> T findDocumentByRef(String ref, Class<? extends T> type);
 
     /**
      * Updates the collaborators of the specified document.
      *
-     * @param id the ID of the document to update.
+     * @param id            the ID of the document to update.
      * @param collaborators the map of users to authorities.
-     * @param type the type class of the document.
+     * @param type          the type class of the document.
      * @return the updated document.
      */
     <T extends XmlDocument> T updateDocumentCollaborators(String id, Map<String, String> collaborators, Class<? extends T> type);
+
+    /**
+     * Finds documents with the specified pagination .
+     *
+     * @param D          the document type
+     * @param path       the path where to find the documents.
+     * @param type       the type class of the documents.
+     * @param startIndex the start index for result.
+     * @param maxResults the maximum number of result to be displayed.
+     * @return the list of found documents or empty.
+     */
+    <D extends LeosDocument> Stream<D> findPagedDocumentsByParentPath(String path, Class<? extends D> type, boolean fetchContent,
+                                                                      int startIndex, int maxResults, QueryFilter workspaceFilter);
+    /**
+     * Finds documents count .
+     *
+     * @param D    the document type
+     * @param path the path where to find the documents.
+     * @param type the type class of the documents.
+     * @return Number of documents.
+     */
+    <D extends LeosDocument> int findDocumentCountByParentPath(String path, Class<? extends D> type, QueryFilter workspaceFilter);
 }

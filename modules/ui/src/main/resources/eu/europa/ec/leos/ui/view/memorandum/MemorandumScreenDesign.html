@@ -2,9 +2,10 @@
 <html>
 <head>
     <meta name="package-mapping" content="content:eu.europa.ec.leos.ui.component"/>
-    <meta name="package-mapping" content="toc:eu.europa.ec.leos.ui.component.toc"/>
     <meta name="package-mapping" content="comp:eu.europa.ec.leos.web.ui.component"/>
     <meta name="package-mapping" content="act:eu.europa.ec.leos.web.ui.component.actions"/>
+    <!--<meta name="package-mapping" content="toc:eu.europa.ec.leos.ui.component.toc"/>-->
+    <!--<meta name="package-mapping" content="versions:eu.europa.ec.leos.ui.component.versions"/>-->
 </head>
 <body>
 <vaadin-vertical-layout size-full spacing="false" margin="false">
@@ -21,7 +22,7 @@
                 <content-comparison-component _id="comparisonComponent"/>
                 <comp-memorandum-component _id="memorandumDoc" :top :left size-full :expand="1.0" spacing="false" margin="false">
                     <vaadin-horizontal-layout style-name="leos-viewdoc-docbar leos-viewdoc-padbar-both" width-full spacing="false">
-                        <act-memorandum-actions-menu-bar _id="actionsMenuBar" immediate :middle :left ></act-memorandum-actions-menu-bar>
+                        <act-memorandum-actions-menu-bar _id="actionsMenuBar" immediate :middle :left width="34px"></act-memorandum-actions-menu-bar>
                         <vaadin-label _id="versionInfoLabel" :expand="0.9" :middle :center></vaadin-label>
                         <vaadin-button _id="refreshNoteButton" style-name="link text-refresh-note" :middle :right></vaadin-button>
                         <vaadin-button _id="refreshButton" icon="fonticon://Vaadin-Icons/e790" style-name="link leos-toolbar-button" immediate :middle :right></vaadin-button>
@@ -29,7 +30,13 @@
                     <content-leos-display-field _id="memorandumContent" id="docContainer" style-name="leos-doc-content" size-full :expand="1.0"/>
                 </comp-memorandum-component>
             </vaadin-horizontal-split-panel>
-            <toc-table-of-content-component _id="memorandumToc"/>
+
+            <content-accordion-pane _id="accordionPane" id="leosAccordionPane" size-full :expand="1.0" spacing="false" margin="false">
+                <vaadin-accordion _id="accordion" id="leosAccordion" size-full>
+                    <!--<toc-table-of-content-component _id="tableOfContentComponent" size-full :expand="1.0" spacing="false" margin="false"/>-->
+                    <!--<versions-versions-tab _id="versionsTab" id="versionsTabOuter" size-full :expand="1.0" spacing="false" margin="false"/>-->
+                </vaadin-accordion>
+            </content-accordion-pane>
         </vaadin-horizontal-split-panel>
     </vaadin-vertical-layout>
 </vaadin-vertical-layout>

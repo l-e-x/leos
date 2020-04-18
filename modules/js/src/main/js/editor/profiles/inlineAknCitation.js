@@ -46,6 +46,7 @@ define(function aknCitationProfileModule(require) {
     plugins.push(require("plugins/leosSpecialChar/leosSpecialCharPlugin"));
     plugins.push(require("plugins/leosPreventElementDeletion/leosPreventElementDeletionPlugin"));
     plugins.push(require("plugins/leosSpellChecker/leosSpellCheckerPlugin"));
+    plugins.push(require("plugins/leosPreventSelectAll/leosPreventSelectAllPlugin"));
 
     var pluginNames=[];
     var specificConfig={};
@@ -89,10 +90,6 @@ define(function aknCitationProfileModule(require) {
         disableNativeSpellChecker: false,
         // LEOS-2887 removing tooltip title 
         title: false,
-        // LEOS-3180 Select all keystroke is blocked to prevent complete deletion of elements in citation
-        blockedKeystrokes: [
-            CKEDITOR.CTRL + 65 //CTRL +A
-        ],
         // toolbar groups arrangement, optimised for a single toolbar row
         toolbarGroups : [ {
             name : "save"

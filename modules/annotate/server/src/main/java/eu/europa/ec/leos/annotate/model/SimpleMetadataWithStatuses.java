@@ -59,22 +59,34 @@ public class SimpleMetadataWithStatuses {
         }
     }
 
+    public boolean isEmptyDefaultEntry() {
+        if(!this.metadata.equals(new SimpleMetadata())) {
+            return false;
+        }
+        
+        return this.statuses.equals(AnnotationStatus.getDefaultStatus());
+    }
+    
     // -------------------------------------
     // Getters & setters
     // -------------------------------------
 
+    @Generated
     public SimpleMetadata getMetadata() {
         return metadata;
     }
 
+    @Generated
     public void setMetadata(final SimpleMetadata metadata) {
         this.metadata = metadata;
     }
 
+    @Generated
     public List<AnnotationStatus> getStatuses() {
         return statuses;
     }
 
+    @Generated
     public void setStatuses(final List<AnnotationStatus> statuses) {
         this.statuses = statuses;
     }

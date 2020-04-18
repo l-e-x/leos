@@ -1,7 +1,7 @@
 /**
- * Copyright 2019 European Commission
+ * Copyright 2017 European Commission
  *
- * Licensed under the EUPL, Version 1.2 or â€“ as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
+ * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
  * You may not use this work except in compliance with the Licence.
  * You may obtain a copy of the Licence at:
  *
@@ -31,6 +31,23 @@ $MENU_BORDER_COLOR:#6E6969;       //picked from Decide
 $G_BORDER_COLOR:#B7B7B7;//#7ec6e3;
 $G_GREEN_COLOR:#38b64b;     //picked from Decide
 $G_BROWN_COLOR:#ee7c08;
+
+$SLIDER_BACKGROUND_COLOR:#d3d3d3;
+
+$ELEMENT_EDITABLE_BORDER_COLOR: #A6C7FF;
+$ELEMENT_EDITABLE_BACKGROUND_COLOR: #FFFAFD;
+
+$ACCORDION_HEADER:$HEADER_BLUE;
+$ACCORDION_HEADER_DESELECTED: rgba(0, 101, 162, 0.61);
+$RECENT:#595959;
+$RECENT_HOVER:rgba(204, 204, 204, 0.1);
+$BLUE_MILESTONE_TITLE:#0071E0;
+$BLUE_MILESTONE_BORDER:#59D5FF;
+$BLUE_MILESTONE_HOVER:rgba(89, 213, 255, 0.1);
+$INTERMEDIATE:#6DBFA9;
+$INTERMEDIATE_HOVER: rgba(32, 191, 158, 0.13);
+$VERSIONS_ROW_BORDER: rgba(0, 70, 151, 0.22);
+$TITLE_DESCRIPTION_BLOCK: #c7c7c7;
 
 //global font definitions
 @font-face {

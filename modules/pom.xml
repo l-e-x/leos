@@ -20,7 +20,7 @@
     <parent>
         <groupId>eu.europa.ec.digit.leos.pilot</groupId>
         <artifactId>leos</artifactId>
-        <version>2.1.0</version>
+        <version>3.0.0</version>
     </parent>
 
     <artifactId>leos-modules</artifactId>
@@ -31,6 +31,8 @@
         <module>repository</module>
         <module>domain</module>
         <module>security</module>
+        <module>security-preauth</module>
+        <module>security-saml</module>
         <module>integration</module>
         <module>i18n</module>
         <module>services</module>

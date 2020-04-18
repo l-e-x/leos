@@ -14,21 +14,24 @@
 package eu.europa.ec.leos.services.support.xml;
 
 import com.ximpleware.AutoPilot;
+import com.ximpleware.ModifyException;
 import com.ximpleware.NavException;
 import com.ximpleware.VTDNav;
 import com.ximpleware.XMLModifier;
 import eu.europa.ec.leos.domain.common.InstanceType;
 import eu.europa.ec.leos.domain.common.Result;
+import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.model.action.SoftActionType;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.services.support.ByteArrayBuilder;
 import eu.europa.ec.leos.services.support.IdGenerator;
-import eu.europa.ec.leos.instance.Instance;
 import eu.europa.ec.leos.services.support.xml.ref.Ref;
+import eu.europa.ec.leos.vo.toc.NumberingConfig;
+import eu.europa.ec.leos.vo.toc.NumberingType;
+import eu.europa.ec.leos.vo.toc.OptionsType;
 import eu.europa.ec.leos.vo.toc.TableOfContentItemVO;
-import eu.europa.ec.leos.vo.toctype.AnnexTocItemType;
-import eu.europa.ec.leos.vo.toctype.LegalTextMandateTocItemType;
-import eu.europa.ec.leos.vo.toctype.TocItemType;
+import eu.europa.ec.leos.vo.toc.TocItem;
+import eu.europa.ec.leos.vo.toc.TocItemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
+
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,9 +48,7 @@ import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.CONTENT;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.EMPTY_STRING;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_AFFECTED_ATTR;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_DELETABLE_ATTR;
@@ -63,28 +65,34 @@ import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_SOFT_USER_ATT
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.SOFT_DELETE_PLACEHOLDER_ID_PREFIX;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.SOFT_MOVE_PLACEHOLDER_ID_PREFIX;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.SOFT_TRANSFORM_PLACEHOLDER_ID_PREFIX;
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.XMLID;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.TOGGLED_TO_NUM;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.XMLID;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.getFragmentAsString;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.getStartTag;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.insertAffectedAttribute;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.removeAttribute;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.restoreOldId;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.setupVTDNav;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.toByteArray;
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.restoreOldId;
-import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateAttributeValue;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.insertOrUpdateAttributeValue;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateOriginAttribute;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateSoftInfo;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateSoftTransFromAttribute;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateXMLIDAttribute;
 import static eu.europa.ec.leos.services.support.xml.VTDUtils.updateXMLIDAttributesInElementContent;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CN;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CONTENT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.EC;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.ELEMENTS_TO_BE_PROCESSED_FOR_NUMBERING;
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEOS_ORIGIN_ATTR_CN;
-import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEOS_ORIGIN_ATTR_EC;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.INDENT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.LEVEL;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.LIST;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.MAINBODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.OPEN_START_TAG;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.PARAGRAPH;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.POINT;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.PREFACE;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITAL;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.SUBPARAGRAPH;
 import static eu.europa.ec.leos.services.support.xml.XmlHelper.SUBPOINT;
@@ -92,6 +100,7 @@ import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.ext
 import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractLevelNonTocItems;
 import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractOrBuildHeaderElement;
 import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.extractOrBuildNumElement;
+import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.getTagValueFromTocItemVo;
 import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.getTagWithContent;
 import static eu.europa.ec.leos.services.support.xml.XmlTableOfContentHelper.navigateToFirstTocElment;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -103,11 +112,13 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(VtdXmlContentProcessorForMandate.class);
 
     @Override
-    public byte[] createDocumentContentWithNewTocList(Function<String, TocItemType> getTocItemType, List<TableOfContentItemVO> tableOfContentItemVOs,
-            byte[] content, User user) {
+    public byte[] createDocumentContentWithNewTocList(List<TableOfContentItemVO> tableOfContentItemVOs, byte[] content, User user) {
         LOG.trace("Start building the document content for the new toc list");
         long startTime = System.currentTimeMillis();
         try {
+            List<TocItem> tocItems = structureContextProvider.get().getTocItems();
+            List<NumberingConfig> numberingConfigs = structureContextProvider.get().getNumberingConfigs();
+            Map<TocItem, List<TocItem>> tocRules = structureContextProvider.get().getTocRules();
 
             ByteArrayBuilder mergedContent = new ByteArrayBuilder();
             VTDNav contentNavigator = setupVTDNav(content);
@@ -125,7 +136,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
 
                 for (TableOfContentItemVO tocVo : tableOfContentItemVOs) {
                     index = tocVo.getVtdIndex();
-                    mergedContent.append(buildTocItemContent(getTocItemType, contentNavigator, tocVo, user));
+                    mergedContent.append(buildTocItemContent(tocItems, numberingConfigs, tocRules, contentNavigator, tocVo, user));
                 }
 
                 contentNavigator.recoverNode(index);
@@ -147,160 +158,132 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         }
     }
 
-    static boolean isNumberSoftDeleted(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean isNumberSoftDeleted(TableOfContentItemVO tableOfContentItemVO) {
         if(tableOfContentItemVO.getNumSoftActionAttr() != null && SoftActionType.DELETE.equals(tableOfContentItemVO.getNumSoftActionAttr())){
             return true;
         }
         return false;
     }
 
-    private byte[] buildTocItemContent(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO,
-            User user)
+    private byte[] buildTocItemContent(List<TocItem> tocItems, List<NumberingConfig> numberingConfigs, Map<TocItem, List<TocItem>> tocRules, VTDNav contentNavigator, TableOfContentItemVO tocItemVO, User user)
             throws NavException, UnsupportedEncodingException {
+
+        String tocTagName = tocItemVO.getTocItem().getAknTag().value();
         ByteArrayBuilder tocItemContent = new ByteArrayBuilder();
-        if (!(tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.PARAGRAPH) && skipParagraphContent(tableOfContentItemVO)) &&
-                !(tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.POINT) && skipPointContent(tableOfContentItemVO))) {
-            byte[] numTag = extractOrBuildNumElement(contentNavigator, tableOfContentItemVO);
+        if (!((tocTagName.equals(PARAGRAPH) || tocTagName.equals(LEVEL)) && skipParagraphContent(tocItemVO)) &&
+                !((tocTagName.equals(POINT) || tocTagName.equals(INDENT)) && skipPointContent(tocItemVO))) {
+            byte[] numTag = extractOrBuildNumElement(contentNavigator, tocItemVO);
 
             //this method does the num toggle processing
-            numTag = numberElementToggleProcessing(tableOfContentItemVO, numTag);
+            numTag = numberElementToggleProcessing(tocItemVO, numTag);
 
             tocItemContent.append(numTag);
         }
-        tocItemContent.append(extractOrBuildHeaderElement(contentNavigator, tableOfContentItemVO));
-        if (tableOfContentItemVO.getPreambleFormula1TagIndex() != null) {
-            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getPreambleFormula1TagIndex()));
-        }
-        if (tableOfContentItemVO.getRecitalsIntroIndex() != null) {
-            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getRecitalsIntroIndex()));
+        tocItemContent.append(extractOrBuildHeaderElement(contentNavigator, tocItemVO));
+        if (tocItemVO.getIntroTagIndex() != null) {
+            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tocItemVO.getIntroTagIndex()));
         }
 
-        for (TableOfContentItemVO child : tableOfContentItemVO.getChildItemsView()) {
-            tocItemContent.append(buildTocItemContent(getTocItemType, contentNavigator, child, user));
+        for (TableOfContentItemVO child : tocItemVO.getChildItemsView()) {
+            tocItemContent.append(buildTocItemContent(tocItems, numberingConfigs, tocRules, contentNavigator, child, user));
         }
 
         byte[] startTag = new byte[0];
-        String tocTagName = tableOfContentItemVO.getType().getName();
-
-        if (tableOfContentItemVO.getVtdIndex() != null) {
-            contentNavigator.recoverNode(tableOfContentItemVO.getVtdIndex());
-            if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.PARAGRAPH) && skipParagraphContent(tableOfContentItemVO)) {
-                startTag = updateOriginAttribute(getStartTag(contentNavigator), tableOfContentItemVO.getOriginAttr());
-                tocItemContent = buildParagraphContent(contentNavigator, tableOfContentItemVO, user, tocItemContent);
-            } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.POINT)) {
-                startTag = updateOriginAttribute(getStartTag(contentNavigator), tableOfContentItemVO.getOriginAttr());
-                if (skipPointContent(tableOfContentItemVO)) {
-                    tocItemContent = buildPointContent(contentNavigator, tableOfContentItemVO, user, tocItemContent);
-                } else if (shouldWrapWithList(tableOfContentItemVO.getParentItem())) {
-                    tocItemContent.append(tableOfContentItemVO.getContent().getBytes(UTF_8));
-                    byte[] pointTag = wrapWithPoint(tableOfContentItemVO, user, tocItemContent.getContent());
-
-                    pointTag = updateSoftInfo(pointTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                            tableOfContentItemVO.getOriginAttr(), tableOfContentItemVO.getSoftMoveFrom(), false, tableOfContentItemVO.getType());
-                    return constructListStructure(tableOfContentItemVO, user, pointTag);
+        int configuredIndentNumConfigDepth = TocItemUtils.getDepthByNumberingType(numberingConfigs, NumberingType.INDENT);
+        if (tocItemVO.getVtdIndex() != null) {
+            contentNavigator.recoverNode(tocItemVO.getVtdIndex());
+            if ((tocTagName.equals(PARAGRAPH) || tocTagName.equals(LEVEL)) && skipParagraphContent(tocItemVO)) {
+                startTag = updateOriginAttribute(getStartTag(contentNavigator), tocItemVO.getOriginAttr());
+                tocItemContent = buildParagraphOrLevelContent(contentNavigator, tocItems, tocItemVO, user, tocItemContent);
+            } else if (tocTagName.equals(POINT) || tocTagName.equals(INDENT)) {
+                boolean isIndent  = getPointDepthInToc(tocItemVO,1) == configuredIndentNumConfigDepth ;
+                startTag = updateOriginAttribute(getStartTag(contentNavigator), tocItemVO.getOriginAttr());
+                if (skipPointContent(tocItemVO)) {
+                    tocItemContent = buildPointContent(contentNavigator, tocItems, tocItemVO, user, tocItemContent);
+                } else if (shouldWrapWithList(tocItemVO.getParentItem())) {
+                    tocItemContent.append(tocItemVO.getContent().getBytes(UTF_8));
+                    byte[] pointTag = wrapWithPoint(tocItemVO, tocItemContent.getContent(), isIndent);
+                    pointTag = updateSoftInfo(pointTag, tocItemVO.getSoftActionAttr(), tocItemVO.isSoftActionRoot(), user,
+                            tocItemVO.getOriginAttr(), tocItemVO.getSoftMoveFrom(), false, tocItemVO.getTocItem());
+                    return constructListStructure(tocItemVO, user, pointTag);
                 } else {
-                    startTag = buildExistingXmlNode(getTocItemType, contentNavigator, tableOfContentItemVO, tocItemContent);
+                    startTag = buildExistingXmlNode(tocItems, tocRules, contentNavigator, tocItemVO, tocItemContent);
+                    if (isIndent && tocItemVO.getTocItem().getAknTag().value().equals(POINT)) {
+                        startTag = new String(startTag).replaceAll(OPEN_START_TAG + POINT, OPEN_START_TAG + INDENT).getBytes(UTF_8);
+                        tocTagName = INDENT;
+                    } else if (!isIndent && tocItemVO.getTocItem().getAknTag().value().equals(INDENT)) {
+                        startTag = new String(startTag).replaceAll(OPEN_START_TAG + INDENT, OPEN_START_TAG + POINT).getBytes(UTF_8);
+                        tocTagName = POINT;
+                    }
                 }
-            } else if ((tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.SUBPARAGRAPH) ||
-                    tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.SUBPOINT)) && isSingleSubElement(tableOfContentItemVO) &&
-                    !isSoftDeletedOrMoved(tableOfContentItemVO)) {
-                return extractSubElementContent(contentNavigator, tableOfContentItemVO);
-            } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.LIST) && isEmptyElement(tableOfContentItemVO)) {
+            } else if ((tocTagName.equals(SUBPARAGRAPH) ||
+                    tocTagName.equals(SUBPOINT)) && isSingleSubElement(tocItemVO) &&
+                    !isSoftDeletedOrMoved(tocItemVO)) {
+                return extractSubElementContent(contentNavigator, tocItemVO);
+            } else if (tocTagName.equals(LIST) && isEmptyElement(tocItemVO)) {
                 return "".getBytes(UTF_8); // remove list content if there is no child
             } else {
-                startTag = buildExistingXmlNode(getTocItemType, contentNavigator, tableOfContentItemVO, tocItemContent);
+                startTag = buildExistingXmlNode(tocItems, tocRules, contentNavigator, tocItemVO, tocItemContent);
             }
 
-            if (SoftActionType.MOVE_TO.equals(tableOfContentItemVO.getSoftActionAttr())) {
-                startTag = updateXMLIDAttribute(startTag, tableOfContentItemVO.getId());
+            if (SoftActionType.MOVE_TO.equals(tocItemVO.getSoftActionAttr())) {
+                startTag = updateXMLIDAttribute(startTag, tocItemVO.getId());
                 tocItemContent = updateXMLIDAttributesInElementContent(tocItemContent, SOFT_MOVE_PLACEHOLDER_ID_PREFIX, false);
-            } else if (SoftActionType.DELETE.equals(tableOfContentItemVO.getSoftActionAttr())) {
-                startTag = updateXMLIDAttribute(startTag, tableOfContentItemVO.getId());
+            } else if (SoftActionType.DELETE.equals(tocItemVO.getSoftActionAttr())) {
+                startTag = updateXMLIDAttribute(startTag, tocItemVO.getId());
                 tocItemContent = updateXMLIDAttributesInElementContent(tocItemContent, SOFT_DELETE_PLACEHOLDER_ID_PREFIX, false);
-            } else if ((tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.PARAGRAPH) || tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.POINT)) &&
-                    !isEmptyElement(tableOfContentItemVO) && isSingleSubElement(tableOfContentItemVO.getChildItems().get(0)) &&
-                    !isSoftDeletedOrMoved(tableOfContentItemVO.getChildItems().get(0))) {
-                startTag = updateSoftTransFromAttribute(startTag, tableOfContentItemVO.getChildItems().get(0).getId());
+            } else if (Arrays.asList(PARAGRAPH, LEVEL, POINT, INDENT).contains(tocTagName) &&
+                    !isEmptyElement(tocItemVO) && isSingleSubElement(tocItemVO.getChildItems().get(0)) &&
+                    !isSoftDeletedOrMoved(tocItemVO.getChildItems().get(0))) {
+                startTag = updateSoftTransFromAttribute(startTag, tocItemVO.getChildItems().get(0).getId());
             }
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.CITATION)) {
-            byte[] citationTag = XmlHelper.getCitationTemplate().getBytes(UTF_8);
-            citationTag = updateSoftInfo(citationTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                    tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-            return updateOriginAttribute(citationTag, tableOfContentItemVO.getOriginAttr());
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.RECITAL)) {
-            byte[] recitalTag = XmlHelper.getRecitalTemplate(tableOfContentItemVO.getNumber()).getBytes(UTF_8);
-            recitalTag = updateSoftInfo(recitalTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                    tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-            return updateOriginAttribute(recitalTag, tableOfContentItemVO.getOriginAttr());
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.ARTICLE)) {
-            if(tableOfContentItemVO.getChildItemsView().isEmpty()) {
-                byte[] articleTag = XmlHelper.getArticleTemplate(tableOfContentItemVO.getNumber(), tableOfContentItemVO.getHeading()).getBytes(UTF_8);
-                articleTag = updateSoftInfo(articleTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                        tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-                return updateOriginAttribute(articleTag, tableOfContentItemVO.getOriginAttr());
+        } else if (tocItemVO.getChildItemsView().isEmpty()) {
+            byte[] tocItemTag;
+            if (tocTagName.equals(POINT) || tocTagName.equals(INDENT)) {
+                boolean isIndent = getPointDepthInToc(tocItemVO, 1) == configuredIndentNumConfigDepth;
+                tocItemTag = XmlHelper.getTemplate(TocItemUtils.getTocItemByNameOrThrow(tocItems, isIndent ? INDENT : POINT), tocItemVO.getNumber(), messageHelper).getBytes(UTF_8);
+                tocItemTag = constructListStructure(tocItemVO, user, tocItemTag);
             } else {
-                String startTagStr = "<" + tocTagName + " xml:id=\"" + IdGenerator.generateId(tocTagName.substring(0, 3), 7)
-                        + "\" leos:editable=\"true\"  leos:deletable=\"true\">";
-                startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.getOriginAttr());
+                tocItemTag = XmlHelper.getTemplate(tocItemVO.getTocItem(), tocItemVO.getNumber(), tocItemVO.getHeading(), messageHelper).getBytes(UTF_8);
             }
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.PARAGRAPH)) {
-            if (tableOfContentItemVO.getChildItemsView().isEmpty()) {
-                byte[] paragraphTag = XmlHelper.getParagraphTemplate(tableOfContentItemVO.getNumber()).getBytes(UTF_8);
-                paragraphTag = updateSoftInfo(paragraphTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                        tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-                return updateOriginAttribute(paragraphTag, tableOfContentItemVO.getOriginAttr());
-            } else {
-                String startTagStr = "<" + tocTagName + " xml:id=\"" + IdGenerator.generateId(tocTagName.substring(0, 3), 7) + "\">";
-                startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.getOriginAttr());
-                tocItemContent = buildParagraphContent(contentNavigator, tableOfContentItemVO, user, tocItemContent);
+            tocItemTag = updateSoftInfo(tocItemTag, tocItemVO.getSoftActionAttr(), tocItemVO.isSoftActionRoot(), user,
+                    tocItemVO.getOriginAttr(), null, tocItemVO.isUndeleted(), tocItemVO.getTocItem());
+            if (tocItemVO.getTocItem().getItemHeading() == OptionsType.OPTIONAL) {
+                tocItemTag = removeEmptyHeading(new String(tocItemTag, UTF_8)).getBytes(UTF_8);
             }
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.SUBPARAGRAPH)) {
-            byte[] subParagraphTag = XmlHelper.getSubParagraphTemplate(null).getBytes(UTF_8);
-            subParagraphTag = updateSoftInfo(subParagraphTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                    tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-            return updateOriginAttribute(subParagraphTag, tableOfContentItemVO.getOriginAttr());
-        } else if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.POINT)) {
-            if (tableOfContentItemVO.getChildItemsView().isEmpty()) {
-                byte[] pointTag = XmlHelper.getPointTemplate(tableOfContentItemVO.getNumber()).getBytes(UTF_8);
-                pointTag = updateSoftInfo(pointTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                        tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-                pointTag = updateOriginAttribute(pointTag, tableOfContentItemVO.getOriginAttr());
-
-                return constructListStructure(tableOfContentItemVO, user, pointTag);
-            } else {
-                byte[] pointTag = buildPointContent(contentNavigator, tableOfContentItemVO, user, tocItemContent).getContent();
-                pointTag = wrapWithPoint(tableOfContentItemVO, user, pointTag);
-                pointTag = updateSoftInfo(pointTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                        tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-                return constructListStructure(tableOfContentItemVO, user, pointTag);
-            }
-        } else if (tableOfContentItemVO.getType().equals(AnnexTocItemType.DIVISION)) {
-            byte[] annexTag = XmlHelper.getAnnexTemplate().getBytes(UTF_8);
-            annexTag = updateSoftInfo(annexTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                    tableOfContentItemVO.getOriginAttr(), null, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
-            return updateOriginAttribute(annexTag, tableOfContentItemVO.getOriginAttr());
+            return updateOriginAttribute(tocItemTag, tocItemVO.getOriginAttr());
         } else {
+            if (tocTagName.equals(POINT) || tocTagName.equals(INDENT)) {
+                byte[] pointTag = buildPointContent(contentNavigator, tocItems, tocItemVO, user, tocItemContent).getContent();
+                boolean isIndent = getPointDepthInToc(tocItemVO, 1) == configuredIndentNumConfigDepth;
+                pointTag = wrapWithPoint(tocItemVO, pointTag, isIndent);
+                pointTag = updateSoftInfo(pointTag, tocItemVO.getSoftActionAttr(), tocItemVO.isSoftActionRoot(), user,
+                        tocItemVO.getOriginAttr(), null, tocItemVO.isUndeleted(), tocItemVO.getTocItem());
+                return constructListStructure(tocItemVO, user, pointTag);
+            } else if (tocTagName.equals(PARAGRAPH) || tocTagName.equals(LEVEL)) {
+                tocItemContent = buildParagraphOrLevelContent(contentNavigator, tocItems, tocItemVO, user, tocItemContent);
+            }
             String startTagStr = "<" + tocTagName + " xml:id=\"" + IdGenerator.generateId(tocTagName.substring(0, 3), 7) + "\">";
-            startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.getOriginAttr());
+            startTag = updateOriginAttribute(startTagStr.getBytes(UTF_8), tocItemVO.getOriginAttr());
         }
-        
+
         final String moveId;
-        if (tableOfContentItemVO.getSoftActionAttr() != null && tableOfContentItemVO.getSoftActionAttr().equals(SoftActionType.MOVE_TO)) {
-            moveId = tableOfContentItemVO.getSoftMoveTo();
-        } else if (tableOfContentItemVO.getSoftActionAttr() != null && tableOfContentItemVO.getSoftActionAttr().equals(SoftActionType.MOVE_FROM)) {
-            moveId = tableOfContentItemVO.getSoftMoveFrom();
+        if (tocItemVO.getSoftActionAttr() != null && tocItemVO.getSoftActionAttr().equals(SoftActionType.MOVE_TO)) {
+            moveId = tocItemVO.getSoftMoveTo();
+        } else if (tocItemVO.getSoftActionAttr() != null && tocItemVO.getSoftActionAttr().equals(SoftActionType.MOVE_FROM)) {
+            moveId = tocItemVO.getSoftMoveFrom();
         } else {
             moveId = null;
         }
-        startTag = updateSoftInfo(startTag, tableOfContentItemVO.getSoftActionAttr(), tableOfContentItemVO.isSoftActionRoot(), user,
-                            tableOfContentItemVO.getOriginAttr(), moveId, tableOfContentItemVO.isUndeleted(), tableOfContentItemVO.getType());
+        startTag = updateSoftInfo(startTag, tocItemVO.getSoftActionAttr(), tocItemVO.isSoftActionRoot(), user,
+                            tocItemVO.getOriginAttr(), moveId, tocItemVO.isUndeleted(), tocItemVO.getTocItem());
         
-        startTag = insertAffectedAttribute(startTag, tableOfContentItemVO.isAffected());
+        startTag = insertAffectedAttribute(startTag, tocItemVO.isAffected());
         return XmlHelper.buildTag(startTag, tocTagName.getBytes(UTF_8), tocItemContent.getContent());
     }
 
     private byte[] numberElementToggleProcessing(TableOfContentItemVO tableOfContentItemVO, byte[] numTag) {
-        if (tableOfContentItemVO.getType().equals(LegalTextMandateTocItemType.PARAGRAPH)) {
+        if (tableOfContentItemVO.getTocItem().getAknTag().value().equals(PARAGRAPH)) {
             if (tableOfContentItemVO.getParentItem().isNumberingToggled() != null) {
                 if (tableOfContentItemVO.getParentItem().isNumberingToggled()) {
                     if (isNumberSoftDeleted(tableOfContentItemVO)) {// if a para is soft deleted and numbering is toggled
@@ -328,6 +311,10 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         updateNewElements(xmlModifier, ARTICLE, null);
         updateNewElements(xmlModifier, PARAGRAPH, SUBPARAGRAPH);
         updateNewElements(xmlModifier, POINT, SUBPOINT);
+        updateNewElements(xmlModifier, INDENT, SUBPOINT);
+        updateNewElements(xmlModifier, PREFACE, null);
+        updateNewElements(xmlModifier, MAINBODY, null);
+        updateNewElements(xmlModifier, LEVEL, SUBPARAGRAPH);
     }
 
     private void updateSoftMoveLabelAttribute(XMLModifier xmlModifier, String attr) throws Exception {
@@ -344,8 +331,8 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
                 currentIndex = vtdNav.getCurrentIndex();
                 try {
                     String updatedMovedReferenceContent;
-                    Result<String> labelResult = referenceLabelProcessor.generateSoftmoveLabel(getRefFromSoftMovedElt(vtdNav, attr),
-                            getParentId(vtdNav), vtdNav, attr);
+                    Result<String> labelResult = referenceLabelService.generateSoftmoveLabel(getRefFromSoftMovedElt(vtdNav, attr),
+                            getParentId(vtdNav), xmlModifier, attr, getRef(vtdNav));
                     vtdNav.recoverNode(currentIndex);
                     if (labelResult.isOk()) {
                         updatedMovedReferenceContent = labelResult.get();
@@ -366,7 +353,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
     }
 
     private Ref getRefFromSoftMovedElt(VTDNav vtdNav, String attr) throws Exception {
-        String id = null, href = null;
+        String id = null, href = null, documentRef = null;
         int index = vtdNav.getAttrVal(XMLID);
         if (index != -1) {
             id = vtdNav.toString(index);
@@ -375,58 +362,66 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         if (index != -1) {
             href = vtdNav.toString(index);
         }
-        return new Ref(id, href);
+        index = vtdNav.getAttrVal("documentref");
+        if (index != -1) {
+            documentRef = vtdNav.toString(index);
+        }
+        return new Ref(id, href, documentRef);
     }
 
-    private static byte[] constructListStructure(TableOfContentItemVO tableOfContentItemVO, User user, byte[] pointTag) {
+    private byte[] constructListStructure(TableOfContentItemVO tableOfContentItemVO, User user, byte[] pointTag) {
         TableOfContentItemVO parentItem = tableOfContentItemVO.getParentItem();
         List<TableOfContentItemVO> childItems = parentItem.getChildItems();
-        List<TableOfContentItemVO> childItemsOfType = constructChildListWithType(childItems, tableOfContentItemVO.getType().getName());
+        List<TableOfContentItemVO> childItemsOfType = constructChildListWithType(childItems, tableOfContentItemVO.getTocItem().getAknTag().value());
 
         if (tableOfContentItemVO.getId().equals(childItemsOfType.get(0).getId()) && shouldWrapWithList(parentItem)) {
             return wrapWithList(tableOfContentItemVO, user, childItemsOfType, pointTag);
         } else if (tableOfContentItemVO.getId().equals(childItemsOfType.get(childItemsOfType.size() - 1).getId()) && (parentItem.getVtdIndex() == null ||
-                !parentItem.getType().getName().equals(LIST))) {
+                !parentItem.getTocItem().getAknTag().value().equals(LIST))) {
             return closeListTag(pointTag);
         } else {
             return pointTag;
         }
     }
 
-    private static List<TableOfContentItemVO> constructChildListWithType(List<TableOfContentItemVO> childItems, String type) {
+    private List<TableOfContentItemVO> constructChildListWithType(List<TableOfContentItemVO> childItems, String type) {
         List<TableOfContentItemVO> childItemsOfType = new ArrayList<>();
         for (TableOfContentItemVO child : childItems) {
-            if (child.getType().getName().equals(type)) {
+            String childTagValue = getTagValueFromTocItemVo(child);
+            if (childTagValue.equals(type)) {
+                childItemsOfType.add(child);
+            }else if(Arrays.asList(POINT,INDENT).contains(type) && Arrays.asList(POINT,INDENT).contains(childTagValue)){
                 childItemsOfType.add(child);
             }
         }
         return childItemsOfType;
     }
 
-    private static byte[] closeListTag(byte[] pointTag) {
+    private byte[] closeListTag(byte[] pointTag) {
         ByteArrayBuilder composedList = new ByteArrayBuilder(pointTag);
         String closeListTag = "</" + LIST + ">";
         composedList.append(closeListTag.getBytes(UTF_8));
         return composedList.getContent();
     }
 
-    private static byte[] wrapWithList(TableOfContentItemVO tableOfContentItemVO, User user, List<TableOfContentItemVO> childItems, byte[] pointTag) {
+    private byte[] wrapWithList(TableOfContentItemVO tableOfContentItemVO, User user, List<TableOfContentItemVO> childItems, byte[] pointTag) {
         // Build the list block
         String startTagStr = "<" + LIST + " xml:id=\"" + IdGenerator.generateId(LIST.substring(0, 3), 7) + "\">";
         byte[] listTag = updateSoftInfo(startTagStr.getBytes(UTF_8), SoftActionType.ADD, Boolean.TRUE, user,
-                tableOfContentItemVO.getOriginAttr(), null, false, tableOfContentItemVO.getType());
-        listTag = updateOriginAttribute(listTag, LEOS_ORIGIN_ATTR_CN);
+                tableOfContentItemVO.getOriginAttr(), null, false, tableOfContentItemVO.getTocItem());
+        listTag = updateOriginAttribute(listTag, CN);
         byte[] listCloseTag = childItems.size() == 1 ? LIST.getBytes(UTF_8) : null;
         return XmlHelper.buildTag(listTag, listCloseTag, pointTag);
     }
 
-    private static boolean shouldWrapWithList(TableOfContentItemVO parentItem) {
+    private boolean shouldWrapWithList(TableOfContentItemVO parentItem) {
         boolean wrapWithList = true;
         List<TableOfContentItemVO> childItems = parentItem.getChildItems();
         if (!childItems.isEmpty()) {
-            switch (parentItem.getType().getName()) {
+            switch (parentItem.getTocItem().getAknTag().value()) {
                 case PARAGRAPH:
-                    wrapWithList = !parentItem.containsType(LIST);
+                case LEVEL:
+                    wrapWithList = !parentItem.containsItem(LIST);
                     break;
                 case LIST:
                     wrapWithList = false;
@@ -436,79 +431,80 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         return wrapWithList;
     }
 
-    private static ByteArrayBuilder buildParagraphContent(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO, User user,
-            ByteArrayBuilder tocItemContent)
-            throws NavException, UnsupportedEncodingException {
+    private ByteArrayBuilder buildParagraphOrLevelContent(VTDNav contentNavigator, List<TocItem> tocItems, TableOfContentItemVO tableOfContentItemVO, User user,
+                                                          ByteArrayBuilder tocItemContent) throws NavException {
         ByteArrayBuilder composedContent = new ByteArrayBuilder();
         composedContent.append(extractOrBuildNumElement(contentNavigator, tableOfContentItemVO));
-        composedContent.append(convertToSubparagraph(tableOfContentItemVO, user));
+        composedContent.append(convertToSubparagraph(tocItems, tableOfContentItemVO, user));
         composedContent.append(tocItemContent.getContent());
         return composedContent;
     }
 
-    private static byte[] convertToSubparagraph(TableOfContentItemVO tableOfContentItemVO, User user) throws UnsupportedEncodingException {
-        byte[] subParaTag = XmlHelper.getSubParagraphTemplate(tableOfContentItemVO.getContent()).getBytes(UTF_8);
-        return updateSoftInfo(subParaTag, SoftActionType.ADD, Boolean.TRUE, user, LEOS_ORIGIN_ATTR_CN, null, false, tableOfContentItemVO.getType());
+    private byte[] convertToSubparagraph(List<TocItem> tocItems, TableOfContentItemVO tableOfContentItemVO, User user) {
+        byte[] subParaTag = XmlHelper.getTemplateWithExtractedContent(TocItemUtils.getTocItemByNameOrThrow(tocItems, SUBPARAGRAPH), tableOfContentItemVO.getContent(), messageHelper).getBytes(UTF_8);
+        return updateSoftInfo(subParaTag, SoftActionType.ADD, Boolean.TRUE, user, CN, null, false, tableOfContentItemVO.getTocItem());
     }
 
-    private static ByteArrayBuilder buildPointContent(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO, User user,
-            ByteArrayBuilder tocItemContent)
-            throws NavException, UnsupportedEncodingException {
+    private ByteArrayBuilder buildPointContent(VTDNav contentNavigator, List<TocItem> tocItems, TableOfContentItemVO tableOfContentItemVO, User user,
+                                                      ByteArrayBuilder tocItemContent)
+            throws NavException {
         ByteArrayBuilder composedContent = new ByteArrayBuilder();
         composedContent.append(extractOrBuildNumElement(contentNavigator, tableOfContentItemVO));
-        composedContent.append(convertToSubpoint(tableOfContentItemVO, user));
+        composedContent.append(convertToSubpoint(tocItems, tableOfContentItemVO, user));
+        if (!new String(tocItemContent.getContent()).startsWith("<list")) {
+            List<TableOfContentItemVO> childItems = tableOfContentItemVO.getChildItems();
+            List<TableOfContentItemVO> childItemsOfType = constructChildListWithType(childItems, tableOfContentItemVO.getTocItem().getAknTag().value());
+            tocItemContent = new ByteArrayBuilder(wrapWithList(tableOfContentItemVO, user, childItemsOfType, tocItemContent.getContent()));
+        }
         composedContent.append(tocItemContent.getContent());
         return composedContent;
     }
 
-    private static byte[] convertToSubpoint(TableOfContentItemVO tableOfContentItemVO, User user) throws UnsupportedEncodingException {
-        byte[] subPointTag = XmlHelper.getSubpointTemplate(tableOfContentItemVO.getContent()).getBytes(UTF_8);
-        return updateSoftInfo(subPointTag, SoftActionType.ADD, Boolean.TRUE, user, LEOS_ORIGIN_ATTR_CN, null, false, tableOfContentItemVO.getType());
+    private byte[] convertToSubpoint(List<TocItem> tocItems, TableOfContentItemVO tableOfContentItemVO, User user) {
+        byte[] subPointTag = XmlHelper.getTemplateWithExtractedContent(TocItemUtils.getTocItemByNameOrThrow(tocItems, SUBPOINT), tableOfContentItemVO.getContent(), messageHelper).getBytes(UTF_8);
+        return updateSoftInfo(subPointTag, SoftActionType.ADD, Boolean.TRUE, user, CN, null, false, tableOfContentItemVO.getTocItem());
     }
 
-    private static byte[] extractSubElementContent(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO)
-            throws NavException, UnsupportedEncodingException {
+    private byte[] extractSubElementContent(VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO)
+            throws NavException {
         contentNavigator.recoverNode(tableOfContentItemVO.getVtdIndex());
         contentNavigator.toElement(VTDNav.FIRST_CHILD, CONTENT);
         return getTagWithContent(contentNavigator);
     }
 
-    private static byte[] wrapWithPoint(TableOfContentItemVO tableOfContentItemVO, User user, byte[] pointContent) {
+    private byte[] wrapWithPoint(TableOfContentItemVO tableOfContentItemVO, byte[] pointContent, boolean isIndent) {
         // Build the point block
-        String startTagStr = "<" + POINT + " xml:id=\"" + tableOfContentItemVO.getId() + "\">";
+        String elementTag = isIndent ? INDENT : POINT;
+        String startTagStr = "<" + elementTag + " xml:id=\"" + tableOfContentItemVO.getId() + "\">";
         byte[] pointTag = insertAffectedAttribute(startTagStr.getBytes(UTF_8), tableOfContentItemVO.isAffected());
         pointTag = updateOriginAttribute(pointTag, tableOfContentItemVO.getOriginAttr());
-        return XmlHelper.buildTag(pointTag, POINT.getBytes(UTF_8), pointContent);
+        return XmlHelper.buildTag(pointTag, elementTag.getBytes(UTF_8), pointContent);
     }
 
-    private static byte[] buildExistingXmlNode(Function<String, TocItemType> getTocItemType, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO,
-            ByteArrayBuilder tocItemContent) throws NavException, UnsupportedEncodingException {
-        TocItemType tocType = tableOfContentItemVO.getType();
+    private byte[] buildExistingXmlNode(List<TocItem> tocItems, Map<TocItem, List<TocItem>> tocRules, VTDNav contentNavigator, TableOfContentItemVO tableOfContentItemVO,
+                                               ByteArrayBuilder tocItemContent) throws NavException, UnsupportedEncodingException {
         byte[] startTag = updateOriginAttribute(XmlTableOfContentHelper.getStartTagAndRemovePrefix(contentNavigator, tableOfContentItemVO), tableOfContentItemVO.getOriginAttr());
-        if (tocType.equals(LegalTextMandateTocItemType.PREAMBLE) && tableOfContentItemVO.getPreambleFormula2TagIndex() != null) {
-            tocItemContent.append(extractIndexedNonTocElements(contentNavigator, tableOfContentItemVO.getPreambleFormula2TagIndex()));
-        } else if (!tocType.equals(LegalTextMandateTocItemType.RECITALS)) { // Recitals contains intro non TOC item and it already has been added
-            tocItemContent.append(extractLevelNonTocItems(getTocItemType, contentNavigator, tableOfContentItemVO));
-        }
+        tocItemContent.append(extractLevelNonTocItems(tocItems, tocRules, contentNavigator, tableOfContentItemVO));
         return startTag;
     }
 
-    private static boolean skipPointContent(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean skipPointContent(TableOfContentItemVO tableOfContentItemVO) {
         List<TableOfContentItemVO> childList = tableOfContentItemVO.getChildItems();
         if (childList != null && !childList.isEmpty()) {
             TableOfContentItemVO child = childList.get(0);
-            if (child.getType().equals(LegalTextMandateTocItemType.POINT) || child.getType().equals(LegalTextMandateTocItemType.LIST)) {
+            String tagValue = getTagValueFromTocItemVo(child);
+            if (tagValue.equals(POINT) || tagValue.equals(INDENT) || tagValue.equals(LIST)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean skipParagraphContent(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean skipParagraphContent(TableOfContentItemVO tableOfContentItemVO) {
         List<TableOfContentItemVO> childList = tableOfContentItemVO.getChildItems();
         if (childList != null && !childList.isEmpty()) {
             for (TableOfContentItemVO child : childList) {
-                if ((child.getVtdIndex() != null) && !child.isMovedOnEmptyParent() && child.getType().equals(LegalTextMandateTocItemType.SUBPARAGRAPH)) {
+                if ((child.getVtdIndex() != null) && !child.isMovedOnEmptyParent() && child.getTocItem().getAknTag().value().equals(SUBPARAGRAPH)) {
                     return false;
                 }
             }
@@ -517,7 +513,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         return false;
     }
 
-    private static boolean isSingleSubElement(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean isSingleSubElement(TableOfContentItemVO tableOfContentItemVO) {
         boolean isSingle = false;
         List<TableOfContentItemVO> childList = tableOfContentItemVO.getParentItem().getChildItems();
         if (childList != null && !childList.isEmpty()) {
@@ -526,15 +522,15 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
                 case 1:
                     // If only single subparagraph or subpoint is remaining in the paragraph
                     if ((firstChild.getVtdIndex() != null && !firstChild.isMovedOnEmptyParent()) &&
-                            (firstChild.getType().equals(LegalTextMandateTocItemType.SUBPARAGRAPH) ||
-                                    firstChild.getType().equals(LegalTextMandateTocItemType.SUBPOINT))) {
+                            (firstChild.getTocItem().getAknTag().value().equals(SUBPARAGRAPH) ||
+                                    firstChild.getTocItem().getAknTag().value().equals(SUBPOINT))) {
                         isSingle = true;
                     }
                     break;
                 case 2:
                     // If point inside list is deleted and empty list remaining in the paragraph.
                     TableOfContentItemVO secondChild = childList.get(1);
-                    if (secondChild.getVtdIndex() != null && secondChild.getType().equals(LegalTextMandateTocItemType.LIST) &&
+                    if (secondChild.getVtdIndex() != null && secondChild.getTocItem().getAknTag().value().equals(LIST) &&
                             secondChild.getChildItems().isEmpty()) {
                         isSingle = true;
                     }
@@ -546,13 +542,13 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         return isSingle;
     }
 
-    private static boolean isSoftDeletedOrMoved(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean isSoftDeletedOrMoved(TableOfContentItemVO tableOfContentItemVO) {
         return SoftActionType.DELETE.equals(tableOfContentItemVO.getSoftActionAttr()) ||
                 SoftActionType.MOVE_FROM.equals(tableOfContentItemVO.getSoftActionAttr()) ||
                 SoftActionType.MOVE_TO.equals(tableOfContentItemVO.getSoftActionAttr());
     }
 
-    private static boolean isEmptyElement(TableOfContentItemVO tableOfContentItemVO) {
+    private boolean isEmptyElement(TableOfContentItemVO tableOfContentItemVO) {
         List<TableOfContentItemVO> childList = tableOfContentItemVO.getChildItems();
         return childList == null || childList.isEmpty();
     }
@@ -568,31 +564,20 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         while (autoPilot.iterate()) {
             int currentIndex = vtdNav.getCurrentIndex();
             String elementId = vtdNav.toString(vtdNav.getAttrVal(XMLID));
-            String elementOrigin = (vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) != -1) ? vtdNav.toString(vtdNav.getAttrVal(LEOS_ORIGIN_ATTR)) : LEOS_ORIGIN_ATTR_CN;
-            if (elementOrigin.equals(LEOS_ORIGIN_ATTR_CN) &&
-                    ((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1) || (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1))) {
-                xmlModifier.insertAttribute((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1 ? generateOriginInfo(LEOS_ORIGIN_ATTR_CN) : EMPTY_STRING) +
-                        (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1 ? generateSoftInfo(SoftActionType.ADD) : EMPTY_STRING));
-            }
+            String elementOrigin = modifySubElement(xmlModifier, vtdNav);
             if ((subElementTagName != null) && (vtdNav.toElement(VTDNav.FIRST_CHILD, subElementTagName))) {
                 boolean isFirstSubElement = true;
                 do {
-                    if (isFirstSubElement && elementOrigin.equals(LEOS_ORIGIN_ATTR_EC) && (vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1)) {
+                    if (isFirstSubElement && elementOrigin.equals(EC) && (vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1)) {
                         if (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1) {
-                            xmlModifier.insertAttribute(generateOriginInfo(LEOS_ORIGIN_ATTR_EC) + generateSoftInfo(SoftActionType.TRANSFORM));
+                            xmlModifier.insertAttribute(generateOriginInfo(EC) + generateSoftInfo(SoftActionType.TRANSFORM));
                         } else {
-                            xmlModifier.insertAttribute(generateOriginInfo(LEOS_ORIGIN_ATTR_EC));
+                            xmlModifier.insertAttribute(generateOriginInfo(EC));
                             xmlModifier.updateToken(vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR), SoftActionType.TRANSFORM.getSoftAction());
                         }
                         xmlModifier.updateToken(vtdNav.getAttrVal(XMLID), SOFT_TRANSFORM_PLACEHOLDER_ID_PREFIX + elementId);
                     } else {
-                        String subElementOrigin = (vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) != -1) ? vtdNav.toString(vtdNav.getAttrVal(LEOS_ORIGIN_ATTR))
-                                : LEOS_ORIGIN_ATTR_CN;
-                        if (subElementOrigin.equals(LEOS_ORIGIN_ATTR_CN) &&
-                                ((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1) || (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1))) {
-                            xmlModifier.insertAttribute((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1 ? generateOriginInfo(LEOS_ORIGIN_ATTR_CN) : EMPTY_STRING) +
-                                    (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1 ? generateSoftInfo(SoftActionType.ADD) : EMPTY_STRING));
-                        }
+                        modifySubElement(xmlModifier, vtdNav);
                     }
                     isFirstSubElement = false;
                 } while (vtdNav.toElement(VTDNav.NEXT_SIBLING, subElementTagName));
@@ -601,6 +586,17 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
             }
             vtdNav.recoverNode(currentIndex);
         }
+    }
+
+    private String modifySubElement(XMLModifier xmlModifier, VTDNav vtdNav) throws NavException, ModifyException, UnsupportedEncodingException, DatatypeConfigurationException {
+        String subElementOrigin = (vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) != -1) ? vtdNav.toString(vtdNav.getAttrVal(LEOS_ORIGIN_ATTR))
+                : CN;
+        if (subElementOrigin.equals(CN) &&
+                ((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1) || (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1))) {
+            xmlModifier.insertAttribute((vtdNav.getAttrVal(LEOS_ORIGIN_ATTR) == -1 ? generateOriginInfo(CN) : EMPTY_STRING) +
+                    (vtdNav.getAttrVal(LEOS_SOFT_ACTION_ATTR) == -1 ? generateSoftInfo(SoftActionType.ADD) : EMPTY_STRING));
+        }
+        return subElementOrigin;
     }
 
     private String generateOriginInfo(String origin) {
@@ -653,7 +649,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
 
         if (!isProposalElement(attributes)) {
             String[] parentElement = getParentElement(xmlContent, mergeOnElement[1], mergeOnElement[0]);
-            if (Arrays.asList(PARAGRAPH, POINT).contains(parentElement[1]) && getChildElement(xmlContent, parentElement[1], parentElement[0], Arrays.asList(SUBPARAGRAPH, SUBPOINT, LIST), 3) == null) {
+            if (Arrays.asList(PARAGRAPH, LEVEL, POINT, INDENT).contains(parentElement[1]) && getChildElement(xmlContent, parentElement[1], parentElement[0], Arrays.asList(SUBPARAGRAPH, SUBPOINT, LIST), 3) == null) {
                 return parentElement;
             }
         }
@@ -678,7 +674,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
                 updatedXmlContent = replaceElementByTagNameAndId(updatedXmlContent, softDeleteElement(softMovedToElement[2]), softMovedToElement[1], softMovedToElement[0]);
             }
             String[] parentElement = getParentElement(updatedXmlContent, mergeOnElement[1], mergeOnElement[0]);
-            if (Arrays.asList(PARAGRAPH, POINT).contains(parentElement[1]) && getChildElement(updatedXmlContent, parentElement[1], parentElement[0], Arrays.asList(SUBPARAGRAPH, SUBPOINT, LIST), 2) == null) {
+            if (Arrays.asList(PARAGRAPH, LEVEL, POINT, INDENT).contains(parentElement[1]) && getChildElement(updatedXmlContent, parentElement[1], parentElement[0], Arrays.asList(SUBPARAGRAPH, SUBPOINT, LIST), 2) == null) {
                 Map<String, String> mergedElementAttributes = getElementAttributesByPath(parentElement[2].getBytes(UTF_8), "/" + parentElement[1] + "/" + mergeOnElement[1], false);
                 if (isSoftMovedFrom(mergedElementAttributes)) {
                     String[] softMovedToMergedElement = getElementById(updatedXmlContent, getSoftMovedFromAttribute(mergedElementAttributes));
@@ -688,7 +684,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
                 String mergedContentFragment = getElementFragmentByPath(parentElement[2].getBytes(UTF_8), "/" + parentElement[1] + "/" + mergeOnElement[1] + "/content", false);
                 String parentElementFragment = parentElement[2].replace(mergedElementFragment, mergedContentFragment);
                 updatedXmlContent = replaceElementByTagNameAndId(updatedXmlContent, new String(updateSoftTransFromAttribute(parentElementFragment.getBytes(UTF_8), mergeOnElement[0]), UTF_8), parentElement[1], parentElement[0]);
-            } else if (Arrays.asList(PARAGRAPH, POINT).contains(mergeOnElement[1])) {
+            } else if (Arrays.asList(PARAGRAPH, LEVEL, POINT, INDENT).contains(mergeOnElement[1])) {
                 updatedXmlContent = insertAffectedAttributeIntoParentElements(updatedXmlContent, mergeOnElement[0]);
             }
         }
@@ -706,7 +702,7 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
     }
 
     private boolean isProposalElement(Map<String, String> attributes) {
-        return ((attributes.get(LEOS_ORIGIN_ATTR) != null) && attributes.get(LEOS_ORIGIN_ATTR).equals(LEOS_ORIGIN_ATTR_EC));
+        return ((attributes.get(LEOS_ORIGIN_ATTR) != null) && attributes.get(LEOS_ORIGIN_ATTR).equals(EC));
     }
 
     private boolean isPContent(String content, String tagName) {
@@ -720,8 +716,8 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
     private String softDeleteElement(String content) {
         StringBuilder tagStr = new StringBuilder(content);
 
-        updateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
-        updateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
+        insertOrUpdateAttributeValue(tagStr, LEOS_EDITABLE_ATTR, Boolean.FALSE.toString());
+        insertOrUpdateAttributeValue(tagStr, LEOS_DELETABLE_ATTR, Boolean.FALSE.toString());
         updateSoftAttributes(SoftActionType.DELETE, tagStr);
 
         removeAttribute(tagStr, LEOS_SOFT_MOVED_LABEL_ATTR);
@@ -772,13 +768,13 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
         }
 
         if(TOGGLED_TO_NUM.equals(setToggledToNum)){
-            updateAttributeValue(tagStr, setToggledToNum, Boolean.TRUE.toString());
+            insertOrUpdateAttributeValue(tagStr, setToggledToNum, Boolean.TRUE.toString());
         }
 
         return new String(tagStr).getBytes(UTF_8);
     }
 
-    private static void removeSoftAttributes(StringBuilder tagStr) {
+    private void removeSoftAttributes(StringBuilder tagStr) {
         removeAttribute(tagStr, LEOS_SOFT_ACTION_ATTR);
         removeAttribute(tagStr, LEOS_SOFT_ACTION_ROOT_ATTR);
         removeAttribute(tagStr, LEOS_SOFT_USER_ATTR);
@@ -787,14 +783,27 @@ public class VtdXmlContentProcessorForMandate extends VtdXmlContentProcessor {
     }
 
     private void updateSoftAttributes(SoftActionType softAction, StringBuilder tagStr) {
-        updateAttributeValue(tagStr, LEOS_SOFT_ACTION_ATTR, softAction.getSoftAction());
-        updateAttributeValue(tagStr, LEOS_SOFT_ACTION_ROOT_ATTR, Boolean.TRUE.toString());
-        updateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, getUserName());
+        insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_ACTION_ATTR, softAction.getSoftAction());
+        insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_ACTION_ROOT_ATTR, Boolean.TRUE.toString());
+        insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_USER_ATTR, getUserName());
         try {
-            updateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, getXMLFormatDate());
+            insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, getXMLFormatDate());
         } catch (DatatypeConfigurationException e) {
-            updateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
+            insertOrUpdateAttributeValue(tagStr, LEOS_SOFT_DATE_ATTR, null);
         }
+    }
+
+    private int getPointDepthInToc(TableOfContentItemVO tocItemVO, int pointDepth) {
+        TableOfContentItemVO parentItemVO = tocItemVO;
+        while (true) {
+            parentItemVO = parentItemVO.getParentItem();
+            if (getTagValueFromTocItemVo(parentItemVO).equals(POINT) || getTagValueFromTocItemVo(parentItemVO).equals(INDENT)) {
+                pointDepth++;
+            } else if (getTagValueFromTocItemVo(parentItemVO).equals(PARAGRAPH) || getTagValueFromTocItemVo(parentItemVO).equals(LEVEL)) {
+                break;
+            }
+        }
+        return pointDepth;
     }
 
 }

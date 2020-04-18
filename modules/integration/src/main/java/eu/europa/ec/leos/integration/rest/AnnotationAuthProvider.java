@@ -27,24 +27,22 @@ import org.springframework.web.client.RestTemplate;
 @Component
 class AnnotationAuthProvider {
 
-	@Autowired
-	private RestTemplate restTemplate;
+    @Autowired
+    private RestTemplate restTemplate;
 
-	@Value("#{integrationProperties['annotate.api.host']}")
-	private String annotationHost;
+    @Value("#{integrationProperties['annotate.api.internal.host']}")
+    private String annotationHost;
 
-
-	
-	/**
-	 * @param jwtToken
-	 * @return Access token
-	 */
-	public TokenJson getToken(String jwtToken) {
-		String tokenURI = annotationHost + "token";
-		MultiValueMap<String, String> requestPayload = new LinkedMultiValueMap<String, String>();
-		requestPayload.add("grant_type", "jwt-bearer");
-		requestPayload.add("assertion", jwtToken);
-		return restTemplate.postForObject(tokenURI, requestPayload, TokenJson.class);
-	}
+    /**
+     * @param jwtToken
+     * @return Access token
+     */
+    public TokenJson getToken(String jwtToken) {
+        String tokenURI = annotationHost + "token";
+        MultiValueMap<String, String> requestPayload = new LinkedMultiValueMap<String, String>();
+        requestPayload.add("grant_type", "jwt-bearer");
+        requestPayload.add("assertion", jwtToken);
+        return restTemplate.postForObject(tokenURI, requestPayload, TokenJson.class);
+    }
 
 }

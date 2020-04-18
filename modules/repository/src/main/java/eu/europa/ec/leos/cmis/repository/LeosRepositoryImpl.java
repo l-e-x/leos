@@ -21,10 +21,12 @@ import eu.europa.ec.leos.cmis.mapping.CmisProperties;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
 import eu.europa.ec.leos.domain.cmis.LeosPackage;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
 import eu.europa.ec.leos.domain.cmis.document.LegDocument;
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.domain.cmis.metadata.LeosMetadata;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 import eu.europa.ec.leos.repository.LeosRepository;
 import eu.europa.ec.leos.security.LeosPermissionAuthorityMapHelper;
 import eu.europa.ec.leos.security.SecurityContext;
@@ -32,17 +34,23 @@ import org.apache.chemistry.opencmis.client.api.Document;
 import org.apache.chemistry.opencmis.client.api.Folder;
 import org.apache.chemistry.opencmis.commons.PropertyIds;
 import org.apache.chemistry.opencmis.commons.enums.BaseTypeId;
-import org.apache.chemistry.opencmis.commons.enums.VersioningState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static eu.europa.ec.leos.cmis.support.RepositoryUtil.updateDocumentProperties;
+import static eu.europa.ec.leos.cmis.support.RepositoryUtil.updateMilestoneCommentsProperties;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -81,6 +89,8 @@ public class LeosRepositoryImpl implements LeosRepository {
         properties.put(PropertyIds.NAME, name);
         properties.putAll(LeosMetadataExtensions.toCmisProperties(metadata));
         properties.put(CmisProperties.COLLABORATORS.getId(), singletonList(getAccessRecord(securityContext.getUser().getLogin(), authorityMapHelper.getRoleForDocCreation())));
+        properties.put(CmisProperties.INITIAL_CREATED_BY.getId(), securityContext.getUser().getLogin());
+        properties.put(CmisProperties.INITIAL_CREATION_DATE.getId(), Date.from(Instant.now()));
 
         Document doc = cmisRepository.createDocumentFromSource(templateId, path, properties);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
@@ -102,8 +112,10 @@ public class LeosRepositoryImpl implements LeosRepository {
         properties.put(CmisProperties.DOCUMENT_CATEGORY.getId(), leosCategory);
         properties.putAll(LeosMetadataExtensions.toCmisProperties(metadata));
         properties.put(CmisProperties.COLLABORATORS.getId(), singletonList(getAccessRecord(securityContext.getUser().getLogin(), authorityMapHelper.getRoleForDocCreation())));
+        properties.put(CmisProperties.INITIAL_CREATED_BY.getId(), securityContext.getUser().getLogin());
+        properties.put(CmisProperties.INITIAL_CREATION_DATE.getId(), Date.from(Instant.now()));
 
-        Document doc = cmisRepository.createDocumentFromContent(path, name, properties, leosDocMimeType, contentBytes, VersioningState.MAJOR);
+        Document doc = cmisRepository.createDocumentFromContent(path, name, properties, leosDocMimeType, contentBytes);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository document creation took " + time + " milliseconds.");
 
@@ -112,7 +124,8 @@ public class LeosRepositoryImpl implements LeosRepository {
     }
 
     @Override
-    public LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status) {
+    public LegDocument createLegDocumentFromContent(String path, String name, String jobId, List<String> milestoneComments, byte[] contentBytes, LeosLegStatus status,
+                                                    List<String> containedDocuments) {
         logger.trace("Creating leg document from content... [path=" + path + ", name=" + name + ']');
         long startTimeNanos = System.nanoTime();
 
@@ -122,11 +135,14 @@ public class LeosRepositoryImpl implements LeosRepository {
         properties.put(PropertyIds.OBJECT_TYPE_ID, CmisMapper.cmisPrimaryType(LegDocument.class));
         properties.put(CmisProperties.DOCUMENT_CATEGORY.getId(), LeosCategory.LEG.name());
         properties.put(CmisProperties.JOB_ID.getId(), jobId);
-        properties.put(CmisProperties.JOB_DATE.getId(), GregorianCalendar.from(ZonedDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())));
+        properties.put(CmisProperties.JOB_DATE.getId(), Date.from(Instant.now()));
         properties.put(CmisProperties.MILESTONE_COMMENTS.getId(), milestoneComments);
         properties.put(CmisProperties.STATUS.getId(), status.name());
+        properties.put(CmisProperties.INITIAL_CREATED_BY.getId(), securityContext.getUser().getLogin());
+        properties.put(CmisProperties.INITIAL_CREATION_DATE.getId(), Date.from(Instant.now()));
+        properties.put(CmisProperties.CONTAINED_DOCUMENTS.getId(), containedDocuments);
 
-        Document doc = cmisRepository.createDocumentFromContent(path, name, properties, legMimeType, contentBytes, VersioningState.MINOR);
+        Document doc = cmisRepository.createDocumentFromContent(path, name, properties, legMimeType, contentBytes);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository Leg document creation from content took " + time + " milliseconds.");
 
@@ -151,14 +167,14 @@ public class LeosRepositoryImpl implements LeosRepository {
     }
 
     @Override
-    public LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] contentBytes, boolean major, String comment) {
-        logger.debug("Updating Leg document status and content... [id=" + id + ", status=" + status.name() + ", content size=" + contentBytes.length + ", major=" + major + ", comment=" + comment + ']');
+    public LegDocument updateLegDocument(String id, LeosLegStatus status, byte[] contentBytes, VersionType versionType, String comment) {
+        logger.debug("Updating Leg document status and content... [id=" + id + ", status=" + status.name() + ", content size=" + contentBytes.length + ", versionType=" + versionType + ", comment=" + comment + ']');
         long startTimeNanos = System.nanoTime();
 
         Map<String, Object> properties = new HashMap<>();
         properties.put(CmisProperties.STATUS.getId(), status.name());
 
-        Document doc = cmisRepository.updateDocument(id, properties, contentBytes, major, comment);
+        Document doc = cmisRepository.updateDocument(id, properties, contentBytes, versionType, comment);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository Leg document status and content update took " + time + " milliseconds.");
 
@@ -180,12 +196,12 @@ public class LeosRepositoryImpl implements LeosRepository {
     }
 
     @Override
-    public <D extends LeosDocument, M extends LeosMetadata> D updateDocument(String id, M metadata, byte[] content, boolean major, String comment, Class<? extends D> type) {
+    public <D extends LeosDocument, M extends LeosMetadata> D updateDocument(String id, M metadata, byte[] content, VersionType versionType, String comment, Class<? extends D> type) {
         logger.trace("Updating document metadata and content... [id=" + id + ", comment=" + comment + ']');
 
         long startTimeNanos = System.nanoTime();
 
-        Document doc = cmisRepository.updateDocument(id, updateDocumentProperties(metadata), content, major, comment);
+        Document doc = cmisRepository.updateDocument(id, updateDocumentProperties(metadata), content, versionType, comment);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository document update took " + time + " milliseconds.");
 
@@ -193,20 +209,13 @@ public class LeosRepositoryImpl implements LeosRepository {
                 .orElseThrow(() -> new IllegalStateException("Unable to update document! [id=" + id + ", comment=" + comment + ']'));
     }
 
-    private Map<String, ?> updateDocumentProperties(LeosMetadata metadata) {
-        Map<String, Object> properties = new HashMap<>();
-        properties.putAll(updateMilestoneCommentsProperties(emptyList()));
-        properties.putAll(LeosMetadataExtensions.toCmisProperties(metadata));
-        return properties;
-    }
-
     @Override
-    public <D extends LeosDocument> D updateDocument(String id, byte[] content, boolean major, String comment, Class<? extends D> type) {
+    public <D extends LeosDocument> D updateDocument(String id, byte[] content, VersionType versionType, String comment, Class<? extends D> type) {
         logger.trace("Updating document content... [id=" + id + ", comment=" + comment + ']');
 
         long startTimeNanos = System.nanoTime();
 
-        Document doc = cmisRepository.updateDocument(id, updateMilestoneCommentsProperties(emptyList()), content, major, comment);
+        Document doc = cmisRepository.updateDocument(id, updateMilestoneCommentsProperties(emptyList()), content, versionType, comment);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository document update took " + time + " milliseconds.");
 
@@ -237,13 +246,13 @@ public class LeosRepositoryImpl implements LeosRepository {
     }
 
     @Override
-    public <D extends LeosDocument> D updateMilestoneComments(String id, byte[] content, List<String> milestoneComments, boolean major, String comment, Class<? extends D> type) {
+    public <D extends LeosDocument> D updateMilestoneComments(String id, byte[] content, List<String> milestoneComments, VersionType versionType, String comment, Class<? extends D> type) {
         logger.trace("Updating document metadata and content... [id=" + id + ", comment=" + comment + ']');
 
         long startTimeNanos = System.nanoTime();
         Map<String, List<String>> properties = updateMilestoneCommentsProperties(milestoneComments);
 
-        Document doc = cmisRepository.updateDocument(id, properties, content, major, comment);
+        Document doc = cmisRepository.updateDocument(id, properties, content, versionType, comment);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
         logger.trace("CMIS Repository document update took " + time + " milliseconds.");
 
@@ -257,29 +266,6 @@ public class LeosRepositoryImpl implements LeosRepository {
         long startTimeNanos = System.nanoTime();
 
         Map<String, List<String>> properties = updateMilestoneCommentsProperties(milestoneComments);
-
-        Document doc = cmisRepository.updateDocument(id, properties);
-        long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
-        logger.trace("CMIS Repository document update took " + time + " milliseconds.");
-
-        return toLeosDocument(doc, type, true)
-                .orElseThrow(() -> new IllegalStateException("Unable to update document! [id=" + id + ']'));
-    }
-
-    private Map<String, List<String>> updateMilestoneCommentsProperties(List<String> milestoneComments) {
-        Map<String, List<String>> result = new HashMap<>();
-        result.put(CmisProperties.MILESTONE_COMMENTS.getId(), milestoneComments);
-        return result;
-    }
-
-    @Override
-    public <D extends LeosDocument> D updateInitialCreationProperties(String id, String initialCreatedBy, Instant initialCreationInstant, Class<? extends D> type) {
-        logger.trace("Updating document initial creation metadata... [id=" + id + ']');
-
-        long startTimeNanos = System.nanoTime();
-        Map<String, Object> properties = new HashMap<>();
-        properties.put(CmisProperties.INITIAL_CREATED_BY.getId(), initialCreatedBy);
-        properties.put(CmisProperties.INITIAL_CREATION_DATE.getId(), Date.from(initialCreationInstant));
 
         Document doc = cmisRepository.updateDocument(id, properties);
         long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
@@ -354,7 +340,7 @@ public class LeosRepositoryImpl implements LeosRepository {
 
         return toLeosDocuments(docs, type, fetchContent);
     }
-
+    
     @Override
     public void deleteDocumentById(String id) {
         logger.trace("Deleting Document... [id=" + id + ']');
@@ -452,4 +438,95 @@ public class LeosRepositoryImpl implements LeosRepository {
         }
         return leosDocuments;
     }
+
+    @Override
+    public <D extends LeosDocument> Stream<D> findPagedDocumentsByParentPath(String path, Class<? extends D> type, boolean descendants, boolean fetchContent,
+                                                                             int startIndex, int maxResults, QueryFilter workspaceFilter) {
+        logger.trace("Finding documents by parent path... [path=$path, type=${type.simpleName}]");
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        Set<LeosCategory> categories = CmisMapper.cmisCategories(type);
+        Stream<Document> docs = cmisRepository.findPagedDocumentsByParentPath(path, primaryType, categories, descendants, startIndex, maxResults, workspaceFilter);
+
+        logger.trace("CMIS Repository document search took $time milliseconds.");
+        return docs.map(doc -> CmisDocumentExtensions.toLeosDocument(doc, type, fetchContent));
+    }
+
+    @Override
+    public <D extends LeosDocument> int findDocumentCountByParentPath(String path, Class<? extends D> type, boolean descendants, QueryFilter workspaceFilter) {
+        logger.trace("Finding documents by parent path... [path=$path, type=${type.simpleName}]");
+        int docCount = 0;
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        Set<LeosCategory> categories = CmisMapper.cmisCategories(type);
+        docCount = cmisRepository.findDocumentCountByParentPath(path, primaryType, categories, descendants, workspaceFilter);
+
+        logger.trace("CMIS Repository document search took $time milliseconds.");
+        return docCount;
+    }
+
+    @Override
+    public <D extends LeosDocument> D findDocumentByRef(String ref, Class<? extends D> type) {
+        logger.trace("Finding document with ref... [ref=" + ref + ']');
+
+        long startTimeNanos = System.nanoTime();
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        List<Document> docs = cmisRepository.findDocumentsByRef(ref, primaryType);
+        long time = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTimeNanos);
+        logger.trace("CMIS Repository document search took " + time + " milliseconds.");
+
+        if (docs.isEmpty() || (docs.size() > 1)) {
+            throw new IllegalStateException("Error occurred retrieving document! [=" + ref + ']');
+        } else {
+            return toLeosDocument(docs.get(0), type, true)
+                .orElseThrow(() -> new IllegalStateException("Error occurred retrieving document! [=" + ref + ']'));
+        }
+    }
+    
+    @Override
+    public <D extends LeosDocument> List<D> findAllMinorsForIntermediate(Class<? extends D> type, String docRef, String currIntVersion, String prevIntVersion, int startIndex, int maxResults) {
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        Stream<Document> documents = cmisRepository.findAllMinorsForIntermediate(primaryType, docRef, currIntVersion, prevIntVersion, startIndex, maxResults);
+        return documents.map(doc -> CmisDocumentExtensions.toLeosDocument(doc, type, false))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public <D extends LeosDocument> int findAllMinorsCountForIntermediate(Class<? extends D> type, String docRef, String currIntVersion, String prevIntVersion) {
+     String primaryType = CmisMapper.cmisPrimaryType(type);
+     return cmisRepository.findAllMinorsCountForIntermediate(primaryType, docRef, currIntVersion, prevIntVersion);
+    }
+    
+    @Override
+    public <D extends LeosDocument> Integer findAllMajorsCount(Class<? extends D> type, String docRef) {
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        return cmisRepository.findAllMajorsCount(primaryType, docRef);
+    }
+    
+    @Override
+    public <D extends LeosDocument> List<D> findAllMajors(Class<? extends D> type, String docRef, int startIndex, int maxResult) {
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        Stream<Document> documents = cmisRepository.findAllMajors(primaryType, docRef, startIndex, maxResult);
+        return documents.map(doc -> CmisDocumentExtensions.toLeosDocument(doc, type, false))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public <D extends LeosDocument> D findLatestMajorVersionById(Class<? extends D> type, String documentId) {
+        Document doc = cmisRepository.findLatestMajorVersionById(documentId);
+        return CmisDocumentExtensions.toLeosDocument(doc, type, false);
+    }
+    
+    @Override
+    public <D extends LeosDocument> List<D> findRecentMinorVersions(Class<? extends D> type, String documentRef, String lastMajorId, int startIndex, int maxResults) {
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        Stream<Document> documents = cmisRepository.findRecentMinorVersions(primaryType, documentRef, lastMajorId, startIndex, maxResults);
+        return documents.map(doc -> CmisDocumentExtensions.toLeosDocument(doc, type, false))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public <D extends LeosDocument> Integer findRecentMinorVersionsCount(Class<? extends D> type, String documentRef, String versionLabel) {
+        String primaryType = CmisMapper.cmisPrimaryType(type);
+        return cmisRepository.findRecentMinorVersionsCount(primaryType, documentRef, versionLabel);
+    }
+    
 }

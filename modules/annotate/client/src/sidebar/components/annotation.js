@@ -1,21 +1,11 @@
-/*
- * Copyright 2019 European Commission
- *
- * Licensed under the EUPL, Version 1.2 or – as soon they will be approved by the European Commission - subsequent versions of the EUPL (the "Licence");
- * You may not use this work except in compliance with the Licence.
- * You may obtain a copy of the Licence at:
- *
- *     https://joinup.ec.europa.eu/software/page/eupl
- *
- * Unless required by applicable law or agreed to in writing, software distributed under the Licence is distributed on an "AS IS" basis,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the Licence for the specific language governing permissions and limitations under the Licence.
- */
 'use strict';
 
 var annotationMetadata = require('../annotation-metadata');
 var events = require('../events');
 var { isThirdPartyUser } = require('../util/account-id');
+var serviceConfig = require('../../../src/sidebar/service-config');
+var SYSTEMIDS = require('../../../leos/shared/systemId');
+var OPERATION_MODES = require('../../../leos/shared/operationMode');
 
 var isNew = annotationMetadata.isNew;
 var isReply = annotationMetadata.isReply;
@@ -32,7 +22,7 @@ function updateModel(annotation, changes, permissions) {
     tags: changes.tags,
     text: changes.text,
     permissions: changes.isPrivate ?
-      permissions.private(userid) : permissions.shared(userid, annotation.group),
+      permissions.private(userid) : permissions.shared(userid, annotation.group)
   });
 }
 
@@ -46,9 +36,28 @@ function AnnotationController(
   var newlyCreatedByHighlightButton;
 
   /** Save an annotation to the server. */
-  function save(annot) {
+  function save(annot, loggedUserId, loggedUserDisplayName) {
     var saved;
     var updating = !!annot.id;
+
+    var svc = serviceConfig(settings);
+    if (svc && svc.authority && svc.authority === SYSTEMIDS.ISC) {
+      //LEOS-3992 : In ISC context, we need to certify that the group is always the connectedEntity
+      if(settings.connectedEntity) {
+        annot.group = settings.connectedEntity;
+      }
+
+      //LEOS-3839 : In ISC context, if annotation is SENT and we are editing it, we need to increment the responseVersion
+      if(annot.document.metadata.responseStatus === 'SENT'
+          && settings.displayMetadataCondition.responseVersion
+          && !isNaN(parseInt(settings.displayMetadataCondition.responseVersion))) {
+        annot.document.metadata.responseVersion = settings.displayMetadataCondition.responseVersion;
+        if(loggedUserId && loggedUserDisplayName) {
+          annot.user = loggedUserId;
+          annot.user_info.display_name = loggedUserDisplayName;
+        }
+      }
+    }
 
     if (updating) {
       saved = api.annotation.update({id: annot.id}, annot);
@@ -92,7 +101,7 @@ function AnnotationController(
     * All initialization code except for assigning the controller instance's
     * methods goes here.
     */
-  function init() {
+  function init(settings) {
     /** Determines whether controls to expand/collapse the annotation body
      * are displayed adjacent to the tags field.
      */
@@ -124,10 +133,25 @@ function AnnotationController(
     // required state is in the store.
     self.annotation.user = self.annotation.user || session.state.userid;
     self.annotation.user_info = self.annotation.user_info || session.state.user_info;
-    self.annotation.group = self.annotation.group || groups.focused().id;
+    //LEOS-3992 : on ISC -> always use connectedEntity
+    var svc = serviceConfig(settings);
+    if (svc && svc.authority && svc.authority === SYSTEMIDS.ISC && groups.get(settings.connectedEntity)) {
+      self.annotation.group = groups.get(settings.connectedEntity).id;
+      groups.focus(self.annotation.group);
+    }
+    //If group not defined means: not in ISC or connectedEntity not valid. In that case, use default behaviour
+    if(!self.annotation.group){
+      self.annotation.group = self.annotation.group || groups.focused().id;
+    }
+
     if (!self.annotation.permissions) {
-      self.annotation.permissions = permissions.default(self.annotation.user,
-                                                      self.annotation.group);
+      //LEOS-3992 : on operationMode.PRIVATE (used by ISC) annotations can only be private
+      if(settings.operationMode === OPERATION_MODES.PRIVATE){
+        self.annotation.permissions = permissions.private(self.annotation.user);
+      } else {
+        self.annotation.permissions = permissions.default(self.annotation.user, self.annotation.group);
+      }
+
     }
     self.annotation.text = self.annotation.text || '';
     if (!Array.isArray(self.annotation.tags)) {
@@ -413,7 +437,10 @@ function AnnotationController(
     // indicator
     self.isSaving = true;
 
-    return save(updatedModel).then(function (model) {
+    var loggedUserId = this.session().state.userid;
+    var loggedUserDisplayName = this.session().state.user_info.display_name;
+
+    return save(updatedModel, loggedUserId, loggedUserDisplayName).then(function (model) {
       Object.assign(updatedModel, model);
 
       self.isSaving = false;
@@ -552,6 +579,10 @@ function AnnotationController(
     };
   };
 
+  this.session = function () {
+    return session;
+  };
+
   /**
    * Return true if the CC 0 license notice should be shown beneath the
    * annotation body.
@@ -563,7 +594,7 @@ function AnnotationController(
     return self.group().type !== 'private';
   };
 
-  init();
+  init(settings);
 }
 
 module.exports = {

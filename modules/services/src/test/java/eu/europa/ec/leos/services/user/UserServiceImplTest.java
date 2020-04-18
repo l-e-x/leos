@@ -14,6 +14,7 @@
 package eu.europa.ec.leos.services.user;
 
 import eu.europa.ec.leos.integration.UsersProvider;
+import eu.europa.ec.leos.model.user.Entity;
 import eu.europa.ec.leos.model.user.User;
 import eu.europa.ec.leos.test.support.LeosTest;
 import org.junit.Test;
@@ -44,12 +45,13 @@ public class UserServiceImplTest extends LeosTest {
         String user1Login = "smithj";
         String user1Mail = "smithj@test.com";
 
-        String entity = "Entity";
+        List<Entity> entities = new ArrayList<Entity>();
+        entities.add(new Entity("1", "EXT.A1", "Ext"));
 
         String userId = "smithj";
         List<String> roles= new ArrayList<String>();
         roles.add("ADMIN");
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail,roles);
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entities, user1Mail,roles);
 
         when(usersClient.getUserByLogin(userId)).thenReturn(user1);
 
@@ -58,7 +60,7 @@ public class UserServiceImplTest extends LeosTest {
         assertEquals(result.getLogin(),userId);
         assertEquals(result.getId(), Long.valueOf(1));
         assertEquals(result.getName(), user1LastName + " " + user1FirstName);
-        assertEquals(result.getEntity(), entity);
+        assertEquals(result.getEntities(), entities);
     }
 
     @Test
@@ -77,12 +79,13 @@ public class UserServiceImplTest extends LeosTest {
         List<String> user2Roles= new ArrayList<String>();
         user1Roles.add("ADMIN");
 
-        String entity = "Entity";
+        List<Entity> entities = new ArrayList<Entity>();
+        entities.add(new Entity("1", "EXT.A1", "Ext"));
 
         String searchKey = "smith";
         
-        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entity, user1Mail,user1Roles);
-        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, entity, user2Mail,user2Roles);
+        User user1 = new User(1l, user1Login, user1LastName + " " + user1FirstName, entities, user1Mail,user1Roles);
+        User user2 = new User(0l, user2Login, user2LastName + " " + user2FirstName, entities, user2Mail,user2Roles);
 
         String key = searchKey;
         List<User> users = new ArrayList();
@@ -99,10 +102,10 @@ public class UserServiceImplTest extends LeosTest {
         assertEquals(results.get(0).getLogin(),user1Login);
         assertEquals(results.get(0).getId(), Long.valueOf(1));
         assertEquals(results.get(0).getName(), user1LastName + " " + user1FirstName);
-        assertEquals(results.get(0).getEntity(), entity);
+        assertEquals(results.get(0).getEntities(), entities);
         assertEquals(results.get(1).getLogin(),user2Login);
         assertEquals(results.get(1).getId(), Long.valueOf(0));
         assertEquals(results.get(1).getName(), user2LastName + " " + user2FirstName);
-        assertEquals(results.get(1).getEntity(), entity);
+        assertEquals(results.get(1).getEntities(), entities);
     }
 }

@@ -17,20 +17,23 @@ import eu.europa.ec.leos.domain.cmis.LeosCategory;
 
 public final class ProposalMetadata extends LeosMetadata {
 
-    public ProposalMetadata(String stage, String type, String purpose, String template, String language, String docTemplate, String ref, String objectId) {
-        super(LeosCategory.PROPOSAL, stage, type, purpose, template, language, docTemplate, ref, objectId);
+    public ProposalMetadata(String stage, String type, String purpose, String template, String language, String docTemplate, String ref, String objectId, String docVersion) {
+        super(LeosCategory.PROPOSAL, stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final ProposalMetadata withPurpose(String p) {
-        return new ProposalMetadata(stage, type, p, template, language, docTemplate, ref, objectId);
+        return new ProposalMetadata(stage, type, p, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final ProposalMetadata withRef(String ref) {
-        return new ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
     public final ProposalMetadata withObjectId(String objectId) {
-        return new ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId);
+        return new ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
     }
 
+    public final ProposalMetadata withDocVersion(String docVersion) {
+        return new ProposalMetadata(stage, type, purpose, template, language, docTemplate, ref, objectId, docVersion);
+    }
 }

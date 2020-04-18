@@ -20,5 +20,6 @@ public enum LeosCategory {
     ANNEX,
     MEDIA,
     CONFIG,
-    LEG
+    LEG,
+    STRUCTURE
 }

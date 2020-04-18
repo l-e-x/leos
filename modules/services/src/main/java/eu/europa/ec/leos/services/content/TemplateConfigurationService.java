@@ -13,11 +13,15 @@
  */
 package eu.europa.ec.leos.services.content;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 public interface TemplateConfigurationService {
     /**
      * Returns tempalte configuration items in Json String format
      * @param templateId
      * @return Json array in string format
      */
-    String getTempalteConfiguration(String templateId, String configurationElement) ;
+    String getTemplateConfiguration(String templateId, String configurationElement) ;
+
+    JsonNode getTemplateConfigurationJson(String templateId, String configurationElement) ;
 }

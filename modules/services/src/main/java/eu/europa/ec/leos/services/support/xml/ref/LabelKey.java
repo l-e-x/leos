@@ -18,11 +18,13 @@ public class LabelKey {
     private String labelName; // name to be shown
     private String labelNumber; // number can be letters or numbers
     private boolean unNumbered; // in case of unnumbered, the number has to be expressed in letters rather than in number.
+    private String documentRef;
 
-    public LabelKey(String labelName, String labelNumber, boolean unNumbered) {
+    public LabelKey(String labelName, String labelNumber, boolean unNumbered, String documentRef) {
         this.labelName = labelName;
         this.labelNumber = labelNumber;
         this.unNumbered = unNumbered;
+        this.documentRef = documentRef;
     }
 
     public String getLabelName() {
@@ -31,6 +33,10 @@ public class LabelKey {
 
     public String getLabelNumber() {
         return labelNumber;
+    }
+
+    public String getDocumentRef() {
+        return documentRef;
     }
 
     public boolean isUnNumbered() {

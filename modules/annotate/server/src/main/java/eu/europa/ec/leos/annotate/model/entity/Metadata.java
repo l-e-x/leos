@@ -27,10 +27,12 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.*;
 
+@SuppressWarnings("PMD.GodClass")
 @Entity
 @Table(name = "METADATA", indexes = {
         @Index(columnList = "SYSTEM_ID", name = "METADATA_IX_SYSTEM_ID"),
-        @Index(columnList = "RESPONSE_STATUS", name = "METADATA_IX_RESPONSE_STATUS")})
+        @Index(columnList = "RESPONSE_STATUS", name = "METADATA_IX_RESPONSE_STATUS"),
+        @Index(columnList = "VERSION", name = "METADATA_IX_VERSION")})
 public class Metadata {
 
     /**
@@ -43,9 +45,12 @@ public class Metadata {
     // Constants for known metadata properties
     // -----------------------------------------------------------
     private static final String PROP_SYSTEM_ID = "systemId";
-    private static final String PROP_RESPONSE_STATUS = "responseStatus";
-    private static final String PROP_ISC_REF = "ISCReference";
-    private static final List<String> PROPS_OWN_COLS = Arrays.asList(PROP_SYSTEM_ID, PROP_RESPONSE_STATUS);
+    public static final String PROP_RESPONSE_STATUS = "responseStatus";
+    public static final String PROP_RESPONSE_ID = "responseId";
+    public static final String PROP_RESPONSE_VERSION = "responseVersion";
+    private static final String PROP_VERSION = "version";
+    public static final String PROP_ISC_REF = "ISCReference";
+    private static final List<String> PROPS_OWN_COLS = Arrays.asList(PROP_SYSTEM_ID, PROP_RESPONSE_STATUS, PROP_VERSION);
 
     // -------------------------------------
     // column definitions
@@ -83,6 +88,10 @@ public class Metadata {
     @Column(name = "SYSTEM_ID", nullable = false)
     private String systemId;
 
+    // version
+    @Column(name = "VERSION", nullable = true)
+    private String version;
+    
     // response status enum
     @Column(name = "RESPONSE_STATUS")
     @Enumerated(EnumType.ORDINAL)
@@ -119,7 +128,7 @@ public class Metadata {
         this.document = document;
         this.group = group;
         this.systemId = systemId;
-        this.setKeyValuePropertyFromSimpleMetadata(otherProps);
+        this.setKeyValuePropertyFromSimpleMetadataIntern(otherProps); // call internal function (PMD)!
     }
 
     public Metadata(final Metadata other) {
@@ -128,6 +137,7 @@ public class Metadata {
         this.document = other.document;
         this.group = other.group;
         this.systemId = other.systemId;
+        this.version = other.version;
         this.keyValuePairs = other.keyValuePairs;
         this.responseStatus = other.responseStatus;
         this.responseStatusUpdated = other.responseStatusUpdated;
@@ -162,6 +172,12 @@ public class Metadata {
     // -----------------------------------------------------------
     public void setKeyValuePropertyFromSimpleMetadata(final SimpleMetadata hashMap) {
 
+        // moved logic to non-overridable function to prevent PMD warning (since called in constructor)
+        setKeyValuePropertyFromSimpleMetadataIntern(hashMap);
+    }
+    
+    private void setKeyValuePropertyFromSimpleMetadataIntern(final SimpleMetadata hashMap) {
+        
         if (hashMap == null) {
             return;
         }
@@ -171,6 +187,11 @@ public class Metadata {
             this.systemId = foundValue;
         }
 
+        foundValue = hashMap.getOrDefault(PROP_VERSION, null);
+        if(!StringUtils.isEmpty(foundValue)) {
+            this.version = foundValue;
+        }
+        
         foundValue = hashMap.getOrDefault(PROP_RESPONSE_STATUS, null);
         if (!StringUtils.isEmpty(foundValue)) {
             try {
@@ -227,6 +248,11 @@ public class Metadata {
             result.put(PROP_RESPONSE_STATUS, this.responseStatus.toString());
         }
 
+        // add the version
+        if(!StringUtils.isEmpty(this.version)) {
+            result.put(PROP_VERSION, this.version);
+        }
+        
         // add system id
         result.put(PROP_SYSTEM_ID, this.systemId);
 
@@ -250,85 +276,147 @@ public class Metadata {
         return this.responseStatus == ResponseStatus.SENT;
     }
 
+    // extracts the responseId from the metadata, if available
+    public String getResponseId() {
+        
+        final SimpleMetadata props = getKeyValuePropertyAsSimpleMetadata();
+        return props.get(PROP_RESPONSE_ID);
+    }
+    
+    // extracts the responseVersion from the metadata, if available
+    public long getResponseVersion() {
+        
+        final SimpleMetadata props = getKeyValuePropertyAsSimpleMetadata();
+        final String respVers = props.get(PROP_RESPONSE_VERSION);
+        return StringUtils.isEmpty(respVers) ? -1L : Long.parseLong(respVers);
+    }
+
+    // set the responseVersion to the given value
+    public void setResponseVersion(final long respVersion) {
+        
+        final SimpleMetadata props = getKeyValuePropertyAsSimpleMetadata();
+        props.put(PROP_RESPONSE_VERSION, Long.toString(respVersion));
+        setKeyValuePropertyFromSimpleMetadata(props);
+    }
+    
+    // remove the responseVersion from the metadata, if available
+    public void removeResponseVersion() {
+        
+        final SimpleMetadata props = getKeyValuePropertyAsSimpleMetadata();
+        props.remove(PROP_RESPONSE_VERSION);
+        setKeyValuePropertyFromSimpleMetadata(props);
+    }
+    
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final long newId) {
         this.id = newId;
     }
 
+    @Generated
     public long getDocumentId() {
         return documentId;
     }
 
+    @Generated
     public void setDocumentId(final long documentId) {
         this.documentId = documentId;
     }
 
+    @Generated
     public Document getDocument() {
         return document;
     }
 
+    @Generated
     public void setDocument(final Document document) {
         this.document = document;
     }
 
+    @Generated
     public long getGroupId() {
         return groupId;
     }
 
+    @Generated
     public void setGroupId(final long groupId) {
         this.groupId = groupId;
     }
 
+    @Generated
     public Group getGroup() {
         return group;
     }
 
+    @Generated
     public void setGroup(final Group group) {
         this.group = group;
     }
 
+    @Generated
     public String getSystemId() {
         return systemId;
     }
 
+    @Generated
     public void setSystemId(final String systemId) {
         this.systemId = systemId;
     }
 
+    @Generated
+    public String getVersion() {
+        return version;
+    }
+    
+    @Generated
+    public void setVersion(final String version) {
+        this.version = version;
+    }
+    
+    @Generated
     public ResponseStatus getResponseStatus() {
         return responseStatus;
     }
 
+    @Generated
     public void setResponseStatus(final ResponseStatus responseStatus) {
         this.responseStatus = responseStatus;
     }
 
+    @Generated
     public LocalDateTime getResponseStatusUpdated() {
         return responseStatusUpdated;
     }
 
+    @Generated
     public void setResponseStatusUpdated(final LocalDateTime upd) {
         this.responseStatusUpdated = upd;
     }
 
+    @Generated
     public Long getResponseStatusUpdatedBy() {
         return responseStatusUpdatedBy;
     }
 
+    @Generated
     public void setResponseStatusUpdatedBy(final Long userId) {
         this.responseStatusUpdatedBy = userId;
     }
 
+    @Generated
     public String getKeyValuePairs() {
         return keyValuePairs;
     }
 
+    @Generated
     public void setKeyValuePairs(final String keyValuePairs) {
         this.keyValuePairs = keyValuePairs;
     }
@@ -361,6 +449,7 @@ public class Metadata {
                 Objects.equals(this.groupId, other.groupId) &&
                 Objects.equals(this.group, other.group) &&
                 Objects.equals(this.systemId, other.systemId) &&
+                Objects.equals(this.version, other.version) &&
                 Objects.equals(this.responseStatus, other.responseStatus) &&
                 Objects.equals(this.responseStatusUpdated, other.responseStatusUpdated) &&
                 Objects.equals(this.responseStatusUpdatedBy, other.responseStatusUpdatedBy) &&

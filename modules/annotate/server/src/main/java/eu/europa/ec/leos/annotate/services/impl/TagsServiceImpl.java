@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -38,10 +39,7 @@ public class TagsServiceImpl implements TagsService {
     private TagRepository tagRepos;
     
     /**
-     * create a list of Tag objects associated to an annotation, based on a String list of the tags
-     * 
-     * @param tags String list of the tags
-     * @param annotation the annotation object to which the tags belong
+     * {@inheritDoc}
      */
     @Override
     public List<Tag> getTagList(final List<String> tags, final Annotation annotation) {
@@ -63,9 +61,7 @@ public class TagsServiceImpl implements TagsService {
     }
 
     /**
-     * remove a given set of tags from the database
-     * 
-     * @param tagsToRemove the list of tag items to be removed
+     * {@inheritDoc}
      */
     @Transactional
     @Override
@@ -79,20 +75,28 @@ public class TagsServiceImpl implements TagsService {
     }
 
     /**
-     * check if a given list of tags contains a tag identifying an annotation as a suggestion
-     * 
-     * @param tags list of tags
-     * @return flag indicating whether the dedicated tag was found
+     * {@inheritDoc}
      */
     @Override
     public boolean hasSuggestionTag(final List<Tag> tags) {
 
-        if(tags == null || tags.isEmpty()) {
+        if(CollectionUtils.isEmpty(tags)) {
             return false;
         }
         
         return tags.stream().anyMatch(tag -> tag.getName().equals(Annotation.ANNOTATION_SUGGESTION));
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasHighlightTag(final List<Tag> tags) {
 
+        if(CollectionUtils.isEmpty(tags)) {
+            return false;
+        }
+        
+        return tags.stream().anyMatch(tag -> tag.getName().equals(Annotation.ANNOTATION_HIGHLIGHT));
+    }
 }

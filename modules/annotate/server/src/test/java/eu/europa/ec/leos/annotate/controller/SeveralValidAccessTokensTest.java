@@ -172,7 +172,8 @@ public class SeveralValidAccessTokensTest {
     }
 
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
-    private void executeRequest(final String token, final String uri, final int expectedNumberOfAnnotations) throws Exception {
+    @SuppressWarnings({"PMD.SignatureDeclareThrowsException"})
+    private void executeRequest(final String token, final String uri, final int expNumAnnotations) throws Exception {
 
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
                 .get("/api/search?_separate_replies=true&sort=created&order=asc&uri=" + uri + "&group=__world__")
@@ -188,7 +189,7 @@ public class SeveralValidAccessTokensTest {
         // check that the expected annotation was returned (compare IDs)
         final JsonSearchResultWithSeparateReplies jsResponse = SerialisationHelper.deserializeJsonSearchResultWithSeparateReplies(responseString);
         Assert.assertNotNull(jsResponse);
-        Assert.assertEquals(expectedNumberOfAnnotations, jsResponse.getRows().size());
+        Assert.assertEquals(expNumAnnotations, jsResponse.getRows().size());
     }
 
 }

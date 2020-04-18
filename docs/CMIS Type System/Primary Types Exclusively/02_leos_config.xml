@@ -442,7 +442,37 @@
         <cmis:orderable>true</cmis:orderable>
         <cmis:openChoice>false</cmis:openChoice>
         <cmis:defaultValue/>
-    </cmis:propertyStringDefinition>    
+    </cmis:propertyStringDefinition>
+    <cmis:propertyStringDefinition>
+        <cmis:id>leos:versionLabel</cmis:id>
+        <cmis:localName>leos:versionLabel</cmis:localName>
+        <cmis:displayName>LEOS Version Label</cmis:displayName>
+        <cmis:queryName>leos:versionLabel</cmis:queryName>
+        <cmis:description>This is LEOS Version Label property.</cmis:description>
+        <cmis:propertyType>string</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>false</cmis:orderable>
+        <cmis:defaultValue/>
+    </cmis:propertyStringDefinition>
+    <cmis:propertyIntegerDefinition>
+        <cmis:id>leos:versionType</cmis:id>
+        <cmis:localName>leos:versionType</cmis:localName>
+        <cmis:displayName>LEOS Version Type</cmis:displayName>
+        <cmis:queryName>leos:versionType</cmis:queryName>
+        <cmis:description>This is LEOS Version Type property.</cmis:description>
+        <cmis:propertyType>integer</cmis:propertyType>
+        <cmis:cardinality>single</cmis:cardinality>
+        <cmis:updatability>readwrite</cmis:updatability>
+        <cmis:inherited>false</cmis:inherited>
+        <cmis:required>false</cmis:required>
+        <cmis:queryable>true</cmis:queryable>
+        <cmis:orderable>false</cmis:orderable>
+        <cmis:defaultValue/>
+    </cmis:propertyIntegerDefinition>
     <cmis:versionable>true</cmis:versionable>
     <cmis:contentStreamAllowed>allowed</cmis:contentStreamAllowed>
 </cmis:type>

@@ -14,23 +14,31 @@
 package eu.europa.ec.digit.userdata.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Entity
+@javax.persistence.Entity
 @Table(name = "LEOS_USER")
 public class User implements Serializable {
 
     private static final long serialVersionUID = -242509624358432413L;
-    
+
     @Id
     @Column(name = "USER_LOGIN", nullable = false, insertable = false, updatable = false)
     private String login;
-    
+
     @Column(name = "USER_PER_ID", nullable = false, insertable = false, updatable = false)
     private Long perId;
 
@@ -40,29 +48,33 @@ public class User implements Serializable {
     @Column(name = "USER_FIRSTNAME", nullable = false, insertable = false, updatable = false)
     private String firstName;
 
-    @Column(name = "USER_DG", nullable = false, insertable = false, updatable = false)
-    private String entity;
-
     @Column(name = "USER_EMAIL", nullable = false, insertable = false, updatable = false)
     private String email;
-    
+
     @JsonIgnore
-    @OneToMany(fetch=FetchType.EAGER)
-    @JoinTable(name = "LEOS_USER_ROLE", joinColumns = @JoinColumn(name = "USER_LOGIN"),
-            inverseJoinColumns = @JoinColumn(name = "ROLE_NAME"))
+    @OneToMany
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @JoinTable(name = "LEOS_USER_ROLE", joinColumns = @JoinColumn(name = "USER_LOGIN"), inverseJoinColumns = @JoinColumn(name = "ROLE_NAME"))
     private List<Role> roleEntities;
+
+    @OneToMany
+    @LazyCollection(LazyCollectionOption.FALSE)
+    @JoinTable(name = "LEOS_USER_ENTITY", joinColumns = @JoinColumn(name = "USER_LOGIN"), inverseJoinColumns = @JoinColumn(name = "ENTITY_ID"))
+    @OrderBy("ENTITY_ORG_NAME, ENTITY_NAME")
+    private List<Entity> entities;
 
     public User() {
     }
 
-    public User(String login, Long perId, String lastName, String firstName, String entity, String email, List<Role> roleEntities) {
+    public User(String login, Long perId, String lastName, String firstName,
+            String email, List<Role> roleEntities, List<Entity> entities) {
         this.login = login;
         this.perId = perId;
         this.lastName = lastName;
         this.firstName = firstName;
-        this.entity = entity;
         this.email = email;
         this.roleEntities = roleEntities;
+        this.entities = entities;
     }
 
     public String getLogin() {
@@ -81,9 +93,6 @@ public class User implements Serializable {
         return firstName;
     }
 
-    public String getEntity() {
-        return entity;
-    }
     public String getEmail() {
         return email;
     }
@@ -93,8 +102,11 @@ public class User implements Serializable {
     }
 
     public List<String> getRoles() {
-        List<String> roles = new ArrayList<>();
-        this.roleEntities.forEach(r -> roles.add(r.getRole()));
-        return roles;
+        return roleEntities.stream().map(r -> r.getRole())
+                .collect(Collectors.toList());
+    }
+
+    public List<Entity> getEntities() {
+        return entities;
     }
 }

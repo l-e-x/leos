@@ -42,14 +42,13 @@ public class LegalTextActionsMenuBar extends CommonActionsMenuBar {
         buildImporterActions();
         buildViewActions();
     }
-
+    
     protected void buildImporterActions() {
         LOG.debug("Building Importer actions group...");
         importerSeparator = addCustomSeparator(messageHelper.getMessage("menu.actions.separator.importer"));
 
         //Importer
-        importerItem = createMenuItem(messageHelper.getMessage("menu.actions.importer"),
-                new ImporterCommand());
+        importerItem = createMenuItem(messageHelper.getMessage("menu.actions.importer"), new ImporterCommand());
     }
     
     public void setImporterEnabled(boolean enabled) {

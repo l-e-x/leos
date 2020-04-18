@@ -13,21 +13,20 @@
  */
 package eu.europa.ec.leos.annotate.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.*;
-import eu.europa.ec.leos.annotate.model.SimpleMetadata;
-import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
-import eu.europa.ec.leos.annotate.model.UserInformation;
+import eu.europa.ec.leos.annotate.model.*;
 import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
+import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonSearchCount;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonSearchResultWithSeparateReplies;
 import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
 import eu.europa.ec.leos.annotate.services.exceptions.CannotCreateAnnotationException;
+import eu.europa.ec.leos.annotate.services.impl.UserDetailsCache;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,8 +46,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.net.URI;
@@ -103,14 +100,23 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     private MetadataRepository metadataRepos;
 
     @Autowired
+    private UserDetailsCache userDetailsCache;
+
+    @Autowired
     private WebApplicationContext wac;
 
     private MockMvc mockMvc;
 
-    private final static String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "refr";
-    private static final String AUTHORITY = Authorities.ISC; // we need to use this as no metadata is matched for EdiT
-    private final static String LOGIN1 = "demo";
-    private final static String USER_ACCOUNT = "acct:" + LOGIN1 + "@" + AUTHORITY;
+    private static final String ACCESS_TOKEN = "demoaccesstoken", REFRESH_TOKEN = "refr";
+    private static final String AUTHORITY = Authorities.ISC; // authority used for most tests; tests with EdiT authority change it in the DB
+    private static final String LOGIN1 = "demo";
+    private static final String LOGINACC = "accep";
+    private static final String LOGINDEL = "del";
+    private static final String ENTITYACC = "SG";
+    private static final String ENTITYDEL = "AGRI";
+    private static final String USER_ACCOUNT = "acct:" + LOGIN1 + "@" + AUTHORITY;
+    private static final String USER_ACCOUNT_ACC = "acct:" + LOGINACC + "@" + AUTHORITY;
+    private static final String USER_ACCOUNT_DEL = "acct:" + LOGINDEL + "@" + AUTHORITY;
     private static final String ISCREF = "ISCReference";
     private static final String ISCREF1 = "ISC/2018/1";
     private static final String ISCREF2 = "ISC/2018/2";
@@ -119,6 +125,7 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     private UserInformation userInfo;
     private Group theGroup;
     private Document document;
+    private User userAcc, userDel;
 
     private final Consumer<SimpleMetadata> setIscRef1 = hashMap -> hashMap.put(ISCREF, ISCREF1);
     private final Consumer<SimpleMetadata> setIscRef2 = hashMap -> hashMap.put(ISCREF, ISCREF2);
@@ -136,7 +143,8 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     public void setupTests() throws URISyntaxException {
 
         TestDbHelper.cleanupRepositories(this);
-        theGroup = new Group(GROUPNAME, true);// note: we do not use the __world__ group, as it would use a special search model
+        final Group defGroup = TestDbHelper.insertDefaultGroup(groupRepos); // used for EdiT queries
+        theGroup = new Group(GROUPNAME, true);// note: we do not use the __world__ group for our ISC queries, as it would use a special search model
         groupRepos.save(theGroup);
 
         // create two users of same group
@@ -147,6 +155,7 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         userInfo = new UserInformation(token);
 
         userGroupRepos.save(new UserGroup(user1.getId(), theGroup.getId()));
+        userGroupRepos.save(new UserGroup(user1.getId(), defGroup.getId()));
 
         final DefaultMockMvcBuilder builder = MockMvcBuilders.webAppContextSetup(this.wac);
         this.mockMvc = builder.build();
@@ -155,6 +164,25 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         final String URI = "https://leos/4";
         document = new Document(new URI(URI), "document's title");
         documentRepos.save(document);
+
+        // cache information about the users in order to enable annotation status update to be verified
+        final String entity = "DIGIT";
+        final List<UserEntity> entities = Arrays.asList(new UserEntity("1", entity, entity), new UserEntity("2", "DIGIT.B", entity),
+                new UserEntity("3", "DIGIT.B.2", entity));
+        final UserDetails userDetails = new UserDetails(LOGIN1, user1.getId(), "de", "mo", entities, "de.mo@ec.eu", null);
+        userDetailsCache.cache(LOGIN1, userDetails);
+
+        // create users that accepted and deleted annotations
+        userAcc = new User(LOGINACC);
+        userDel = new User(LOGINDEL);
+        userRepos.save(userAcc);
+        userRepos.save(userDel);
+
+        final List<UserEntity> entitiesAcc = Arrays.asList(new UserEntity("10", ENTITYACC, ENTITYACC), new UserEntity("11", "SG.R", ENTITYACC));
+        final List<UserEntity> entitiesDel = Arrays.asList(new UserEntity("20", ENTITYDEL, ENTITYDEL), new UserEntity("21", "AGRI.I", ENTITYDEL),
+                new UserEntity("22", "AGRI.I.3", ENTITYDEL));
+        userDetailsCache.cache(LOGINACC, new UserDetails(LOGINACC, userAcc.getId(), "acceptor", "the", entitiesAcc, "ac@ec.eu", null));
+        userDetailsCache.cache(LOGINDEL, new UserDetails(LOGINDEL, userDel.getId(), "deletor", "the", entitiesDel, "del@ec.eu", null));
     }
 
     @After
@@ -182,22 +210,32 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         ann6 = createAnnotation(sixthMeta, "id6");
 
         // create replies
-        ann1R1N = createReply(Arrays.asList(ann1.getId()), document, theGroup, AnnotationStatus.NORMAL);
-        ann1R2D = createReply(Arrays.asList(ann1.getId()), document, theGroup, AnnotationStatus.DELETED);
-        ann2R1N = createReply(Arrays.asList(ann2.getId()), document, theGroup, AnnotationStatus.NORMAL);
-        ann2R2N = createReply(Arrays.asList(ann2.getId()), document, theGroup, AnnotationStatus.NORMAL);
-        ann3R1N = createReply(Arrays.asList(ann3.getId()), document, theGroup, AnnotationStatus.NORMAL); // cannot occur in real life
-        ann4R1D = createReply(Arrays.asList(ann4.getId()), document, theGroup, AnnotationStatus.DELETED);
-        ann4R2D = createReply(Arrays.asList(ann4.getId()), document, theGroup, AnnotationStatus.DELETED);
-        ann5R1A = createReply(Arrays.asList(ann5.getId()), document, theGroup, AnnotationStatus.ACCEPTED);
-        ann5R2D = createReply(Arrays.asList(ann5.getId()), document, theGroup, AnnotationStatus.DELETED);
+        ann1R1N = createReply(Arrays.asList(ann1.getId()), document, theGroup, AnnotationStatus.NORMAL, null, null);
+        ann1R2D = createReply(Arrays.asList(ann1.getId()), document, theGroup, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 8, 24, 13, 24));
+        ann2R1N = createReply(Arrays.asList(ann2.getId()), document, theGroup, AnnotationStatus.NORMAL, null, null);
+        ann2R2N = createReply(Arrays.asList(ann2.getId()), document, theGroup, AnnotationStatus.NORMAL, null, null);
+        ann3R1N = createReply(Arrays.asList(ann3.getId()), document, theGroup, AnnotationStatus.NORMAL, null, null); // cannot occur in real life
+        ann4R1D = createReply(Arrays.asList(ann4.getId()), document, theGroup, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 8, 24, 13, 24));
+        ann4R2D = createReply(Arrays.asList(ann4.getId()), document, theGroup, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 8, 24, 13, 24));
+        ann5R1A = createReply(Arrays.asList(ann5.getId()), document, theGroup, AnnotationStatus.ACCEPTED, userAcc, LocalDateTime.of(2018, 6, 25, 12, 25));
+        ann5R2D = createReply(Arrays.asList(ann5.getId()), document, theGroup, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 8, 24, 13, 24));
 
         // now assign different statuses
-        ann3.setStatus(AnnotationStatus.DELETED);
-        ann4.setStatus(AnnotationStatus.DELETED);
-        ann5.setStatus(AnnotationStatus.ACCEPTED);
-        ann6.setStatus(AnnotationStatus.ACCEPTED);
+        setAnnotationStatus(ann3, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 8, 24, 13, 25));
+        setAnnotationStatus(ann4, AnnotationStatus.DELETED, userDel, LocalDateTime.of(2019, 9, 1, 14, 24));
+        setAnnotationStatus(ann5, AnnotationStatus.ACCEPTED, userAcc, LocalDateTime.of(2018, 6, 25, 12, 25));
+        setAnnotationStatus(ann6, AnnotationStatus.ACCEPTED, userAcc, LocalDateTime.of(2019, 8, 24, 9, 48));
         annotRepos.save(Arrays.asList(ann3, ann4, ann5, ann6));
+        
+        // make all Metadata items be SENT, so they can be found - ANOT-96 is not the primary test focus here, therefore we keep the response status simple
+        metadataRepos.findAll().forEach(meta -> {meta.setResponseStatus(Metadata.ResponseStatus.SENT); metadataRepos.save(meta);});
+    }
+    
+    private void setAnnotationStatus(final Annotation ann, final AnnotationStatus newStatus, final User user, final LocalDateTime dateTime) {
+
+        ann.setStatus(newStatus);
+        ann.setStatusUpdated(dateTime);
+        ann.setStatusUpdatedBy(user.getId());
     }
 
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -220,7 +258,8 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     }
 
     private Annotation createReply(final List<String> parentAnnotIds, final Document document,
-            final Group group, final AnnotationStatus status)
+            final Group group, final AnnotationStatus status,
+            final User statusModifyingUser, final LocalDateTime statusModificationDate)
             throws CannotCreateAnnotationException, URISyntaxException {
 
         JsonAnnotation jsReply = TestData.getTestReplyToAnnotation(USER_ACCOUNT,
@@ -231,6 +270,8 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         // apply status
         final Annotation annot = annotRepos.findById(jsReply.getId());
         annot.setStatus(status);
+        annot.setStatusUpdatedBy(statusModifyingUser == null ? null : statusModifyingUser.getId());
+        annot.setStatusUpdated(statusModificationDate);
         annotRepos.save(annot);
 
         return annot;
@@ -1057,6 +1098,67 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         runCountInternal(requestedMetadata, 3);
     }
 
+    // EdiT search (!)
+    // ask for ISC reference 1 + ISC response 1, status NORMAL+ACCEPTED
+    // or ISC reference 2, status DELETED+ACCEPTED
+    // note: there is no corresponding Count() test as this is only allowed for ISC users
+    @Test
+    public void testSearch_Edit_IscRef1Resp1NormalAccepted_Or_IscRef2DeletedAccepted() throws Exception {
+
+        createTestData();
+
+        // adapt the token to be an EdiT token -> becomes EdiT search request
+        final Token theToken = tokenRepos.findByAccessToken(ACCESS_TOKEN);
+        theToken.setAuthority(Authorities.EdiT);
+        tokenRepos.save(theToken);
+
+        // adapt metadata: first should be recognized as an edit metadata
+        // others receive response status SENT
+        final List<Metadata> allMeta = metadataRepos.findByDocumentAndGroupAndSystemId(document, theGroup, Authorities.ISC);
+        for (final Metadata meta : allMeta) {
+            if (meta.getKeyValuePropertyAsSimpleMetadata().size() == 0) {
+                meta.setSystemId(Authorities.EdiT);
+                meta.setKeyValuePropertyFromSimpleMetadata(new SimpleMetadata("key", "value")); // create some metadata
+            } else {
+                meta.setResponseStatus(ResponseStatus.SENT);
+            }
+        }
+        metadataRepos.save(allMeta);
+
+        // add another EdiT metadata item without any entries
+        final Metadata newLeosMeta = new Metadata(document, theGroup, Authorities.EdiT);
+        metadataRepos.save(newLeosMeta);
+
+        // create a new EdiT annotation associated to the new metadata item - should not be matched due to missing metadata entries
+        createAnnotation(newLeosMeta, "id8");
+
+        // launch three metadata sets
+        final List<SimpleMetadataWithStatuses> requestedMetadata = new ArrayList<SimpleMetadataWithStatuses>();
+
+        // match the key/value for EdiT -> matches annotation 1, all states -> matches annotation 1 (and its two replies)
+        final SimpleMetadata metaLeos = new SimpleMetadata();
+        metaLeos.put("key", "value");
+        requestedMetadata.add(new SimpleMetadataWithStatuses(metaLeos, AnnotationStatus.getAllValues()));
+
+        // ISC reference 1 + response version 1, NORMAL+ACCEPTED -> matches annotations 2 (and its two replies)
+        final SimpleMetadata metaIscRef1A = new SimpleMetadata();
+        setIscRef1.accept(metaIscRef1A);
+        setRespVers1.accept(metaIscRef1A);
+        requestedMetadata.add(new SimpleMetadataWithStatuses(metaIscRef1A, Arrays.asList(AnnotationStatus.NORMAL, AnnotationStatus.ACCEPTED)));
+
+        // ISC reference 2, DELETED+ACCEPTED -> matches annotations 4+5 (and one ACCEPTED and three DELETED replies)
+        final SimpleMetadata metaIscRef2 = new SimpleMetadata();
+        setIscRef2.accept(metaIscRef2);
+        requestedMetadata.add(new SimpleMetadataWithStatuses(metaIscRef2, Arrays.asList(AnnotationStatus.ACCEPTED, AnnotationStatus.DELETED)));
+
+        // ann1 is reported to the EdiT, others coming from ISC
+        final List<Annotation> expAnnotIds = Arrays.asList(ann1, ann2, ann4, ann5);
+        // eight replies
+        final List<Annotation> expReplyIds = Arrays.asList(ann1R1N, ann1R2D, ann2R1N, ann2R2N, ann4R1D, ann4R2D, ann5R1A, ann5R2D);
+
+        runSearchInternalWithoutReplyCheck(requestedMetadata, expAnnotIds, expReplyIds, "__world__");
+    }
+
     // don't ask for any metadata
     // and status NORMAL
     @Test
@@ -1236,7 +1338,7 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
             final List<Annotation> expectedAnnotations, final List<Annotation> expectedReplies) throws Exception {
 
         final String serializedMetaRequest = SerialisationHelper.serializeSimpleMetadataWithStatusesList(requestedMetadata);
-        runSearchInternal(serializedMetaRequest, expectedAnnotations, expectedReplies);
+        runSearchInternal(serializedMetaRequest, expectedAnnotations, expectedReplies, GROUPNAME, true);
     }
 
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -1244,8 +1346,18 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     private void runSearchInternal(final List<SimpleMetadata> requestedMetadata, final List<AnnotationStatus> statuses,
             final List<Annotation> expectedAnnotations, final List<Annotation> expectedReplies) throws Exception {
 
-        final String serializedMetaRequest = serializeMetadataAndStatus(requestedMetadata, statuses);
-        runSearchInternal(serializedMetaRequest, expectedAnnotations, expectedReplies);
+        final String serializedMetaRequest = SerialisationHelper.serializeMetadataAndStatus(requestedMetadata, statuses);
+        runSearchInternal(serializedMetaRequest, expectedAnnotations, expectedReplies, GROUPNAME, true);
+    }
+
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @SuppressWarnings("PMD.SignatureDeclareThrowsException")
+    private void runSearchInternalWithoutReplyCheck(final List<SimpleMetadataWithStatuses> requestedMetadata,
+            final List<Annotation> expectedAnnotations, final List<Annotation> expectedReplies,
+            final String groupName) throws Exception {
+
+        final String serializedMetaRequest = SerialisationHelper.serializeSimpleMetadataWithStatusesList(requestedMetadata);
+        runSearchInternal(serializedMetaRequest, expectedAnnotations, expectedReplies, groupName, false);
     }
 
     /**
@@ -1256,13 +1368,14 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     private void runSearchInternal(final String serializedMetaRequest,
-            final List<Annotation> expectedAnnotations, final List<Annotation> expectedReplies) throws Exception {
+            final List<Annotation> expectedAnnotations, final List<Annotation> expectedReplies,
+            final String groupName, final boolean checkReplyDetails) throws Exception {
 
         /**
          * run the /search query
          */
         final StringBuffer url = new StringBuffer().append("/api/search?_separate_replies=true&sort=created&order=asc&uri=").append(ann1.getDocument().getUri())
-                .append("&group=").append(GROUPNAME)
+                .append("&group=").append(groupName)
                 .append("&metadatasets=").append(serializedMetaRequest);
 
         // send search request
@@ -1295,7 +1408,7 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         Assert.assertThat(expectedReplyIds,
                 containsInAnyOrder(jsResponse.getReplies().stream().map(JsonAnnotation::getId).toArray()));
 
-        checkStatus(jsResponse, expectedAnnotations, expectedReplies);
+        checkStatus(jsResponse, expectedAnnotations, expectedReplies, checkReplyDetails);
     }
 
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -1303,8 +1416,8 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     private void runCountInternal(final List<SimpleMetadata> requestedMetadata, final List<AnnotationStatus> statuses,
             final int expectedAnnotations) throws Exception {
 
-        final String serializedMetaRequest = serializeMetadataAndStatus(requestedMetadata, statuses);
-        runCountInternal(serializedMetaRequest, expectedAnnotations);
+        final String serializedMetaRequest = SerialisationHelper.serializeMetadataAndStatus(requestedMetadata, statuses);
+        runCountInternal(serializedMetaRequest, expectedAnnotations, GROUPNAME);
     }
 
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
@@ -1313,7 +1426,7 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
             final int expectedAnnotations) throws Exception {
 
         final String serializedMetaRequest = SerialisationHelper.serializeSimpleMetadataWithStatusesList(requestedMetadata);
-        runCountInternal(serializedMetaRequest, expectedAnnotations);
+        runCountInternal(serializedMetaRequest, expectedAnnotations, GROUPNAME);
     }
 
     /**
@@ -1324,10 +1437,10 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @SuppressWarnings("PMD.SignatureDeclareThrowsException")
     private void runCountInternal(final String serializedMetaRequest,
-            final int expectedAnnotations) throws Exception {
+            final int expectedAnnotations, final String groupName) throws Exception {
 
         final StringBuffer url = new StringBuffer().append("/api/count?uri=").append(ann1.getDocument().getUri())
-                .append("&group=").append(GROUPNAME)
+                .append("&group=").append(groupName)
                 .append("&metadatasets=").append(serializedMetaRequest);
 
         final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders.get(url.toString())
@@ -1347,43 +1460,47 @@ public class SearchAndCountAnnotationsWithMetadataSetsAndStatusesTest {
         Assert.assertEquals(expectedAnnotations, jsCountResponse.getCount());
     }
 
-    private String serializeMetadataAndStatus(final List<SimpleMetadata> requestedMetadata, final List<AnnotationStatus> statuses)
-            throws JsonProcessingException {
-
-        if (!StringUtils.isEmpty(statuses)) {
-            final String statusForMeta = statuses.toString().replace(" ", "")
-                    .replace(",", "\",\"") // add quotes between elements
-                    .replace("[", "[\"") // quote for first element
-                    .replace("]", "\"]"); // quote for last element
-
-            // we need at least one dummy to add the status to
-            if (CollectionUtils.isEmpty(requestedMetadata)) {
-                requestedMetadata.add(new SimpleMetadata());
-            }
-            requestedMetadata.forEach(metaSet -> metaSet.put("status", statusForMeta));
-        }
-
-        return SerialisationHelper.serialize(requestedMetadata).replace("{", "%7B").replace("}", "%7D");
-    }
-
     // check that the JSON format of the found annotations have the correct status value assigned
     private void checkStatus(final JsonSearchResultWithSeparateReplies result,
-            final List<Annotation> anns, final List<Annotation> replies) {
+            final List<Annotation> anns, final List<Annotation> replies, final boolean checkReplyDetails) {
 
         for (final Annotation annCheck : anns) {
             final JsonAnnotation foundAnnot = result.getRows().stream().filter(jsAnn -> jsAnn.getId().equals(annCheck.getId()))
                     .findFirst().get();
-            Assert.assertNotNull(foundAnnot);
-            Assert.assertNotNull(foundAnnot.getStatus());
-            Assert.assertEquals(annCheck.getStatus(), foundAnnot.getStatus().getStatus());
+            checkStatus(annCheck, foundAnnot, true);
         }
 
         for (final Annotation annCheck : replies) {
             final JsonAnnotation foundAnnot = result.getReplies().stream().filter(jsAnn -> jsAnn.getId().equals(annCheck.getId()))
                     .findFirst().get();
-            Assert.assertNotNull(foundAnnot);
-            Assert.assertNotNull(foundAnnot.getStatus());
-            Assert.assertEquals(annCheck.getStatus(), foundAnnot.getStatus().getStatus());
+            checkStatus(annCheck, foundAnnot, checkReplyDetails);
+        }
+    }
+
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    private void checkStatus(final Annotation annRef, final JsonAnnotation foundAnnot, final boolean checkReplyDetails) {
+
+        Assert.assertNotNull(foundAnnot);
+        Assert.assertNotNull(foundAnnot.getStatus());
+        Assert.assertEquals(annRef.getStatus(), foundAnnot.getStatus().getStatus());
+
+        if (checkReplyDetails) {
+            if (annRef.getStatusUpdatedBy() == null) {
+                Assert.assertNull(foundAnnot.getStatus().getUpdated());
+                Assert.assertNull(foundAnnot.getStatus().getUpdated_by());
+                Assert.assertNull(foundAnnot.getStatus().getUser_info());
+            } else {
+                Assert.assertEquals(annRef.getStatusUpdated(), foundAnnot.getStatus().getUpdated());
+
+                // check that user and its entity were correctly resolved
+                if (annRef.getStatusUpdatedBy().longValue() == userAcc.getId().longValue()) {
+                    Assert.assertEquals(USER_ACCOUNT_ACC, foundAnnot.getStatus().getUser_info());
+                    Assert.assertEquals(ENTITYACC, foundAnnot.getStatus().getUpdated_by());
+                } else if (annRef.getStatusUpdatedBy().longValue() == userDel.getId().longValue()) {
+                    Assert.assertEquals(USER_ACCOUNT_DEL, foundAnnot.getStatus().getUser_info());
+                    Assert.assertEquals(ENTITYDEL, foundAnnot.getStatus().getUpdated_by());
+                }
+            }
         }
     }
 }

@@ -17,6 +17,8 @@ import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.common.Securable;
 import eu.europa.ec.leos.domain.cmis.common.SecurityData;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.domain.cmis.metadata.LeosMetadata;
 import io.atlassian.fugue.Option;
 
 import java.time.Instant;
@@ -40,18 +42,35 @@ public abstract class XmlDocument extends LeosDocument implements Securable {
 
     protected XmlDocument(LeosCategory category, String id, String name, String createdBy,
                           Instant creationInstant, String lastModifiedBy, Instant lastModificationInstant,
-                          String versionSeriesId, String versionLabel, String versionComment,
-                          boolean isMajorVersion, boolean isLatestVersion, String title,
+                          String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment,
+                          VersionType versionType, boolean isLatestVersion, String title,
                           Map<String, String> collaborators, List<String> milestoneComments, Option<Content> content) {
         super(category, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant, versionSeriesId,
-                versionLabel, versionComment, isMajorVersion, isLatestVersion, content);
+                cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, content);
         this.securityData = new SecurityData(collaborators);
         this.title = title;
         this.milestoneComments = milestoneComments;
     }
 
+    protected XmlDocument(LeosCategory category, String id, String name, String createdBy,
+                          Instant creationInstant, String lastModifiedBy, Instant lastModificationInstant,
+                          String versionSeriesId, String cmisVersionLabel, String versionLabel, String versionComment,
+                          VersionType versionType, boolean isLatestVersion, Option<Content> content) {
+        super(category, id, name, createdBy, creationInstant, lastModifiedBy, lastModificationInstant, versionSeriesId,
+                cmisVersionLabel, versionLabel, versionComment, versionType, isLatestVersion, content);
+        this.securityData = null;
+        this.title = null;
+        this.milestoneComments = null;
+    }
+
+
     public Map<String, String> getCollaborators() {
         return this.securityData.getCollaborators();
     }
 
+    public abstract Option<? extends LeosMetadata> getMetadata();
+
+    public String getVersionedReference() {
+        return this.getMetadata().get().getRef() + "_" + this.getVersionLabel();
+    }
 }

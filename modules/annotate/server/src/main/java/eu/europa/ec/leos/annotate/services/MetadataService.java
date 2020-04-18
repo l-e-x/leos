@@ -13,7 +13,6 @@
  */
 package eu.europa.ec.leos.annotate.services;
 
-import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Document;
 import eu.europa.ec.leos.annotate.model.entity.Group;
@@ -29,48 +28,146 @@ import java.util.List;
 
 public interface MetadataService {
 
-    // find a set of metadata matching the given document, group, system ID and other metadata
-    Metadata findExactMetadata(Document document, Group group, String systemId, Metadata otherMetadata);
-
-    Metadata findExactMetadata(Document document, Group group, String systemId, SimpleMetadata otherMetadata);
-
-    // find a set of metadata using the associated document, group and system id
+    /**
+     * find {@link Metadata} objects given their linked {@link Document}, {@link Group} and system ID
+     * 
+     * @param document 
+     *        the linked document
+     * @param group
+     *        the associate group
+     * @param systemId 
+     *        the system ID via which the metadata was given
+     * 
+     * @return found {@link Metadata} objects, or empty list
+     */
     @Nonnull
     List<Metadata> findMetadataOfDocumentGroupSystemid(Document document, Group group, String systemId);
 
-    // find a set of metadata using the associated document, group and system id, having a given response status set
+    /**
+     * find {@link Metadata} objects given their linked document URI, group name and system ID
+     * 
+     * @param document 
+     *        the linked document's URI
+     * @param group
+     *        the associate group name
+     * @param systemId 
+     *        the system ID via which the metadata was given
+     * 
+     * @return found {@link Metadata} objects, or empty list
+     */
+    @Nonnull
+    List<Metadata> findMetadataOfDocumentGroupSystemid(String docUri, String group, String isc);
+    
+    /**
+     * find {@link Metadata} objects given their linked {@link Document}, {@link Group}, system ID, and having response status SENT
+     * 
+     * @param document 
+     *        the linked document
+     * @param group
+     *        the associate group
+     * @param systemId
+     *        the system ID via which the metadata was given
+     * 
+     * @return found Metadata objects, or empty list
+     */
     @Nonnull
     List<Metadata> findMetadataOfDocumentGroupSystemidSent(Document document, Group group, String systemId);
 
-    // saving a given metadata set
+    /**
+     * save a given {@link Metadata} set
+     * 
+     * @param metadata 
+     *        the metadata set to be saved
+     * 
+     * @return saved metadata, with IDs filled in
+     * @throws CannotCreateMetadataException 
+     */
     Metadata saveMetadata(Metadata metadata) throws CannotCreateMetadataException;
 
-    // find a set of metadata associated to a document and system Id, having one of the given group IDs
+    /**
+     * find all {@link Metadata} objects given linked {@link Document}, system ID and a list of allowed linked {@link Group}s
+     * 
+     * @param document 
+     *        the linked document
+     * @param systemId 
+     *        the system ID via which the metadata was given
+     * @param groupIds 
+     *        the list of associate groups' IDs
+     * 
+     * @return found Metadata objects, or empty list
+     * @throws IllegalArgumentException if groupIds are {@literal null}
+     */
     @Nonnull
     List<Metadata> findMetadataOfDocumentSystemidGroupIds(Document document, String systemId, List<Long> groupIds);
 
-    // find a set of metadata associated to a document and system Id, having a given response status
+    /**
+     * find all {@link Metadata} objects given linked {@link Document}, system ID, and having response status SENT
+     * 
+     * @param document 
+     *        the linked document
+     * @param systemId 
+     *        the system ID via which the metadata was given
+     * 
+     * @return found {@link Metadata} objects, or empty list
+     */
     @Nonnull
     List<Metadata> findMetadataOfDocumentSystemidSent(Document document, String authorityIsc);
 
-    // helper functions
-    boolean areAllMetadataContainedInDbMetadata(SimpleMetadata metadataRequired, Metadata candidateMeta);
-
-    List<Long> getIdsOfMatchingMetadatas(List<Metadata> candidates, List<SimpleMetadata> requested);
-    List<Long> getIdsOfMatchingMetadatas(List<Metadata> candidates, SimpleMetadata requested);
-
-    List<Long> getMetadataSetIds(List<Metadata> metaList);
-
+    /**
+     * find all {@link Metadata} objects given linked {@link Document}, {@link Group}, system ID, and having response status IN_PREPARATION
+     * 
+     * @param document 
+     *        the linked document
+     * @param group 
+     *        the linked group
+     * @param systemId 
+     *        the system ID via which the metadata was given
+     * 
+     * @return found {@link Metadata} objects, or empty list
+     */
     @Nonnull
-    List<Long> getNonNullMetadataSetIds(List<Metadata> metaList);
+    List<Metadata> findMetadataOfDocumentGroupSystemidInPreparation(final Document document,
+            final Group group, final String systemId);
 
-    List<Long> getMetadataSetIds(List<Metadata> metaList1, List<Metadata> metaList2);
-
-    // removing an entry
+    /**
+     * removal of given {@link Metadata} set identified by its ID
+     * 
+     * @param metadataId 
+     *        ID of the {@link Metadata} set to be removed
+     */
     void deleteMetadataById(long metadataId);
 
-    // status update of annotation's (via associate metadata)
+    /**
+     * update the response status of metadata sets
+     * note: "at least" matching is applied, i.e. all metadata having *at least* the requested ones are updated
+     * 
+     * @param updateRequest 
+     *        {@link StatusUpdateRequest} object containing the group and document URI whose metadata is to be updated;
+     *        in addition, it contains the new responseStatus and further metadata properties for identifying target metadata
+     * @param userInfo 
+     *        information about the user requesting metadata update
+     * 
+     * @return returns the list {@link Metadata} sets that were updated; at least an empty list is returned, but not {@literal null}
+     * 
+     * @throws CannotUpdateAnnotationStatusException 
+     *         whenever required information cannot be identified (e.g. related group/document)
+     * @throws MissingPermissionException 
+     *         thrown if user does not have required permissions
+     */
     @Nonnull
-    List<Long> updateMetadata(StatusUpdateRequest updateRequest, UserInformation userInfo)
+    List<Metadata> updateMetadata(StatusUpdateRequest updateRequest, UserInformation userInfo)
             throws CannotUpdateAnnotationStatusException, MissingPermissionException;
+
+    /**
+     * create a {@link Metadata} instance based on the information contained in a {@link StatusUpdateRequest}
+     * 
+     * @param updateRequest
+     *        incoming {@link StatusUpdateRequest}
+     * @return assembled {@link Metadata}
+     * @throws CannotUpdateAnnotationStatusException
+     *         exception thrown when mandatory Metadata information is missing (e.g. document, group)
+     */
+    @Nonnull
+    Metadata createMetadataFromStatusUpdateRequest(final StatusUpdateRequest updateRequest) throws CannotUpdateAnnotationStatusException;
+
 }

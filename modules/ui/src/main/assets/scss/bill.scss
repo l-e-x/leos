@@ -28,19 +28,22 @@
 @import 'shared/compare';
 @import 'shared/doubleCompare';
 @import 'shared/higherElements';
+@import 'shared/elementHeading';
 @import 'shared/image';
 @import 'shared/soft';
 @import 'shared/print';
+@import 'shared/exportPdf';
 
-@import 'bill/modules/article';
-@import 'bill/modules/articleAlinea';
-@import 'bill/modules/articleParagraph';
-@import 'bill/modules/articleSubParagraph';
+@import 'shared/article';
+@import 'shared/articleAlinea';
+@import 'shared/articleParagraph';
+@import 'shared/articleSubParagraph';
+@import 'shared/reference';
+
 @import 'bill/modules/clause';
 @import 'bill/modules/citation';
 @import 'bill/modules/citations';
 @import 'bill/modules/comments';
-@import 'bill/modules/reference';
 @import 'bill/modules/highlight';
 @import 'bill/modules/list';
 

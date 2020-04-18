@@ -14,12 +14,15 @@
 package eu.europa.ec.leos.annotate.services;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.SpotBugsAnnotations;
+import eu.europa.ec.leos.annotate.model.UserInformation;
 import eu.europa.ec.leos.annotate.model.entity.Annotation;
+import eu.europa.ec.leos.annotate.model.entity.Group;
 import eu.europa.ec.leos.annotate.model.entity.Metadata;
 import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.model.entity.User;
-import eu.europa.ec.leos.annotate.services.impl.AnnotationPermissionService;
+import eu.europa.ec.leos.annotate.services.impl.AnnotationPermissionServiceImpl;
 import eu.europa.ec.leos.annotate.services.impl.UserServiceImpl;
 import org.junit.Assert;
 import org.junit.Test;
@@ -32,6 +35,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
+@SuppressWarnings("PMD.TooManyMethods")
 @RunWith(MockitoJUnitRunner.class)
 public class AnnotationPermissionServiceTest {
 
@@ -39,25 +43,17 @@ public class AnnotationPermissionServiceTest {
     // Required services and repositories
     // -------------------------------------
     @InjectMocks
-    private AnnotationPermissionService annotPermMockService;
+    private AnnotationPermissionServiceImpl annotPermMockService;
 
     @Mock
     private UserServiceImpl userService;
 
+    @Mock
+    private GroupService groupService;
+
     // -------------------------------------
     // Tests
     // -------------------------------------
-
-    // test that no permissions for viewing an annotation are given in case of invalid parameters
-    @Test
-    public void testNoPermissionsForSeeingAnnotationWithInvalidArguments() throws Exception {
-
-        final AnnotationPermissionService annotService = new AnnotationPermissionService();
-
-        Assert.assertFalse(callHasUserPermissionToSeeAnnotation(annotService, null, null));
-        Assert.assertFalse(callHasUserPermissionToSeeAnnotation(annotService, new Annotation(), null));
-        Assert.assertFalse(callHasUserPermissionToSeeAnnotation(annotService, null, new User()));
-    }
 
     // test that annotation is not by default considered as belonging to an undefined user
     @Test
@@ -70,69 +66,223 @@ public class AnnotationPermissionServiceTest {
         Assert.assertFalse(callIsAnnotationOfUser(annotPermMockService, null, login));
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
-    public void testCanAnnotationBeUpdatedNull() throws Exception {
+    public void testHasPermissionToUpdate_AnnotationNull() throws Exception {
 
         final Annotation annot = null;
-        Assert.assertFalse(callCanAnnotationBeUpdated(annotPermMockService, annot));
+        final UserInformation userinfo = new UserInformation("itsme", Authorities.EdiT);
+        annotPermMockService.hasUserPermissionToUpdateAnnotation(annot, userinfo);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    @SuppressFBWarnings(value = SpotBugsAnnotations.KnownNullValue, justification = SpotBugsAnnotations.KnownNullValueReason)
+    public void testHasPermissionToUpdate_UserinfoNull() throws Exception {
+
+        final Annotation annot = new Annotation();
+        final UserInformation userinfo = null;
+
+        annotPermMockService.hasUserPermissionToUpdateAnnotation(annot, userinfo);
     }
 
     @Test
-    public void testCanAnnotationBeUpdatedOtherMetadata() throws Exception {
+    public void testHasPermissionToUpdate_OtherMetadata_EditUser() throws Exception {
+
+        final String LOGIN = "theuser";
+
+        final User user = new User(LOGIN);
+        user.setId(Long.valueOf(2));
+        Mockito.when(userService.createUser(LOGIN)).thenReturn(user);
+        Mockito.when(userService.findByLogin(LOGIN)).thenReturn(user);
 
         final Annotation annot = new Annotation();
         final Metadata meta = new Metadata();
         annot.setMetadata(meta);
+        annot.setUser(user);
+
+        meta.setResponseStatus(ResponseStatus.IN_PREPARATION);
+
+        // verify: status is not SENT, it is the user's annotation -> it can be updated
+        Assert.assertTrue(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation(annot.getUser().getLogin(), Authorities.EdiT)));
+    }
+
+    // user wanting to update is not the annotation's creator -> refused
+    @Test
+    public void testHasPermissionToUpdate_OtherMetadata_OtherEditUser() throws Exception {
+
+        final Annotation annot = new Annotation();
+        final Metadata meta = new Metadata();
+        annot.setMetadata(meta);
+        annot.setUser(new User("theuser"));
+
+        meta.setResponseStatus(ResponseStatus.IN_PREPARATION);
+
+        // verify: status is not SENT -> ok, but user is not the annotation's creator
+        Assert.assertFalse(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation("nottheuser", Authorities.EdiT)));
+    }
+
+    @Test
+    public void testHasPermissionToUpdate_OtherMetadata_IscUser() throws Exception {
+
+        final String LOGIN = "dave";
+        final User user = new User(LOGIN);
+        user.setId(Long.valueOf(8));
+
+        Mockito.when(userService.findByLogin(LOGIN)).thenReturn(user);
+
+        final Annotation annot = new Annotation();
+        final Metadata meta = new Metadata();
+        annot.setMetadata(meta);
+        annot.setUser(user);
 
         meta.setResponseStatus(ResponseStatus.IN_PREPARATION);
 
         // verify: status is not SENT -> it can be updated
-        Assert.assertTrue(callCanAnnotationBeUpdated(annotPermMockService, annot));
+        Assert.assertTrue(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation(annot.getUser().getLogin(), Authorities.ISC)));
     }
 
     @Test
-    public void testCanAnnotationBeUpdatedSuccessful() throws Exception {
+    public void testHasPermissionToUpdateNotSuccessful_Sent_EditUser() throws Exception {
 
         final Annotation annot = new Annotation();
         final Metadata meta = new Metadata();
         annot.setMetadata(meta);
+        annot.setUser(new User("hello"));
 
         meta.setResponseStatus(ResponseStatus.SENT);
 
         // verify: status is SENT -> it cannot be updated any more
-        Assert.assertFalse(callCanAnnotationBeUpdated(annotPermMockService, annot));
+        Assert.assertFalse(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation(annot.getUser().getLogin(), Authorities.EdiT)));
     }
 
+    // an ISC user wants to update a SENT annotation; he belongs to the same group as the annotation
+    @Test
+    public void testHasPermissionToUpdateSuccessful_IscUserOfSameGroup() throws Exception {
+
+        final String LOGIN_ANNOT = "annotUser";
+        final String LOGIN_OTHER = "other";
+
+        final User annotUser = new User(LOGIN_ANNOT);
+        final User otherUser = new User(LOGIN_OTHER);
+        final Group group = new Group("mygroup", true);
+
+        Mockito.when(userService.findByLogin(LOGIN_ANNOT)).thenReturn(annotUser);
+        Mockito.when(userService.findByLogin(LOGIN_OTHER)).thenReturn(otherUser);
+        Mockito.when(groupService.isUserMemberOfGroup(annotUser, group)).thenReturn(true);
+        Mockito.when(groupService.isUserMemberOfGroup(otherUser, group)).thenReturn(true);
+
+        final Annotation annot = new Annotation();
+        final Metadata meta = new Metadata();
+        meta.setGroup(group);
+        annot.setMetadata(meta);
+        annot.setUser(annotUser);
+        
+        meta.setResponseStatus(ResponseStatus.SENT);
+
+        // verify: status is SENT, but user belongs to same group -> it can be updated
+        Assert.assertTrue(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation(otherUser, Authorities.ISC)));
+    }
+
+    // an ISC user wants to update a SENT annotation; he does not belong to the same group as the annotation
+    @Test
+    public void testHasPermissionToUpdateSuccessful_IscUserOfOtherGroup() throws Exception {
+
+        final String LOGIN_ANNOT = "annotUser";
+        final String LOGIN_OTHER = "other";
+
+        final User annotUser = new User(LOGIN_ANNOT);
+        final User otherUser = new User(LOGIN_OTHER);
+        final Group group = new Group("mygroup", true);
+
+        Mockito.when(userService.findByLogin(LOGIN_ANNOT)).thenReturn(annotUser);
+        Mockito.when(userService.findByLogin(LOGIN_OTHER)).thenReturn(otherUser);
+        Mockito.when(groupService.isUserMemberOfGroup(annotUser, group)).thenReturn(true);
+        Mockito.when(groupService.isUserMemberOfGroup(otherUser, group)).thenReturn(false); //
+
+        final Annotation annot = new Annotation();
+        final Metadata meta = new Metadata();
+        meta.setGroup(group);
+        annot.setMetadata(meta);
+        annot.setUser(annotUser);
+
+        meta.setResponseStatus(ResponseStatus.SENT);
+
+        // verify: status is SENT, but user does not belong to same group -> it cannot be updated
+        Assert.assertFalse(annotPermMockService.hasUserPermissionToUpdateAnnotation(annot,
+                new UserInformation(otherUser, Authorities.ISC)));
+    }
+
+ // test that user is not considered belonging to same entity if no information is available at all
+    @Test
+    public void testIsResponseFromUsersEntity_RespIdNull() throws Exception {
+
+        Assert.assertFalse(callIsResponseFromUsersEntity(annotPermMockService, null, null));
+    }
+
+    // test that user is not considered belonging to same entity if no information is available at all
+    @Test
+    public void testIsResponseFromUsersEntity_RespIdEmpty() throws Exception {
+
+        Assert.assertFalse(callIsResponseFromUsersEntity(annotPermMockService, null, null));
+    }
+
+    // test that user is not considered belonging to same entity if no information is available at all
+    @Test
+    public void testIsResponseFromUsersEntity_UserinfoNull() throws Exception {
+
+        Assert.assertFalse(callIsResponseFromUsersEntity(annotPermMockService, null, "SG"));
+    }
+
+    // test that user is not considered belonging to same entity if no information is available about user's connected entity
+    @Test
+    public void testIsResponseFromUsersEntity_UserinfoConnectedEntityEmpty() throws Exception {
+
+        final UserInformation userInfo = new UserInformation("me", Authorities.ISC);
+        Assert.assertFalse(callIsResponseFromUsersEntity(annotPermMockService, userInfo, "SG"));
+    }
+
+    // test that user is not considered belonging to same entity if user's connected entity is different
+    @Test
+    public void testIsResponseFromUsersEntity_NotEquals() throws Exception {
+
+        final UserInformation userInfo = new UserInformation("me", Authorities.ISC);
+        userInfo.setConnectedEntity("DIGIT");
+        Assert.assertFalse(callIsResponseFromUsersEntity(annotPermMockService, userInfo, "AGRI"));
+    }
+
+    // test that user is considered belonging to same entity if user's connected entity is identical
+    @Test
+    public void testIsResponseFromUsersEntity_Identical() throws Exception {
+
+        final UserInformation userInfo = new UserInformation("me", Authorities.ISC);
+        userInfo.setConnectedEntity("SJ");
+        Assert.assertTrue(callIsResponseFromUsersEntity(annotPermMockService, userInfo, "SJ"));
+    }
+    
     // -------------------------------------
     // Test help methods that make private methods callable for the test purposes
     // -------------------------------------
 
-    private boolean callHasUserPermissionToSeeAnnotation(final AnnotationPermissionService annotService, final Annotation annotParam, final User userParam)
-            throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-
-        final Method method = AnnotationPermissionService.class.getDeclaredMethod("hasUserPermissionToSeeAnnotation", Annotation.class, User.class);
-        method.setAccessible(true);
-
-        return (boolean) method.invoke(annotService, annotParam, userParam);
-    }
-
     private boolean callIsAnnotationOfUser(final AnnotationPermissionService annotPermService, final Annotation annotParam, final String userLoginParam)
             throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
-        final Method method = AnnotationPermissionService.class.getDeclaredMethod("isAnnotationOfUser", Annotation.class, String.class);
+        final Method method = AnnotationPermissionServiceImpl.class.getDeclaredMethod("isAnnotationOfUser", Annotation.class, String.class);
         method.setAccessible(true);
 
         return (boolean) method.invoke(annotPermService, annotParam, userLoginParam);
     }
 
-
-    private boolean callCanAnnotationBeUpdated(final AnnotationPermissionService annotService, final Annotation annotParam)
+    private boolean callIsResponseFromUsersEntity(final AnnotationPermissionService annotPermService, final UserInformation userParam, final String respIdParam)
             throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
-        final Method method = AnnotationPermissionService.class.getDeclaredMethod("canAnnotationBeUpdated", Annotation.class);
+        final Method method = AnnotationPermissionServiceImpl.class.getDeclaredMethod("isResponseFromUsersEntity", UserInformation.class, String.class);
         method.setAccessible(true);
 
-        return (boolean) method.invoke(annotService, annotParam);
+        return (boolean) method.invoke(annotPermService, userParam, respIdParam);
     }
 }

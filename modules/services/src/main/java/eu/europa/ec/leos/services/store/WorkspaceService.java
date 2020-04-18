@@ -13,13 +13,22 @@
  */
 package eu.europa.ec.leos.services.store;
 
-
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public interface WorkspaceService {
 
     <T extends LeosDocument> List<T> browseWorkspace(Class<T> filterType, Boolean fetchContent);
 
+    <T extends LeosDocument> Stream<T> findDocuments(Class<T> filterType, Boolean fetchContent,
+                                                     int startIndex, int maxResults, QueryFilter workspaceFilter);
+
+    <T extends LeosDocument> int findDocumentCount(Class<T> filterType, QueryFilter workspaceFilter);
+
+    <T extends LeosDocument> T findDocumentById(String id, Class<T> filterType);
+
+    <T extends LeosDocument> T findDocumentByRef(String ref, Class<T> filterType);
 }

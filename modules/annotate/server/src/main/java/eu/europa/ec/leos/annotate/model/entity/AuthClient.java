@@ -83,42 +83,53 @@ public class AuthClient {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public long getId() {
         return id;
     }
 
+    @Generated
     public void setId(final long newId) {
         this.id = newId;
     }
 
+    @Generated
     public String getDescription() {
         return description;
     }
 
+    @Generated
     public void setDescription(final String description) {
         this.description = description;
     }
 
+    @Generated
     public String getSecret() {
         return secret;
     }
 
+    @Generated
     public void setSecret(final String secret) {
         this.secret = secret;
     }
 
+    @Generated
     public String getClientId() {
         return clientId;
     }
 
+    @Generated
     public void setClientId(final String clientId) {
         this.clientId = clientId;
     }
 
+    @Generated
     public String getAuthorities() {
         return authorities;
     }
 
+    @Generated
     public void setAuthorities(final String authorities) {
         this.authorities = authorities;
     }

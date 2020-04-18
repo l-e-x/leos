@@ -27,7 +27,7 @@ public interface ElementProcessor<T extends XmlDocument> {
      * @param elementId The  id of element
      * @return the xml string representation of the element
      */
-    String getElement(T document, String elementName, String elementId);
+    String getElement(XmlDocument document, String elementName, String elementId);
 
     /**
      * Retrieves first sibling after of the element from the given document

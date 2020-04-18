@@ -13,6 +13,7 @@
  */
 package eu.europa.ec.leos.services.mandate;
 
+import com.google.common.base.Strings;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.common.ErrorCode;
 import eu.europa.ec.leos.domain.common.Result;
@@ -23,6 +24,17 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.Collections;
+
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_DELETABLE_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_EDITABLE_ATTR;
+import static eu.europa.ec.leos.services.support.xml.VTDUtils.LEOS_ORIGIN_ATTR;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.ARTICLE;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BILL;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.BODY;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.CITATIONS;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.DOC;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.EC;
+import static eu.europa.ec.leos.services.support.xml.XmlHelper.RECITALS;
 
 @Service
 public class PostProcessingMandateServiceImpl implements PostProcessingMandateService {
@@ -36,27 +48,32 @@ public class PostProcessingMandateServiceImpl implements PostProcessingMandateSe
 
     public Result<String> processMandate(DocumentVO documentVO) {
         if (documentVO.getCategory().equals(LeosCategory.PROPOSAL)) {
+            byte[] updatedDocContent = preserveDocumentReference(documentVO.getSource());
+            documentVO.setSource(updatedDocContent);
             for (DocumentVO doc : documentVO.getChildDocuments()) {
                 try {
                     if (!doc.getCategory().equals(LeosCategory.PROPOSAL)) {
                         byte[] docContent = doc.getSource();
                         if (doc.getCategory().equals(LeosCategory.BILL)) {
                             
-                            byte[] updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(docContent, BILL, Collections.emptyList(), LEOS_ORIGIN_ATTR, EC);
+                            updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(docContent, BILL, Collections.emptyList(), LEOS_ORIGIN_ATTR, EC);
                             updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(updatedDocContent, BODY, Arrays.asList(ARTICLE),
                                     LEOS_DELETABLE_ATTR, "false");
                             updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(updatedDocContent, BILL,
                                     Arrays.asList(CITATIONS, RECITALS, ARTICLE), LEOS_EDITABLE_ATTR, "false");
+                            updatedDocContent = preserveDocumentReference(updatedDocContent);
                             
                             doc.setSource(updatedDocContent);
                             
                             for (DocumentVO annex : doc.getChildDocuments()) {
                                 byte[] annexContent = annex.getSource();
                                 byte[] updatedDocContentAnnex = xmlContentProcessor.setAttributeForAllChildren(annexContent, DOC, Collections.emptyList(), LEOS_ORIGIN_ATTR, EC);
+                                updatedDocContentAnnex = preserveDocumentReference(updatedDocContentAnnex);
                                 annex.setSource(updatedDocContentAnnex);
                             }
                         } else {
-                            byte[] updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(docContent, DOC, Collections.emptyList(), LEOS_ORIGIN_ATTR, EC);
+                            updatedDocContent = xmlContentProcessor.setAttributeForAllChildren(docContent, DOC, Collections.emptyList(), LEOS_ORIGIN_ATTR, EC);
+                            updatedDocContent = preserveDocumentReference(updatedDocContent);
                             doc.setSource(updatedDocContent);
                         }
                     }
@@ -66,5 +83,12 @@ public class PostProcessingMandateServiceImpl implements PostProcessingMandateSe
             }
         }
         return new Result<String>("OK", null);
+    }
+
+    private byte[] preserveDocumentReference(byte[] xmlContent) {
+        byte[] updatedDocContent = xmlContentProcessor.removeElement(xmlContent, "/akomaNtoso//meta/proprietary/leos:refOrigin", true);
+        String documentReference = Strings.nullToEmpty(xmlContentProcessor.getElementValue(updatedDocContent, "/akomaNtoso//meta/proprietary/leos:ref", true));
+        return xmlContentProcessor.replaceElement(updatedDocContent, "/akomaNtoso//meta/proprietary/leos:ref", true,
+                "<leos:ref></leos:ref><leos:refOrigin>" + documentReference + "</leos:refOrigin>");
     }
 }

@@ -44,6 +44,8 @@ public class JsonDeleteSuccessResponse extends JsonSuccessResponseBase {
     // Getters & setters
     // -------------------------------------
     
+    @Generated
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getDeleted() {
         return deleted;
     }

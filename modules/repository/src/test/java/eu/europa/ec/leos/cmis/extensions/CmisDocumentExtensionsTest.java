@@ -19,7 +19,16 @@ import eu.europa.ec.leos.cmis.mapping.CmisProperties;
 import eu.europa.ec.leos.domain.cmis.Content;
 import eu.europa.ec.leos.domain.cmis.LeosCategory;
 import eu.europa.ec.leos.domain.cmis.LeosLegStatus;
-import eu.europa.ec.leos.domain.cmis.document.*;
+import eu.europa.ec.leos.domain.cmis.common.VersionType;
+import eu.europa.ec.leos.domain.cmis.document.Annex;
+import eu.europa.ec.leos.domain.cmis.document.Bill;
+import eu.europa.ec.leos.domain.cmis.document.ConfigDocument;
+import eu.europa.ec.leos.domain.cmis.document.LegDocument;
+import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
+import eu.europa.ec.leos.domain.cmis.document.MediaDocument;
+import eu.europa.ec.leos.domain.cmis.document.Memorandum;
+import eu.europa.ec.leos.domain.cmis.document.Proposal;
+import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
 import eu.europa.ec.leos.domain.cmis.metadata.AnnexMetadata;
 import eu.europa.ec.leos.domain.cmis.metadata.BillMetadata;
 import eu.europa.ec.leos.domain.cmis.metadata.MemorandumMetadata;
@@ -39,10 +48,17 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.Map;
 
 import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -56,19 +72,20 @@ public class CmisDocumentExtensionsTest {
     private final static String DOC_ID = "DOCUMENT_ID";
     private final static String DOC_NAME = "DOCUMENT_NAME";
     private final static String DOC_CREATED_BY = "DOCUMENT_CREATED_BY";
-    private final static Instant DOC_CREATION_INSTANT = LocalDateTime.of(2019, 05, 28, 23, 20).toInstant(ZoneOffset.UTC);
+    private final static Instant DOC_CREATION_INSTANT = LocalDateTime.of(2019, 5, 28, 23, 20).toInstant(ZoneOffset.UTC);
     private final static String DOC_LAST_MODIFIED_BY = "DEVELOPER";
-    private final static Instant DOC_LAST_MODIFICATION_INSTANT = LocalDateTime.of(2019, 05, 28, 23, 30).toInstant(ZoneOffset.UTC);
+    private final static Instant DOC_LAST_MODIFICATION_INSTANT = LocalDateTime.of(2019, 5, 28, 23, 30).toInstant(ZoneOffset.UTC);
     private final static String DOC_VERSION_SERIES_ID = "DOCUMENT_SERIES_ID";
     private final static String DOC_VERSION_LABEL = "DOCUMENT_VERSION_LABEL";
     private final static String DOC_VERSION_COMMENT = "DOCUMENT_VERSION_COMMENT";
-    private final static Boolean DOC_IS_MAJOR_VERSION = Boolean.TRUE;
+    private final static VersionType DOC_VERSION_TYPE = VersionType.MINOR;
     private final static Boolean DOC_IS_LATEST_VERSION = Boolean.TRUE;
     private final static String DOC_TITLE = "DOCUMENT_TITLE";
     private final static Map<String, String> DOC_COLLABORATORS = Collections.singletonMap("KEY", "VALUE");
     private final static List<String> DOC_MILESTONE_COMMENTS = Arrays.asList("COMM_1", "COMM_2", "COMM3");
+    private final static List<String> DOC_CONTAINED_DOCUMENTS = Arrays.asList("DOC_1", "DOC_2", "DOC_3");
     private final static String DOC_INITIAL_CREATED_BY = "DOCUMENT_INITIAL_CREATED_BY_";
-    private final static Instant DOC_INITIAL_CREATION_INSTANT = LocalDateTime.of(2019, 05, 28, 23, 40).toInstant(ZoneOffset.UTC);
+    private final static Instant DOC_INITIAL_CREATION_INSTANT = LocalDateTime.of(2019, 5, 28, 23, 40).toInstant(ZoneOffset.UTC);
     private final static Option<Content> DOC_CONTENT = Option.option(new ContentImpl("testFile", "mime type", 23, new SourceImpl(new ByteArrayInputStream(new byte[]{0, 1, 2}))));
 
     @Test
@@ -127,7 +144,7 @@ public class CmisDocumentExtensionsTest {
     public void test_toLeosDocument_IfProposalType() throws IOException {
         //setup
         Document cmisDocument = setupLeosDocument(LeosCategory.PROPOSAL);
-        cmisDocument = addXmlDocumentProperties(cmisDocument);
+        addXmlDocumentProperties(cmisDocument);
         when(cmisDocument.getPropertyValue(CmisProperties.INITIAL_CREATED_BY.getId())).thenReturn(DOC_INITIAL_CREATED_BY);
         when(cmisDocument.getPropertyValue(CmisProperties.INITIAL_CREATION_DATE.getId())).thenReturn(GregorianCalendar.from(DOC_INITIAL_CREATION_INSTANT.atZone(ZoneId.of("UTC"))));
 
@@ -161,7 +178,7 @@ public class CmisDocumentExtensionsTest {
     public void test_toLeosDocument_IfMemorandumType() throws IOException {
         //setup
         Document cmisDocument = setupLeosDocument(LeosCategory.MEMORANDUM);
-        cmisDocument = addXmlDocumentProperties(cmisDocument);
+        addXmlDocumentProperties(cmisDocument);
         Option<MemorandumMetadata> memorandumMetadata = Option.none();
         mockStatic(CmisMetadataExtensions.class);
         when(CmisMetadataExtensions.getMemorandumMetadataOption(cmisDocument)).thenReturn(memorandumMetadata);
@@ -190,7 +207,7 @@ public class CmisDocumentExtensionsTest {
     public void test_toLeosDocument_IfBillType() throws IOException {
         //setup
         Document cmisDocument = setupLeosDocument(LeosCategory.BILL);
-        cmisDocument = addXmlDocumentProperties(cmisDocument);
+        addXmlDocumentProperties(cmisDocument);
         Option<BillMetadata> billMetadata = Option.none();
         mockStatic(CmisMetadataExtensions.class);
         when(CmisMetadataExtensions.getBillMetadataOption(cmisDocument)).thenReturn(billMetadata);
@@ -219,7 +236,7 @@ public class CmisDocumentExtensionsTest {
     public void test_toLeosDocument_IfAnnexType() throws IOException {
         //setup
         Document cmisDocument = setupLeosDocument(LeosCategory.ANNEX);
-        cmisDocument = addXmlDocumentProperties(cmisDocument);
+        addXmlDocumentProperties(cmisDocument);
         Option<AnnexMetadata> annexMetadata = Option.none();
         mockStatic(CmisMetadataExtensions.class);
         when(CmisMetadataExtensions.getAnnexMetadataOption(cmisDocument)).thenReturn(annexMetadata);
@@ -304,6 +321,10 @@ public class CmisDocumentExtensionsTest {
         when(milestoneProperty.getValues()).thenReturn(DOC_MILESTONE_COMMENTS);
         when(cmisDocument.getProperty(eq(CmisProperties.MILESTONE_COMMENTS.getId()))).thenReturn(milestoneProperty);
 
+        Property containedDocuments = mock(Property.class);
+        when(containedDocuments.getValues()).thenReturn(DOC_CONTAINED_DOCUMENTS);
+        when(cmisDocument.getProperty(eq(CmisProperties.CONTAINED_DOCUMENTS.getId()))).thenReturn(containedDocuments);
+
         //make call
         LegDocument legDocument = CmisDocumentExtensions.toLeosDocument(cmisDocument, LegDocument.class, true);
 
@@ -314,6 +335,7 @@ public class CmisDocumentExtensionsTest {
         assertThat(legDocument.getJobDate(), is(jobDate));
         assertThat(legDocument.getStatus(), is(LeosLegStatus.IN_CONSULTATION));
         assertThat(legDocument.getMilestoneComments(), is(DOC_MILESTONE_COMMENTS));
+        assertThat(legDocument.getContainedDocuments(), is(DOC_CONTAINED_DOCUMENTS));
     }
 
     @Test(expected = IllegalStateException.class)
@@ -394,7 +416,7 @@ public class CmisDocumentExtensionsTest {
         assertThat(leosDocument.getVersionSeriesId(), is(DOC_VERSION_SERIES_ID));
         assertThat(leosDocument.getVersionLabel(), is(DOC_VERSION_LABEL));
         assertThat(leosDocument.getVersionComment(), is(DOC_VERSION_COMMENT));
-        assertThat(leosDocument.isMajorVersion(), is(DOC_IS_MAJOR_VERSION));
+        assertThat(leosDocument.getVersionType(), is(DOC_VERSION_TYPE));
         assertThat(leosDocument.isLatestVersion(), is(DOC_IS_LATEST_VERSION));
 
         assertThat(leosDocument.getContent().get().getFileName(), is(DOC_CONTENT.get().getFileName()));
@@ -421,9 +443,9 @@ public class CmisDocumentExtensionsTest {
         when(cmisDocument.getLastModifiedBy()).thenReturn(DOC_LAST_MODIFIED_BY);
         when(cmisDocument.getLastModificationDate()).thenReturn(GregorianCalendar.from(DOC_LAST_MODIFICATION_INSTANT.atZone(ZoneId.of("UTC"))));
         when(cmisDocument.getVersionSeriesId()).thenReturn(DOC_VERSION_SERIES_ID);
-        when(cmisDocument.getVersionLabel()).thenReturn(DOC_VERSION_LABEL);
+        when(cmisDocument.getPropertyValue(CmisProperties.VERSION_LABEL.getId())).thenReturn(DOC_VERSION_LABEL);
         when(cmisDocument.getCheckinComment()).thenReturn(DOC_VERSION_COMMENT);
-        when(cmisDocument.isMajorVersion()).thenReturn(DOC_IS_MAJOR_VERSION);
+        when(cmisDocument.getPropertyValue(CmisProperties.VERSION_TYPE.getId())).thenReturn(null);
         when(cmisDocument.isLatestVersion()).thenReturn(DOC_IS_LATEST_VERSION);
 
         ContentStream contentStream = mock(ContentStream.class);
@@ -436,7 +458,7 @@ public class CmisDocumentExtensionsTest {
         return cmisDocument;
     }
 
-    private Document addXmlDocumentProperties(Document cmisDocument) {
+    private void addXmlDocumentProperties(Document cmisDocument) {
         when(cmisDocument.getPropertyValue(CmisProperties.DOCUMENT_TITLE.getId())).thenReturn(DOC_TITLE);
 
         Property collaboratorProperty = mock(Property.class);
@@ -446,7 +468,6 @@ public class CmisDocumentExtensionsTest {
         Property milestoneProperty = mock(Property.class);
         when(milestoneProperty.getValues()).thenReturn(DOC_MILESTONE_COMMENTS);
         when(cmisDocument.getProperty(eq(CmisProperties.MILESTONE_COMMENTS.getId()))).thenReturn(milestoneProperty);
-        return cmisDocument;
     }
 
 }

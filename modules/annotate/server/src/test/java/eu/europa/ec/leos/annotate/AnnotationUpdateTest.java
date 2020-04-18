@@ -74,6 +74,9 @@ public class AnnotationUpdateTest {
     private GroupRepository groupRepos;
 
     @Autowired
+    private UserGroupRepository userGroupRepos;
+
+    @Autowired
     private TagRepository tagRepos;
 
     @Autowired
@@ -127,20 +130,137 @@ public class AnnotationUpdateTest {
         final String annotId = annot.getId();
 
         // update the annotation properties and launch update via service
-        annot.setText("new text");
+        annot.setText("new text2");
         annot.getPermissions().setRead(Arrays.asList(hypothesisUserAccount)); // change from public to private
 
         // update via service
         final JsonAnnotation updatedAnnot = annotService.updateAnnotation(annot.getId(), annot, userInfo);
         Assert.assertEquals(annotId, updatedAnnot.getId()); // id remains same
+        Assert.assertNull(updatedAnnot.getLinkedAnnotationId());
 
         // read annotation from database and verify
         final Annotation readAnnot = annotService.findAnnotationById(annotId);
         Assert.assertNotNull(readAnnot);
-        Assert.assertEquals("new text", readAnnot.getText());
+        Assert.assertEquals("new text2", readAnnot.getText());
         Assert.assertFalse(readAnnot.isShared());
         Assert.assertEquals(savedCreated, readAnnot.getCreated());
         Assert.assertTrue(readAnnot.getUpdated().compareTo(savedUpdated) >= 0); // equal or after, but not before!
+        Assert.assertFalse(readAnnot.isSentDeleted());
+    }
+
+    /**
+     * update of a SENT annotation by an ISC user - should return new annotation, which is linked
+     * to the original (in both directions)
+     * user is allowed to update -> should work
+     */
+    @Test
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    public void testSimpleAnnotationUpdate_IscUser_Sent()
+            throws CannotCreateAnnotationException, CannotUpdateAnnotationException,
+            MissingPermissionException, CannotUpdateSentAnnotationException {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = ACCOUNT_PREFIX + authority;
+
+        final UserInformation userInfo = new UserInformation(user, authority);
+
+        // create an annotation
+        final JsonAnnotation annot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        annotService.createAnnotation(annot, userInfo);
+
+        final String annotId = annot.getId();
+
+        // modify saved metadata to make the annotation be SENT already
+        final Metadata meta = metadataRepos.findAll().iterator().next();
+        meta.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(meta);
+
+        // update the metadata in the Json annotation also
+        annot.getDocument().getMetadata().put("responseStatus", Metadata.ResponseStatus.SENT.toString());
+
+        // update the annotation properties and launch update via service
+        annot.setText("new text for SENT");
+
+        // make sure user is member of the same group (as the annotation),
+        // otherwise the update will be refused
+        final Group group = groupRepos.findByName(annot.getGroup());
+        userGroupRepos.save(new UserGroup(user.getId(), group.getId()));
+
+        // update via service
+        final JsonAnnotation updatedAnnot = annotService.updateAnnotation(annot.getId(), annot, userInfo);
+        Assert.assertNotEquals(annotId, updatedAnnot.getId()); // id is changed
+        Assert.assertEquals(annotId, updatedAnnot.getLinkedAnnotationId());
+        Assert.assertTrue(updatedAnnot.getDocument().getMetadata().containsValue(Metadata.ResponseStatus.IN_PREPARATION.toString()));
+
+        // read the new annotation from database and verify the linkedAnnot is set
+        final Annotation newAnnot = annotService.findAnnotationById(updatedAnnot.getId());
+        Assert.assertEquals(annotId, newAnnot.getLinkedAnnotationId());
+        Assert.assertFalse(newAnnot.isSentDeleted());
+        
+        // verify original annotation has linkedAnnot set
+        final Annotation origAnnot = annotService.findAnnotationById(annotId);
+        Assert.assertNotNull(origAnnot);
+        Assert.assertNotEquals(updatedAnnot.getText(), origAnnot.getText());
+        Assert.assertEquals(updatedAnnot.getId(), origAnnot.getLinkedAnnotationId());
+        Assert.assertTrue(origAnnot.getMetadata().isResponseStatusSent());
+        Assert.assertFalse(origAnnot.isSentDeleted());
+        
+        // check that both items are in the database
+        Assert.assertEquals(2, annotRepos.count()); // two annotations
+        Assert.assertEquals(2, metadataRepos.count()); // two metadata sets (once SENT, once IN_PREPARATION)
+    }
+
+    /**
+     * update of a SENT annotation by an ISC user, but user is not allowed to update -> should fail
+     */
+    @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
+    public void testSimpleAnnotationUpdate_IscUser_Sent_NoPermission()
+            throws CannotCreateAnnotationException, CannotUpdateAnnotationException,
+            MissingPermissionException, CannotUpdateSentAnnotationException {
+
+        final String authority = Authorities.ISC;
+        final String hypothesisUserAccount = ACCOUNT_PREFIX + authority;
+
+        final UserInformation userInfo = new UserInformation(user, authority);
+
+        // create an annotation
+        final JsonAnnotation annot = TestData.getTestAnnotationObject(hypothesisUserAccount);
+        annotService.createAnnotation(annot, userInfo);
+
+        final String annotId = annot.getId();
+        final String savedText = annot.getText();
+
+        // modify saved metadata to make the annotation be SENT already
+        final Metadata meta = metadataRepos.findAll().iterator().next();
+        meta.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(meta);
+
+        // update the metadata in the Json annotation also
+        annot.getDocument().getMetadata().put("responseStatus", Metadata.ResponseStatus.SENT.toString());
+
+        // update the annotation properties and launch update via service
+        annot.setText("new text for SENT");
+
+        // do not add the user to the group -> update should throw exception
+
+        // update via service
+        try {
+            annotService.updateAnnotation(annot.getId(), annot, userInfo);
+        } catch (CannotUpdateSentAnnotationException cusae) {
+            // expected
+        }
+
+        // verify original annotation was not changed (no linkedAnnot set, response status unchanged)
+        final Annotation origAnnot = annotService.findAnnotationById(annotId);
+        Assert.assertNotNull(origAnnot);
+        Assert.assertEquals(savedText, origAnnot.getText());
+        Assert.assertNull(origAnnot.getLinkedAnnotationId());
+        Assert.assertTrue(origAnnot.getMetadata().isResponseStatusSent());
+
+        // check that only the one item is in the database
+        Assert.assertEquals(1, annotRepos.count()); // only original annotation
+        Assert.assertEquals(1, metadataRepos.count()); // only one metadata set (SENT)
     }
 
     /**
@@ -174,10 +294,11 @@ public class AnnotationUpdateTest {
     }
 
     /**
-     * simple update of annotation, but from a different user than the creator
+     * simple update of annotation, but from a different user than the creator (EdiT)
      * -> not valid
      */
     @Test
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     public void testSimpleAnnotationUpdateForbidden()
             throws CannotCreateAnnotationException, CannotUpdateAnnotationException,
             MissingPermissionException, CannotUpdateSentAnnotationException {
@@ -401,7 +522,7 @@ public class AnnotationUpdateTest {
     @Test
     public void testUpdateAnnotationGroupWithNewMetadataExistingAlready() throws Exception {
 
-        final String authority = "theauthority";
+        final String authority = "someauthority";
         final String hypothesisUserAccount = ACCOUNT_PREFIX + authority;
 
         final UserInformation userInfo = new UserInformation(user, authority);

@@ -31,6 +31,7 @@ public class JsonBulkDeleteSuccessResponse {
     // Constructor
     // -------------------------------------
 
+    @SuppressWarnings("PMD.UnnecessaryConstructor")
     public JsonBulkDeleteSuccessResponse() {
         // default constructor required for deserialisation
     }
@@ -39,6 +40,8 @@ public class JsonBulkDeleteSuccessResponse {
     // Getters & setters
     // -------------------------------------
 
+    @Generated
+    @SuppressWarnings("PMD.BooleanGetMethodName")
     public boolean getDeleted() {
         return deleted;
     }

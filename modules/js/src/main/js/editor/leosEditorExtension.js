@@ -86,7 +86,7 @@ define(function leosEditorExtensionModule(require) {
         log.debug("Registering beforeunload handler...");
         $(window).on("beforeunload", function() {
             if ($("akomantoso .cke_editable").is("[data-wrapped-id]") ||
-                    $("div.popupContent .leos-toc-tree").length) {
+                    $("div.leos-toc-tree-editable").length) {
                 return "Changes you made may not be saved."; // Browser shows it's own message and not this
             }
         });

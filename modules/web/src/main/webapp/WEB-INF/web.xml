@@ -50,20 +50,6 @@
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
     </listener>
 
-    <!-- Hook for Spring Security-->
-    <filter>
-        <filter-name>springSecurityFilterChain</filter-name>
-        <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
-    </filter>
-
-    <!-- Spring security should be applied only to Secure URLs -->
-    <filter-mapping>
-        <filter-name>springSecurityFilterChain</filter-name>
-        <url-pattern>/api/secured/*</url-pattern>
-        <url-pattern>/ui/*</url-pattern>
-        <url-pattern>/VAADIN/*</url-pattern>
-    </filter-mapping>
-
     <filter>
         <filter-name>requestContextFilter</filter-name>
         <filter-class>org.springframework.web.filter.RequestContextFilter</filter-class>
@@ -78,6 +64,17 @@
         <url-pattern>/ui/*</url-pattern>
         <url-pattern>/VAADIN/*</url-pattern>
         <url-pattern>/ws/*</url-pattern>
+    </filter-mapping>
+    
+    <!-- Milestone resource filters -->
+    <filter>
+      <filter-name>milestoneCssFilter</filter-name>
+      <filter-class>eu.europa.ec.leos.ui.window.milestone.filter.MilestoneCssFilter</filter-class>
+    </filter>
+
+    <filter-mapping>
+        <filter-name>milestoneCssFilter</filter-name>
+        <url-pattern>/css/*</url-pattern>
     </filter-mapping>
 
     <!-- LEOS Web Application Servlet -->
@@ -137,29 +134,6 @@
         <servlet-name>Logback Status Servlet</servlet-name>
         <url-pattern>/logStatus</url-pattern>
     </servlet-mapping>
-
-    <!-- User authentication -->
-    <login-config>
-        <auth-method>${leos.web.auth.method}</auth-method>
-    </login-config>
-
-    <!-- User access privileges -->
-    <security-constraint>
-        <web-resource-collection>
-            <web-resource-name>Secure</web-resource-name>
-            <description>Require users to authenticate</description>
-            <url-pattern>/ui/*</url-pattern>
-            <url-pattern>/VAADIN/*</url-pattern>
-        </web-resource-collection>
-        <auth-constraint>
-            <description>Allow access to authenticated users</description>
-            <role-name>**</role-name>
-        </auth-constraint>
-        <user-data-constraint>
-            <description>Encryption is not required</description>
-            <transport-guarantee>NONE</transport-guarantee>
-        </user-data-constraint>
-    </security-constraint>
 
     <!-- MIME mappings -->
     <mime-mapping>

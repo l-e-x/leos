@@ -15,6 +15,7 @@ package eu.europa.ec.leos.repository.store;
 
 import eu.europa.ec.leos.domain.cmis.document.LeosDocument;
 import eu.europa.ec.leos.domain.cmis.document.XmlDocument;
+import eu.europa.ec.leos.model.filter.QueryFilter;
 import eu.europa.ec.leos.repository.LeosRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 /**
  * Workspace Repository implementation.
@@ -54,8 +56,27 @@ public class WorkspaceRepositoryImpl implements WorkspaceRepository {
     }
 
     @Override
+    public <T extends LeosDocument> T findDocumentByRef(String ref, Class<? extends T> type) {
+        logger.debug("Finding document by ref... [ref=" + ref + ", type=" + type.getSimpleName() + "]");
+        return leosRepository.findDocumentByRef(ref, type);
+    }
+
+    @Override
     public <T extends XmlDocument> T updateDocumentCollaborators(String id, Map<String, String> collaborators, Class<? extends T> type) {
         logger.debug("Updating document collaborators... [id=" + id + ", collaborators=" + collaborators + "]");
         return leosRepository.updateDocument(id, collaborators, type);
+    }
+
+    @Override
+    public <D extends LeosDocument> Stream<D> findPagedDocumentsByParentPath(String path, Class<? extends D> type, boolean fetchContent,
+                                                                             int startIndex, int maxResults, QueryFilter workspaceFilter) {
+        logger.debug("Finding document by parent path... [path=$path, type=${type.simpleName}]");
+        return leosRepository.findPagedDocumentsByParentPath(path, type, true, fetchContent, startIndex, maxResults, workspaceFilter);
+    }
+
+    @Override
+    public <D extends LeosDocument> int findDocumentCountByParentPath(String path, Class<? extends D> type, QueryFilter workspaceFilter) {
+        logger.debug("Finding document by parent path... [path=$path, type=${type.simpleName}]");
+        return leosRepository.findDocumentCountByParentPath(path, type, true, workspaceFilter);
     }
 }

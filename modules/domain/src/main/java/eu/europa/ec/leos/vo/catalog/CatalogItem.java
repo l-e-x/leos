@@ -28,6 +28,7 @@ public class CatalogItem {
     private ItemType type;
     private String id;
     private Boolean enabled;
+    private String key;
 
     private Map<String, String> nameMap;
     private Map<String, String> descMap;
@@ -45,6 +46,10 @@ public class CatalogItem {
 
     public boolean isEnabled() {
         return enabled != null && enabled;
+    }
+
+    public String getKey() {
+        return key;
     }
 
     public String getName(String lang) {

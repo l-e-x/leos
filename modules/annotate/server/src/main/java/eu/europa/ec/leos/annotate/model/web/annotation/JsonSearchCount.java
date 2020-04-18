@@ -40,10 +40,13 @@ public class JsonSearchCount {
     // -----------------------------------------------------------
     // Getters & setters
     // -----------------------------------------------------------
+    
+    @Generated
     public int getCount() {
         return count;
     }
 
+    @Generated
     public void setCount(final int count) {
         this.count = count;
     }

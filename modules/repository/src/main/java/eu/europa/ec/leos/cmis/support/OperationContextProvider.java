@@ -20,14 +20,21 @@ import org.apache.commons.lang3.Validate;
 
 public class OperationContextProvider {
 
-    public static final int MAX_ITEMS_PER_PAGE = 500;
+    public static final int MAX_ITEMS_PER_PAGE = 40;
 
     public static OperationContext getMinimalContext(Session session) {
-        return getOperationContext(session, null);
+        return getOperationContext(session, null, MAX_ITEMS_PER_PAGE);
     }
 
-
     public static OperationContext getOperationContext(Session session, String orderBy) {
+        return getOperationContext(session, orderBy, MAX_ITEMS_PER_PAGE);
+    }
+
+    public static OperationContext getOperationContext(Session session, int maxItemPerPage) {
+        return getOperationContext(session, null, maxItemPerPage);
+    }
+
+    public static OperationContext getOperationContext(Session session, String orderBy, int maxItemPerPage) {
         // create the context
         OperationContext context = session.createOperationContext();
         Validate.notNull(context, "The operation context must not be null!");
@@ -42,7 +49,7 @@ public class OperationContextProvider {
         context.setIncludeRelationships(IncludeRelationships.NONE);
         context.setRenditionFilterString(null);
         // will get the first MAX_ITEMS_PER_PAGE if there are more docs it will continue getting pages until getting all
-        context.setMaxItemsPerPage(MAX_ITEMS_PER_PAGE);
+        context.setMaxItemsPerPage(maxItemPerPage <= 0 ? MAX_ITEMS_PER_PAGE : maxItemPerPage);
         // enabling cache must be analysed on a case-by-case basis,
         // side effects will depend on the specific usage scenarios
         context.setCacheEnabled(false);

@@ -18,16 +18,11 @@ import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.*;
 import eu.europa.ec.leos.annotate.model.SimpleMetadata;
 import eu.europa.ec.leos.annotate.model.UserInformation;
-import eu.europa.ec.leos.annotate.model.entity.Annotation;
-import eu.europa.ec.leos.annotate.model.entity.Metadata;
-import eu.europa.ec.leos.annotate.model.entity.Token;
-import eu.europa.ec.leos.annotate.model.entity.User;
+import eu.europa.ec.leos.annotate.model.entity.*;
 import eu.europa.ec.leos.annotate.model.web.JsonFailureResponse;
 import eu.europa.ec.leos.annotate.model.web.annotation.JsonAnnotation;
 import eu.europa.ec.leos.annotate.model.web.status.StatusUpdateSuccessResponse;
-import eu.europa.ec.leos.annotate.repository.GroupRepository;
-import eu.europa.ec.leos.annotate.repository.TokenRepository;
-import eu.europa.ec.leos.annotate.repository.UserRepository;
+import eu.europa.ec.leos.annotate.repository.*;
 import eu.europa.ec.leos.annotate.services.AnnotationService;
 import org.junit.After;
 import org.junit.Assert;
@@ -35,6 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -51,6 +47,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.util.StringUtils;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 
 @RunWith(SpringRunner.class)
@@ -68,13 +65,23 @@ public class StatusUpdateTest {
     private AnnotationService annotService;
 
     @Autowired
+    @Qualifier("annotationTestRepos")
+    private AnnotationRepository annotRepos;
+    
+    @Autowired
     private GroupRepository groupRepos;
 
+    @Autowired
+    private DocumentRepository documentRepos;
+    
     @Autowired
     private UserRepository userRepos;
 
     @Autowired
     private TokenRepository tokenRepos;
+    
+    @Autowired
+    private MetadataRepository metadataRepos;
 
     @Autowired
     private WebApplicationContext wac;
@@ -120,11 +127,11 @@ public class StatusUpdateTest {
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
-    public void testStatusUpdateOk() throws Exception {
+    public void testResponseStatusUpdateOk() throws Exception {
 
         final String RESP_VERS_VAL = "1";
         final String ISC_REF_VAL = "ISC/2016/642";
-        final String RESP_ID_VAL = "id2";
+        final String RESP_ID_VAL = "id3";
         final Token token = new Token(user, Authorities.ISC, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN,
                 LocalDateTime.now().plusMinutes(5));
         tokenRepos.save(token);
@@ -144,6 +151,19 @@ public class StatusUpdateTest {
         Assert.assertNotNull(readAnnot);
         Assert.assertEquals(Metadata.ResponseStatus.IN_PREPARATION, readAnnot.getMetadata().getResponseStatus());
 
+        // create a second annotation in SENT status that is linked to the first annotation
+        final JsonAnnotation jsAnnotSent = TestData.getTestAnnotationObject("acct:somebody@" + Authorities.ISC);
+        final String annotIdSent = annotService.createAnnotation(jsAnnotSent, userInfo).getId();
+        final Metadata readMetaSent = annotService.findAnnotationById(annotIdSent).getMetadata();
+        readMetaSent.setResponseStatus(Metadata.ResponseStatus.SENT);
+        metadataRepos.save(readMetaSent);
+        
+        readAnnot.setLinkedAnnotationId(annotIdSent);
+        final Annotation readAnnotSent = annotService.findAnnotationById(annotIdSent);
+        readAnnotSent.setLinkedAnnotationId(annotId);
+        annotRepos.save(readAnnot);
+        annotRepos.save(readAnnotSent);
+        
         final SimpleMetadata metaMap = new SimpleMetadata();
         metaMap.put(ISC_REF, ISC_REF_VAL);
         metaMap.put(RESP_VERS, RESP_VERS_VAL);
@@ -173,11 +193,13 @@ public class StatusUpdateTest {
         // verify
         // - the annotation's metadata status was changed from IN_PREPARATION to SENT
         // - the metadata status change was tracked
+        // - it is no longer linked to another annotation
         readAnnot = annotService.findAnnotationById(annotId);
         Assert.assertNotNull(readAnnot);
         Assert.assertEquals(Metadata.ResponseStatus.SENT, readAnnot.getMetadata().getResponseStatus());
         Assert.assertTrue(TestHelper.withinLastSeconds(readAnnot.getMetadata().getResponseStatusUpdated(), 5));
         Assert.assertEquals(user.getId(), readAnnot.getMetadata().getResponseStatusUpdatedBy());
+        Assert.assertNull(readAnnot.getLinkedAnnotationId());
     }
 
     /**
@@ -185,7 +207,7 @@ public class StatusUpdateTest {
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
-    public void testStatusUpdateFailure() throws Exception {
+    public void testResponseStatusUpdateFailure() throws Exception {
 
         final String RESP_VERS_VAL = "1";
         final String ISC_REF_VAL = "ISC/2016/644";
@@ -222,11 +244,59 @@ public class StatusUpdateTest {
     }
 
     /**
+     * launch a request with metadata not matching anything; in addition, there are not sentDeleted items requiring being
+     * really deleted -> should throw exception internally
+     */
+    @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
+    @Test
+    public void testResponseStatusUpdateFailure_nothingToUpdate() throws Exception {
+
+        // create the document
+        final String DOCURI = "file://LEOS/1";
+        final Document doc = new Document(URI.create(DOCURI), "title");
+        documentRepos.save(doc);
+        
+        final String RESP_VERS_VAL = "1";
+        final String ISC_REF_VAL = "ISC/2016/644";
+        final String RESP_ID_VAL = "id2";
+        final Token token = new Token(user, Authorities.ISC, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN,
+                LocalDateTime.now().plusMinutes(5));
+        tokenRepos.save(token);
+
+        final SimpleMetadata metaMap = new SimpleMetadata();
+        metaMap.put(ISC_REF, ISC_REF_VAL);
+        metaMap.put(RESP_VERS, RESP_VERS_VAL);
+        metaMap.put(RESP_ID, RESP_ID_VAL);
+        metaMap.put(RESP_STATUS, RESP_STATUS_PREP);
+        final String serializedMetadataToMatch = SerialisationHelper.serialize(metaMap);
+
+        // we launch the request with some metadata, but there are neither metadata matches nor any sentDeleted items exist
+        final MockHttpServletRequestBuilder builder = MockMvcRequestBuilders
+                .post("/api/changeStatus?group=__world__&uri=" + DOCURI + "&responseStatus=SENT")
+                .header(TestHelper.AUTH_HEADER, TestHelper.AUTH_BEARER + ACCESS_TOKEN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(serializedMetadataToMatch);
+
+        final ResultActions result = this.mockMvc.perform(builder);
+
+        // expected: Http 404
+        result.andExpect(MockMvcResultMatchers.status().isNotFound());
+
+        final MvcResult resultContent = result.andReturn();
+        final String responseString = resultContent.getResponse().getContentAsString();
+
+        // should be success message
+        final JsonFailureResponse jsResponse = SerialisationHelper.deserializeJsonFailureResponse(responseString);
+        Assert.assertNotNull(jsResponse);
+        Assert.assertTrue(!StringUtils.isEmpty(jsResponse.getReason()));
+    }
+    
+    /**
      * updating annotation status fails since group was not set in request, expected HTTP 400 and error message
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
-    public void testStatusUpdateFailure_MissingParameters() throws Exception {
+    public void testResponseStatusUpdateFailure_MissingParameters() throws Exception {
 
         final String RESP_VERS_VAL = "1";
         final String ISC_REF_VAL = "ISC/2016/648";
@@ -267,7 +337,7 @@ public class StatusUpdateTest {
      */
     @SuppressFBWarnings(value = SpotBugsAnnotations.FieldNotInitialized, justification = SpotBugsAnnotations.FieldNotInitializedReason)
     @Test
-    public void testStatusUpdateFailure_MissingPermission() throws Exception {
+    public void testResponseStatusUpdateFailure_MissingPermission() throws Exception {
 
         final String ISC_REF_VAL = "ISC/2016/642";
         final Token token = new Token(user, Authorities.EdiT, ACCESS_TOKEN, LocalDateTime.now().plusMinutes(5), REFRESH_TOKEN,
@@ -298,4 +368,5 @@ public class StatusUpdateTest {
         Assert.assertNotNull(jsResponse);
         Assert.assertTrue(!StringUtils.isEmpty(jsResponse.getReason()));
     }
+    
 }

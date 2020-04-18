@@ -15,7 +15,10 @@ package eu.europa.ec.leos.annotate.model.search;
 
 import eu.europa.ec.leos.annotate.Authorities;
 import eu.europa.ec.leos.annotate.helper.TestDbHelper;
+import eu.europa.ec.leos.annotate.model.SimpleMetadata;
+import eu.europa.ec.leos.annotate.model.SimpleMetadataWithStatuses;
 import eu.europa.ec.leos.annotate.model.entity.*;
+import eu.europa.ec.leos.annotate.model.entity.Annotation.AnnotationStatus;
 import eu.europa.ec.leos.annotate.model.entity.Metadata.ResponseStatus;
 import eu.europa.ec.leos.annotate.repository.*;
 import org.junit.After;
@@ -30,10 +33,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = "spring.config.name=anot")
 @ActiveProfiles("test")
+@SuppressWarnings("PMD.TooManyMethods")
 public class SearchModelFactoryTest {
 
     /**
@@ -157,6 +162,40 @@ public class SearchModelFactoryTest {
         Assert.assertNull(searchModelFactory.getSearchModel(rso));
     }
 
+    // test that an EdiT.1 search model is received when expected
+    @Test
+    public void testEdit1ModelReceivedWithMetadata() throws Exception {
+
+        final String SystemId = Authorities.EdiT;
+
+        final User executingUser = new User("itsyou");
+        userRepos.save(executingUser);
+
+        final Group defaultGroup = TestDbHelper.insertDefaultGroup(groupRepos);
+        userGroupRepos.save(new UserGroup(executingUser.getId(), defaultGroup.getId()));
+
+        final Document document = new Document(new URI("leos://6"), "title");
+        documentRepos.save(document);
+
+        final ResolvedSearchOptions rso = new ResolvedSearchOptions();
+        rso.setExecutingUser(executingUser);
+        rso.setExecutingUserToken(new Token(executingUser, SystemId, null, null, null, null));
+        rso.setGroup(defaultGroup); // public default world group -> EdiT.1 model
+        rso.setDocument(document);
+
+        // store metadata for document/group combination and assign metadata -> EdiT.meta has all conditions fulfilled
+        final Metadata meta = new Metadata(document, defaultGroup, SystemId);
+        metadataRepos.save(meta);
+
+        final SimpleMetadata simpMeta = new SimpleMetadata("key", "value");
+        rso.setMetadataWithStatusesList(Arrays.asList(new SimpleMetadataWithStatuses(simpMeta, AnnotationStatus.getDefaultStatus())));
+
+        // check that correct model is returned
+        final SearchModel resultModel = searchModelFactory.getSearchModel(rso);
+        Assert.assertNotNull(resultModel);
+        Assert.assertTrue(resultModel instanceof SearchModelLeosAllGroups);
+    }
+
     // test that an EdiT.2 search model is received when expected
     @Test
     public void testEdit2ModelReceived() throws Exception {
@@ -179,7 +218,7 @@ public class SearchModelFactoryTest {
         rso.setGroup(someGroup); // specific group -> EdiT.2 model
         rso.setDocument(document);
         rso.setMetadataWithStatusesList("");
-        
+
         // store metadata for document/group combination -> EdiT.2 has all conditions fulfilled
         final Metadata meta = new Metadata(document, someGroup, SystemId);
         metadataRepos.save(meta);
@@ -251,11 +290,13 @@ public class SearchModelFactoryTest {
         rso.setGroup(someGroup); // specific group and some few metadata -> ISC.1 model
         rso.setDocument(document);
         rso.setMetadataWithStatusesList(metadata);
+        rso.setUserIsMemberOfGroup(true); // -> considers IN_PREPARATION items
         Assert.assertFalse(rso.getMetadataWithStatusesList().isEmpty()); // added since the map became a list of maps
 
         // store metadata for document/group combination -> ISC.1 has all conditions fulfilled
         final Metadata meta = new Metadata(document, someGroup, SystemId);
         meta.setKeyValuePairs("ISCReference:ISC/2018/00918\nresponseId:id-123\nresponseVersion:1");
+        meta.setResponseStatus(Metadata.ResponseStatus.IN_PREPARATION);
         metadataRepos.save(meta);
 
         // check that correct model is returned
@@ -332,7 +373,7 @@ public class SearchModelFactoryTest {
 
         // store metadata for document/group combination -> ISC.2 has all conditions fulfilled
         final Metadata meta = new Metadata(document, someGroup, SystemId);
-        meta.setResponseStatus(ResponseStatus.IN_PREPARATION);
+        meta.setResponseStatus(ResponseStatus.SENT);
         meta.setKeyValuePairs("ISCReference:ISC/2018/00918\nresponseId:id-123\nresponseVersion:1");
         metadataRepos.save(meta);
 
@@ -357,7 +398,8 @@ public class SearchModelFactoryTest {
         rso.setExecutingUser(executingUser);
         rso.setExecutingUserToken(new Token(executingUser, Authorities.ISC, null, null, null, null));
         rso.setGroup(someGroup); // specific group and some metadata (including responseStatus)-> ISC.2 model
-        rso.setMetadataWithStatusesList("[{ISCReference: \"ISC/2018/00918\",responseId: \"id-123\",responseVersion: \"1\",responseStatus: \"IN_PREPARATION\"}]");
+        rso.setMetadataWithStatusesList(
+                "[{ISCReference: \"ISC/2018/00918\",responseId: \"id-123\",responseVersion: \"1\",responseStatus: \"IN_PREPARATION\"}]");
         Assert.assertFalse(rso.getMetadataWithStatusesList().isEmpty()); // added since the map became a list of maps
 
         // no metadata supplied in database for document/group combination -> no search model

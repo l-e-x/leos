@@ -15,12 +15,12 @@ package eu.europa.ec.leos.web.ui.component.actions;
 
 import com.google.common.eventbus.EventBus;
 import com.vaadin.server.Resource;
+import com.vaadin.server.ThemeResource;
 import com.vaadin.ui.MenuBar;
 import eu.europa.ec.leos.i18n.MessageHelper;
 import eu.europa.ec.leos.web.ui.themes.LeosTheme;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class ActionsMenuBarComponent extends MenuBar {
 
@@ -30,11 +30,12 @@ public abstract class ActionsMenuBarComponent extends MenuBar {
     protected MessageHelper messageHelper;
     protected EventBus eventBus;
     protected MenuItem mainMenuItem;
+    protected ThemeResource theme;
 
-    @Autowired
-    public ActionsMenuBarComponent(final MessageHelper messageHelper, final EventBus eventBus) {
+    public ActionsMenuBarComponent(final MessageHelper messageHelper, final EventBus eventBus, ThemeResource theme) {
         this.messageHelper = messageHelper;
         this.eventBus = eventBus;
+        this.theme = theme;
         addStyleName("leos-actions-menu");
         eventBus.register(this);
         buildActionsMenuBar();
@@ -59,7 +60,7 @@ public abstract class ActionsMenuBarComponent extends MenuBar {
     }
 
     protected void buildDropDownMenuItem() {
-        mainMenuItem = addItem("", LeosTheme.LEOS_HAMBURGUER_16, null);
+        mainMenuItem = addItem("", theme, null);
         mainMenuItem.setStyleName("leos-actions-menu-selector");
         mainMenuItem.setDescription(messageHelper.getMessage("menu.actions.tooltip"));
     }
@@ -78,7 +79,7 @@ public abstract class ActionsMenuBarComponent extends MenuBar {
         return menuItem;
     }
 
-    protected MenuItem createMenuItem(String caption, Command command) {
+    public MenuItem createMenuItem(String caption, Command command) {
         return createMenuItem(caption, null, command);
     }
 

@@ -19,11 +19,14 @@ import eu.europa.ec.leos.model.user.User;
 public class UserVO extends User implements Comparable {
 
     public UserVO(User user) {
-        super(user.getId(), user.getLogin(), user.getName(), user.getEntity(), user.getEmail(),user.getRoles());
+        super(user.getId(), user.getLogin(), user.getName(), user.getEntities(), user.getEmail(), user.getRoles());
     }
 
     public void setEntity(String entity){ //exposed for collaborator editing
-        super.setEntity(entity);
+    }
+
+    public String getEntity() {
+        return getDefaultEntity() != null ? getDefaultEntity().getOrganizationName() : null;
     }
 
     /*Presence of  setLogin and setName is required as com.vaadin.server.JsonCodec.encodeObject() reads properties

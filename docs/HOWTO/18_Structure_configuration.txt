@@ -1,0 +1,93 @@
+                            STRUCTURE CONFIGURATION - HOWTO
+--------------------------------------------------------------------------------
+
+1. Schema file structure_1.xsd in module domain describes all elements that can be used to build
+structure configuration files.
+
+2. A structure configuration file can be associated to one or more templates. For example template SJ-023
+is composed of Proposal PR-023, Memorandum EM-LP01, Legal Text BL-023 and Annexes SG-017.
+Each of these template files can have a configuration file in JSON format (EM-LP01-CONF.json for EM-LP01
+, BL-023-CONF.json for BL-023, etc.) to configure guidances and alternatives. In these configuration JSON format
+files following JSON Array has been added (ex. BL-023-CONF.json):
+
+	"structure": [
+	    {
+	      "name": "structure_01"
+	    }
+	  ]
+
+This "structure" array contains property "name" and it indicates the structure file to be used for this template. All these
+templates, template configuration files and structure configuration files are stored in the CMIS.
+
+Structure configuration file describes all elements that can be used in a concrete template and relations between them.
+
+	- tocItems List.
+	- numberingConfigs List.
+	- tocRules.
+
+The tocItems list defines all elements that can be used inside a document. These elements have a common set of properties to
+configure element behaviour inside a particular document.
+
+For example "preface" element (check structure_1.xsd schema to see possible values).
+
+	<tocItem>
+		<aknTag>preface</aknTag>						--------------> Element name
+		<root>true</root>								--------------> It is a root element
+		<draggable>false</draggable>					--------------> Can not be draggable
+		<childrenAllowed>false</childrenAllowed>		--------------> Not allows children
+		<display>true</display>							--------------> It is showed in the TOC tree
+		<itemNumber>none</itemNumber>					--------------> Contains <num> tag?
+		<itemHeading>none</itemHeading>					--------------> Contains <heading> tag?
+		<itemDescription>true</itemDescription>         --------------> Text for the item is retrieved from the message.properties file
+		<numberEditable>false</numberEditable>          --------------> Number is editable by the user
+		<contentDisplayed>false</contentDisplayed>      --------------> Content inside element is showed in the TOC
+		<deletable>false</deletable>					--------------> Element can be deleted
+		<numWithType>false</numWithType>				--------------> Inside the <num> tag the element type is with the number
+		<expandedByDefault>true</expandedByDefault>		--------------> Element is expanded by default in the TOC
+		<sameParentAsChild>false</sameParentAsChild>	--------------> Can contain same elements
+		<numberingType>NONE</numberingType>				--------------> Numbering configuration
+		<editable>false</editable>						--------------> Element is editable
+	</tocItem>
+
+Through the numberingConfigs list a set of different numbering configuration can be defined. A concrete number configuration is applied to an element
+using the <numberingType> tag inside the tocItem.
+
+Example of numberingConfig - ARABIC.
+
+	<numberingConfig>
+		<type>ARABIC</type>								--------------> Numbering configuration name
+		<prefix></prefix>								--------------> If includes any prefix
+		<suffix></suffix>								--------------> If includes any suffix
+		<sequence>1</sequence>							--------------> Numbering sequence (1 by 1 in this example)
+		<description>1, 2, etc</description>			--------------> Just a description
+		<regex>\d+$|#</regex>							--------------> Regular expresion used to validate number introduced by the user
+		<msgValidationError>arabic.num.config.validation.error.message</msgValidationError> --------------> Error validation message showed
+	</numberingConfig>
+
+
+The tocRules allows to define which kind of elements can contain a particular element. For example body element:
+
+	<entry>
+		<tocItem>body</tocItem>
+		<list>
+			<tocItem>part</tocItem>
+			<tocItem>title</tocItem>
+			<tocItem>chapter</tocItem>
+			<tocItem>section</tocItem>
+			<tocItem>article</tocItem>
+		</list>
+	</entry>
+
+Body element can contain part, title, chapter, section and article elements.
+
+The article element configuration is the following. It is needed to configure an article inside an article to allow add an article as sibling of
+another article. 
+
+	<entry>
+		<tocItem>article</tocItem>
+		<list>
+			<tocItem>article</tocItem> <!-- Article is not allowed to have child elements but should be allowed to drop elements on it
+        									which will be added as siblings-->
+		</list>
+	</entry>
+ 

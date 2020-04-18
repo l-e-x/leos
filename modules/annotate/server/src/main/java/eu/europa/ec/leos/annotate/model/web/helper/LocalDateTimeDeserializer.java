@@ -38,6 +38,6 @@ public class LocalDateTimeDeserializer extends JsonDeserializer<LocalDateTime> {
         final TextNode node = (TextNode) codec.readTree(jsonparser);
         final String dateString = node.textValue();
         final Instant instant = Instant.parse(dateString);
-        return LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+        return LocalDateTime.ofInstant(instant, ZoneId.of("UTC"));
     }
 }
