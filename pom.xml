@@ -141,7 +141,7 @@
         <google-diffutils.version>1.3.0</google-diffutils.version>
         <freemarker.version>2.3.27-incubating</freemarker.version>
         <vtd-xml.version>2.13</vtd-xml.version>
-        <xstream.version>1.4.9</xstream.version>
+        <xstream.version>1.4.10-java7</xstream.version>
         <cachefilter.version>2.0</cachefilter.version>
         <cuid.version>0.1.1</cuid.version>
         <jsoup.version>1.10.3</jsoup.version>
