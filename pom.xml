@@ -121,7 +121,7 @@
         <hamcrest.version>1.3</hamcrest.version>
         <mockito.version>2.7.22</mockito.version>
         <mathjax.version>2.7.0</mathjax.version>
-        <spring.version>4.3.16.RELEASE</spring.version>
+        <spring.version>4.3.29.RELEASE</spring.version>
         <spring-data.version>Codd-SR3</spring-data.version>
         <hibernate-orm.version>4.2.10.Final</hibernate-orm.version><!--UPGRADE PENDING-->
         <spring-security.version>4.2.5.RELEASE</spring-security.version>
