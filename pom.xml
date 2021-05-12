@@ -124,7 +124,7 @@
         <spring.version>4.3.16.RELEASE</spring.version>
         <spring-data.version>Codd-SR3</spring-data.version>
         <hibernate-orm.version>4.2.10.Final</hibernate-orm.version><!--UPGRADE PENDING-->
-        <spring-security.version>4.2.5.RELEASE</spring-security.version>
+        <spring-security.version>5.2.10.RELEASE</spring-security.version>
         <spring-webmvc.version>4.3.5.RELEASE</spring-webmvc.version>
         <auth0.version>3.2.0</auth0.version>
         <jboss-logging.version>3.3.0.Final</jboss-logging.version>
