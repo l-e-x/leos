@@ -172,7 +172,7 @@
         <junit-platform.version>1.0.2</junit-platform.version>
         <junit-vintage.version>4.12.2</junit-vintage.version>
         <!-- httpclient -->
-        <httpclient.version>4.5.3</httpclient.version>
+        <httpclient.version>4.5.13</httpclient.version>
         <!-- Sonar -->
         <sonar-maven-plugin.version>3.2</sonar-maven-plugin.version>
         <commons-text.version>1.4</commons-text.version>
