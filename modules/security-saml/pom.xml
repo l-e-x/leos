@@ -30,7 +30,7 @@
         <commons-codec.version>1.10</commons-codec.version>
         <xml-sec.version>1.5.8</xml-sec.version>
         <xml-apis.version>1.4.01</xml-apis.version>
-        <bouncycastle-bcprov.version>1.55</bouncycastle-bcprov.version>
+        <bouncycastle-bcprov.version>1.67</bouncycastle-bcprov.version>
     </properties>
 
     <dependencies>
