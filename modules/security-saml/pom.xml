@@ -28,7 +28,7 @@
         <!-- Spring SAML2 extensions -->
         <spring-security-extensions-saml2.version>1.0.9.RELEASE</spring-security-extensions-saml2.version>
         <commons-codec.version>1.10</commons-codec.version>
-        <xml-sec.version>1.5.8</xml-sec.version>
+        <xml-sec.version>2.1.7</xml-sec.version>
         <xml-apis.version>1.4.01</xml-apis.version>
         <bouncycastle-bcprov.version>1.55</bouncycastle-bcprov.version>
     </properties>
