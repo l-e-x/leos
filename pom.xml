@@ -157,7 +157,7 @@
         <jena.version>3.3.0</jena.version>
         <icu4j.version>60.2</icu4j.version>
         <!-- Vaadin -->
-        <vaadin.version>8.8.6</vaadin.version>
+        <vaadin.version>8.14.1</vaadin.version>
         <vaadin-sass-compiler.version>0.9.13</vaadin-sass-compiler.version>
         <vaadin-plugin.version>${vaadin.version}</vaadin-plugin.version>
         <vaadin-spring.version>3.2.1</vaadin-spring.version>
