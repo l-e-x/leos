@@ -178,7 +178,7 @@
         <commons-text.version>1.4</commons-text.version>
         <artemis.version>2.11.0</artemis.version>
         <!-- iText -->
-        <itext-itext7-core.version>7.1.6</itext-itext7-core.version>
+        <itext-itext7-core.version>7.2.0</itext-itext7-core.version>
         <itext-html2pdf.version>2.1.3</itext-html2pdf.version>
     </properties>
 
