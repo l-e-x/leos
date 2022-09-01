@@ -144,7 +144,7 @@
         <xstream.version>1.4.9</xstream.version>
         <cachefilter.version>2.0</cachefilter.version>
         <cuid.version>0.1.1</cuid.version>
-        <jsoup.version>1.10.3</jsoup.version>
+        <jsoup.version>1.15.3</jsoup.version>
         <sass-maven-plugin.version>2.22</sass-maven-plugin.version>
         <jackson-databind.version>2.8.5</jackson-databind.version>
         <cxf-maven-plugin.version>3.1.10</cxf-maven-plugin.version>
